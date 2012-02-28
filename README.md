@@ -4,11 +4,11 @@ Most JVM-hosted graph libraries are flexible but not
 space efficient. Cassovary is designed from the ground up to first be
 able to efficiently handle graphs with billions of nodes
 and edges. A typical example usage is to do large scale
-graph mining and analysis of a <a href="http://twitter.com">big network</a>.
+graph mining and analysis of a <a href="https://twitter.com">big network</a>.
 Cassovary is written in Scala and can be used with any JVM-hosted language.
 It comes with some common data structures and algorithms.
 
-Please follow the cassovary project on twitter at [@cassovary](http://twitter.com/cassovary)
+Please follow the cassovary project on twitter at [@cassovary](https://twitter.com/cassovary)
 for updates.
 
 ## Quick Start and Examples
@@ -40,24 +40,28 @@ which is written in Java but stores nodes and edges as big objects.
 On the other hand, Cassovary is intended to be easy to use and extend in a JVM-hosted
 environment and yet be efficient enough to scale to billions of nodes and edges.
 It is deliberately not designed to provide any persistence or database functionality.
+Also, it currently skips any concerns of partitioning the graph (with corresponding
+limitations dependent on available single machine resources), and hence is
+not directly comparable to distributed graph processing systems like
+[Apache Giraph](http://incubator.apache.org/giraph/).
 
 ## Mailing list
 http://groups.google.com/group/cassovary
 
-Please follow the cassovary project on twitter at [@cassovary](http://twitter.com/cassovary)
+Please follow the cassovary project on twitter at [@cassovary](https://twitter.com/cassovary)
 for updates.
 
 ## Bugs
 Please report any bugs to: <https://github.com/twitter/cassovary/issues>
 
 ## Authors:
-* [Pankaj Gupta](http://twitter.com/pankaj)
-* [Dong Wang](http://twitter.com/dongwang218)
-* [Tao Tao](http://twitter.com/tao)
-* [John Sirois](http://twitter.com/johnsirois)
-* [Aneesh Sharma](http://twitter.com/aneeshs)
-* [Ashish Goel](http://twitter.com/ashishgoel)
-* [Mengqiu Wang](http://twitter.com/4ad)
+* [Pankaj Gupta](https://twitter.com/pankaj)
+* [Dong Wang](https://twitter.com/dongwang218)
+* [Tao Tao](https://twitter.com/tao)
+* [John Sirois](https://twitter.com/johnsirois)
+* [Aneesh Sharma](https://twitter.com/aneeshs)
+* [Ashish Goel](https://twitter.com/ashishgoel)
+* [Mengqiu Wang](https://twitter.com/4ad)
 
 ## License
 Copyright 2012 Twitter, Inc.

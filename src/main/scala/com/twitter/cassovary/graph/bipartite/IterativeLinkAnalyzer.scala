@@ -37,7 +37,6 @@ class IterativeLinkAnalyzer(graphUtils: GraphUtils, resetProbOnLeft: Double,
     resetProbOnRight: Double, numTopContributors: Int) {
 
   private val graph = graphUtils.graph
-  // TODO(pankaj) -- remove
   private val log = Logger.get
 
   // keep track of associated info for every node while doing iterations
@@ -91,7 +90,7 @@ class IterativeLinkAnalyzer(graphUtils: GraphUtils, resetProbOnLeft: Double,
     }
   }
 
-  //TODO(pankaj) return value type here is getting out of control!
+  //TODO get a better return value type here!
 
   /**
    * Carries out link analysis on a bipartite graph, by default sort its output
@@ -137,7 +136,7 @@ class IterativeLinkAnalyzer(graphUtils: GraphUtils, resetProbOnLeft: Double,
       listFrom(hash).sortBy( - _._2)
     }
 
-    // TODO(pankaj) -- use a Pair as well as make it clearer
+    // TODO -- perhaps use a Pair as well as make it clearer
 
     // set up nodeInfos in both directions
     // one map in each direction, of which ids are present and their info

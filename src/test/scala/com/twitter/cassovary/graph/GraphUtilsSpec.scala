@@ -17,7 +17,7 @@ import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.util.Duration
 import org.specs.Specification
 
-// TODO (pankaj) add a fake random so that the random walk tests can be controlled
+// TODO add a fake random so that the random walk tests can be controlled
 class GraphUtilsSpec extends Specification {
 
   var graph: DirectedGraph = _
@@ -136,7 +136,7 @@ class GraphUtilsSpec extends Specification {
       // 10000 steps should visit every node at least once
       visitsPerNode.length mustEqual graph.nodeCount
       visitsPerNode.head._1 mustEqual 10
-      // TODO(pankaj) need to think about how to do more testing here
+      // TODO more testing here
     }
 
     "stable random walk correctly" in {
