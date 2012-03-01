@@ -46,7 +46,7 @@ not directly comparable to distributed graph processing systems like
 [Apache Giraph](http://incubator.apache.org/giraph/).
 
 ## Mailing list
-http://groups.google.com/group/cassovary
+http://groups.google.com/group/twitter-cassovary
 
 Please follow the cassovary project on twitter at [@cassovary](https://twitter.com/cassovary)
 for updates.
