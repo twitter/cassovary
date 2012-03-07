@@ -32,18 +32,25 @@ them have one or more of the following characteristics:
 [GraphLab](http://graphlab.org/) from CMU. The typical way to use these from JVM is to use
 JNI bridges.
 2. Sacrifice storage efficiency for flexibility. Examples include
-[JUNG](http://jung.sourceforge.net/),
-which is written in Java but stores nodes and edges as big objects.
+[JUNG](http://jung.sourceforge.net/) which is written in Java but
+stores nodes and edges as big objects.
 3. Are meant to do much more, typically a full graph database. Examples include
 [Neo4J](http://neo4j.org).
 
-On the other hand, Cassovary is intended to be easy to use and extend in a JVM-hosted
-environment and yet be efficient enough to scale to billions of nodes and edges.
+On the other hand, Cassovary is intended to be easy to use in a JVM-hosted
+environment and yet be efficient enough to scale to billions of edges.
 It is deliberately not designed to provide any persistence or database functionality.
-Also, it currently skips any concerns of partitioning the graph (with corresponding
-limitations dependent on available single machine resources), and hence is
+Also, it currently skips any concerns of partitioning the graph and hence is
 not directly comparable to distributed graph processing systems like
-[Apache Giraph](http://incubator.apache.org/giraph/).
+[Apache Giraph](http://incubator.apache.org/giraph/). This allows complex algorithms
+to be run on the graph efficiently, an otherwise recurring issue with distributed
+graph processing systems because of the known difficulty of achieving good
+graph partitions. On the flip side, the size of the
+graph it works with is bounded by the memory available in a machine, though
+the use of space efficient data structures does not seem to make this a
+limitation for most practical graphs. For example, an ```ArrayBasedDirectedGraph```
+instance of a unidirectional graph with 10M nodes and 1B edges consumes
+less than 6GB of memory, and scales linearly beyond that.
 
 ## Mailing list
 http://groups.google.com/group/twitter-cassovary
