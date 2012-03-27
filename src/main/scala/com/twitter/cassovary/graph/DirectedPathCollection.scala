@@ -20,16 +20,16 @@ import collection.mutable
  * Represents a collection of directed paths. For example, a collection of paths out of
  * the same source node.
  */
-class DirectedPathCollection[T] {
+class DirectedPathCollection {
 
   // the current path being built
-  private val currPath = DirectedPath.builder[T]()
+  private val currPath = DirectedPath.builder()
 
   // pathCountsPerId(id)(path) = count of #times path has been seen ending in id
-  private val pathCountsPerId = new mutable.HashMap[T, mutable.HashMap[DirectedPath[T], Int]] {
-    override def default(node: T) = {
-      val h1 = new mutable.HashMap[DirectedPath[T], Int] {
-        override def default(p: DirectedPath[T]) = 0
+  private val pathCountsPerId = new mutable.HashMap[Int, mutable.HashMap[DirectedPath, Int]] {
+    override def default(node: Int) = {
+      val h1 = new mutable.HashMap[DirectedPath, Int] {
+        override def default(p: DirectedPath) = 0
       }
       put(node, h1)
       h1
@@ -40,7 +40,7 @@ class DirectedPathCollection[T] {
    * Appends node to the current path and record this path against the node.
    * @param node the node being visited
    */
-  def appendToCurrentPath(node: T) {
+  def appendToCurrentPath(node: Int) {
     currPath.append(node)
     pathCountsPerId(node)(currPath.snapshot) += 1
   }
@@ -56,7 +56,7 @@ class DirectedPathCollection[T] {
    * @return a list of tuple(path, count) where count is the number of times path
    *         ending at {@code node} is observed
    */
-  def topPathsTill(node: T, num: Int) = {
+  def topPathsTill(node: Int, num: Int) = {
     val paths = pathCountsPerId(node)
     val top = paths.toList.sortBy { case (path, count) => (-count, path.length) }
     top.take(num)
@@ -66,7 +66,7 @@ class DirectedPathCollection[T] {
    * @param num the number of top paths to return for a node
    * @return a mapping of node to the list of top paths ending at node
    */
-  def topPathsPerNodeId(num: Int): collection.Map[T, List[(DirectedPath[T], Int)]] = {
+  def topPathsPerNodeId(num: Int): collection.Map[Int, List[(DirectedPath, Int)]] = {
     Map.empty ++ pathCountsPerId.keysIterator.map { node =>
         (node, topPathsTill(node, num))
     }
@@ -75,7 +75,7 @@ class DirectedPathCollection[T] {
   /**
    * @return the total number of unique paths that end at {@code node}
    */
-  def numUniquePathsTill(node: T) = pathCountsPerId(node).size
+  def numUniquePathsTill(node: Int) = pathCountsPerId(node).size
 
   /**
    * @return the total number of unique paths in this collection

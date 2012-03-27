@@ -13,12 +13,12 @@
  */
 package com.twitter.cassovary.graph
 
-import collection.mutable.ArrayBuffer
+import it.unimi.dsi.fastutil.ints.IntArrayList
 
 /**
  * Represents a directed path of nodes in a graph. No loop detection is done.
  */
-case class DirectedPath[T](val nodes: Seq[T]) {
+case class DirectedPath(val nodes: Array[Int]) {
 
   /**
    * @return the number of nodes on this path
@@ -35,18 +35,18 @@ case class DirectedPath[T](val nodes: Seq[T]) {
 }
 
 object DirectedPath {
-  trait Builder[T] {
+  trait Builder {
     /**
      * Appends a node to the end of this path.
      * @param node the node to append
      * @return this Builder for chaining
      */
-    def append(node: T): this.type
+    def append(node: Int): this.type
 
     /**
      * Takes the snapshot of the path currently being built to return an immutable DirectedPath.
      */
-    def snapshot: DirectedPath[T]
+    def snapshot: DirectedPath
 
     /**
      * Clear this path
@@ -54,16 +54,20 @@ object DirectedPath {
     def clear()
   }
 
-  def builder[T](): Builder[T] = {
-    new Builder[T]() {
-      private val path = new ArrayBuffer[T]
+  def builder(): Builder = {
+    new Builder() {
+      private val path = new IntArrayList
 
-      def append(node: T) = {
-        path.append(node)
+      def append(node: Int) = {
+        path.add(node)
         this
       }
 
-      def snapshot = DirectedPath(path.toList)
+      def snapshot = {
+        val intArray = new Array[Int](path.size)
+        path.toArray(intArray)
+        DirectedPath(intArray)
+      }
 
       def clear() { path.clear() }
     }

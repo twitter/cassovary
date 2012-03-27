@@ -85,8 +85,8 @@ class VisitsCounter extends InfoKeeper[Int] {
  * a function param of Node => Boolean
  */
 class PathsCounter(numTopPathsPerNode: Int, homeNodeIds: Seq[Int])
-    extends NodeTourist[List[(DirectedPath[Int], Int)]] {
-  private val paths = new DirectedPathCollection[Int]
+    extends NodeTourist[List[(DirectedPath, Int)]] {
+  private val paths = new DirectedPathCollection
 
   def visit(id: Int) {
     if (homeNodeIds.contains(id)) {

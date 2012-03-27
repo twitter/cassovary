@@ -126,16 +126,16 @@ class GraphUtils(val graph: Graph) {
    *            in the form of (P as a {@link DirectedPath}, frequency of walking P).
    */
   def calculatePersonalizedReputation(startNodeIds: Seq[Int], walkParams: RandomWalkParams):
-      (List[(Int, Int)], collection.Map[Int, List[(DirectedPath[Int], Int)]]) = {
+      (List[(Int, Int)], collection.Map[Int, List[(DirectedPath, Int)]]) = {
     val (numVisitsPerNode, topPathsVisited) =
         generateWalkResults("PTC", randomWalk(walkParams.dir, startNodeIds, walkParams) _)
     val convertedTopPathsVisited =
-        topPathsVisited.asInstanceOf[collection.Map[Int, List[(DirectedPath[Int], Int)]]]
+        topPathsVisited.asInstanceOf[collection.Map[Int, List[(DirectedPath, Int)]]]
     (numVisitsPerNode, convertedTopPathsVisited)
   }
 
   def calculatePersonalizedReputation(startNodeId: Int, walkParams: RandomWalkParams):
-      (List[(Int, Int)], collection.Map[Int, List[(DirectedPath[Int], Int)]]) = {
+      (List[(Int, Int)], collection.Map[Int, List[(DirectedPath, Int)]]) = {
     calculatePersonalizedReputation(Seq(startNodeId), walkParams)
   }
 
