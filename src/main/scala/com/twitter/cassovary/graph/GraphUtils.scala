@@ -38,7 +38,7 @@ class GraphUtils(val graph: Graph) {
     nodes foreach { node =>
       tourists foreach { _.visit(node) }
     }
-    tourists map { _.infoAllNodes }
+    tourists
   }
 
   /**
@@ -56,9 +56,9 @@ class GraphUtils(val graph: Graph) {
    *         V from {@code previousNodeId} {@code count} number of times.
    */
   def bfsWalk(dir: GraphDir, startNodeId: Int, walkParams: RandomWalkParams)():
-      Seq[collection.Map[Int, Any]] = {
+      Seq[NodeTourist[Any]] = {
     if (!graph.existsNodeId(startNodeId)) {
-      Seq(Map.empty, Map.empty)
+      Seq(EmptyNodeTourist.instance, EmptyNodeTourist.instance)
     } else {
       Stats.incr("bfs_walk_request", 1)
       val tourists = Seq(new VisitsCounter)
@@ -72,7 +72,7 @@ class GraphUtils(val graph: Graph) {
         walk(traversedNodes, tourists)
       }
 
-      walkResults ++ Seq(traversedNodes.prevNbrCounter.infoAllNodes)
+      walkResults ++ Seq(traversedNodes.prevNbrCounter)
     }
   }
 
@@ -89,12 +89,12 @@ class GraphUtils(val graph: Graph) {
    *         The path P is kept as a {@link DirectedPath}.
    */
   def randomWalk(dir: GraphDir, startNodeIds: Seq[Int], walkParams: RandomWalkParams)():
-      Seq[collection.Map[Int, Any]] = {
+      Seq[NodeTourist[Any]] = {
     val startNodesExist = (startNodeIds.length > 0) && startNodeIds.foldLeft(true) { (exists, elem) =>
       exists && graph.existsNodeId(elem)
     }
     if (!startNodesExist) {
-      Seq(Map.empty, Map.empty)
+      Seq(EmptyNodeTourist.instance, EmptyNodeTourist.instance)
     } else {
       val tourists = Seq(new VisitsCounter) ++
           (walkParams.numTopPathsPerNode match {
@@ -110,7 +110,7 @@ class GraphUtils(val graph: Graph) {
       }
       walkParams.numTopPathsPerNode match {
         case Some(k) if(k > 0) => walkResults
-        case _ => walkResults ++ Seq(Map.empty[Int, Any])
+        case _ => walkResults ++ Seq(EmptyNodeTourist.instance)
       }
     }
   }
@@ -160,14 +160,16 @@ class GraphUtils(val graph: Graph) {
    * Utility function that performs the walk, sort the num of visits counter and return the results
    */
   private def generateWalkResults(algorithmName: String,
-      walkFunc: () => Seq[collection.Map[Int, Any]]) = {
+      walkFunc: () => Seq[NodeTourist[Any]]) = {
     val walkResult = Stats.time ("%s_total".format(algorithmName)) { walkFunc() }
-    val numVisitsPerNode = walkResult(0).asInstanceOf[collection.Map[Int, Int]]
-    val visitorResult = walkResult(1).asInstanceOf[collection.Map[Int, Any]]
+
     // sort by #visits. If count is equal, arbitrarily keep the smaller id higher in the list
-    val sortedByNumVisits = numVisitsPerNode.toList.sortBy {
-      case (nodeId, count) => (-count, nodeId)
-    }
+    val visitsCounter = walkResult(0).asInstanceOf[VisitsCounter]
+    val sortedByNumVisits = visitsCounter.sortedByVisits
+
+    val pathsCounter = walkResult(1).asInstanceOf[PathsCounter]
+    val visitorResult = pathsCounter.topPathsPerNode
+
     (sortedByNumVisits, visitorResult)
   }
 

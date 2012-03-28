@@ -14,12 +14,15 @@
 package com.twitter.cassovary.graph
 
 import scala.collection.mutable
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap
+import it.unimi.dsi.fastutil.ints.{Int2IntOpenHashMap, Int2ObjectOpenHashMap}
 
 /**
  * Represents the processing done when visiting a node.
  */
 trait NodeTourist[+O] {
+
+  // TODO figure out a way to iterate through all key value pairs
+
   /**
    * Visit a node by its {@code id}
    */
@@ -29,21 +32,15 @@ trait NodeTourist[+O] {
    * Visit a {@code node}
    */
   def visit(node: Node) { visit(node.id) }
+}
 
-  /**
-   * Get information of all nodes
-   */
-  def infoAllNodes: collection.Map[Int, O]
+// Convenience class
+class EmptyNodeTourist[O] extends NodeTourist[O] {
+  def visit(id: Int) { }
+}
 
-  /**
-   * Get information of a particular node by its {@code id}
-   */
-  def infoOfNode(id: Int): Option[O] = infoAllNodes.get(id)
-
-  /**
-   * Get information of a particular {@code node}.
-   */
-  def infoOfNode(node: Node): Option[O] = infoOfNode(node.id)
+object EmptyNodeTourist {
+  val instance = new EmptyNodeTourist[Any]
 }
 
 /**
@@ -56,18 +53,39 @@ trait InfoKeeper[O] extends NodeTourist[O] {
    */
   val onlyOnce: Boolean
 
-  protected val infoPerNode = new mutable.HashMap[Int, O]
+  protected val infoPerNode = new Int2ObjectOpenHashMap[O]
 
   /**
    * Record information {@code info} of node {@code id}.
    */
   def recordInfo(id: Int, info: O) {
-    if (!(onlyOnce && infoPerNode.contains(id))) {
+    if (!(onlyOnce && infoPerNode.containsKey(id))) {
       infoPerNode.put(id, info)
     }
   }
 
-  def infoAllNodes = infoPerNode
+  /**
+   * Get information of a particular node by its {@code id}
+   */
+  def infoOfNode(id: Int): Option[O] = {
+    if (infoPerNode.containsKey(id)) {
+      Some(infoPerNode.get(id))
+    } else {
+      None
+    }
+  }
+
+  /**
+   * Get information of a particular {@code node}.
+   */
+  def infoOfNode(node: Node): Option[O] = infoOfNode(node.id)
+
+  /**
+   * Clear underlying map
+   */
+  def clear() {
+    infoPerNode.clear()
+  }
 }
 
 /**
@@ -80,7 +98,21 @@ class VisitsCounter extends NodeTourist[Int] {
     infoPerNode.add(id, 1)
   }
 
-  def infoAllNodes = infoPerNode.asInstanceOf[collection.Map[Int, Int]]
+  def sortedByVisits = {
+    val sortedPairs = new Array[(Int, Int)](infoPerNode.size)
+    val nodeIterator = infoPerNode.keySet.iterator
+
+    var index = 0
+    while (nodeIterator.hasNext) {
+      val node = nodeIterator.nextInt
+      sortedPairs(index) = (node, infoPerNode.get(node))
+      index += 1
+    }
+
+    sortedPairs.toList.sortBy {
+      case (nodeId, count) => (-count, nodeId)
+    }
+  }
 }
 
 /**
@@ -101,8 +133,10 @@ class PathsCounter(numTopPathsPerNode: Int, homeNodeIds: Seq[Int])
     paths.appendToCurrentPath(id)
   }
 
-  def infoAllNodes = paths.topPathsPerNodeId(numTopPathsPerNode)
+  val topPathsPerNode = paths.topPathsPerNodeId(numTopPathsPerNode)
 }
+
+// collection.Map[Int, List[(DirectedPath, Int)]]
 
 /**
  * A NodeTourist that keeps track of the previous immediate neighbor of a

@@ -97,7 +97,7 @@ class RandomTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
     } else {
       var randNextNodeId = takeRandomStep()
       if (onlyOnce && seenBefore(randNextNodeId)) {
-        seenNodesTracker.infoAllNodes.clear()
+        seenNodesTracker.clear()
         goHome()
       } else {
         randNextNodeId
@@ -183,7 +183,7 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
     def visit(id: Int) { /* we will only use recordInfo() method in this InfoKeeper */ }
 
     override def recordInfo(id: Int, info: Int) {
-      if (!infoPerNode.contains(id)) {
+      if (!infoPerNode.containsKey(id)) {
         infoPerNode.put(id, info)
       }
     }

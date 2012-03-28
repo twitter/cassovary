@@ -58,11 +58,7 @@ class DirectedPathCollection {
     val pathArray = new Array[DirectedPath](pathCount)
     pathCountMap.keySet.toArray(pathArray)
 
-    val sorted = pathArray.toList.sortWith { (a, b) =>
-      val aCount = pathCountMap.getInt(a)
-      val bCount = pathCountMap.getInt(b)
-      bCount < aCount
-    }
+    val sorted = pathArray.toList.sortBy { x => -1 * pathCountMap.getInt(x) }
     sorted.take(num).map { path => (path, pathCountMap.getInt(path)) }
   }
 
