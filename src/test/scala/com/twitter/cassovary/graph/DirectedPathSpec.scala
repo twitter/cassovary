@@ -21,44 +21,43 @@ class DirectedPathSpec extends Specification {
     val testPathIds = Array(10, 11, 12, 14, 15, 11, 14, 0)
 
     "length, append, exists, equals" in {
-      val testPathNodes = testPathIds map { TestNode(_, Nil, Nil) }
-      val path = DirectedPath.builder[Node]()
-      path.append(testPathNodes(0))
-      path.snapshot mustEqual DirectedPath(List(testPathNodes(0)))
+      val path = DirectedPath.builder()
+      path.append(testPathIds(0))
+      path.snapshot mustEqual DirectedPath(Array(testPathIds(0)))
       (1 until testPathIds.length - 2) foreach { indx =>
-        val node = testPathNodes(indx)
+        val node = testPathIds(indx)
         path.append(node)
         val snapshotted = path.snapshot
         snapshotted.length mustEqual (indx + 1)
         snapshotted.exists(node) mustEqual true
-        snapshotted.exists(testPathNodes(indx - 1)) mustEqual true
-        snapshotted.exists(testPathNodes(testPathNodes.length - 1)) mustEqual false
+        snapshotted.exists(testPathIds(indx - 1)) mustEqual true
+        snapshotted.exists(testPathIds(testPathIds.length - 1)) mustEqual false
       }
 
-      val path2 = DirectedPath.builder[Node]()
-      path2.append(testPathNodes(0))
+      val path2 = DirectedPath.builder()
+      path2.append(testPathIds(0))
       (path.snapshot == path2.snapshot) mustEqual false
 
       path.clear()
       path.snapshot.length mustEqual 0
-      path.append(testPathNodes(0)).append(testPathNodes(1))
+      path.append(testPathIds(0)).append(testPathIds(1))
 
       path2.clear()
-      path2.append(testPathNodes(0))
-      path2.append(testPathNodes(1))
-      path2.snapshot mustEqual DirectedPath(List(testPathNodes(0), testPathNodes(1)))
+      path2.append(testPathIds(0))
+      path2.append(testPathIds(1))
+      path2.snapshot mustEqual DirectedPath(Array(testPathIds(0), testPathIds(1)))
       (path.snapshot == path2.snapshot) mustEqual true
     }
 
     "a path of ints" in {
-      val path = DirectedPath.builder[Int]()
+      val path = DirectedPath.builder()
       path.append(testPathIds(0))
-      path.snapshot mustEqual DirectedPath(List(testPathIds(0)))
+      path.snapshot mustEqual DirectedPath(Array(testPathIds(0)))
       path.clear()
       path.snapshot.length mustEqual 0
       path.append(testPathIds(0)).append(testPathIds(1))
       path.snapshot.length mustEqual 2
-      path.snapshot mustEqual DirectedPath(List(testPathIds(0), testPathIds(1)))
+      path.snapshot mustEqual DirectedPath(Array(testPathIds(0), testPathIds(1)))
     }
 
   }

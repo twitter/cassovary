@@ -57,8 +57,8 @@ class GraphUtilsSpec extends Specification {
       val Seq(numVisitsPerNode, paths) = graphUtils.randomWalk(OutDir, Seq(1), walkParams)
       numVisitsPerNode(1) mustEqual 1
       numVisitsPerNode(2) mustEqual 1
-      paths(1) mustEqual List( (DirectedPath(List(1)), 1) )
-      paths(2) mustEqual List( (DirectedPath(List(1, 2)), 1) )
+      paths(1) mustEqual List( (DirectedPath(Array(1)), 1) )
+      paths(2) mustEqual List( (DirectedPath(Array(1, 2)), 1) )
 
       // random walk but no top paths maintained
       val Seq(numVisitsPerNode2, paths2) = graphUtils.randomWalk(OutDir, Seq(1),

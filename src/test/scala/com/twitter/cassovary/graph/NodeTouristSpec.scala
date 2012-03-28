@@ -42,19 +42,19 @@ class NodeTouristSpec extends Specification {
       }
       val info = visitor.infoAllNodes
       info(1) mustEqual List(
-        (DirectedPath(List(1)), 5)
+        (DirectedPath(Array(1)), 5)
         )
       info(2) mustEqual List(
-        (DirectedPath(List(2)), 3)
+        (DirectedPath(Array(2)), 3)
         )
       info(3) mustEqual List(
-        (DirectedPath(List(2, 3)), 3),
-        (DirectedPath(List(1, 3)), 1),
-        (DirectedPath(List(2, 3, 4, 3)), 1)
+        (DirectedPath(Array(2, 3)), 3),
+        (DirectedPath(Array(1, 3)), 1),
+        (DirectedPath(Array(2, 3, 4, 3)), 1)
         )
       info(4) mustEqual List(
-        (DirectedPath(List(2, 3, 4)), 2),
-        (DirectedPath(List(1, 4)), 1)
+        (DirectedPath(Array(2, 3, 4)), 2),
+        (DirectedPath(Array(1, 4)), 1)
         )
       info.contains(5) mustEqual false
     }

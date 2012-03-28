@@ -30,7 +30,7 @@ case class DirectedPath(val nodes: Array[Int]) {
    * @param node the node to check membership of in this path
    * @return <code>true</code> if the node is in this path
    */
-  def exists(node: Node) = nodes.contains(node)
+  def exists(node: Int) = nodes.contains(node)
 
 }
 

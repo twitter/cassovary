@@ -14,6 +14,7 @@
 package com.twitter.cassovary.graph
 
 import scala.collection.mutable
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap
 
 /**
  * Represents the processing done when visiting a node.
@@ -72,9 +73,14 @@ trait InfoKeeper[O] extends NodeTourist[O] {
 /**
  * A tourist that keeps counts of the number of times a node has been seen.
  */
-class VisitsCounter extends InfoKeeper[Int] {
-  val onlyOnce = false
-  def visit(id: Int) { recordInfo(id, infoOfNode(id).getOrElse(0) + 1) }
+class VisitsCounter extends NodeTourist[Int] {
+  protected val infoPerNode = new Int2IntOpenHashMap
+
+  def visit(id: Int) {
+    infoPerNode.add(id, 1)
+  }
+
+  def infoAllNodes = infoPerNode.asInstanceOf[collection.Map[Int, Int]]
 }
 
 /**
