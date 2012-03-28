@@ -14,7 +14,7 @@
 package com.twitter.cassovary.graph
 
 import it.unimi.dsi.fastutil.{Arrays, Swapper}
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap
+import it.unimi.dsi.fastutil.objects.{Object2IntOpenHashMap, Object2IntMaps}
 import it.unimi.dsi.fastutil.ints.{Int2ObjectOpenHashMap, IntComparator}
 
 
@@ -29,10 +29,6 @@ class DirectedPathCollection {
 
   // pathCountsPerId(id)(path) = count of #times path has been seen ending in id
   private val pathCountsPerId = new Int2ObjectOpenHashMap[Object2IntOpenHashMap[DirectedPath]]
-
-  // int comparator and swapper for sorting directed path
-  private val directedPathIntComparator = new DirectedPathIntComparator
-  private val directedPathArraySwapper = new DirectedPathArraySwapper
 
   /**
    * Appends node to the current path and record this path against the node.
@@ -55,21 +51,19 @@ class DirectedPathCollection {
    *         ending at {@code node} is observed
    */
   def topPathsTill(node: Int, num: Int) = {
-    val pathCounterMap = pathCountsPerIdWithDefault(node)
-    val pathCount = pathCounterMap.size
+    val pathCountMap = pathCountsPerIdWithDefault(node)
+    val pathCount = pathCountMap.size
 
     // Save direct path values into an array
     val pathArray = new Array[DirectedPath](pathCount)
-    pathCounterMap.keySet.toArray(pathArray)
+    pathCountMap.keySet.toArray(pathArray)
 
-    // Sort the array
-    directedPathIntComparator.pathCounterMap = pathCounterMap
-    directedPathIntComparator.pathArray = pathArray
-    directedPathArraySwapper.pathArray = pathArray
-    Arrays.quickSort(0, pathCount, directedPathIntComparator, directedPathArraySwapper)
-
-    // TODO make this an array instead of a list
-    pathArray.toSeq.take(num).map { path => (path, pathCounterMap.getInt(path)) }.toList
+    val sorted = pathArray.toList.sortWith { (a, b) =>
+      val aCount = pathCountMap.getInt(a)
+      val bCount = pathCountMap.getInt(b)
+      bCount < aCount
+    }
+    sorted.take(num).map { path => (path, pathCountMap.getInt(path)) }
   }
 
   /**
@@ -113,25 +107,4 @@ class DirectedPathCollection {
     pathCountsPerId.get(node)
   }
 
-}
-
-class DirectedPathIntComparator extends IntComparator {
-  var pathCounterMap: Object2IntOpenHashMap[DirectedPath]
-  var pathArray: Array[DirectedPath]
-
-  override def compare(a: Int, b: Int) = {
-    val aCount = pathCounterMap.getInt(pathArray(a))
-    val bCount = pathCounterMap.getInt(pathArray(b))
-    bCount - aCount
-  }
-}
-
-class DirectedPathArraySwapper extends Swapper {
-  var pathArray: Array[DirectedPath]
-
-  override def swap(a: Int, b: Int) {
-    val temp = pathArray(a)
-    pathArray(a) = pathArray(b)
-    pathArray(b) = temp
-  }
 }
