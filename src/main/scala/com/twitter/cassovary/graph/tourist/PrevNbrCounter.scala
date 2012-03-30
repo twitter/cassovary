@@ -27,13 +27,13 @@ class PrevNbrCounter(numTopPathsPerNode: Option[Int], onlyOnce: Boolean)
   /**
    * Keep info only the first time a node is seen
    */
-  val infoPerNode = new Int2ObjectOpenHashMap[Int2IntOpenHashMap]
+  override val infoPerNode = new Int2ObjectOpenHashMap[Int2IntOpenHashMap]
 
   /**
    * Record the previous neighbor {@code nodeId} of {@code id}.
    */
   def recordInfo(id: Int, nodeId: Int) {
-    if (!(onlyOnce && infoPerNode.contains(id))) {
+    if (!(onlyOnce && infoPerNode.containsKey(id))) {
       if (!infoPerNode.containsKey(id)) {
         infoPerNode.put(id, new Int2IntOpenHashMap)
       }

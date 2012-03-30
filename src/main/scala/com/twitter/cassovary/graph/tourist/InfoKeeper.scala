@@ -67,9 +67,9 @@ trait InfoKeeper[O] {
     val allPairs = new Array[(Int, O)](infoPerNode.size)
 
     var counter = 0
-    val nodeIterator = allPairs.keySet.iterator
+    val nodeIterator = infoPerNode.keySet.iterator
     while (nodeIterator.hasNext) {
-      val node = nodeIterator.next
+      val node = nodeIterator.nextInt
       allPairs(counter) = (node, infoPerNode.get(node))
       counter += 1
     }

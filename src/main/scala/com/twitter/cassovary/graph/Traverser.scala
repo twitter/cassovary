@@ -15,7 +15,7 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
-import com.twitter.cassovary.graph.tourist.PrevNbrCounter
+import com.twitter.cassovary.graph.tourist.{InfoKeeper, PrevNbrCounter}
 import com.twitter.ostrich.stats.Stats
 import it.unimi.dsi.fastutil.ints.IntArrayList
 import net.lag.logging.Logger
@@ -69,7 +69,7 @@ class RandomTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
   private val homeNodeIdSet = Set(homeNodeIds: _*)
 
   private val seenNodesTracker = new InfoKeeper[Int] {
-    val onlyOnce = self.onlyOnce
+    override val onlyOnce = self.onlyOnce
   }
 
   protected def seenBefore(id: Int) = seenNodesTracker.infoOfNode(id).isDefined
@@ -131,7 +131,7 @@ abstract class DistanceTraverser[T](graph: Graph, homeNodeIds: Seq[Int], onlyOnc
     extends Traverser { self =>
 
   private val distanceTracker = new InfoKeeper[Int] {
-    val onlyOnce = self.onlyOnce
+    override val onlyOnce = self.onlyOnce
   }
 
   protected def init(defaultInfo: T) {
@@ -181,7 +181,7 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
   private val qu = new IntArrayList
 
   private val depthTracker = new InfoKeeper[Int] {
-    val onlyOnce = self.onlyOnce
+    override val onlyOnce = self.onlyOnce
 
     override def recordInfo(id: Int, info: Int) {
       if (!infoPerNode.containsKey(id)) {

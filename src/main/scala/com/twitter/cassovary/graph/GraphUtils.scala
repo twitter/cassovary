@@ -133,15 +133,16 @@ class GraphUtils(val graph: Graph) {
    *            in the form of (P as a {@link DirectedPath}, frequency of walking P).
    */
   def calculatePersonalizedReputation(startNodeIds: Seq[Int], walkParams: RandomWalkParams):
-      (Array[(Int, Int)], Array[Int, Array[(DirectedPath, Int)]]) = {
+      (Array[(Int, Int)], Option[Array[(Int, Array[(DirectedPath, Int)])]]) = {
     Stats.time ("%s_total".format("PTC")) {
-      val (visitsCounter, pathsCounter) = randomWalk(walkParams.dir, startNodeIds, walkParams)
-      (visitsCounter.infoAllNodes, pathsCounter.infoAllNodes)
+      val (visitsCounter, pathsCounterOption) = randomWalk(walkParams.dir, startNodeIds, walkParams)
+      val topPathsOption = pathsCounterOption flatMap { counter => Some(counter.infoAllNodes) }
+      (visitsCounter.infoAllNodes, topPathsOption)
     }
   }
 
   def calculatePersonalizedReputation(startNodeId: Int, walkParams: RandomWalkParams):
-      (Array[(Int, Int)], Array[Int, Array[(DirectedPath, Int)]]) = {
+      (Array[(Int, Int)], Option[Array[(Int, Array[(DirectedPath, Int)])]]) = {
     calculatePersonalizedReputation(Seq(startNodeId), walkParams)
   }
 
@@ -154,7 +155,7 @@ class GraphUtils(val graph: Graph) {
    *    in the form of (P as a {@link DirectedPath}, frequency of walking P).
    */
   def calculateBFS(startNodeId: Int, walkParams: RandomWalkParams):
-      (List[(Int, Int)], collection.Map[Int, List[(Int, Int)]]) = {
+      (Array[(Int, Int)], Array[(Int, Array[(Int, Int)])]) = {
     Stats.time("%s_total".format("BFS")) {
       val (visitsCounter, prevNbrCounter) = bfsWalk(walkParams.dir, startNodeId, walkParams)
       (visitsCounter.infoAllNodes, prevNbrCounter.infoAllNodes)

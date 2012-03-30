@@ -28,7 +28,7 @@ class VisitsCounter extends NodeTourist with InfoKeeper[Int] {
 
   override def infoAllNodes: Array[(Int, Int)] = {
     val info = super.infoAllNodes
-    info.sortWith { (node, count) => (-count, node) }
+    info.sortBy { case (node, count) => (-count, node) }
   }
 
 }
