@@ -14,7 +14,9 @@
 package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.GraphDir._
+import com.twitter.cassovary.graph.tourist._
 import com.twitter.ostrich.stats.Stats
+
 import net.lag.logging.Logger
 import scala.util.Random
 
@@ -34,11 +36,10 @@ class GraphUtils(val graph: Graph) {
    * @return Seq of tourist-specific-returned information
    */
 
-  def walk(nodes: Iterator[Node], tourists: Seq[NodeTourist[Any]]) = {
+  def walk(nodes: Iterator[Node], walkFunc: (Node => Unit)) = {
     nodes foreach { node =>
-      tourists foreach { _.visit(node) }
+      walkFunc(node)
     }
-    tourists
   }
 
   /**
@@ -56,24 +57,29 @@ class GraphUtils(val graph: Graph) {
    *         V from {@code previousNodeId} {@code count} number of times.
    */
   def bfsWalk(dir: GraphDir, startNodeId: Int, walkParams: RandomWalkParams)():
-      Seq[NodeTourist[Any]] = {
-    if (!graph.existsNodeId(startNodeId)) {
-      Seq(EmptyNodeTourist.instance, EmptyNodeTourist.instance)
-    } else {
-      Stats.incr("bfs_walk_request", 1)
-      val tourists = Seq(new VisitsCounter)
+      (VisitsCounter, PrevNbrCounter) = {
+
+    val visitsCounter = new VisitsCounter
+    val prevNbrCounter = new PrevNbrCounter(walkParams.numTopPathsPerNode, walkParams.visitSameNodeOnce)
+
+    if (graph.existsNodeId(startNodeId)) {
       val traversedNodes = new BreadthFirstTraverser(graph, dir, Seq(startNodeId),
-          walkParams.maxDepth, walkParams.numTopPathsPerNode,
-          walkParams.maxNumEdgesThresh, walkParams.numSteps, walkParams.visitSameNodeOnce)
-              with BoundedIterator[Node] {
-            val maxSteps = walkParams.numSteps
-          }
-      val walkResults = Stats.time ("bfs_walk_traverse") {
-        walk(traversedNodes, tourists)
+        walkParams.maxDepth, walkParams.maxNumEdgesThresh, walkParams.numSteps,
+        walkParams.visitSameNodeOnce, prevNbrCounter)
+      with BoundedIterator[Node] {
+        val maxSteps = walkParams.numSteps
       }
 
-      walkResults ++ Seq(traversedNodes.prevNbrCounter)
+      Stats.incr("bfs_walk_request", 1)
+      Stats.time ("bfs_walk_traverse") {
+        walk(traversedNodes, { node =>
+          // prevNbrCounter is mutated within BreadthFirstTraverser
+          visitsCounter.visit(node)
+        })
+      }
     }
+
+    (visitsCounter, prevNbrCounter)
   }
 
   /**
@@ -89,30 +95,31 @@ class GraphUtils(val graph: Graph) {
    *         The path P is kept as a {@link DirectedPath}.
    */
   def randomWalk(dir: GraphDir, startNodeIds: Seq[Int], walkParams: RandomWalkParams)():
-      Seq[NodeTourist[Any]] = {
+      (VisitsCounter, Option[PathsCounter]) = {
     val startNodesExist = (startNodeIds.length > 0) && startNodeIds.foldLeft(true) { (exists, elem) =>
       exists && graph.existsNodeId(elem)
     }
-    if (!startNodesExist) {
-      Seq(EmptyNodeTourist.instance, EmptyNodeTourist.instance)
-    } else {
-      val tourists = Seq(new VisitsCounter) ++
-          (walkParams.numTopPathsPerNode match {
-            case Some(k) if (k > 0) => Seq(new PathsCounter(k, startNodeIds))
-            case _ => Seq()
-          })
 
+    val visitsCounter = new VisitsCounter
+    val pathsCounterOption = walkParams.numTopPathsPerNode match {
+      case Some(k) if (k > 0) => Some(new PathsCounter(k, startNodeIds))
+      case _ => None
+    }
+
+    if (startNodesExist) {
       val traversedNodes = new RandomBoundedTraverser(graph, dir, startNodeIds,
-          walkParams.numSteps, walkParams)
+        walkParams.numSteps, walkParams)
 
-      val walkResults = Stats.time ("random_walk_traverse") {
-        walk(traversedNodes, tourists)
-      }
-      walkParams.numTopPathsPerNode match {
-        case Some(k) if(k > 0) => walkResults
-        case _ => walkResults ++ Seq(EmptyNodeTourist.instance)
+      Stats.time("random_walk_traverse") {
+        walk(traversedNodes, { node =>
+          visitsCounter.visit(node)
+          pathsCounterOption match {
+            case Some(counter) => counter.visit(node)
+          }
+        })
       }
     }
+    (visitsCounter, pathsCounterOption)
   }
 
   /**
@@ -126,16 +133,15 @@ class GraphUtils(val graph: Graph) {
    *            in the form of (P as a {@link DirectedPath}, frequency of walking P).
    */
   def calculatePersonalizedReputation(startNodeIds: Seq[Int], walkParams: RandomWalkParams):
-      (List[(Int, Int)], collection.Map[Int, List[(DirectedPath, Int)]]) = {
-    val (numVisitsPerNode, topPathsVisited) =
-        generateWalkResults("PTC", randomWalk(walkParams.dir, startNodeIds, walkParams) _)
-    val convertedTopPathsVisited =
-        topPathsVisited.asInstanceOf[collection.Map[Int, List[(DirectedPath, Int)]]]
-    (numVisitsPerNode, convertedTopPathsVisited)
+      (Array[(Int, Int)], Array[Int, Array[(DirectedPath, Int)]]) = {
+    Stats.time ("%s_total".format("PTC")) {
+      val (visitsCounter, pathsCounter) = randomWalk(walkParams.dir, startNodeIds, walkParams)
+      (visitsCounter.infoAllNodes, pathsCounter.infoAllNodes)
+    }
   }
 
   def calculatePersonalizedReputation(startNodeId: Int, walkParams: RandomWalkParams):
-      (List[(Int, Int)], collection.Map[Int, List[(DirectedPath, Int)]]) = {
+      (Array[(Int, Int)], Array[Int, Array[(DirectedPath, Int)]]) = {
     calculatePersonalizedReputation(Seq(startNodeId), walkParams)
   }
 
@@ -149,28 +155,10 @@ class GraphUtils(val graph: Graph) {
    */
   def calculateBFS(startNodeId: Int, walkParams: RandomWalkParams):
       (List[(Int, Int)], collection.Map[Int, List[(Int, Int)]]) = {
-    val (numVisitsPerNode, prevNbrsCounts) =
-      generateWalkResults("BFS", bfsWalk(walkParams.dir, startNodeId, walkParams) _)
-    val convertedDepthCounts = prevNbrsCounts.asInstanceOf[collection.Map[Int, List[(Int, Int)]]]
-
-    (numVisitsPerNode, convertedDepthCounts)
-  }
-
-  /**
-   * Utility function that performs the walk, sort the num of visits counter and return the results
-   */
-  private def generateWalkResults(algorithmName: String,
-      walkFunc: () => Seq[NodeTourist[Any]]) = {
-    val walkResult = Stats.time ("%s_total".format(algorithmName)) { walkFunc() }
-
-    // sort by #visits. If count is equal, arbitrarily keep the smaller id higher in the list
-    val visitsCounter = walkResult(0).asInstanceOf[VisitsCounter]
-    val sortedByNumVisits = visitsCounter.sortedByVisits
-
-    val pathsCounter = walkResult(1).asInstanceOf[PathsCounter]
-    val visitorResult = pathsCounter.topPathsPerNode
-
-    (sortedByNumVisits, visitorResult)
+    Stats.time("%s_total".format("BFS")) {
+      val (visitsCounter, prevNbrCounter) = bfsWalk(walkParams.dir, startNodeId, walkParams)
+      (visitsCounter.infoAllNodes, prevNbrCounter.infoAllNodes)
+    }
   }
 
   /**

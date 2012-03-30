@@ -15,7 +15,9 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
+import com.twitter.cassovary.graph.tourist.PrevNbrCounter
 import com.twitter.ostrich.stats.Stats
+import it.unimi.dsi.fastutil.ints.IntArrayList
 import net.lag.logging.Logger
 import scala.collection.mutable
 import scala.util.Random
@@ -68,7 +70,6 @@ class RandomTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
 
   private val seenNodesTracker = new InfoKeeper[Int] {
     val onlyOnce = self.onlyOnce
-    def visit(id: Int) { /* we will only use recordInfo() method in this InfoKeeper */ }
   }
 
   protected def seenBefore(id: Int) = seenNodesTracker.infoOfNode(id).isDefined
@@ -129,9 +130,8 @@ class RandomBoundedTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
 abstract class DistanceTraverser[T](graph: Graph, homeNodeIds: Seq[Int], onlyOnce: Boolean)
     extends Traverser { self =>
 
-  private val distanceTracker = new InfoKeeper[Int]{
+  private val distanceTracker = new InfoKeeper[Int] {
     val onlyOnce = self.onlyOnce
-    def visit(id: Int) { /* we will only use recordInfo() method in this InfoKeeper */ }
   }
 
   protected def init(defaultInfo: T) {
@@ -166,21 +166,22 @@ abstract class DistanceTraverser[T](graph: Graph, homeNodeIds: Seq[Int], onlyOnc
  * @param onlyOnce specifies whether the same node should only be allowed to be
  * visited once in any path
  */
+
+// TODO replace qu
+
 class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
-                            maxDepth: Option[Int], numTopPathsPerNode: Option[Int],
-                            maxNumEdgesThresh: Option[Int], maxSteps: Long, onlyOnce: Boolean)
+                            maxDepth: Option[Int], maxNumEdgesThresh: Option[Int], maxSteps: Long,
+                            onlyOnce: Boolean, prevNbrCounter: PrevNbrCounter)
     extends Traverser { self =>
 
   private val log = Logger.get
   // the number of items can be enqueued is bounded by maxSteps
   // cuz we never need to enqueue more than maxSteps items
   private var numEnqueuedEver = 0L
+  private val qu = new IntArrayList
 
-  val prevNbrCounter = new PrevNbrCounter(numTopPathsPerNode, self.onlyOnce)
-  private val qu = new mutable.Queue[Int]
   private val depthTracker = new InfoKeeper[Int] {
     val onlyOnce = self.onlyOnce
-    def visit(id: Int) { /* we will only use recordInfo() method in this InfoKeeper */ }
 
     override def recordInfo(id: Int, info: Int) {
       if (!infoPerNode.containsKey(id)) {
@@ -196,7 +197,7 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
 
   private def visitPotentialNode(id: Int, depth: Int) {
     if (!(onlyOnce && seen(id))) {
-      qu.enqueue(id)
+      qu.add(id)
       numEnqueuedEver += 1
     }
     depthTracker.recordInfo(id, depth)
@@ -220,7 +221,7 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
   private def seen(id: Int) = depth(id).isDefined
 
   def next = {
-    val curr = qu.dequeue
+    val curr = qu.removeInt(0)
     val currDepth = depth(curr).get
     val nd = getExistingNodeById(graph, curr)
     log.ifTrace { "visiting %d, nbrCount=%d, maxNumEdges=%d, depth=%d".format(curr,
@@ -234,7 +235,7 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
     Stats.incr("bfs_walk_request_exhausted_2nd_degree", 1)
     false
   } else {
-    maxDepth.isEmpty || depth(qu.front).get <= maxDepth.get
+    maxDepth.isEmpty || depth(qu.getInt(0)).get <= maxDepth.get
   }
 }
 

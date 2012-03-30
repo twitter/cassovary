@@ -58,23 +58,26 @@ class DirectedPathCollection {
     val pathArray = new Array[DirectedPath](pathCount)
     pathCountMap.keySet.toArray(pathArray)
 
-    val sorted = pathArray.toList.sortBy { x => -1 * pathCountMap.getInt(x) }
-    sorted.take(num).map { path => (path, pathCountMap.getInt(path)) }
+    val sorted = pathArray.toSeq.sortBy { x => -1 * pathCountMap.getInt(x) }
+    sorted.take(num).map { path => (path, pathCountMap.getInt(path)) }.toArray
   }
 
   /**
    * @param num the number of top paths to return for a node
-   * @return a mapping of node to the list of top paths ending at node
+   * @return an array of tuples, each containing a node and array of top paths ending at node, with scores
    */
-  def topPathsPerNodeId(num: Int): collection.Map[Int, List[(DirectedPath, Int)]] = {
-    // TODO replace with more efficient map
-    val map = new collection.mutable.HashMap[Int, List[(DirectedPath, Int)]]
+  def topPathsPerNodeId(num: Int): Array[(Int, Array[(DirectedPath, Int)])] = {
+    val idsWithTopPaths = new Array[(Int, Array[(DirectedPath, Int)])](pathCountsPerId.size)
+
     val nodeIterator = pathCountsPerId.keySet.iterator
+    var counter = 0
     while (nodeIterator.hasNext) {
       val node = nodeIterator.nextInt
-      map.put(node, topPathsTill(node, num))
+      idsWithTopPaths(counter) = (node, topPathsTill(node, num))
+      counter += 1
     }
-    Map.empty ++ map
+
+    idsWithTopPaths
   }
 
   /**
