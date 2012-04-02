@@ -43,20 +43,17 @@ class NodeTouristSpec extends Specification {
       }
       val info = visitor.infoAllNodes
 
-      info.get(1).length mustEqual 1
-      info.get(1)(0) mustEqual DirectedPath(Array(1))
-
-      info.get(2).length mustEqual 1
-      info.get(2)(0) mustEqual DirectedPath(Array(2))
-
-      info.get(3).length mustEqual 3
-      info.get(3)(0) mustEqual DirectedPath(Array(2, 3))
-      info.get(3)(1) mustEqual DirectedPath(Array(1, 3))
-      info.get(3)(2) mustEqual DirectedPath(Array(2, 3, 4, 3))
-
-      info.get(4).length mustEqual 2
-      info.get(4)(0) mustEqual DirectedPath(Array(2, 3, 4))
-      info.get(4)(1) mustEqual DirectedPath(Array(1, 4))
+      info.get(1).toSeq mustEqual Array(DirectedPath(Array(1))).toSeq
+      info.get(2).toSeq mustEqual Array(DirectedPath(Array(2))).toSeq
+      info.get(3).toSeq mustEqual Array(
+        DirectedPath(Array(2, 3)),
+        DirectedPath(Array(1, 3)),
+        DirectedPath(Array(2, 3, 4, 3))
+      ).toSeq
+      info.get(4).toSeq mustEqual Array(
+        DirectedPath(Array(2, 3, 4)),
+        DirectedPath(Array(1, 4))
+      ).toSeq
     }
   }
 }

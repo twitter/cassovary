@@ -36,11 +36,9 @@ class DirectedPathCollectionSpec extends Specification {
         paths.resetCurrentPath()
         addPath(paths, List(0,1,2))
 
-        val left = paths.topPathsTill(testPathIds(0), 10)
-        val right = Array((getPath(0), times))
-        paths.topPathsTill(testPathIds(0), 10) mustEqual Array((getPath(0), times))
-        paths.topPathsTill(testPathIds(1), 10) mustEqual Array((getPath(0, 1), times))
-        paths.topPathsTill(testPathIds(2), 10) mustEqual Array((getPath(0, 1, 2), times))
+        paths.topPathsTill(testPathIds(0), 10).toSeq mustEqual Array(getPath(0)).toSeq
+        paths.topPathsTill(testPathIds(1), 10).toSeq mustEqual Array(getPath(0, 1)).toSeq
+        paths.topPathsTill(testPathIds(2), 10).toSeq mustEqual Array(getPath(0, 1, 2)).toSeq
 
         List(0,1,2) foreach { id =>
           paths.numUniquePathsTill(testPathIds(id)) mustEqual 1
@@ -62,23 +60,23 @@ class DirectedPathCollectionSpec extends Specification {
 
       //println(paths.topPathsTill(testPathIds(0), 10))
       //println(List((getPath(0), 1), (getPath(1, 0), 1)))
-      paths.topPathsTill(testPathIds(0), 10) mustEqual List((getPath(0), 1), (getPath(1, 0), 1))
-      paths.topPathsTill(testPathIds(1), 10) mustEqual List((getPath(1), 3), (getPath(0, 1), 1))
-      paths.topPathsTill(testPathIds(2), 10) mustEqual List(
-        (getPath(1, 2), 2),
-        (getPath(0, 1, 2), 1),
-        (getPath(1, 0, 3, 2), 1)
-        )
-      paths.topPathsTill(testPathIds(3), 10) mustEqual List(
-        (getPath(1, 2, 3), 2),
-        (getPath(1, 0, 3), 1),
-        (getPath(1, 0, 3, 2, 3), 1)
-        )
+      paths.topPathsTill(testPathIds(0), 10).toSeq mustEqual Array((getPath(0), 1), (getPath(1, 0), 1)).toSeq
+      paths.topPathsTill(testPathIds(1), 10).toSeq mustEqual Array(getPath(1), getPath(0, 1)).toSeq
+      paths.topPathsTill(testPathIds(2), 10).toSeq mustEqual Array(
+        getPath(1, 2),
+        getPath(0, 1, 2),
+        getPath(1, 0, 3, 2)
+      ).toSeq
+      paths.topPathsTill(testPathIds(3), 10) mustEqual Array(
+        getPath(1, 2, 3),
+        getPath(1, 0, 3),
+        getPath(1, 0, 3, 2, 3)
+      ).toSeq
 
-      paths.topPathsTill(testPathIds(2), 2) mustEqual List(
-        (getPath(1, 2), 2),
-        (getPath(0, 1, 2), 1)
-        )
+      paths.topPathsTill(testPathIds(2), 2) mustEqual Array(
+        getPath(1, 2),
+        getPath(0, 1, 2)
+      ).toSeq
 
       paths.numUniquePathsTill(testPathIds(0)) mustEqual 2
       paths.numUniquePathsTill(testPathIds(1)) mustEqual 2

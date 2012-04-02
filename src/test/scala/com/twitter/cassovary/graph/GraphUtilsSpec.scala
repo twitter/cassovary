@@ -15,6 +15,7 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.util.Duration
+import it.unimi.dsi.fastutil.ints.Int2IntMap
 import org.specs.Specification
 
 // TODO add a fake random so that the random walk tests can be controlled
@@ -41,9 +42,9 @@ class GraphUtilsSpec extends Specification {
   "two node graph with each following the other" definedAs twoNodeGraph should {
     "neighborCount should always be 1" in {
       graph.iterator foreach { node =>
-          GraphDir.values foreach { dir =>
-            graphUtils.neighborCount(node.id, dir) mustEqual 1
-          }
+        GraphDir.values foreach { dir =>
+          graphUtils.neighborCount(node.id, dir) mustEqual 1
+        }
       }
     }
 
@@ -60,10 +61,8 @@ class GraphUtilsSpec extends Specification {
       visitsCountMap.get(2) mustEqual 1
 
       val pathsCountMap = pathsCounterOption.get.infoAllNodes
-      pathsCountMap.get(1).length mustBe 1
-      pathsCountMap.get(1)(0) mustEqual DirectedPath(Array(1))
-      pathsCountMap.get(2).length mustBe 1
-      pathsCountMap.get(2)(0) mustEqual DirectedPath(Array(1, 2))
+      pathsCountMap.get(1).toSeq mustEqual Array(DirectedPath(Array(1))).toSeq
+      pathsCountMap.get(2).toSeq mustEqual Array(DirectedPath(Array(1, 2))).toSeq
 
       // random walk but no top paths maintained
       val (visitsCounter2, pathsCounterOption2) = graphUtils.randomWalk(OutDir, Seq(1),
@@ -73,7 +72,7 @@ class GraphUtilsSpec extends Specification {
       visitCounterMap2.get(1) mustEqual 1
       visitCounterMap2.get(2) mustEqual 1
 
-      pathsCounterOption2.get.infoAllNodes.size mustEqual 0
+      pathsCounterOption2.isDefined mustEqual false
     }
 
     "random walk of n steps with resetProb of 0" in {
@@ -155,7 +154,7 @@ class GraphUtilsSpec extends Specification {
         10000L, 0.5, None, Some(2), None, false, GraphDir.OutDir, true)
       val visitsPerNode = graphUtils.calculatePersonalizedReputation(10, walkParams)._1
       val visitsPerNode2 = graphUtils.calculatePersonalizedReputation(10, walkParams)._1
-      visitsPerNode mustEqual visitsPerNode2
+      checkMapApproximatelyEquals(visitsPerNode, visitsPerNode2, 200) // Prob(fail) ~ 10^-7
     }
 
     "maxDepth works properly" in {
@@ -212,6 +211,16 @@ class GraphUtilsSpec extends Specification {
       }
       println("Avg duration over %d random walks: %s ms".format(numTimes, sumDuration/numTimes))
       true
+    }
+  }
+
+  private def checkMapApproximatelyEquals(visitsPerNode: Int2IntMap, visitsPerNode2: Int2IntMap, delta: Int) {
+    visitsPerNode.size mustEqual visitsPerNode2.size
+
+    val nodeIterator = visitsPerNode.keySet.iterator
+    while (nodeIterator.hasNext) {
+      val node = nodeIterator.nextInt
+      (visitsPerNode.get(node) - visitsPerNode2.get(node) < delta) mustBe true
     }
   }
 }

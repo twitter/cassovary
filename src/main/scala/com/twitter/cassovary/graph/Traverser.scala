@@ -163,8 +163,6 @@ abstract class DistanceTraverser[T](graph: Graph, homeNodeIds: Seq[Int], onlyOnc
  * visited once in any path
  */
 
-// TODO replace qu
-
 class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
                             maxDepth: Option[Int], maxNumEdgesThresh: Option[Int], maxSteps: Long,
                             onlyOnce: Boolean, prevNbrCounter: Option[PrevNbrCounter])

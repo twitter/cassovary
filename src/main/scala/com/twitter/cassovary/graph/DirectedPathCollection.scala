@@ -62,7 +62,7 @@ class DirectedPathCollection {
   def topPathsTill(node: Int, num: Int): Array[DirectedPath] = {
     val pathCountMap = pathCountsPerIdWithDefault(node)
     val pathCount = pathCountMap.size
-    val pathArray = new Array[DirectedPath](num)
+    val pathArray = new Array[DirectedPath](scala.math.min(num, pathCount))
 
     priQ.synchronized {
       comparator.setNode(node)
