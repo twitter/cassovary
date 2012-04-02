@@ -60,8 +60,10 @@ class GraphUtilsSpec extends Specification {
       visitsCountMap.get(2) mustEqual 1
 
       val pathsCountMap = pathsCounterOption.get.infoAllNodes
-      pathsCountMap.get(DirectedPath(Array(1))) mustEqual 1
-      pathsCountMap.get(DirectedPath(Array(1,2))) mustEqual 1
+      pathsCountMap.get(1).length mustBe 1
+      pathsCountMap.get(1)(0) mustEqual DirectedPath(Array(1))
+      pathsCountMap.get(2).length mustBe 1
+      pathsCountMap.get(2)(0) mustEqual DirectedPath(Array(1, 2))
 
       // random walk but no top paths maintained
       val (visitsCounter2, pathsCounterOption2) = graphUtils.randomWalk(OutDir, Seq(1),
@@ -101,7 +103,8 @@ class GraphUtilsSpec extends Specification {
           5L, 0.0, None, Some(2), Some(5), false, GraphDir.OutDir, false)
       val visitsPerNode = graphUtils.calculateBFS(10, walkParams)._1
       visitsPerNode.size mustEqual 2
-      visitsPerNode mustEqual List( (11, 3), (12, 2) )
+      visitsPerNode.get(11) mustEqual 3
+      visitsPerNode.get(12) mustEqual 2
     }
 
   }
@@ -175,7 +178,11 @@ class GraphUtilsSpec extends Specification {
       val visitsPerNode = graphUtils.calculateBFS(15, walkParams)._1
       // doing enough random steps to cause to visit every node (even with reset prob of 0.5)
       visitsPerNode.size mustEqual 5
-      visitsPerNode mustEqual List( (12, 3), (11, 2), (14, 2), (10, 1), (13, 1) )
+      visitsPerNode.get(12) mustEqual 3
+      visitsPerNode.get(11) mustEqual 2
+      visitsPerNode.get(14) mustEqual 2
+      visitsPerNode.get(10) mustEqual 1
+      visitsPerNode.get(13) mustEqual 1
     }
   }
 
