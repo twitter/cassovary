@@ -13,13 +13,14 @@
  */
 package com.twitter.cassovary.graph.tourist
 
-import it.unimi.dsi.fastutil.ints.{Int2IntOpenHashMap, Int2ObjectOpenHashMap}
+import it.unimi.dsi.fastutil.ints._
+import java.util.Comparator
 
 /**
  * A NodeTourist that keeps track of the previous immediate neighbor of a
  * given node in visiting sequence.
  */
-class PrevNbrCounter(numTopPathsPerNode: Option[Int])
+class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce: Boolean)
     extends InfoKeeper[Int, Array[Int], Int2ObjectMap[Array[Int]]] {
 
   /**
@@ -27,7 +28,7 @@ class PrevNbrCounter(numTopPathsPerNode: Option[Int])
    */
   def this() = this(None, false)
 
-  override val infoPerNode = new Int2ObjectOpenHashMap[Int2IntMap]
+  val infoPerNode = new Int2ObjectOpenHashMap[Int2IntOpenHashMap]
 
   /**
    * Priority queue and comparator for sorting prev nbrs. Reused across nodes.
@@ -75,8 +76,8 @@ class PrevNbrCounter(numTopPathsPerNode: Option[Int])
       priQ.clear()
 
       val infoMap = infoPerNode.get(nodeId)
-      val nodeIteraotr = infoMap.keySet.iterator
-      while (nodeIterator.next) {
+      val nodeIterator = infoMap.keySet.iterator
+      while (nodeIterator.hasNext) {
         val nbrId = nodeIterator.nextInt
         priQ.enqueue(nbrId)
       }
@@ -89,7 +90,7 @@ class PrevNbrCounter(numTopPathsPerNode: Option[Int])
       val result = new Array[Int](size)
       var counter = 0
       while (counter < size) {
-        result(counter) = priQ.dequeue()
+        result(counter) = priQ.dequeueInt()
         counter += 1
       }
       result
@@ -101,28 +102,28 @@ class PrevNbrCounter(numTopPathsPerNode: Option[Int])
     val nodeIterator = infoPerNode.keySet.iterator
     while (nodeIterator.hasNext) {
       val node = nodeIterator.nextInt
-      allPairs(counter) = (node, topPrevNbrsTill(node, numTopPathsPerNode))
+      result.put(node, topPrevNbrsTill(node, numTopPathsPerNode))
     }
     result
   }
 
-  private def nbrCountsPerNodeOrDefault(node: Int): Int2IntMap {
+  private def nbrCountsPerNodeOrDefault(node: Int): Int2IntOpenHashMap = {
     if (!infoPerNode.containsKey(node)) {
-      infoPerNode.put(id, new Int2IntOpenHashMap)
+      infoPerNode.put(node, new Int2IntOpenHashMap)
     }
-    infoPerNode.get(id)
+    infoPerNode.get(node)
   }
 }
 
-class PrevNbrComparator(nbrCountsPerId: Int2ObjectMap[Int2IntMap], descending: Boolean) extends Comparator[Int] {
+class PrevNbrComparator(nbrCountsPerId: Int2ObjectOpenHashMap[Int2IntOpenHashMap], descending: Boolean) extends IntComparator {
 
-  var infoMap: Int2IntMap = null
+  var infoMap: Int2IntOpenHashMap = null
 
   def setNode(id: Int) {
     infoMap = nbrCountsPerId.get(id)
   }
 
-  override def compare(id1: Int, id2: Int) {
+  override def compare(id1: Int, id2: Int): Int = {
     val id1Count = infoMap.get(id1)
     val id2Count = infoMap.get(id2)
     if (descending) {

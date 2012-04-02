@@ -14,8 +14,9 @@
 package com.twitter.cassovary.graph
 
 import it.unimi.dsi.fastutil.{Arrays, Swapper}
-import it.unimi.dsi.fastutil.objects.{Object2IntOpenHashMap, Object2IntMaps}
+import it.unimi.dsi.fastutil.objects.{Object2IntOpenHashMap, ObjectArrayPriorityQueue}
 import it.unimi.dsi.fastutil.ints.{Int2ObjectOpenHashMap, IntComparator}
+import java.util.Comparator
 
 
 /**
@@ -87,13 +88,13 @@ class DirectedPathCollection {
    * @param num the number of top paths to return for a node
    * @return an array of tuples, each containing a node and array of top paths ending at node, with scores
    */
-  def topPathsPerNodeId(num: Int): Int2ObjectMap[Array[DirectedPath]] = {
+  def topPathsPerNodeId(num: Int): Int2ObjectOpenHashMap[Array[DirectedPath]] = {
     val topPathMap = new Int2ObjectOpenHashMap[Array[DirectedPath]]
 
     val nodeIterator = pathCountsPerId.keySet.iterator
     while (nodeIterator.hasNext) {
       val node = nodeIterator.nextInt
-      topPathMap.put(counter, topPathsTill(node, num))
+      topPathMap.put(node, topPathsTill(node, num))
     }
 
     topPathMap
@@ -132,7 +133,7 @@ class DirectedPathCollection {
     pathCountsPerId.clear()
   }
 
-  private def pathCountsPerIdWithDefault(node: Int) = {
+  private def pathCountsPerIdWithDefault(node: Int): Object2IntOpenHashMap[DirectedPath] = {
     if (!pathCountsPerId.containsKey(node)) {
       val map = new Object2IntOpenHashMap[DirectedPath]
       pathCountsPerId.put(node, map)
@@ -142,17 +143,17 @@ class DirectedPathCollection {
 
 }
 
-class PathCounterComparator(pathCountsPerId: Int2ObjectMap[Object2IntMap[DirectedPath]], descending: Boolean) extends Comparator[DirectedPath] {
+class PathCounterComparator(pathCountsPerId: Int2ObjectOpenHashMap[Object2IntOpenHashMap[DirectedPath]], descending: Boolean) extends Comparator[DirectedPath] {
 
-  var infoMap: Object2IntMap[DirectedPath] = null
+  var infoMap: Object2IntOpenHashMap[DirectedPath] = null
 
   def setNode(id: Int) {
     infoMap = pathCountsPerId.get(id)
   }
 
-  override def compare(dp1: DirectedPath, dp2: DirectedPath) {
-    val dp1Count = infoMap.get(dp1)
-    val dp2Count = infoMap.get(dp2)
+  override def compare(dp1: DirectedPath, dp2: DirectedPath): Int = {
+    val dp1Count = infoMap.getInt(dp1)
+    val dp2Count = infoMap.getInt(dp2)
     if (descending) {
       dp2Count - dp1Count
     } else {

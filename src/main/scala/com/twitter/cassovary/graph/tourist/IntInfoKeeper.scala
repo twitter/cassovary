@@ -15,7 +15,7 @@
 package com.twitter.cassovary.graph.tourist
 
 import com.twitter.cassovary.graph.Node
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap
+import it.unimi.dsi.fastutil.ints.{Int2IntMap, Int2IntOpenHashMap}
 
 /**
  * An InfoKeeper keeps caller-supplied info per node.

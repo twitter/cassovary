@@ -14,6 +14,7 @@
 package com.twitter.cassovary.graph.tourist
 
 import com.twitter.cassovary.graph.{DirectedPath, DirectedPathCollection}
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap
 
 /**
  * A tourist that keeps track of the paths ending at each node. It keeps
