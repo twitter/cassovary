@@ -75,7 +75,7 @@ class DirectedPathCollection {
       }
 
       var counter = 0
-      while (counter < num) {
+      while (counter < num && !priQ.isEmpty) {
         pathArray(counter) = priQ.dequeue()
         counter += 1
       }

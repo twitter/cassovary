@@ -89,7 +89,7 @@ class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce:
 
       val result = new Array[Int](size)
       var counter = 0
-      while (counter < size) {
+      while (counter < size && !priQ.isEmpty) {
         result(counter) = priQ.dequeueInt()
         counter += 1
       }
@@ -123,7 +123,7 @@ class PrevNbrComparator(nbrCountsPerId: Int2ObjectOpenHashMap[Int2IntOpenHashMap
     infoMap = nbrCountsPerId.get(id)
   }
 
-  // TODO which call does scala actually use?
+  // TODO ensure scala runtime does not call this boxed version
   override def compare(id1: java.lang.Integer, id2: java.lang.Integer): Int = {
     compare(id1.intValue, id2.intValue)
   }

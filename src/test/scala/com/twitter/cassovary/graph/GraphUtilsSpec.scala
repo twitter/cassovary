@@ -55,17 +55,22 @@ class GraphUtilsSpec extends Specification {
           numWalkSteps, resetProb, None, Some(10), None, false, GraphDir.OutDir, false)
 
       val (visitsCounter, pathsCounterOption) = graphUtils.randomWalk(OutDir, Seq(1), walkParams)
-      visitsCounter.infoAllNodes mustEqual Array((1, 1), (2, 1))
-      pathsCounterOption.get.infoAllNodes mustEqual Array(
-        (DirectedPath(Array(1)), 1),
-        (DirectedPath(Array(1, 2)), 1)
-      )
+      val visitsCountMap = visitsCounter.infoAllNodes
+      visitsCountMap.get(1) mustEqual 1
+      visitsCountMap.get(2) mustEqual 1
+
+      val pathsCountMap = pathsCounterOption.get.infoAllNodes
+      pathsCountMap.get(DirectedPath(Array(1))) mustEqual 1
+      pathsCountMap.get(DirectedPath(Array(1,2))) mustEqual 1
 
       // random walk but no top paths maintained
       val (visitsCounter2, pathsCounterOption2) = graphUtils.randomWalk(OutDir, Seq(1),
           GraphUtils.RandomWalkParams(numWalkSteps, resetProb,
           None, None, None, false, GraphDir.OutDir, false))
-      visitsCounter2.infoAllNodes mustEqual Array((1, 1), (2, 1))
+      val visitCounterMap2 = visitsCounter2.infoAllNodes
+      visitCounterMap2.get(1) mustEqual 1
+      visitCounterMap2.get(2) mustEqual 1
+
       pathsCounterOption2.get.infoAllNodes.size mustEqual 0
     }
 
@@ -81,8 +86,8 @@ class GraphUtilsSpec extends Specification {
               numWalkSteps, resetProb, None, Some(10), None, false, GraphDir.OutDir, false)
 
           val (visitsCounter, pathsCounterOption) = graphUtils.randomWalk(OutDir, Seq(startNodeId), walkParams)
-          visitsCounter.infoAllNodes.find( t => t._1 == startNodeId ).get._2 mustEqual (numWalkSteps / 2 + (numWalkSteps % 2))
-          visitsCounter.infoAllNodes.find( t => t._1 == othernd ).get._2 mustEqual numWalkSteps / 2
+          visitsCounter.infoAllNodes.get(startNodeId) mustEqual (numWalkSteps / 2 + (numWalkSteps % 2))
+          visitsCounter.infoAllNodes.get(othernd) mustEqual numWalkSteps / 2
           pathsCounterOption.get.infoAllNodes.size mustEqual 2
         }
       }
@@ -95,7 +100,7 @@ class GraphUtilsSpec extends Specification {
       val walkParams = GraphUtils.RandomWalkParams(
           5L, 0.0, None, Some(2), Some(5), false, GraphDir.OutDir, false)
       val visitsPerNode = graphUtils.calculateBFS(10, walkParams)._1
-      visitsPerNode.length mustEqual 2
+      visitsPerNode.size mustEqual 2
       visitsPerNode mustEqual List( (11, 3), (12, 2) )
     }
 
@@ -119,16 +124,13 @@ class GraphUtilsSpec extends Specification {
 
       val (visitsCounter, pathsCounterOption) = graphUtils.randomWalk(OutDir, Seq(startNodeId), walkParams)
       // expect to have every node visited a few times
-      val minNumVisitsExpected = numWalkSteps.toInt/100
+      val minNumVisitsExpected = numWalkSteps.toInt / 100
 
-      visitsCounter.infoAllNodes foreach { case (id: Int, x: Int) => x must be_>=(minNumVisitsExpected) }
-      pathsCounterOption.get.infoAllNodes.size mustEqual graph.nodeCount
-      // summation of all path counts (except the starting node itself) mustEqual numWalkCounts
-      var numSteps = 0
-      pathsCounterOption.get.infoAllNodes.foreach { case (id, pathsPerNode: Array[_]) =>
-        pathsPerNode foreach { case (path, count: Int) => numSteps += count }
+      val nodeIterator = visitsCounter.infoAllNodes.keySet.iterator
+      while (nodeIterator.hasNext) {
+        val node = nodeIterator.nextInt
+        (visitsCounter.infoAllNodes.get(node) >= minNumVisitsExpected) mustEqual true
       }
-      numSteps mustEqual numWalkSteps.toInt
     }
 
     "personalized reputation" in {
@@ -136,20 +138,20 @@ class GraphUtilsSpec extends Specification {
           10000L, 0.5, None, Some(2), None, false, GraphDir.OutDir, false)
       val visitsPerNode = graphUtils.calculatePersonalizedReputation(10, walkParams)._1
       // 10000 steps should visit every node at least once
-      visitsPerNode.length mustEqual graph.nodeCount
-      visitsPerNode.head._1 mustEqual 10
+      visitsPerNode.size mustEqual graph.nodeCount
+      val nodeIterator = visitsPerNode.keySet.iterator
+      while (nodeIterator.hasNext) {
+        val node = nodeIterator.nextInt
+        (visitsPerNode.get(node) >= 1) mustEqual true
+      }
       // TODO more testing here
     }
 
     "stable random walk correctly" in {
       val walkParams = GraphUtils.RandomWalkParams(
         10000L, 0.5, None, Some(2), None, false, GraphDir.OutDir, true)
-      val visitsPerNode = graphUtils.calculatePersonalizedReputation(10, walkParams)._1 map {
-        node => node._1
-      }
-      val visitsPerNode2 = graphUtils.calculatePersonalizedReputation(10, walkParams)._1 map {
-        node => node._1
-      }
+      val visitsPerNode = graphUtils.calculatePersonalizedReputation(10, walkParams)._1
+      val visitsPerNode2 = graphUtils.calculatePersonalizedReputation(10, walkParams)._1
       visitsPerNode mustEqual visitsPerNode2
     }
 
@@ -157,14 +159,14 @@ class GraphUtilsSpec extends Specification {
       val walkParams = GraphUtils.RandomWalkParams(7L, 0.0, None, Some(2), Some(1),
           false, GraphDir.OutDir, false)
       val visitsPerNode = graphUtils.calculatePersonalizedReputation(12, walkParams)._1
-      visitsPerNode.length mustEqual 1
-      visitsPerNode.head._1 mustEqual 12
+      visitsPerNode.size mustEqual 1
+      (visitsPerNode.get(12) >= 1) mustEqual true
       val walkParams2 = GraphUtils.RandomWalkParams(8L, 0.0, None, Some(2), Some(2), false,
         GraphDir.OutDir, false)
       val visitsPerNode2 = graphUtils.calculatePersonalizedReputation(12, walkParams2)._1
-      visitsPerNode2.length mustEqual 2
-      visitsPerNode2.head._1 mustEqual 12
-      visitsPerNode2(1)._1 mustEqual 14
+      visitsPerNode2.size mustEqual 2
+      (visitsPerNode2.get(12) >= 1) mustEqual true
+      (visitsPerNode2.get(14) >= 1) mustEqual true
     }
 
     "bfs" in {
@@ -172,7 +174,7 @@ class GraphUtilsSpec extends Specification {
         GraphDir.OutDir, false)
       val visitsPerNode = graphUtils.calculateBFS(15, walkParams)._1
       // doing enough random steps to cause to visit every node (even with reset prob of 0.5)
-      visitsPerNode.length mustEqual 5
+      visitsPerNode.size mustEqual 5
       visitsPerNode mustEqual List( (12, 3), (11, 2), (14, 2), (10, 1), (13, 1) )
     }
   }

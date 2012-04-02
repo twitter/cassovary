@@ -27,11 +27,11 @@ class NodeTouristSpec extends Specification {
         visitor.visit(testNode(id))
       }
       val info = visitor.infoAllNodes
-      info(1) mustEqual 3
-      info(2) mustEqual 3
-      info(3) mustEqual 2
-      info(4) mustEqual 1
-      info.contains(5) mustEqual false
+      info.get(1) mustEqual 3
+      info.get(2) mustEqual 3
+      info.get(3) mustEqual 2
+      info.get(4) mustEqual 1
+      info.containsKey(5) mustEqual false
     }
   }
 
