@@ -195,9 +195,11 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
       nd.neighborIds(dir) foreach { id =>
         // bound the total number of items that
         // can be pushed into the queue by maxSteps
-        if (numEnqueuedEver < maxSteps && prevNbrCounter.isDefined) {
+        if (numEnqueuedEver < maxSteps) {
           visitPotentialNode(id, newDepth)
-          prevNbrCounter.get.recordInfo(id, nodeId)
+          if (prevNbrCounter.isDefined) {
+            prevNbrCounter.get.recordInfo(id, nodeId)
+          }
         }
       }
     }
