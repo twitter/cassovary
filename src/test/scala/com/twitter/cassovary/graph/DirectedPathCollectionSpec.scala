@@ -60,21 +60,22 @@ class DirectedPathCollectionSpec extends Specification {
 
       //println(paths.topPathsTill(testPathIds(0), 10))
       //println(List((getPath(0), 1), (getPath(1, 0), 1)))
-      paths.topPathsTill(testPathIds(0), 10).toSeq mustEqual Array((getPath(0), 1), (getPath(1, 0), 1)).toSeq
+      paths.topPathsTill(testPathIds(0), 10).toSeq mustEqual Array(getPath(1, 0), getPath(0)).toSeq
       paths.topPathsTill(testPathIds(1), 10).toSeq mustEqual Array(getPath(1), getPath(0, 1)).toSeq
       paths.topPathsTill(testPathIds(2), 10).toSeq mustEqual Array(
         getPath(1, 2),
-        getPath(0, 1, 2),
-        getPath(1, 0, 3, 2)
+        getPath(1, 0, 3, 2),
+        getPath(0, 1, 2)
       ).toSeq
-      paths.topPathsTill(testPathIds(3), 10) mustEqual Array(
+      paths.topPathsTill(testPathIds(3), 10).toSeq mustEqual Array(
         getPath(1, 2, 3),
-        getPath(1, 0, 3),
-        getPath(1, 0, 3, 2, 3)
+        getPath(1, 0, 3, 2, 3),
+        getPath(1, 0, 3)
       ).toSeq
 
-      paths.topPathsTill(testPathIds(2), 2) mustEqual Array(
+      paths.topPathsTill(testPathIds(2), 3).toSeq mustEqual Array(
         getPath(1, 2),
+        getPath(1, 0, 3, 2),
         getPath(0, 1, 2)
       ).toSeq
 

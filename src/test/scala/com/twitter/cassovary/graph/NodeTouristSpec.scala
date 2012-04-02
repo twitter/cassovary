@@ -47,8 +47,8 @@ class NodeTouristSpec extends Specification {
       info.get(2).toSeq mustEqual Array(DirectedPath(Array(2))).toSeq
       info.get(3).toSeq mustEqual Array(
         DirectedPath(Array(2, 3)),
-        DirectedPath(Array(1, 3)),
-        DirectedPath(Array(2, 3, 4, 3))
+        DirectedPath(Array(2, 3, 4, 3)),
+        DirectedPath(Array(1, 3))
       ).toSeq
       info.get(4).toSeq mustEqual Array(
         DirectedPath(Array(2, 3, 4)),
