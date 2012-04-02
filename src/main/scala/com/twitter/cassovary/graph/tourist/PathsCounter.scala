@@ -22,8 +22,9 @@ import com.twitter.cassovary.graph.{DirectedPath, DirectedPathCollection}
  * TODO: instead of homeNodeIds, this func should take
  * a function param of Node => Boolean
  */
+
 class PathsCounter(numTopPathsPerNode: Int, homeNodeIds: Seq[Int])
-    extends NodeTourist with InfoKeeper[Array[(DirectedPath, Int)]] {
+    extends NodeTourist with InfoKeeper[Int, Array[DirectedPath], Int2ObjectMap[Array[DirectedPath]]] {
 
   def this() = this(0, Nil)
 
@@ -36,5 +37,21 @@ class PathsCounter(numTopPathsPerNode: Int, homeNodeIds: Seq[Int])
     paths.appendToCurrentPath(id)
   }
 
-  override def infoAllNodes = paths.topPathsPerNodeId(numTopPathsPerNode)
+  def recordInfo(id: Int, info: Int) {
+    // NOOP use visit
+  }
+
+  def infoOfNode(id: Int): Option[Array[DirectedPath]] = {
+    if (paths.containsNode(id)) {
+      Some(paths.topPathsTill(id, numTopPathsPerNode))
+    } else {
+      None
+    }
+  }
+
+  def infoAllNodes: Int2ObjectMap[Array[DirectedPath]] = paths.topPathsPerNodeId(numTopPathsPerNode)
+
+  def clear() {
+    paths.clear()
+  }
 }

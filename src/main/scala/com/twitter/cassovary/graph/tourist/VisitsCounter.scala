@@ -18,7 +18,7 @@ import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap
 /**
  * A tourist that keeps counts of the number of times a node has been seen.
  */
-class VisitsCounter extends NodeTourist with InfoKeeper[Int] {
+class VisitsCounter extends IntInfoKeeper(false) with NodeTourist {
 
   override protected val infoPerNode = new Int2IntOpenHashMap
 
@@ -28,7 +28,15 @@ class VisitsCounter extends NodeTourist with InfoKeeper[Int] {
 
   override def infoAllNodes: Array[(Int, Int)] = {
     val info = super.infoAllNodes
-    info.sortBy { case (node, count) => (-count, node) }
+    info.sortWith { (a, b) =>
+      if (a._2 == b._2) {
+        // count, descending
+        b._2 < a._2
+      } else {
+        // node id, ascending
+        a._1 < b._1
+      }
+    }
   }
 
 }

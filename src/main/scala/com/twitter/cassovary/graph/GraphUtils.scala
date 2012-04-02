@@ -65,7 +65,7 @@ class GraphUtils(val graph: Graph) {
     if (graph.existsNodeId(startNodeId)) {
       val traversedNodes = new BreadthFirstTraverser(graph, dir, Seq(startNodeId),
         walkParams.maxDepth, walkParams.maxNumEdgesThresh, walkParams.numSteps,
-        walkParams.visitSameNodeOnce, prevNbrCounter)
+        walkParams.visitSameNodeOnce, Some(prevNbrCounter))
       with BoundedIterator[Node] {
         val maxSteps = walkParams.numSteps
       }
@@ -113,8 +113,8 @@ class GraphUtils(val graph: Graph) {
       Stats.time("random_walk_traverse") {
         walk(traversedNodes, { node =>
           visitsCounter.visit(node)
-          pathsCounterOption match {
-            case Some(counter) => counter.visit(node)
+          if (pathsCounterOption.isDefined) {
+            pathsCounterOption.get.visit(node)
           }
         })
       }

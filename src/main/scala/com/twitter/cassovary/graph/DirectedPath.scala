@@ -14,6 +14,7 @@
 package com.twitter.cassovary.graph
 
 import it.unimi.dsi.fastutil.ints.IntArrayList
+import java.util.Arrays
 
 /**
  * Represents a directed path of nodes in a graph. No loop detection is done.
@@ -32,6 +33,17 @@ case class DirectedPath(val nodes: Array[Int]) {
    */
   def exists(node: Int) = nodes.contains(node)
 
+  override def equals(other: Any): Boolean = {
+    if (other.isInstanceOf[DirectedPath]) {
+      Arrays.equals(nodes, other.asInstanceOf[DirectedPath].nodes)
+    } else {
+      false
+    }
+  }
+
+  override def hashCode(): Int = {
+    Arrays.hashCode(nodes)
+  }
 }
 
 object DirectedPath {

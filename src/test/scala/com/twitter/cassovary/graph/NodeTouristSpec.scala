@@ -13,6 +13,7 @@
  */
 package com.twitter.cassovary.graph
 
+import com.twitter.cassovary.graph.tourist.{VisitsCounter, PathsCounter}
 import org.specs.Specification
 
 class NodeTouristSpec extends Specification {
@@ -41,22 +42,19 @@ class NodeTouristSpec extends Specification {
         visitor.visit(id)
       }
       val info = visitor.infoAllNodes
-      info(1) mustEqual List(
-        (DirectedPath(Array(1)), 5)
-        )
-      info(2) mustEqual List(
-        (DirectedPath(Array(2)), 3)
-        )
-      info(3) mustEqual List(
-        (DirectedPath(Array(2, 3)), 3),
-        (DirectedPath(Array(1, 3)), 1),
-        (DirectedPath(Array(2, 3, 4, 3)), 1)
-        )
-      info(4) mustEqual List(
-        (DirectedPath(Array(2, 3, 4)), 2),
-        (DirectedPath(Array(1, 4)), 1)
-        )
-      info.contains(5) mustEqual false
+      info mustEqual Array(
+        (1, Array((DirectedPath(Array(1)), 5))),
+        (2, Array((DirectedPath(Array(2)), 3))),
+        (3, Array(
+          (DirectedPath(Array(2, 3)), 3),
+          (DirectedPath(Array(1, 3)), 1),
+          (DirectedPath(Array(2, 3, 4, 3)), 1)
+        )),
+        (4, Array(
+          (DirectedPath(Array(2, 3, 4)), 2),
+          (DirectedPath(Array(1, 4)), 1)
+        ))
+      )
     }
   }
 }

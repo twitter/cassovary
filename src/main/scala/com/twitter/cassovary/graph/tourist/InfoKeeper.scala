@@ -11,42 +11,26 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
- package com.twitter.cassovary.graph.tourist
+package com.twitter.cassovary.graph.tourist
 
 import com.twitter.cassovary.graph.Node
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 
-/**
- * An InfoKeeper keeps caller-supplied info per node.
- * It provides another method recordInfo() to record a given info for a node.
- */
-trait InfoKeeper[O] {
+trait InfoKeeper[I, O, M] {
   /**
    * Keep info only the first time a node is seen
    */
   val onlyOnce = false
 
-  protected val infoPerNode = new Int2ObjectOpenHashMap[O]
+  /**
+   * Record information {@code info} of node {@code id}
+   */
+  def recordInfo(id: Int, info: I)
 
   /**
-   * Record information {@code info} of node {@code id}.
+   * Get information of a paticular node by its {@code id}
    */
-  def recordInfo(id: Int, info: O) {
-    if (!(onlyOnce && infoPerNode.containsKey(id))) {
-      infoPerNode.put(id, info)
-    }
-  }
-
-  /**
-   * Get information of a particular node by its {@code id}
-   */
-  def infoOfNode(id: Int): Option[O] = {
-    if (infoPerNode.containsKey(id)) {
-      Some(infoPerNode.get(id))
-    } else {
-      None
-    }
-  }
+  def infoOfNode(id: Int): Option[O]
 
   /**
    * Get information of a particular {@code node}.
@@ -56,24 +40,10 @@ trait InfoKeeper[O] {
   /**
    * Clear underlying map
    */
-  def clear() {
-    infoPerNode.clear()
-  }
+  def clear()
 
   /**
-   * Get info for all nodes as an array of (key, value) tuples
+   * Get info for all nodes
    */
-  def infoAllNodes: Array[(Int, O)] = {
-    val allPairs = new Array[(Int, O)](infoPerNode.size)
-
-    var counter = 0
-    val nodeIterator = infoPerNode.keySet.iterator
-    while (nodeIterator.hasNext) {
-      val node = nodeIterator.nextInt
-      allPairs(counter) = (node, infoPerNode.get(node))
-      counter += 1
-    }
-
-    allPairs
-  }
+  def infoAllNodes: M
 }

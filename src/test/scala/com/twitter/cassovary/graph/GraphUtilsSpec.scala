@@ -54,19 +54,19 @@ class GraphUtilsSpec extends Specification {
       val walkParams = GraphUtils.RandomWalkParams(
           numWalkSteps, resetProb, None, Some(10), None, false, GraphDir.OutDir, false)
 
-      val Seq(numVisitsPerNode, paths) = graphUtils.randomWalk(OutDir, Seq(1), walkParams)
-      numVisitsPerNode(1) mustEqual 1
-      numVisitsPerNode(2) mustEqual 1
-      paths(1) mustEqual List( (DirectedPath(Array(1)), 1) )
-      paths(2) mustEqual List( (DirectedPath(Array(1, 2)), 1) )
+      val (visitsCounter, pathsCounterOption) = graphUtils.randomWalk(OutDir, Seq(1), walkParams)
+      visitsCounter.infoAllNodes mustEqual Array((1, 1), (2, 1))
+      pathsCounterOption.get.infoAllNodes mustEqual Array(
+        (DirectedPath(Array(1)), 1),
+        (DirectedPath(Array(1, 2)), 1)
+      )
 
       // random walk but no top paths maintained
-      val Seq(numVisitsPerNode2, paths2) = graphUtils.randomWalk(OutDir, Seq(1),
+      val (visitsCounter2, pathsCounterOption2) = graphUtils.randomWalk(OutDir, Seq(1),
           GraphUtils.RandomWalkParams(numWalkSteps, resetProb,
           None, None, None, false, GraphDir.OutDir, false))
-      numVisitsPerNode2(1) mustEqual 1
-      numVisitsPerNode2(2) mustEqual 1
-      paths2.size mustEqual 0
+      visitsCounter2.infoAllNodes mustEqual Array((1, 1), (2, 1))
+      pathsCounterOption2.get.infoAllNodes.size mustEqual 0
     }
 
     "random walk of n steps with resetProb of 0" in {
@@ -79,11 +79,11 @@ class GraphUtilsSpec extends Specification {
           val othernd = if (startNodeId == 1) 2 else 1
           val walkParams = GraphUtils.RandomWalkParams(
               numWalkSteps, resetProb, None, Some(10), None, false, GraphDir.OutDir, false)
-          val Seq(numVisitsPerNode, paths) =
-              graphUtils.randomWalk(OutDir, Seq(startNodeId), walkParams)
-          numVisitsPerNode(startNodeId) mustEqual (numWalkSteps/2 + (numWalkSteps % 2))
-          numVisitsPerNode(othernd) mustEqual numWalkSteps/2
-          paths.size mustEqual 2
+
+          val (visitsCounter, pathsCounterOption) = graphUtils.randomWalk(OutDir, Seq(startNodeId), walkParams)
+          visitsCounter.infoAllNodes.find( t => t._1 == startNodeId ).get._2 mustEqual (numWalkSteps / 2 + (numWalkSteps % 2))
+          visitsCounter.infoAllNodes.find( t => t._1 == othernd ).get._2 mustEqual numWalkSteps / 2
+          pathsCounterOption.get.infoAllNodes.size mustEqual 2
         }
       }
       numTimesTested mustEqual (7 * 2)
@@ -116,14 +116,16 @@ class GraphUtilsSpec extends Specification {
       val startNodeId = 10
       val walkParams = GraphUtils.RandomWalkParams(numWalkSteps, resetProb, None,
         Some(numWalkSteps.toInt), None, false, GraphDir.OutDir, false)
-      val Seq(numVisitsPerNode, paths) = graphUtils.randomWalk(OutDir, Seq(startNodeId), walkParams)
+
+      val (visitsCounter, pathsCounterOption) = graphUtils.randomWalk(OutDir, Seq(startNodeId), walkParams)
       // expect to have every node visited a few times
       val minNumVisitsExpected = numWalkSteps.toInt/100
-      numVisitsPerNode.valuesIterator foreach { case x: Int => x must be_>=(minNumVisitsExpected) }
-      paths.size mustEqual graph.nodeCount
+
+      visitsCounter.infoAllNodes foreach { case (id: Int, x: Int) => x must be_>=(minNumVisitsExpected) }
+      pathsCounterOption.get.infoAllNodes.size mustEqual graph.nodeCount
       // summation of all path counts (except the starting node itself) mustEqual numWalkCounts
       var numSteps = 0
-      paths.foreach { case (id, pathsPerNode: List[_]) =>
+      pathsCounterOption.get.infoAllNodes.foreach { case (id, pathsPerNode: Array[_]) =>
         pathsPerNode foreach { case (path, count: Int) => numSteps += count }
       }
       numSteps mustEqual numWalkSteps.toInt
@@ -192,8 +194,9 @@ class GraphUtilsSpec extends Specification {
         val (walk, duration) = Duration.inMilliseconds {
           graphUtils.randomWalk(OutDir, Seq(startNodeId), walkParams)
         }
-        val numVisitedPerNode = walk.head
-        numVisitedPerNode.size must be_>(graph.getNodeById(startNodeId).get.outboundCount)
+
+        val (visitsCounter, pathsCounterOption) = walk
+        visitsCounter.infoAllNodes.size must be_> (graph.getNodeById(startNodeId).get.outboundCount)
         if (times > ignoreFirstNum) {
           sumDuration += duration.inMilliseconds
         }

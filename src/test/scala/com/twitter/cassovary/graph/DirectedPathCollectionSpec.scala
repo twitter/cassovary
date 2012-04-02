@@ -36,9 +36,12 @@ class DirectedPathCollectionSpec extends Specification {
         paths.resetCurrentPath()
         addPath(paths, List(0,1,2))
 
-        paths.topPathsTill(testPathIds(0), 10) mustEqual List((getPath(0), times))
-        paths.topPathsTill(testPathIds(1), 10) mustEqual List((getPath(0, 1), times))
-        paths.topPathsTill(testPathIds(2), 10) mustEqual List((getPath(0, 1, 2), times))
+        val left = paths.topPathsTill(testPathIds(0), 10)
+        val right = Array((getPath(0), times))
+        println((left(0)._1, left(0)._2, right(0)._1, right(0)._2))
+        paths.topPathsTill(testPathIds(0), 10) mustEqual Array((getPath(0), times))
+        paths.topPathsTill(testPathIds(1), 10) mustEqual Array((getPath(0, 1), times))
+        paths.topPathsTill(testPathIds(2), 10) mustEqual Array((getPath(0, 1, 2), times))
 
         List(0,1,2) foreach { id =>
           paths.numUniquePathsTill(testPathIds(id)) mustEqual 1

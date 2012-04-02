@@ -164,9 +164,10 @@ class TraverserSpec extends Specification with Mockito {
     "yield all nodes in BFS order in non-unique id walk" in {
       val dir = GraphDir.OutDir
       val bfs = new BreadthFirstTraverser(graph, dir, Seq(10),
-        Some(5), None, None, 10L, false) with BoundedIterator[Node] {
+        Some(5), None, 10L, false, None) with BoundedIterator[Node] {
         lazy val maxSteps = 10L
       }
+
       val ids = bfs.toSeq.map { _.id }.toList
       ids must_== List(11, 12, 13, 12, 14, 14, 12, 14, 14, 15)
       bfs.depth(10) mustEqual Some(0)
@@ -179,7 +180,7 @@ class TraverserSpec extends Specification with Mockito {
     "yield all nodes in BFS order in unique id walk" in {
       val dir = GraphDir.OutDir
       val bfs = new BreadthFirstTraverser(graph, dir, Seq(10), Some(5),
-          None, None, 10L, true) with BoundedIterator[Node] {
+          None, 10L, true, None) with BoundedIterator[Node] {
         lazy val maxSteps = 10L
       }
       val ids = bfs.toSeq.map { _.id }.toList
@@ -193,8 +194,8 @@ class TraverserSpec extends Specification with Mockito {
 
     "yield all nodes in BFS order walk with constraint numOfFriendsThresh" in {
       val dir = GraphDir.OutDir
-      val bfs = new BreadthFirstTraverser(graph, dir, Seq(15), Some(5), None,
-          Some(2), 10L, false) with BoundedIterator[Node] {
+      val bfs = new BreadthFirstTraverser(graph, dir, Seq(15), Some(5),
+          Some(2), 10L, false, None) with BoundedIterator[Node] {
         lazy val maxSteps = 10L
       }
       val ids = bfs.toSeq.map { _.id }.toList

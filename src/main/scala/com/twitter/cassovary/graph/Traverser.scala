@@ -15,7 +15,7 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
-import com.twitter.cassovary.graph.tourist.{InfoKeeper, PrevNbrCounter}
+import com.twitter.cassovary.graph.tourist.{IntInfoKeeper, PrevNbrCounter}
 import com.twitter.ostrich.stats.Stats
 import it.unimi.dsi.fastutil.ints.IntArrayList
 import net.lag.logging.Logger
@@ -68,9 +68,7 @@ class RandomTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
   private var homeNode: Node = null
   private val homeNodeIdSet = Set(homeNodeIds: _*)
 
-  private val seenNodesTracker = new InfoKeeper[Int] {
-    override val onlyOnce = self.onlyOnce
-  }
+  private val seenNodesTracker = new IntInfoKeeper(self.onlyOnce)
 
   protected def seenBefore(id: Int) = seenNodesTracker.infoOfNode(id).isDefined
   private var pathLength = 0
@@ -130,9 +128,7 @@ class RandomBoundedTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
 abstract class DistanceTraverser[T](graph: Graph, homeNodeIds: Seq[Int], onlyOnce: Boolean)
     extends Traverser { self =>
 
-  private val distanceTracker = new InfoKeeper[Int] {
-    override val onlyOnce = self.onlyOnce
-  }
+  private val distanceTracker = new IntInfoKeeper(self.onlyOnce)
 
   protected def init(defaultInfo: T) {
     homeNodeIds foreach { id => visitPotentialNode(id, defaultInfo, 0) }
@@ -171,24 +167,16 @@ abstract class DistanceTraverser[T](graph: Graph, homeNodeIds: Seq[Int], onlyOnc
 
 class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
                             maxDepth: Option[Int], maxNumEdgesThresh: Option[Int], maxSteps: Long,
-                            onlyOnce: Boolean, prevNbrCounter: PrevNbrCounter)
+                            onlyOnce: Boolean, prevNbrCounter: Option[PrevNbrCounter])
     extends Traverser { self =>
 
   private val log = Logger.get
   // the number of items can be enqueued is bounded by maxSteps
-  // cuz we never need to enqueue more than maxSteps items
+  // because we never need to enqueue more than maxSteps items
   private var numEnqueuedEver = 0L
   private val qu = new IntArrayList
 
-  private val depthTracker = new InfoKeeper[Int] {
-    override val onlyOnce = self.onlyOnce
-
-    override def recordInfo(id: Int, info: Int) {
-      if (!infoPerNode.containsKey(id)) {
-        infoPerNode.put(id, info)
-      }
-    }
-  }
+  private val depthTracker = new IntInfoKeeper(true)
 
   homeNodeIds foreach { id =>
     depthTracker.recordInfo(id, 0)
@@ -209,9 +197,9 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
       nd.neighborIds(dir) foreach { id =>
         // bound the total number of items that
         // can be pushed into the queue by maxSteps
-        if (numEnqueuedEver < maxSteps) {
+        if (numEnqueuedEver < maxSteps && prevNbrCounter.isDefined) {
           visitPotentialNode(id, newDepth)
-          prevNbrCounter.recordInfo(id, nodeId)
+          prevNbrCounter.get.recordInfo(id, nodeId)
         }
       }
     }

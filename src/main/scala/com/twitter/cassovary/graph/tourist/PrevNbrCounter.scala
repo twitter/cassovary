@@ -19,58 +19,116 @@ import it.unimi.dsi.fastutil.ints.{Int2IntOpenHashMap, Int2ObjectOpenHashMap}
  * A NodeTourist that keeps track of the previous immediate neighbor of a
  * given node in visiting sequence.
  */
-class PrevNbrCounter(numTopPathsPerNode: Option[Int], onlyOnce: Boolean)
-    extends InfoKeeper[Array[(Int, Int)]] {
-
-  def this() = this(None, false)
+class PrevNbrCounter(numTopPathsPerNode: Option[Int])
+    extends InfoKeeper[Int, Array[Int], Int2ObjectMap[Array[Int]]] {
 
   /**
    * Keep info only the first time a node is seen
    */
-  override val infoPerNode = new Int2ObjectOpenHashMap[Int2IntOpenHashMap]
+  def this() = this(None, false)
+
+  override val infoPerNode = new Int2ObjectOpenHashMap[Int2IntMap]
+
+  /**
+   * Priority queue and comparator for sorting prev nbrs. Reused across nodes.
+   * Synchronized for thread safety
+   * TODO use ThreadLocal?
+   */
+   val comparator = new PrevNbrComparator(infoPerNode, true)
+   val priQ = new IntArrayPriorityQueue(comparator)
 
   /**
    * Record the previous neighbor {@code nodeId} of {@code id}.
    */
   def recordInfo(id: Int, nodeId: Int) {
     if (!(onlyOnce && infoPerNode.containsKey(id))) {
-      if (!infoPerNode.containsKey(id)) {
-        infoPerNode.put(id, new Int2IntOpenHashMap)
+      nbrCountsPerNodeOrDefault(id).add(nodeId, 1)
+    }
+  }
+
+  /**
+   * Top previous neighborhos until node {@code id}
+   */
+  def infoOfNode(id: Int): Option[Array[Int]] = {
+    if (infoPerNode.containsKey(id)) {
+      Some(topPrevNbrsTill(id, numTopPathsPerNode))
+    } else {
+      None
+    }
+  }
+
+  /**
+   * Clear all infos
+   */
+  def clear() {
+    infoPerNode.clear()
+  }
+
+
+  /**
+   * Returns top {@code num} neighbors ending at {@code nodeId}
+   * Results are sorted in decreasing order of occurrence
+   */
+  private def topPrevNbrsTill(nodeId: Int, num: Option[Int]): Array[Int] = {
+    priQ.synchronized {
+      comparator.setNode(nodeId)
+      priQ.clear()
+
+      val infoMap = infoPerNode.get(nodeId)
+      val nodeIteraotr = infoMap.keySet.iterator
+      while (nodeIterator.next) {
+        val nbrId = nodeIterator.nextInt
+        priQ.enqueue(nbrId)
       }
-      infoPerNode.get(id).add(nodeId, 1)
+
+      val size = num match {
+        case Some(n) => n
+        case None => priQ.size
+      }
+
+      val result = new Array[Int](size)
+      var counter = 0
+      while (counter < size) {
+        result(counter) = priQ.dequeue()
+        counter += 1
+      }
+      result
     }
   }
 
-  private def topPrevNbrsTill(nodeId: Int, num: Option[Int]) = {
-    val infoMap = infoPerNode.get(nodeId)
-    val nbrsWithCounts = new Array[(Int, Int)](infoMap.size)
-    var counter = 0
-
-    val nodeIterator = infoMap.keySet.iterator
-    while (nodeIterator.hasNext) {
-      val nbrId = nodeIterator.nextInt
-      nbrsWithCounts(counter) = (nbrId, infoMap.get(nbrId))
-      counter += 1
-    }
-
-    val sorted = nbrsWithCounts.toSeq.sortBy { case (id, count) => -count }.toArray
-    num match {
-      case Some(n) => sorted.take(n)
-      case None => sorted
-    }
-  }
-
-  override def infoAllNodes = {
-    val allPairs = new Array[(Int, Array[(Int, Int)])](infoPerNode.size)
-
+  def infoAllNodes: Int2ObjectMap[Array[Int]] = {
+    val result = new Int2ObjectOpenHashMap[Array[Int]]
     val nodeIterator = infoPerNode.keySet.iterator
-    var counter = 0
     while (nodeIterator.hasNext) {
       val node = nodeIterator.nextInt
       allPairs(counter) = (node, topPrevNbrsTill(node, numTopPathsPerNode))
-      counter += 1
     }
+    result
+  }
 
-    allPairs
+  private def nbrCountsPerNodeOrDefault(node: Int): Int2IntMap {
+    if (!infoPerNode.containsKey(node)) {
+      infoPerNode.put(id, new Int2IntOpenHashMap)
+    }
+    infoPerNode.get(id)
+  }
+}
+
+class PrevNbrComparator(nbrCountsPerId: Int2ObjectMap[Int2IntMap], descending: Boolean) extends Comparator[Int] {
+
+  var infoMap: Int2IntMap = null
+
+  def setNode(id: Int) {
+    infoMap = nbrCountsPerId.get(id)
+  }
+
+  override def compare(id1: Int, id2: Int) {
+    val id1Count = infoMap.get(id1)
+    val id2Count = infoMap.get(id2)
+    if (descending) {
+      id2Count - id1Count
+    } else {
+      id1Count - id2Count
+    }
   }
 }
