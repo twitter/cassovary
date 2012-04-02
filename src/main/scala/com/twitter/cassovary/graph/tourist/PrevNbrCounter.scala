@@ -123,6 +123,11 @@ class PrevNbrComparator(nbrCountsPerId: Int2ObjectOpenHashMap[Int2IntOpenHashMap
     infoMap = nbrCountsPerId.get(id)
   }
 
+  // TODO which call does scala actually use?
+  override def compare(id1: java.lang.Integer, id2: java.lang.Integer): Int = {
+    compare(id1.intValue, id2.intValue)
+  }
+
   override def compare(id1: Int, id2: Int): Int = {
     val id1Count = infoMap.get(id1)
     val id2Count = infoMap.get(id2)
