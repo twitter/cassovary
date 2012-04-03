@@ -21,7 +21,7 @@ import java.util.Comparator
  * given node in visiting sequence.
  */
 class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce: Boolean)
-    extends InfoKeeper[Int, Array[Int], Int2ObjectMap[Array[Int]]] {
+    extends InfoKeeper[Int, Int2IntMap, Int2ObjectMap[Int2IntMap]] {
 
   /**
    * Keep info only the first time a node is seen
@@ -33,7 +33,6 @@ class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce:
   /**
    * Priority queue and comparator for sorting prev nbrs. Reused across nodes.
    * Synchronized for thread safety
-   * TODO use ThreadLocal?
    */
    val comparator = new PrevNbrComparator(infoPerNode, true)
    val priQ = new IntArrayPriorityQueue(comparator)
@@ -50,7 +49,7 @@ class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce:
   /**
    * Top previous neighborhos until node {@code id}
    */
-  def infoOfNode(id: Int): Option[Array[Int]] = {
+  def infoOfNode(id: Int): Option[Int2IntMap] = {
     if (infoPerNode.containsKey(id)) {
       Some(topPrevNbrsTill(id, numTopPathsPerNode))
     } else {
@@ -70,7 +69,9 @@ class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce:
    * Returns top {@code num} neighbors ending at {@code nodeId}
    * Results are sorted in decreasing order of occurrence
    */
-  private def topPrevNbrsTill(nodeId: Int, num: Option[Int]): Array[Int] = {
+  private def topPrevNbrsTill(nodeId: Int, num: Option[Int]): Int2IntMap = {
+    val result = new Int2IntArrayMap
+
     priQ.synchronized {
       comparator.setNode(nodeId)
       priQ.clear()
@@ -87,18 +88,17 @@ class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce:
         case None => priQ.size
       }
 
-      val result = new Array[Int](size)
-      var counter = 0
-      while (counter < size && !priQ.isEmpty) {
-        result(counter) = priQ.dequeueInt()
-        counter += 1
+      while (result.size < size && !priQ.isEmpty) {
+        val nbrId = priQ.dequeueInt()
+        result.put(nbrId, infoMap.get(nbrId))
       }
-      result
     }
+
+    result
   }
 
-  def infoAllNodes: Int2ObjectMap[Array[Int]] = {
-    val result = new Int2ObjectOpenHashMap[Array[Int]]
+  def infoAllNodes: Int2ObjectMap[Int2IntMap] = {
+    val result = new Int2ObjectOpenHashMap[Int2IntMap]
     val nodeIterator = infoPerNode.keySet.iterator
     while (nodeIterator.hasNext) {
       val node = nodeIterator.nextInt

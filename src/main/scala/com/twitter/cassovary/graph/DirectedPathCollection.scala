@@ -34,7 +34,6 @@ class DirectedPathCollection {
   /**
    * Priority queue and comparator for sorting top paths. Reused across nodes.
    * Synchronized for thread safety.
-   * TODO use ThreadLocal?
    */
   val comparator = new PathCounterComparator(pathCountsPerId, true)
   val priQ = new ObjectArrayPriorityQueue[DirectedPath](comparator)

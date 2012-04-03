@@ -155,7 +155,7 @@ class GraphUtils(val graph: Graph) {
    *    in the form of (P as a {@link DirectedPath}, frequency of walking P).
    */
   def calculateBFS(startNodeId: Int, walkParams: RandomWalkParams):
-      (Int2IntMap, Int2ObjectMap[Array[Int]]) = {
+      (Int2IntMap, Int2ObjectMap[Int2IntMap]) = {
     Stats.time("%s_total".format("BFS")) {
       val (visitsCounter, prevNbrCounter) = bfsWalk(walkParams.dir, startNodeId, walkParams)
       (visitsCounter.infoAllNodes, prevNbrCounter.infoAllNodes)
