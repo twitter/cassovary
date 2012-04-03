@@ -131,10 +131,15 @@ class PrevNbrComparator(nbrCountsPerId: Int2ObjectOpenHashMap[Int2IntOpenHashMap
   override def compare(id1: Int, id2: Int): Int = {
     val id1Count = infoMap.get(id1)
     val id2Count = infoMap.get(id2)
-    if (descending) {
-      id2Count - id1Count
+
+    if (id1Count != id2Count) {
+      if (descending) {
+        id2Count - id1Count
+      } else {
+        id1Count - id2Count
+      }
     } else {
-      id1Count - id2Count
+      id1 - id2
     }
   }
 }

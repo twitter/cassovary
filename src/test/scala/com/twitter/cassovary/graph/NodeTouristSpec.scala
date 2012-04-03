@@ -15,6 +15,7 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.tourist.{VisitsCounter, PathsCounter}
 import com.twitter.cassovary.graph.util.FastUtilConversion
+import it.unimi.dsi.fastutil.ints.Int2IntMap
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 import org.specs.Specification
 
@@ -28,12 +29,8 @@ class NodeTouristSpec extends Specification {
       List(1, 2, 3, 1, 2, 3, 1, 4, 2) foreach { id: Int =>
         visitor.visit(testNode(id))
       }
-      val info = visitor.infoAllNodes
-      info.get(1) mustEqual 3
-      info.get(2) mustEqual 3
-      info.get(3) mustEqual 2
-      info.get(4) mustEqual 1
-      info.containsKey(5) mustEqual false
+
+      visitMapToSeq(visitor.infoAllNodes) mustEqual Array((1, 3), (2, 3), (3, 2), (4, 1)).toSeq
     }
   }
 
@@ -61,5 +58,9 @@ class NodeTouristSpec extends Specification {
 
   def pathMapToSeq(map: Object2IntMap[DirectedPath]) = {
     FastUtilConversion.object2IntMapToArray(map).toSeq
+  }
+
+  def visitMapToSeq(map: Int2IntMap) = {
+    FastUtilConversion.int2IntMapToArray(map).toSeq
   }
 }

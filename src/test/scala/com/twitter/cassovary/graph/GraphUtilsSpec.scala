@@ -59,8 +59,7 @@ class GraphUtilsSpec extends Specification {
 
       val (visitsCounter, pathsCounterOption) = graphUtils.randomWalk(OutDir, Seq(1), walkParams)
       val visitsCountMap = visitsCounter.infoAllNodes
-      visitsCountMap.get(1) mustEqual 1
-      visitsCountMap.get(2) mustEqual 1
+      visitMapToSeq(visitsCountMap) mustEqual Array((1, 1), (2, 1)).toSeq
 
       val pathsCountMap = pathsCounterOption.get.infoAllNodes
       pathMapToSeq(pathsCountMap.get(1)) mustEqual Array((DirectedPath(Array(1)), 1)).toSeq
@@ -71,8 +70,7 @@ class GraphUtilsSpec extends Specification {
           GraphUtils.RandomWalkParams(numWalkSteps, resetProb,
           None, None, None, false, GraphDir.OutDir, false))
       val visitCounterMap2 = visitsCounter2.infoAllNodes
-      visitCounterMap2.get(1) mustEqual 1
-      visitCounterMap2.get(2) mustEqual 1
+      visitMapToSeq(visitCounterMap2) mustEqual Array((1, 1), (2, 1)).toSeq
 
       pathsCounterOption2.isDefined mustEqual false
     }
@@ -103,9 +101,7 @@ class GraphUtilsSpec extends Specification {
       val walkParams = GraphUtils.RandomWalkParams(
           5L, 0.0, None, Some(2), Some(5), false, GraphDir.OutDir, false)
       val visitsPerNode = graphUtils.calculateBFS(10, walkParams)._1
-      visitsPerNode.size mustEqual 2
-      visitsPerNode.get(11) mustEqual 3
-      visitsPerNode.get(12) mustEqual 2
+      visitMapToSeq(visitsPerNode) mustEqual Array((11, 3), (12, 2)).toSeq
     }
 
   }
@@ -141,6 +137,7 @@ class GraphUtilsSpec extends Specification {
       val walkParams = GraphUtils.RandomWalkParams(
           10000L, 0.5, None, Some(2), None, false, GraphDir.OutDir, false)
       val visitsPerNode = graphUtils.calculatePersonalizedReputation(10, walkParams)._1
+
       // 10000 steps should visit every node at least once
       visitsPerNode.size mustEqual graph.nodeCount
       val nodeIterator = visitsPerNode.keySet.iterator
@@ -176,14 +173,10 @@ class GraphUtilsSpec extends Specification {
     "bfs" in {
       val walkParams = GraphUtils.RandomWalkParams(9L, 0.0, None, Some(2), Some(5), false,
         GraphDir.OutDir, false)
-      val visitsPerNode = graphUtils.calculateBFS(15, walkParams)._1
+        val visitsPerNode = graphUtils.calculateBFS(15, walkParams)._1
       // doing enough random steps to cause to visit every node (even with reset prob of 0.5)
-      visitsPerNode.size mustEqual 5
-      visitsPerNode.get(12) mustEqual 3
-      visitsPerNode.get(11) mustEqual 2
-      visitsPerNode.get(14) mustEqual 2
-      visitsPerNode.get(10) mustEqual 1
-      visitsPerNode.get(13) mustEqual 1
+
+      visitMapToSeq(visitsPerNode) mustEqual Array((12, 3), (11, 2), (14, 2), (10, 1), (13, 1)).toSeq
     }
   }
 
@@ -218,6 +211,10 @@ class GraphUtilsSpec extends Specification {
 
   def pathMapToSeq(map: Object2IntMap[DirectedPath]) = {
     FastUtilConversion.object2IntMapToArray(map).toSeq
+  }
+
+  def visitMapToSeq(map: Int2IntMap) = {
+    FastUtilConversion.int2IntMapToArray(map).toSeq
   }
 
   def checkMapApproximatelyEquals(visitsPerNode: Int2IntMap, visitsPerNode2: Int2IntMap, delta: Int) {

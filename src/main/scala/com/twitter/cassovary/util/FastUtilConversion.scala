@@ -41,6 +41,7 @@ object FastUtilConversion {
     while (iterator.hasNext) {
       val key = iterator.nextInt
       result(counter) = (key, map.get(key))
+      counter += 1
     }
 
     result
