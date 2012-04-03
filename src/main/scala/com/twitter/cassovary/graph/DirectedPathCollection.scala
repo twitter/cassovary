@@ -20,7 +20,7 @@ import java.util.Comparator
 
 /**
  * Represents a collection of directed paths. For example, a collection of paths out of
- * the same source node. This class is *not* thread safe!
+ * the same source node.
  */
 class DirectedPathCollection {
 
