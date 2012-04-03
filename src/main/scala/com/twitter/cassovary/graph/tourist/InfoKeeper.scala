@@ -16,6 +16,9 @@ package com.twitter.cassovary.graph.tourist
 import com.twitter.cassovary.graph.Node
 import it.unimi.dsi.fastutil.ints.{Int2IntMap, Int2ObjectOpenHashMap}
 
+/**
+ * Info keeper records info per node and returns output per node or for all nodes
+ */
 trait InfoKeeper[@specialized(Int) I, @specialized(Int) O, M] {
   /**
    * Keep info only the first time a node is seen

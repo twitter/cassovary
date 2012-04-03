@@ -54,10 +54,14 @@ trait BoundedIterator[T] extends {  private var numStepsTaken = 0L } with Iterat
  * @param homeNodeIds the ids of nodes that the traverser will go to next if the node has no
  * neighbors, or we reset the traversal with probability {@code resetProbability},
  * or if the number of out-going edges at the current node exceeds {@code maxNumEdgesThresh}
+ * @param resetProbability the probability of teleporting back to home node set at each step
+ * @param maxNumEdgesThresh if set, do not traverse edges with > maxNumEdgesThresh outgoing edges
  * @param onlyOnce specifies whether the same node should only be allowed to be visited once
  * in any path.
  * @param randNumGen a random number generator (for stable walk, a seeded random number
  * generator is used).
+ * @param maxDepth if set, max depth of path
+ * @param filterHomeNodeByNumEdges filter home node by number of edges
  */
 class RandomTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
                       resetProbability: Double, maxNumEdgesThresh: Option[Int], onlyOnce: Boolean,
@@ -156,11 +160,12 @@ abstract class DistanceTraverser[T](graph: Graph, homeNodeIds: Seq[Int], onlyOnc
  * @param dir direction in which to traverse
  * @param homeNodeIds the ids of nodes that the BFS starts
  * @param maxDepth the maximum depth of nodes to visit in BFS
- * @param numTopPathsPerNode number of top paths (in this case, previous neighbor nodes) to store
  * @param maxNumEdgesThresh threshold of the number of neighbors a node can have, if a node has more
  * than the threshold value, we skip its children in BFS
+ * @param maxSteps number of steps in traversal
  * @param onlyOnce specifies whether the same node should only be allowed to be
  * visited once in any path
+ * @param prevNbrCounter if set, tracks previous neighbors by occurrence
  */
 
 class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],

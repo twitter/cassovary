@@ -51,11 +51,10 @@ class GraphUtils(val graph: Graph) {
    * This is a breadth-first walk along the direction specified by {@code dir}.
    * @param startNodeId(s) node(s) to start the random walk from. These must exist in the graph.
    * @param walkParams the parameters specifying this random walk
-   * @return a Seq of two elements, each of which is a Map.
-   *         The first is a mapping from a visited node's id V to the number of visits to that node.
-   *         The second is a mapping from a visited node's id V to a list of 2-tuples. Each 2-tuple
-   *         is of the form (previousNodeId, count) and represents information that the walk reached
-   *         V from {@code previousNodeId} {@code count} number of times.
+   * @return a tuple of two elements
+   *         The first is a counter tracking a visited node's id V and the number of visits to that node.
+   *         The second is a counter tracking a visited node's id V and a set of neighbors. The neighbors
+   *         are sorted in decreasing order by occurrence
    */
   def bfsWalk(dir: GraphDir, startNodeId: Int, walkParams: RandomWalkParams)():
       (VisitsCounter, PrevNbrCounter) = {
@@ -89,11 +88,11 @@ class GraphUtils(val graph: Graph) {
    * during the walk.
    * @param startNodeIds nodes to start the random walk from
    * @param walkParams the {@link RandomWalkParams} random walk parameters
-   * @return a Seq of two elements, each of which is a Map.
-   *         The first is a mapping from a visited node's id to the number of visits to that node.
-   *         The second is a mapping from a visited node's id to the paths visited while hitting
-   *         that node in the form of (path P, count of times P was traversed).
-   *         The path P is kept as a {@link DirectedPath}.
+   * @return a tuple of two elements.
+   *         The first is a counter tracking a visited node's id to the number of visits to that node.
+   *         The second is a counter tracking a visited node's id to the paths visited while hitting
+   *         that node. The paths are sorted in decreasing order by occurrence
+   *         Each path is kept as a {@link DirectedPath}.
    */
   def randomWalk(dir: GraphDir, startNodeIds: Seq[Int], walkParams: RandomWalkParams)():
       (VisitsCounter, Option[PathsCounter]) = {

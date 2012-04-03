@@ -13,13 +13,61 @@
  */
 package com.twitter.cassovary.graph.tourist
 
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap
+import it.unimi.dsi.fastutil.ints._
 
 /**
  * A tourist that keeps counts of the number of times a node has been seen.
  */
 class VisitsCounter extends IntInfoKeeper(false) with NodeTourist {
+
+  /**
+   * PriorityQueue and IntComparator for sorting
+   */
+  val comparator = new VisitsComparator(infoPerNode, true)
+  val priQ = new IntArrayPriorityQueue(comparator)
+
   def visit(id: Int) {
     infoPerNode.add(id, 1)
+  }
+
+  /**
+   * Returns a map of nodes to visit count, sorted in decreasing order when iterating
+   */
+  override def infoAllNodes: Int2IntMap = {
+    val resultMap = new Int2IntArrayMap
+
+    priQ.synchronized {
+      priQ.clear()
+
+      val nodeIterator = infoPerNode.keySet.iterator
+      while (nodeIterator.hasNext) {
+        val node = nodeIterator.nextInt
+        priQ.enqueue(node)
+      }
+
+      while (!priQ.isEmpty) {
+        val node = priQ.dequeueInt()
+        resultMap.put(node, infoPerNode.get(node))
+      }
+    }
+
+    resultMap
+  }
+}
+
+class VisitsComparator(infoPerNode: Int2IntMap, descending: Boolean) extends IntComparator {
+  // TODO ensure scala runtime does not call this boxed version
+  override def compare(id1: java.lang.Integer, id2: java.lang.Integer): Int = {
+    compare(id1.intValue, id2.intValue)
+  }
+
+  override def compare(id1: Int, id2: Int): Int = {
+    val id1Count = infoPerNode.get(id1)
+    val id2Count = infoPerNode.get(id2)
+    if (descending) {
+      id2Count - id1Count
+    } else {
+      id1Count - id2Count
+    }
   }
 }
