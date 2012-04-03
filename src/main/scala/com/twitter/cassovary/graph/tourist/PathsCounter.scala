@@ -15,6 +15,7 @@ package com.twitter.cassovary.graph.tourist
 
 import com.twitter.cassovary.graph.{DirectedPath, DirectedPathCollection}
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap
+import it.unimi.dsi.fastutil.objects.Object2IntMap
 
 /**
  * A tourist that keeps track of the paths ending at each node. It keeps
@@ -25,7 +26,8 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap
  */
 
 class PathsCounter(numTopPathsPerNode: Int, homeNodeIds: Seq[Int])
-    extends NodeTourist with InfoKeeper[Int, Array[DirectedPath], Int2ObjectMap[Array[DirectedPath]]] {
+    extends NodeTourist with InfoKeeper[Int, Object2IntMap[DirectedPath],
+      Int2ObjectMap[Object2IntMap[DirectedPath]]] {
 
   def this() = this(0, Nil)
 
@@ -42,7 +44,7 @@ class PathsCounter(numTopPathsPerNode: Int, homeNodeIds: Seq[Int])
     // NOOP use visit
   }
 
-  def infoOfNode(id: Int): Option[Array[DirectedPath]] = {
+  def infoOfNode(id: Int): Option[Object2IntMap[DirectedPath]] = {
     if (paths.containsNode(id)) {
       Some(paths.topPathsTill(id, numTopPathsPerNode))
     } else {
@@ -50,7 +52,7 @@ class PathsCounter(numTopPathsPerNode: Int, homeNodeIds: Seq[Int])
     }
   }
 
-  def infoAllNodes: Int2ObjectMap[Array[DirectedPath]] = paths.topPathsPerNodeId(numTopPathsPerNode)
+  def infoAllNodes: Int2ObjectMap[Object2IntMap[DirectedPath]] = paths.topPathsPerNodeId(numTopPathsPerNode)
 
   def clear() {
     paths.clear()

@@ -14,8 +14,10 @@
 package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.GraphDir._
+import com.twitter.cassovary.graph.util.FastUtilConversion
 import com.twitter.util.Duration
 import it.unimi.dsi.fastutil.ints.Int2IntMap
+import it.unimi.dsi.fastutil.objects.Object2IntMap
 import org.specs.Specification
 
 // TODO add a fake random so that the random walk tests can be controlled
@@ -61,8 +63,8 @@ class GraphUtilsSpec extends Specification {
       visitsCountMap.get(2) mustEqual 1
 
       val pathsCountMap = pathsCounterOption.get.infoAllNodes
-      pathsCountMap.get(1).toSeq mustEqual Array(DirectedPath(Array(1))).toSeq
-      pathsCountMap.get(2).toSeq mustEqual Array(DirectedPath(Array(1, 2))).toSeq
+      pathMapToSeq(pathsCountMap.get(1)) mustEqual Array((DirectedPath(Array(1)), 1)).toSeq
+      pathMapToSeq(pathsCountMap.get(2)) mustEqual Array((DirectedPath(Array(1, 2)), 1)).toSeq
 
       // random walk but no top paths maintained
       val (visitsCounter2, pathsCounterOption2) = graphUtils.randomWalk(OutDir, Seq(1),
@@ -214,7 +216,11 @@ class GraphUtilsSpec extends Specification {
     }
   }
 
-  private def checkMapApproximatelyEquals(visitsPerNode: Int2IntMap, visitsPerNode2: Int2IntMap, delta: Int) {
+  def pathMapToSeq(map: Object2IntMap[DirectedPath]) = {
+    FastUtilConversion.object2IntMapToArray(map).toSeq
+  }
+
+  def checkMapApproximatelyEquals(visitsPerNode: Int2IntMap, visitsPerNode2: Int2IntMap, delta: Int) {
     visitsPerNode.size mustEqual visitsPerNode2.size
 
     val nodeIterator = visitsPerNode.keySet.iterator

@@ -18,6 +18,7 @@ import com.twitter.cassovary.graph.tourist._
 import com.twitter.ostrich.stats.Stats
 
 import it.unimi.dsi.fastutil.ints.{Int2IntMap, Int2ObjectMap}
+import it.unimi.dsi.fastutil.objects.Object2IntMap
 import net.lag.logging.Logger
 import scala.util.Random
 
@@ -133,7 +134,7 @@ class GraphUtils(val graph: Graph) {
    *            in the form of (P as a {@link DirectedPath}, frequency of walking P).
    */
   def calculatePersonalizedReputation(startNodeIds: Seq[Int], walkParams: RandomWalkParams):
-      (Int2IntMap, Option[Int2ObjectMap[Array[DirectedPath]]]) = {
+      (Int2IntMap, Option[Int2ObjectMap[Object2IntMap[DirectedPath]]]) = {
     Stats.time ("%s_total".format("PTC")) {
       val (visitsCounter, pathsCounterOption) = randomWalk(walkParams.dir, startNodeIds, walkParams)
       val topPathsOption = pathsCounterOption flatMap { counter => Some(counter.infoAllNodes) }
@@ -142,7 +143,7 @@ class GraphUtils(val graph: Graph) {
   }
 
   def calculatePersonalizedReputation(startNodeId: Int, walkParams: RandomWalkParams):
-      (Int2IntMap, Option[Int2ObjectMap[Array[DirectedPath]]]) = {
+      (Int2IntMap, Option[Int2ObjectMap[Object2IntMap[DirectedPath]]]) = {
     calculatePersonalizedReputation(Seq(startNodeId), walkParams)
   }
 

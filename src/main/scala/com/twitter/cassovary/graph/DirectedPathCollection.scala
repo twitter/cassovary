@@ -13,9 +13,8 @@
  */
 package com.twitter.cassovary.graph
 
-import it.unimi.dsi.fastutil.{Arrays, Swapper}
-import it.unimi.dsi.fastutil.objects.{Object2IntOpenHashMap, ObjectArrayPriorityQueue}
-import it.unimi.dsi.fastutil.ints.{Int2ObjectOpenHashMap, IntComparator}
+import it.unimi.dsi.fastutil.objects._
+import it.unimi.dsi.fastutil.ints._
 import java.util.Comparator
 
 
@@ -55,13 +54,13 @@ class DirectedPathCollection {
   }
 
   /**
-   * @return an array of top DirectedPaths by occurrence
-   *         ending at {@code node}
+   * @return an map of top DirectedPaths with occurrence
+   *         ending at {@code node}, sorted decreasing
    */
-  def topPathsTill(node: Int, num: Int): Array[DirectedPath] = {
+  def topPathsTill(node: Int, num: Int): Object2IntMap[DirectedPath] = {
     val pathCountMap = pathCountsPerIdWithDefault(node)
     val pathCount = pathCountMap.size
-    val pathArray = new Array[DirectedPath](scala.math.min(num, pathCount))
+    val returnMap = new Object2IntArrayMap[DirectedPath]
 
     priQ.synchronized {
       comparator.setNode(node)
@@ -73,22 +72,21 @@ class DirectedPathCollection {
         priQ.enqueue(path)
       }
 
-      var counter = 0
-      while (counter < num && !priQ.isEmpty) {
-        pathArray(counter) = priQ.dequeue()
-        counter += 1
+      while (returnMap.size < num && !priQ.isEmpty) {
+        val path = priQ.dequeue()
+        returnMap.put(path, pathCountMap.get(path))
       }
     }
 
-    pathArray
+    returnMap
   }
 
   /**
    * @param num the number of top paths to return for a node
    * @return an array of tuples, each containing a node and array of top paths ending at node, with scores
    */
-  def topPathsPerNodeId(num: Int): Int2ObjectOpenHashMap[Array[DirectedPath]] = {
-    val topPathMap = new Int2ObjectOpenHashMap[Array[DirectedPath]]
+  def topPathsPerNodeId(num: Int): Int2ObjectOpenHashMap[Object2IntMap[DirectedPath]] = {
+    val topPathMap = new Int2ObjectOpenHashMap[Object2IntMap[DirectedPath]]
 
     val nodeIterator = pathCountsPerId.keySet.iterator
     while (nodeIterator.hasNext) {

@@ -14,6 +14,8 @@
 package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.tourist.{VisitsCounter, PathsCounter}
+import com.twitter.cassovary.graph.util.FastUtilConversion
+import it.unimi.dsi.fastutil.objects.Object2IntMap
 import org.specs.Specification
 
 class NodeTouristSpec extends Specification {
@@ -43,17 +45,21 @@ class NodeTouristSpec extends Specification {
       }
       val info = visitor.infoAllNodes
 
-      info.get(1).toSeq mustEqual Array(DirectedPath(Array(1))).toSeq
-      info.get(2).toSeq mustEqual Array(DirectedPath(Array(2))).toSeq
-      info.get(3).toSeq mustEqual Array(
-        DirectedPath(Array(2, 3)),
-        DirectedPath(Array(2, 3, 4, 3)),
-        DirectedPath(Array(1, 3))
+      pathMapToSeq(info.get(1)) mustEqual Array((DirectedPath(Array(1)), 5)).toSeq
+      pathMapToSeq(info.get(2)) mustEqual Array((DirectedPath(Array(2)), 3)).toSeq
+      pathMapToSeq(info.get(3)) mustEqual Array(
+        (DirectedPath(Array(2, 3)), 3),
+        (DirectedPath(Array(2, 3, 4, 3)), 1),
+        (DirectedPath(Array(1, 3)), 1)
       ).toSeq
-      info.get(4).toSeq mustEqual Array(
-        DirectedPath(Array(2, 3, 4)),
-        DirectedPath(Array(1, 4))
+      pathMapToSeq(info.get(4)) mustEqual Array(
+        (DirectedPath(Array(2, 3, 4)), 2),
+        (DirectedPath(Array(1, 4)), 1)
       ).toSeq
     }
+  }
+
+  def pathMapToSeq(map: Object2IntMap[DirectedPath]) = {
+    FastUtilConversion.object2IntMapToArray(map).toSeq
   }
 }
