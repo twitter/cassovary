@@ -18,6 +18,7 @@ import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.twitter.cassovary.graph.tourist.{IntInfoKeeper, PrevNbrCounter}
 import com.twitter.ostrich.stats.Stats
 import it.unimi.dsi.fastutil.ints.IntArrayList
+import it.unimi.dsi.fastutil.objects.ObjectArrayList
 import net.lag.logging.Logger
 import scala.collection.mutable
 import scala.util.Random
@@ -239,17 +240,19 @@ class DepthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
   // stack keeps a tuple (node, child# of higher node in stack). Hence, top node
   // of stack always has child# = -1
   case class NodeDesc(val id: Int, val childOff: Int)
-  private val stack = new mutable.Stack[NodeDesc]
+
+  private val stack = new ObjectArrayList[NodeDesc]
+
   init(-1)
 
-  protected def storeForVisit(id: Int, info: Int) { stack.push(NodeDesc(id, info)) }
+  protected def storeForVisit(id: Int, info: Int) { stack.add(NodeDesc(id, info)) }
 
   private def firstNotYetVisitedNode(nd: Node, off: Int): Option[NodeDesc] = {
     assert(off != -1)
     if (off == nd.neighborCount(dir)) {
       // no more children of this node left, go to its parent
       if (stack.isEmpty) None else {
-        val topel = stack.pop
+        val topel = stack.remove(stack.size - 1)
         firstNotYetVisitedNode(getExistingNodeById(graph, topel.id), topel.childOff + 1)
       }
     } else {
@@ -265,7 +268,7 @@ class DepthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
   }
 
   def next = {
-    var NodeDesc(id, off) = stack.pop
+    var NodeDesc(id, off) = stack.remove(stack.size - 1)
     assert(off == -1)
     val topnd = getExistingNodeById(graph, id)
     val nextUnvisitedNode = firstNotYetVisitedNode(topnd, off + 1)
