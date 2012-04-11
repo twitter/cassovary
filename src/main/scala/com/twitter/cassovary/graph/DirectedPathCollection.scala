@@ -34,7 +34,7 @@ class DirectedPathCollection {
    * Priority queue and comparator for sorting top paths. Reused across nodes.
    */
   val comparator = new PathCounterComparator(pathCountsPerId, true)
-  val priQ = new ObjectArrayPriorityQueue[DirectedPath](comparator)
+  val priQ = new ObjectHeapPriorityQueue[DirectedPath](comparator)
 
   /**
    * Appends node to the current path and record this path against the node.

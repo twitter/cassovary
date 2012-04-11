@@ -34,7 +34,7 @@ class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce:
    * Priority queue and comparator for sorting prev nbrs. Reused across nodes.
    */
    val comparator = new PrevNbrComparator(infoPerNode, true)
-   val priQ = new IntArrayPriorityQueue(comparator)
+   val priQ = new IntHeapPriorityQueue(comparator)
 
   /**
    * Record the previous neighbor {@code nodeId} of {@code id}.

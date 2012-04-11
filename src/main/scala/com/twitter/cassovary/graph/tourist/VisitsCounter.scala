@@ -24,7 +24,7 @@ class VisitsCounter extends IntInfoKeeper(false) with NodeTourist {
    * PriorityQueue and IntComparator for sorting
    */
   val comparator = new VisitsComparator(infoPerNode, true)
-  val priQ = new IntArrayPriorityQueue(comparator)
+  val priQ = new IntHeapPriorityQueue(comparator)
 
   def visit(id: Int) {
     infoPerNode.add(id, 1)
