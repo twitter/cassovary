@@ -32,7 +32,6 @@ class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce:
 
   /**
    * Priority queue and comparator for sorting prev nbrs. Reused across nodes.
-   * Synchronized for thread safety
    */
    val comparator = new PrevNbrComparator(infoPerNode, true)
    val priQ = new IntArrayPriorityQueue(comparator)
@@ -72,26 +71,24 @@ class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce:
   private def topPrevNbrsTill(nodeId: Int, num: Option[Int]): Int2IntMap = {
     val result = new Int2IntArrayMap
 
-    priQ.synchronized {
-      comparator.setNode(nodeId)
-      priQ.clear()
+    comparator.setNode(nodeId)
+    priQ.clear()
 
-      val infoMap = infoPerNode.get(nodeId)
-      val nodeIterator = infoMap.keySet.iterator
-      while (nodeIterator.hasNext) {
-        val nbrId = nodeIterator.nextInt
-        priQ.enqueue(nbrId)
-      }
+    val infoMap = infoPerNode.get(nodeId)
+    val nodeIterator = infoMap.keySet.iterator
+    while (nodeIterator.hasNext) {
+      val nbrId = nodeIterator.nextInt
+      priQ.enqueue(nbrId)
+    }
 
-      val size = num match {
-        case Some(n) => n
-        case None => priQ.size
-      }
+    val size = num match {
+      case Some(n) => n
+      case None => priQ.size
+    }
 
-      while (result.size < size && !priQ.isEmpty) {
-        val nbrId = priQ.dequeueInt()
-        result.put(nbrId, infoMap.get(nbrId))
-      }
+    while (result.size < size && !priQ.isEmpty) {
+      val nbrId = priQ.dequeueInt()
+      result.put(nbrId, infoMap.get(nbrId))
     }
 
     result

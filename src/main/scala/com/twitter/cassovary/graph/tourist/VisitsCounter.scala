@@ -36,19 +36,17 @@ class VisitsCounter extends IntInfoKeeper(false) with NodeTourist {
   override def infoAllNodes: Int2IntMap = {
     val resultMap = new Int2IntArrayMap
 
-    priQ.synchronized {
-      priQ.clear()
+    priQ.clear()
 
-      val nodeIterator = infoPerNode.keySet.iterator
-      while (nodeIterator.hasNext) {
-        val node = nodeIterator.nextInt
-        priQ.enqueue(node)
-      }
+    val nodeIterator = infoPerNode.keySet.iterator
+    while (nodeIterator.hasNext) {
+      val node = nodeIterator.nextInt
+      priQ.enqueue(node)
+    }
 
-      while (!priQ.isEmpty) {
-        val node = priQ.dequeueInt()
-        resultMap.put(node, infoPerNode.get(node))
-      }
+    while (!priQ.isEmpty) {
+      val node = priQ.dequeueInt()
+      resultMap.put(node, infoPerNode.get(node))
     }
 
     resultMap

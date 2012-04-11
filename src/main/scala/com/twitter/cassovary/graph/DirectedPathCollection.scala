@@ -32,7 +32,6 @@ class DirectedPathCollection {
 
   /**
    * Priority queue and comparator for sorting top paths. Reused across nodes.
-   * Synchronized for thread safety.
    */
   val comparator = new PathCounterComparator(pathCountsPerId, true)
   val priQ = new ObjectArrayPriorityQueue[DirectedPath](comparator)
@@ -62,20 +61,18 @@ class DirectedPathCollection {
     val pathCount = pathCountMap.size
     val returnMap = new Object2IntArrayMap[DirectedPath]
 
-    priQ.synchronized {
-      comparator.setNode(node)
-      priQ.clear()
+    comparator.setNode(node)
+    priQ.clear()
 
-      val pathIterator = pathCountMap.keySet.iterator
-      while (pathIterator.hasNext) {
-        val path = pathIterator.next
-        priQ.enqueue(path)
-      }
+    val pathIterator = pathCountMap.keySet.iterator
+    while (pathIterator.hasNext) {
+      val path = pathIterator.next
+      priQ.enqueue(path)
+    }
 
-      while (returnMap.size < num && !priQ.isEmpty) {
-        val path = priQ.dequeue()
-        returnMap.put(path, pathCountMap.get(path))
-      }
+    while (returnMap.size < num && !priQ.isEmpty) {
+      val path = priQ.dequeue()
+      returnMap.put(path, pathCountMap.get(path))
     }
 
     returnMap
