@@ -15,7 +15,10 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
+import com.twitter.cassovary.graph.tourist.{IntInfoKeeper, PrevNbrCounter}
 import com.twitter.ostrich.stats.Stats
+import it.unimi.dsi.fastutil.ints.IntArrayList
+import it.unimi.dsi.fastutil.objects.ObjectArrayList
 import net.lag.logging.Logger
 import scala.collection.mutable
 import scala.util.Random
@@ -52,10 +55,14 @@ trait BoundedIterator[T] extends {  private var numStepsTaken = 0L } with Iterat
  * @param homeNodeIds the ids of nodes that the traverser will go to next if the node has no
  * neighbors, or we reset the traversal with probability {@code resetProbability},
  * or if the number of out-going edges at the current node exceeds {@code maxNumEdgesThresh}
+ * @param resetProbability the probability of teleporting back to home node set at each step
+ * @param maxNumEdgesThresh if set, do not traverse edges with > maxNumEdgesThresh outgoing edges
  * @param onlyOnce specifies whether the same node should only be allowed to be visited once
  * in any path.
  * @param randNumGen a random number generator (for stable walk, a seeded random number
  * generator is used).
+ * @param maxDepth if set, max depth of path
+ * @param filterHomeNodeByNumEdges filter home node by number of edges
  */
 class RandomTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
                       resetProbability: Double, maxNumEdgesThresh: Option[Int], onlyOnce: Boolean,
@@ -66,10 +73,7 @@ class RandomTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
   private var homeNode: Node = null
   private val homeNodeIdSet = Set(homeNodeIds: _*)
 
-  private val seenNodesTracker = new InfoKeeper[Int] {
-    val onlyOnce = self.onlyOnce
-    def visit(id: Int) { /* we will only use recordInfo() method in this InfoKeeper */ }
-  }
+  private val seenNodesTracker = new IntInfoKeeper(self.onlyOnce)
 
   protected def seenBefore(id: Int) = seenNodesTracker.infoOfNode(id).isDefined
   private var pathLength = 0
@@ -97,7 +101,7 @@ class RandomTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
     } else {
       var randNextNodeId = takeRandomStep()
       if (onlyOnce && seenBefore(randNextNodeId)) {
-        seenNodesTracker.infoAllNodes.clear()
+        seenNodesTracker.clear()
         goHome()
       } else {
         randNextNodeId
@@ -129,10 +133,7 @@ class RandomBoundedTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
 abstract class DistanceTraverser[T](graph: Graph, homeNodeIds: Seq[Int], onlyOnce: Boolean)
     extends Traverser { self =>
 
-  private val distanceTracker = new InfoKeeper[Int]{
-    val onlyOnce = self.onlyOnce
-    def visit(id: Int) { /* we will only use recordInfo() method in this InfoKeeper */ }
-  }
+  private val distanceTracker = new IntInfoKeeper(self.onlyOnce)
 
   protected def init(defaultInfo: T) {
     homeNodeIds foreach { id => visitPotentialNode(id, defaultInfo, 0) }
@@ -160,34 +161,26 @@ abstract class DistanceTraverser[T](graph: Graph, homeNodeIds: Seq[Int], onlyOnc
  * @param dir direction in which to traverse
  * @param homeNodeIds the ids of nodes that the BFS starts
  * @param maxDepth the maximum depth of nodes to visit in BFS
- * @param numTopPathsPerNode number of top paths (in this case, previous neighbor nodes) to store
  * @param maxNumEdgesThresh threshold of the number of neighbors a node can have, if a node has more
  * than the threshold value, we skip its children in BFS
+ * @param maxSteps number of steps in traversal
  * @param onlyOnce specifies whether the same node should only be allowed to be
  * visited once in any path
+ * @param prevNbrCounter if set, tracks previous neighbors by occurrence
  */
+
 class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
-                            maxDepth: Option[Int], numTopPathsPerNode: Option[Int],
-                            maxNumEdgesThresh: Option[Int], maxSteps: Long, onlyOnce: Boolean)
+                            maxDepth: Option[Int], maxNumEdgesThresh: Option[Int], maxSteps: Long,
+                            onlyOnce: Boolean, prevNbrCounter: Option[PrevNbrCounter])
     extends Traverser { self =>
 
   private val log = Logger.get
   // the number of items can be enqueued is bounded by maxSteps
-  // cuz we never need to enqueue more than maxSteps items
+  // because we never need to enqueue more than maxSteps items
   private var numEnqueuedEver = 0L
+  private val qu = new IntArrayList
 
-  val prevNbrCounter = new PrevNbrCounter(numTopPathsPerNode, self.onlyOnce)
-  private val qu = new mutable.Queue[Int]
-  private val depthTracker = new InfoKeeper[Int] {
-    val onlyOnce = self.onlyOnce
-    def visit(id: Int) { /* we will only use recordInfo() method in this InfoKeeper */ }
-
-    override def recordInfo(id: Int, info: Int) {
-      if (!infoPerNode.contains(id)) {
-        infoPerNode.put(id, info)
-      }
-    }
-  }
+  private val depthTracker = new IntInfoKeeper(true)
 
   homeNodeIds foreach { id =>
     depthTracker.recordInfo(id, 0)
@@ -196,7 +189,7 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
 
   private def visitPotentialNode(id: Int, depth: Int) {
     if (!(onlyOnce && seen(id))) {
-      qu.enqueue(id)
+      qu.add(id)
       numEnqueuedEver += 1
     }
     depthTracker.recordInfo(id, depth)
@@ -210,7 +203,9 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
         // can be pushed into the queue by maxSteps
         if (numEnqueuedEver < maxSteps) {
           visitPotentialNode(id, newDepth)
-          prevNbrCounter.recordInfo(id, nodeId)
+          if (prevNbrCounter.isDefined) {
+            prevNbrCounter.get.recordInfo(id, nodeId)
+          }
         }
       }
     }
@@ -220,7 +215,7 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
   private def seen(id: Int) = depth(id).isDefined
 
   def next = {
-    val curr = qu.dequeue
+    val curr = qu.removeInt(0)
     val currDepth = depth(curr).get
     val nd = getExistingNodeById(graph, curr)
     log.ifTrace { "visiting %d, nbrCount=%d, maxNumEdges=%d, depth=%d".format(curr,
@@ -234,7 +229,7 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
     Stats.incr("bfs_walk_request_exhausted_2nd_degree", 1)
     false
   } else {
-    maxDepth.isEmpty || depth(qu.front).get <= maxDepth.get
+    maxDepth.isEmpty || depth(qu.getInt(0)).get <= maxDepth.get
   }
 }
 
@@ -245,17 +240,19 @@ class DepthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
   // stack keeps a tuple (node, child# of higher node in stack). Hence, top node
   // of stack always has child# = -1
   case class NodeDesc(val id: Int, val childOff: Int)
-  private val stack = new mutable.Stack[NodeDesc]
+
+  private val stack = new ObjectArrayList[NodeDesc]
+
   init(-1)
 
-  protected def storeForVisit(id: Int, info: Int) { stack.push(NodeDesc(id, info)) }
+  protected def storeForVisit(id: Int, info: Int) { stack.add(NodeDesc(id, info)) }
 
   private def firstNotYetVisitedNode(nd: Node, off: Int): Option[NodeDesc] = {
     assert(off != -1)
     if (off == nd.neighborCount(dir)) {
       // no more children of this node left, go to its parent
       if (stack.isEmpty) None else {
-        val topel = stack.pop
+        val topel = stack.remove(stack.size - 1)
         firstNotYetVisitedNode(getExistingNodeById(graph, topel.id), topel.childOff + 1)
       }
     } else {
@@ -271,7 +268,7 @@ class DepthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
   }
 
   def next = {
-    var NodeDesc(id, off) = stack.pop
+    var NodeDesc(id, off) = stack.remove(stack.size - 1)
     assert(off == -1)
     val topnd = getExistingNodeById(graph, id)
     val nextUnvisitedNode = firstNotYetVisitedNode(topnd, off + 1)

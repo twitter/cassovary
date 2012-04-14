@@ -13,36 +13,36 @@
  */
 package com.twitter.cassovary.graph
 
-import collection.mutable
+import it.unimi.dsi.fastutil.objects._
+import it.unimi.dsi.fastutil.ints._
+import java.util.Comparator
 
 
 /**
  * Represents a collection of directed paths. For example, a collection of paths out of
  * the same source node.
  */
-class DirectedPathCollection[T] {
+class DirectedPathCollection {
 
   // the current path being built
-  private val currPath = DirectedPath.builder[T]()
+  private val currPath = DirectedPath.builder()
 
-  // pathCountsPerId(id)(path) = count of #times path has been seen ending in id
-  private val pathCountsPerId = new mutable.HashMap[T, mutable.HashMap[DirectedPath[T], Int]] {
-    override def default(node: T) = {
-      val h1 = new mutable.HashMap[DirectedPath[T], Int] {
-        override def default(p: DirectedPath[T]) = 0
-      }
-      put(node, h1)
-      h1
-    }
-  }
+  // pathCountsPerId.get(id).get(path) = count of #times path has been seen ending in id
+  private val pathCountsPerId = new Int2ObjectOpenHashMap[Object2IntOpenHashMap[DirectedPath]]
+
+  /**
+   * Priority queue and comparator for sorting top paths. Reused across nodes.
+   */
+  val comparator = new PathCounterComparator(pathCountsPerId, true)
+  val priQ = new ObjectHeapPriorityQueue[DirectedPath](comparator)
 
   /**
    * Appends node to the current path and record this path against the node.
    * @param node the node being visited
    */
-  def appendToCurrentPath(node: T) {
+  def appendToCurrentPath(node: Int) {
     currPath.append(node)
-    pathCountsPerId(node)(currPath.snapshot) += 1
+    pathCountsPerIdWithDefault(node).add(currPath.snapshot, 1)
   }
 
   /**
@@ -53,35 +53,105 @@ class DirectedPathCollection[T] {
   }
 
   /**
-   * @return a list of tuple(path, count) where count is the number of times path
-   *         ending at {@code node} is observed
+   * @return an map of top DirectedPaths with occurrence
+   *         ending at {@code node}, sorted decreasing
    */
-  def topPathsTill(node: T, num: Int) = {
-    val paths = pathCountsPerId(node)
-    val top = paths.toList.sortBy { case (path, count) => (-count, path.length) }
-    top.take(num)
+  def topPathsTill(node: Int, num: Int): Object2IntMap[DirectedPath] = {
+    val pathCountMap = pathCountsPerIdWithDefault(node)
+    val pathCount = pathCountMap.size
+    val returnMap = new Object2IntArrayMap[DirectedPath]
+
+    comparator.setNode(node)
+    priQ.clear()
+
+    val pathIterator = pathCountMap.keySet.iterator
+    while (pathIterator.hasNext) {
+      val path = pathIterator.next
+      priQ.enqueue(path)
+    }
+
+    while (returnMap.size < num && !priQ.isEmpty) {
+      val path = priQ.dequeue()
+      returnMap.put(path, pathCountMap.get(path))
+    }
+
+    returnMap
   }
 
   /**
    * @param num the number of top paths to return for a node
-   * @return a mapping of node to the list of top paths ending at node
+   * @return an array of tuples, each containing a node and array of top paths ending at node, with scores
    */
-  def topPathsPerNodeId(num: Int): collection.Map[T, List[(DirectedPath[T], Int)]] = {
-    Map.empty ++ pathCountsPerId.keysIterator.map { node =>
-        (node, topPathsTill(node, num))
+  def topPathsPerNodeId(num: Int): Int2ObjectOpenHashMap[Object2IntMap[DirectedPath]] = {
+    val topPathMap = new Int2ObjectOpenHashMap[Object2IntMap[DirectedPath]]
+
+    val nodeIterator = pathCountsPerId.keySet.iterator
+    while (nodeIterator.hasNext) {
+      val node = nodeIterator.nextInt
+      topPathMap.put(node, topPathsTill(node, num))
     }
+
+    topPathMap
   }
 
   /**
    * @return the total number of unique paths that end at {@code node}
    */
-  def numUniquePathsTill(node: T) = pathCountsPerId(node).size
+  def numUniquePathsTill(node: Int) = pathCountsPerIdWithDefault(node).size
 
   /**
    * @return the total number of unique paths in this collection
    */
   def totalNumPaths = {
-    pathCountsPerId.keysIterator.foldLeft(0) { case (tot, node) => tot + numUniquePathsTill(node) }
+    var sum = 0
+    val iterator = pathCountsPerId.keySet.iterator
+    while (iterator.hasNext) {
+      val node = iterator.nextInt
+      sum += numUniquePathsTill(node)
+    }
+    sum
   }
 
+  /**
+   * @return true if entry for {@code node} exists, false otherwise
+   */
+  def containsNode(node: Int): Boolean = {
+    pathCountsPerId.containsKey(node)
+  }
+
+  /**
+   * Resets the path collection
+   */
+  def clear() {
+    currPath.clear()
+    pathCountsPerId.clear()
+  }
+
+  private def pathCountsPerIdWithDefault(node: Int): Object2IntOpenHashMap[DirectedPath] = {
+    if (!pathCountsPerId.containsKey(node)) {
+      val map = new Object2IntOpenHashMap[DirectedPath]
+      pathCountsPerId.put(node, map)
+    }
+    pathCountsPerId.get(node)
+  }
+
+}
+
+class PathCounterComparator(pathCountsPerId: Int2ObjectOpenHashMap[Object2IntOpenHashMap[DirectedPath]], descending: Boolean) extends Comparator[DirectedPath] {
+
+  var infoMap: Object2IntOpenHashMap[DirectedPath] = null
+
+  def setNode(id: Int) {
+    infoMap = pathCountsPerId.get(id)
+  }
+
+  override def compare(dp1: DirectedPath, dp2: DirectedPath): Int = {
+    val dp1Count = infoMap.getInt(dp1)
+    val dp2Count = infoMap.getInt(dp2)
+    if (descending) {
+      dp2Count - dp1Count
+    } else {
+      dp1Count - dp2Count
+    }
+  }
 }
