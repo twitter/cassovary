@@ -69,6 +69,7 @@ Please report any bugs to: <https://github.com/twitter/cassovary/issues>
 * [Aneesh Sharma](https://twitter.com/aneeshs)
 * [Ashish Goel](https://twitter.com/ashishgoel)
 * [Mengqiu Wang](https://twitter.com/4ad)
+* [Ning Liang](https://twitter.com/ningliang)
 
 ## License
 Copyright 2012 Twitter, Inc.

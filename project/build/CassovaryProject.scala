@@ -24,13 +24,18 @@ class CassovaryProject(info: ProjectInfo) extends StandardProject(info) with Def
 
   // library dependencies
   // note that JARs in lib/ are also pulled in, and so are not mentioned here
-  val util = "com.twitter" % "util" % "1.8.5"
-  val guava = "com.google.guava" % "guava" % "r06" withSources()
-  val configgy = "net.lag" % "configgy" % "2.0.2"
+
+  // twitter libraries
   val ostrich = "com.twitter" % "ostrich" % "4.2.0"
+  val util = "com.twitter" % "util" % "1.8.5"
 
+  // third party libraries, production
+  val guava = "com.google.guava" % "guava" % "r06" withSources()
+  val fastUtil = "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided"
+  val configgy = "net.lag" % "configgy" % "2.0.2"
+
+  // third party libraries, test
   val mockito = "org.mockito" % "mockito-all" % "1.8.5" % "test" withSources()
-
   val specs = "org.scala-tools.testing" % "specs_2.8.1" % "1.6.6" % "test" withSources()
 
   override def disableCrossPaths = true

@@ -14,7 +14,11 @@
 package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.GraphDir._
+import com.twitter.cassovary.graph.tourist._
 import com.twitter.ostrich.stats.Stats
+
+import it.unimi.dsi.fastutil.ints.{Int2IntMap, Int2ObjectMap}
+import it.unimi.dsi.fastutil.objects.Object2IntMap
 import net.lag.logging.Logger
 import scala.util.Random
 
@@ -34,11 +38,10 @@ class GraphUtils(val graph: Graph) {
    * @return Seq of tourist-specific-returned information
    */
 
-  def walk(nodes: Iterator[Node], tourists: Seq[NodeTourist[Any]]) = {
+  def walk(nodes: Iterator[Node], walkFunc: (Node => Unit)) = {
     nodes foreach { node =>
-      tourists foreach { _.visit(node) }
+      walkFunc(node)
     }
-    tourists map { _.infoAllNodes }
   }
 
   /**
@@ -49,31 +52,35 @@ class GraphUtils(val graph: Graph) {
    * This is a breadth-first walk along the direction specified by {@code dir}.
    * @param startNodeId(s) node(s) to start the random walk from. These must exist in the graph.
    * @param walkParams the parameters specifying this random walk
-   * @return a Seq of two elements, each of which is a Map.
-   *         The first is a mapping from a visited node's id V to the number of visits to that node.
-   *         The second is a mapping from a visited node's id V to a list of 2-tuples. Each 2-tuple
-   *         is of the form (previousNodeId, count) and represents information that the walk reached
-   *         V from {@code previousNodeId} {@code count} number of times.
+   * @return a tuple of two elements
+   *         The first is a counter tracking a visited node's id V and the number of visits to that node.
+   *         The second is a counter tracking a visited node's id V and a set of neighbors. The neighbors
+   *         are sorted in decreasing order by occurrence
    */
   def bfsWalk(dir: GraphDir, startNodeId: Int, walkParams: RandomWalkParams)():
-      Seq[collection.Map[Int, Any]] = {
-    if (!graph.existsNodeId(startNodeId)) {
-      Seq(Map.empty, Map.empty)
-    } else {
-      Stats.incr("bfs_walk_request", 1)
-      val tourists = Seq(new VisitsCounter)
+      (VisitsCounter, PrevNbrCounter) = {
+
+    val visitsCounter = new VisitsCounter
+    val prevNbrCounter = new PrevNbrCounter(walkParams.numTopPathsPerNode, walkParams.visitSameNodeOnce)
+
+    if (graph.existsNodeId(startNodeId)) {
       val traversedNodes = new BreadthFirstTraverser(graph, dir, Seq(startNodeId),
-          walkParams.maxDepth, walkParams.numTopPathsPerNode,
-          walkParams.maxNumEdgesThresh, walkParams.numSteps, walkParams.visitSameNodeOnce)
-              with BoundedIterator[Node] {
-            val maxSteps = walkParams.numSteps
-          }
-      val walkResults = Stats.time ("bfs_walk_traverse") {
-        walk(traversedNodes, tourists)
+        walkParams.maxDepth, walkParams.maxNumEdgesThresh, walkParams.numSteps,
+        walkParams.visitSameNodeOnce, Some(prevNbrCounter))
+      with BoundedIterator[Node] {
+        val maxSteps = walkParams.numSteps
       }
 
-      walkResults ++ Seq(traversedNodes.prevNbrCounter.infoAllNodes)
+      Stats.incr("bfs_walk_request", 1)
+      Stats.time ("bfs_walk_traverse") {
+        walk(traversedNodes, { node =>
+          // prevNbrCounter is mutated within BreadthFirstTraverser
+          visitsCounter.visit(node)
+        })
+      }
     }
+
+    (visitsCounter, prevNbrCounter)
   }
 
   /**
@@ -82,37 +89,38 @@ class GraphUtils(val graph: Graph) {
    * during the walk.
    * @param startNodeIds nodes to start the random walk from
    * @param walkParams the {@link RandomWalkParams} random walk parameters
-   * @return a Seq of two elements, each of which is a Map.
-   *         The first is a mapping from a visited node's id to the number of visits to that node.
-   *         The second is a mapping from a visited node's id to the paths visited while hitting
-   *         that node in the form of (path P, count of times P was traversed).
-   *         The path P is kept as a {@link DirectedPath}.
+   * @return a tuple of two elements.
+   *         The first is a counter tracking a visited node's id to the number of visits to that node.
+   *         The second is a counter tracking a visited node's id to the paths visited while hitting
+   *         that node. The paths are sorted in decreasing order by occurrence
+   *         Each path is kept as a {@link DirectedPath}.
    */
   def randomWalk(dir: GraphDir, startNodeIds: Seq[Int], walkParams: RandomWalkParams)():
-      Seq[collection.Map[Int, Any]] = {
+      (VisitsCounter, Option[PathsCounter]) = {
     val startNodesExist = (startNodeIds.length > 0) && startNodeIds.foldLeft(true) { (exists, elem) =>
       exists && graph.existsNodeId(elem)
     }
-    if (!startNodesExist) {
-      Seq(Map.empty, Map.empty)
-    } else {
-      val tourists = Seq(new VisitsCounter) ++
-          (walkParams.numTopPathsPerNode match {
-            case Some(k) if (k > 0) => Seq(new PathsCounter(k, startNodeIds))
-            case _ => Seq()
-          })
 
+    val visitsCounter = new VisitsCounter
+    val pathsCounterOption = walkParams.numTopPathsPerNode match {
+      case Some(k) if (k > 0) => Some(new PathsCounter(k, startNodeIds))
+      case _ => None
+    }
+
+    if (startNodesExist) {
       val traversedNodes = new RandomBoundedTraverser(graph, dir, startNodeIds,
-          walkParams.numSteps, walkParams)
+        walkParams.numSteps, walkParams)
 
-      val walkResults = Stats.time ("random_walk_traverse") {
-        walk(traversedNodes, tourists)
-      }
-      walkParams.numTopPathsPerNode match {
-        case Some(k) if(k > 0) => walkResults
-        case _ => walkResults ++ Seq(Map.empty[Int, Any])
+      Stats.time("random_walk_traverse") {
+        walk(traversedNodes, { node =>
+          visitsCounter.visit(node)
+          if (pathsCounterOption.isDefined) {
+            pathsCounterOption.get.visit(node)
+          }
+        })
       }
     }
+    (visitsCounter, pathsCounterOption)
   }
 
   /**
@@ -126,16 +134,16 @@ class GraphUtils(val graph: Graph) {
    *            in the form of (P as a {@link DirectedPath}, frequency of walking P).
    */
   def calculatePersonalizedReputation(startNodeIds: Seq[Int], walkParams: RandomWalkParams):
-      (List[(Int, Int)], collection.Map[Int, List[(DirectedPath[Int], Int)]]) = {
-    val (numVisitsPerNode, topPathsVisited) =
-        generateWalkResults("PTC", randomWalk(walkParams.dir, startNodeIds, walkParams) _)
-    val convertedTopPathsVisited =
-        topPathsVisited.asInstanceOf[collection.Map[Int, List[(DirectedPath[Int], Int)]]]
-    (numVisitsPerNode, convertedTopPathsVisited)
+      (Int2IntMap, Option[Int2ObjectMap[Object2IntMap[DirectedPath]]]) = {
+    Stats.time ("%s_total".format("PTC")) {
+      val (visitsCounter, pathsCounterOption) = randomWalk(walkParams.dir, startNodeIds, walkParams)
+      val topPathsOption = pathsCounterOption flatMap { counter => Some(counter.infoAllNodes) }
+      (visitsCounter.infoAllNodes, topPathsOption)
+    }
   }
 
   def calculatePersonalizedReputation(startNodeId: Int, walkParams: RandomWalkParams):
-      (List[(Int, Int)], collection.Map[Int, List[(DirectedPath[Int], Int)]]) = {
+      (Int2IntMap, Option[Int2ObjectMap[Object2IntMap[DirectedPath]]]) = {
     calculatePersonalizedReputation(Seq(startNodeId), walkParams)
   }
 
@@ -148,27 +156,11 @@ class GraphUtils(val graph: Graph) {
    *    in the form of (P as a {@link DirectedPath}, frequency of walking P).
    */
   def calculateBFS(startNodeId: Int, walkParams: RandomWalkParams):
-      (List[(Int, Int)], collection.Map[Int, List[(Int, Int)]]) = {
-    val (numVisitsPerNode, prevNbrsCounts) =
-      generateWalkResults("BFS", bfsWalk(walkParams.dir, startNodeId, walkParams) _)
-    val convertedDepthCounts = prevNbrsCounts.asInstanceOf[collection.Map[Int, List[(Int, Int)]]]
-
-    (numVisitsPerNode, convertedDepthCounts)
-  }
-
-  /**
-   * Utility function that performs the walk, sort the num of visits counter and return the results
-   */
-  private def generateWalkResults(algorithmName: String,
-      walkFunc: () => Seq[collection.Map[Int, Any]]) = {
-    val walkResult = Stats.time ("%s_total".format(algorithmName)) { walkFunc() }
-    val numVisitsPerNode = walkResult(0).asInstanceOf[collection.Map[Int, Int]]
-    val visitorResult = walkResult(1).asInstanceOf[collection.Map[Int, Any]]
-    // sort by #visits. If count is equal, arbitrarily keep the smaller id higher in the list
-    val sortedByNumVisits = numVisitsPerNode.toList.sortBy {
-      case (nodeId, count) => (-count, nodeId)
+      (Int2IntMap, Int2ObjectMap[Int2IntMap]) = {
+    Stats.time("%s_total".format("BFS")) {
+      val (visitsCounter, prevNbrCounter) = bfsWalk(walkParams.dir, startNodeId, walkParams)
+      (visitsCounter.infoAllNodes, prevNbrCounter.infoAllNodes)
     }
-    (sortedByNumVisits, visitorResult)
   }
 
   /**
