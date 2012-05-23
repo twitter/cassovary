@@ -26,11 +26,11 @@ class CassovaryProject(info: ProjectInfo) extends StandardProject(info) with Def
   // note that JARs in lib/ are also pulled in, and so are not mentioned here
 
   // twitter libraries
-  val ostrich = "com.twitter" % "ostrich" % "4.2.0"
-  val util = "com.twitter" % "util" % "1.8.5"
+  val ostrich = "com.twitter" % "ostrich" % "4.8.0"
+  val util = "com.twitter" % "util" % "4.0.1"
 
   // third party libraries, production
-  val guava = "com.google.guava" % "guava" % "r06" withSources()
+  val guava = "com.google.guava" % "guava" % "11.0.2" withSources()
   val fastUtil = "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided"
   val configgy = "net.lag" % "configgy" % "2.0.2"
 
