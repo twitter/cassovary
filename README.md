@@ -14,13 +14,15 @@ for updates.
 ## Quick Start and Examples
 See examples/ for some simple examples of using the library.
 
+This has been tested with ```sbt``` version 0.11.3-2
+
 ## Building
-1. ```./sbt update``` (might take a couple of minutes)
-2. ```./sbt test```
-3. ```sbt package-dist```
+1. ```sbt update``` (might take a couple of minutes)
+2. ```sbt test```
+3. ```sbt package```
 
 ## Alternative for using for local projects
-1. ```./sbt publish-local```
+1. ```sbt publish-local```
 2. ```cd ../<dependant project>```
 3. ```sbt update```
 
@@ -70,6 +72,7 @@ Please report any bugs to: <https://github.com/twitter/cassovary/issues>
 * [Ashish Goel](https://twitter.com/ashishgoel)
 * [Mengqiu Wang](https://twitter.com/4ad)
 * [Ning Liang](https://twitter.com/ningliang)
+* [Ajeet Grewal](https://twitter.com/ajeet)
 
 ## License
 Copyright 2012 Twitter, Inc.
