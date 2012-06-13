@@ -1,4 +1,4 @@
-# Cassovary
+# Cassovary [![Build Status](https://secure.travis-ci.org/twitter/cassovary.png)](http://travis-ci.org/twitter/cassovary)
 Cassovary is a simple "big graph" processing library for the JVM.
 Most JVM-hosted graph libraries are flexible but not
 space efficient. Cassovary is designed from the ground up to first be

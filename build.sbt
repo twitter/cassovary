@@ -6,9 +6,11 @@ organization := "com.twitter"
 
 scalaVersion := "2.8.1"
 
+resolvers += "Twitter Maven Repo" at "http://maven.twttr.com"
+
 libraryDependencies += "com.twitter" % "ostrich" % "4.8.0"
 
-libraryDependencies += "com.twitter" % "util" % "4.0.1"
+libraryDependencies += "com.twitter" % "util-core" % "4.0.3"
 
 libraryDependencies += "com.google.guava" % "guava" % "11.0.2" withSources()
 
