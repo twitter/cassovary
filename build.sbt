@@ -49,14 +49,13 @@ pomExtra := (
     <connection>scm:git:git@github.com:twitter/cassovary.git</connection>
   </scm>
   <developers>
-    <developer>
-      <id>dong</id>
-      <name>Dong Wang</name>
-      <url>http://twitter.com/dongwang218</url>
-    </developer>
-    <developer>
-      <id>ajeet</id>
-      <name>Ajeet Grewal</name>
-      <url>http://twitter.com/ajeet</url>
-    </developer>
+    <developer><id>pankaj</id><name>Pankaj Gupta</name><url>https://twitter.com/pankaj</url></developer>
+    <developer><id>dongwang218</id><name>Dong Wang</name><url>https://twitter.com/dongwang218</url></developer>
+    <developer><id>tao</id><name>Tao Tao</name><url>https://twitter.com/tao</url></developer>
+    <developer><id>johnsirois</id><name>John Sirois</name><url>https://twitter.com/johnsirois</url></developer>
+    <developer><id>aneeshs</id><name>Aneesh Sharma</name><url>https://twitter.com/aneeshs</url></developer>
+    <developer><id>ashishgoel</id><name>Ashish Goel</name><url>https://twitter.com/ashishgoel</url></developer>
+    <developer><id>4ad</id><name>Mengqiu Wang</name><url>https://twitter.com/4ad</url></developer>
+    <developer><id>ningliang</id><name>Ning Liang</name><url>https://twitter.com/ningliang</url></developer>
+    <developer><id>ajeet</id><name>Ajeet Grewal</name><url>https://twitter.com/ajeet</url></developer>
   </developers>)
