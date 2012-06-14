@@ -14,9 +14,13 @@ for updates.
 ## Quick Start and Examples
 See examples/ for some simple examples of using the library.
 
-This has been tested with ```sbt``` version 0.11.3-2
+## Installing SBT
+Platform specific instructions for installing ```sbt``` are available at https://github.com/harrah/xsbt/wiki/Getting-Started-Setup
+
+Cassovary has been tested with ```sbt``` version 0.11.3-2
 
 ## Building
+
 1. ```sbt update``` (might take a couple of minutes)
 2. ```sbt test```
 3. ```sbt package```
