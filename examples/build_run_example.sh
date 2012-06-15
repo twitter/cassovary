@@ -33,8 +33,8 @@ fi
 
 JAVA_CP=(
   $(find $root/target -name 'cassovary*.jar') \
-  $root/project/boot/scala-2.8.1/lib/scala-library.jar \
-  $(find $root/lib_managed/compile -name '*.jar')
+  $HOME/.sbt/boot/scala-2.8.1/lib/scala-library.jar \
+  $(find $root/lib_managed/jars/ -name '*.jar')
 )
 JAVA_CP=$(echo ${JAVA_CP[@]} | tr ' ' ':')
 
