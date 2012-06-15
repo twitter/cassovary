@@ -6,6 +6,8 @@ organization := "com.twitter"
 
 scalaVersion := "2.8.1"
 
+retrieveManaged := true
+
 resolvers += "Twitter Maven Repo" at "http://maven.twttr.com"
 
 libraryDependencies += "com.twitter" % "ostrich" % "4.8.0"
