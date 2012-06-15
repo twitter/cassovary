@@ -20,6 +20,7 @@
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.twitter.cassovary.graph.{DirectedPath, GraphUtils, TestGraphs}
 import com.twitter.util.Duration
+import scala.collection.JavaConversions._
 
 object RandomWalk {
   def main(args: Array[String]) {
@@ -38,11 +39,13 @@ object RandomWalk {
     }
     printf("Random walk visited %s nodes in %s ms:\n", topNeighbors.size, duration.inMillis.toInt)
     printf("%8s%10s\t%s\n", "NodeId", "#Visits", "Top 2 Paths with counts")
-    topNeighbors.take(10).foreach { case (id, numVisits) =>
-      val topPaths = paths.get(id).get.map { case (DirectedPath(nodes), count) =>
-        nodes.mkString("->") + " (%s)".format(count)
+    topNeighbors.toList.sort((x1, x2) => x2._2.intValue < x1._2.intValue).take(10).foreach { case (id, numVisits) =>
+      if (paths.isDefined) {
+        val topPaths = paths.get.get(id).map { case (DirectedPath(nodes), count) =>
+          nodes.mkString("->") + " (%s)".format(count)
+        }
+        printf("%8s%10s\t%s\n", id, numVisits, topPaths.mkString(" | "))
       }
-      printf("%8s%10s\t%s\n", id, numVisits, topPaths.mkString(" | "))
     }
   }
 }
