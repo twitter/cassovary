@@ -1,6 +1,6 @@
 name := "cassovary"
 
-version := "2.0.3"
+version := "2.0.4"
 
 organization := "com.twitter"
 
