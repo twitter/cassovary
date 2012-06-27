@@ -21,6 +21,8 @@ import com.twitter.cassovary.graph.DirectedGraph;
 import com.twitter.cassovary.graph.TestGraph;
 import com.twitter.cassovary.graph.TestGraphs;
 
+import java.lang.System;
+
 public class HelloGraph {
 	public static void main(String[] args){
 		int numNodes = 3;
