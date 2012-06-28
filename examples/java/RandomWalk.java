@@ -57,29 +57,26 @@ public class RandomWalk {
 
     // Do the walk and measure how long it took
     System.out.printf("Now doing a random walk of %s steps from Node 0...\n", numSteps);
-    long startTime = System.currentTimeMillis();
+    long startTime = System.nanoTime();
     Tuple2<Int2IntMap, scala.Option<Int2ObjectMap<Object2IntMap<DirectedPath>>>> lm =
             graphUtils.calculatePersonalizedReputation(0, walkParams);
-    long endTime = System.currentTimeMillis();
+    long endTime = System.nanoTime();
     Int2IntMap neighbors = lm._1;
-    System.out.printf("Random walk visited %s nodes in %s ms:\n", neighbors.size(), endTime - startTime);
+    System.out.printf("Random walk visited %s nodes in %s ms:\n", neighbors.size(), (endTime - startTime)/1000000);
 
-    // Sort neighbors (or nodes) in descending number of visits
+    // Sort neighbors (or nodes) in descending number of visits and take the top 10 neighbors
     List<Integer> topNeighbors = Ordering.natural().onResultOf(Functions.forMap(neighbors)).reverse()
-            .immutableSortedCopy(neighbors.keySet());
+            .immutableSortedCopy(neighbors.keySet()).subList(0, 10);
 
     // Print the top 10 neighbors (and paths)
     System.out.printf("%8s%10s\t%s\n", "NodeID", "#Visits", "Top 2 Paths with counts");
-    int count = 0;
     for (int id : topNeighbors) {
-      if (count >= 10) break;
-      count++;
       int numVisits = neighbors.get(id);
       System.out.printf("%8s%10s\t", id, numVisits);
       if (lm._2.isDefined()) { // If Option is not None
-        Object2IntMap<DirectedPath> dp = lm._2.get().get(id);
-        int remaining = dp.size();
-        for (Map.Entry<DirectedPath, Integer> ef : dp.entrySet()) {
+        Object2IntMap<DirectedPath> paths = lm._2.get().get(id);
+        int remaining = paths.size();
+        for (Map.Entry<DirectedPath, Integer> ef : paths.entrySet()) {
           // Print a directed path and #visits along that path
           int[] nodes = ef.getKey().nodes();
           for (int i = 0; i < nodes.length; i++) {

@@ -13,5 +13,5 @@ The ```java``` directory contains the same examples, but written in Java. See ``
 in that directory to see how to build HelloGraph.java. As above, you can also run other examples like
 ```examples/java/build_run_example.sh RandomWalk 10000```.
 
-* Note - as cassovary was designed primarily for Scala users, the Java examples are considerably
-more verbose. Improvements on Java interfaces are a work in progress.
+* Note - as Cassovary was designed primarily for Scala users, the Java API is less polished. Improvements
+on the Java interfaces are a work in progress.
