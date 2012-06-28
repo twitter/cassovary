@@ -211,7 +211,7 @@ object GraphUtils {
    *        and will likely restart to a start node when visiting the same node twice
    * @param dir traverse out-direction or in-direction
    * @param stable if true, use a fixed random number generator in the random walk
-   * @param filterHOmeNodeByNumEdges if true, home node will be checked for maxNumEdgesThresh
+   * @param filterHomeNodeByNumEdges if true, home node will be checked for maxNumEdgesThresh
    * when visited during random walk
   */
   case class RandomWalkParams(numSteps: Long,

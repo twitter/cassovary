@@ -18,7 +18,7 @@ fi
 
 
 root=$(
-  cd $(dirname $0)/..
+  cd $(dirname $0)/../..
   echo $PWD
 )
 echo root is $root
@@ -38,7 +38,7 @@ JAVA_CP=(
 )
 JAVA_CP=$(echo ${JAVA_CP[@]} | tr ' ' ':')
 
-cd examples
+cd examples/scala
 mkdir -p classes
 rm -rf classes/*
 echo Compiling $EXAMPLE ...

@@ -12,7 +12,7 @@ Please follow the cassovary project on twitter at [@cassovary](https://twitter.c
 for updates.
 
 ## Quick Start and Examples
-See examples/ for some simple examples of using the library.
+See examples/ for some simple examples of using the library. Both Scala and Java examples are included.
 
 ## Installing SBT
 Platform specific instructions for installing ```sbt``` are available at https://github.com/harrah/xsbt/wiki/Getting-Started-Setup
