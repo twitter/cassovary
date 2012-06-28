@@ -16,26 +16,26 @@
  * The Java version of the RandomWalk example.
  */
 
-import java.lang.Integer;
-import java.lang.System;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.List;
-import scala.Option;
-import scala.Tuple2;
-import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams;
-import com.twitter.cassovary.graph.DirectedPath;
+import com.google.common.base.Functions;
+import com.google.common.collect.Ordering;
 import com.twitter.cassovary.graph.DirectedGraph;
+import com.twitter.cassovary.graph.DirectedPath;
 import com.twitter.cassovary.graph.GraphDir;
 import com.twitter.cassovary.graph.GraphUtils;
+import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams;
 import com.twitter.cassovary.graph.TestGraphs;
 import com.twitter.util.Duration;
-import com.google.common.collect.Ordering;
-import com.google.common.base.Functions;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import java.lang.Integer;
+import java.lang.System;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import scala.Option;
+import scala.Tuple2;
 
 public class RandomWalk {
 
