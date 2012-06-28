@@ -66,7 +66,9 @@ public class RandomWalk {
 
     // Sort neighbors (or nodes) in descending number of visits and take the top 10 neighbors
     List<Integer> topNeighbors = Ordering.natural().onResultOf(Functions.forMap(neighbors)).reverse()
-            .immutableSortedCopy(neighbors.keySet()).subList(0, 10);
+            .immutableSortedCopy(neighbors.keySet());
+    
+    if (topNeighbors.size() > 10) topNeighbors = topNeighbors.subList(0, 10);
 
     // Print the top 10 neighbors (and paths)
     System.out.printf("%8s%10s\t%s\n", "NodeID", "#Visits", "Top 2 Paths with counts");
