@@ -21,11 +21,35 @@ import com.twitter.cassovary.graph._
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
+import com.twitter.cassovary.util.{SimulatedCache, MRUSimulatedCache, ClockSimulatedCache}
 import com.twitter.util.Duration
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.util.Random
 import scala.collection.mutable
+
+class GraphWithSimulatedCache(g: Graph, val cacheSize: Int, val cacheMechanism: String) extends Graph {
+
+  val cache = cacheMechanism match {
+    case "clock" => new ClockSimulatedCache(cacheSize)
+    case "mru" => new MRUSimulatedCache(cacheSize)
+    case _ => new SimulatedCache(cacheSize)
+  }
+
+  override def getNodeById(id: Int) = {
+    cache.get(id) // TODO make sure id is valid!
+    g.getNodeById(id)
+  }
+
+  override def existsNodeId(id: Int) = {
+    g.existsNodeId(id)
+  }
+
+  def getStats(verbose: Boolean = true) = {
+    cache.getStats(verbose)
+  }
+
+}
 
 object RandomWalkCache {
   def main(args: Array[String]) {
@@ -33,12 +57,12 @@ object RandomWalkCache {
 
     // Run an algorithm innerFn on a graph for different cache sizes and mechanisms,
     // printing the average miss rate for each cache mechanism and size
-    def iterate (innerFn: (DirectedGraph => Unit)) = {
+    def iterate (innerFn: (Graph => Unit)) = {
       // Table of results
       val table = new mutable.HashMap[(String,Double),Array[Double]]()
       // Iterate 10 times, foreach cache mechanism, foreach cache size (10%-100%)
       val rand = new Random()
-      for (i <- 1 to 10) {
+      for (i <- 1 to 1) {
         val randomSeed = rand.nextLong()
         Seq("lru", "mru", "clock") map { cacheMechanism:String =>
           printf("%s ", cacheMechanism)
@@ -48,8 +72,8 @@ object RandomWalkCache {
             }
 
             // Generate graph with constant random seed for each "cycle"
-            val graph = TestGraphs.generateRandomGraphWithSimulatedCache(numNodes, 10 min numNodes,
-              (cachePct*numNodes).toInt, cacheMechanism, randomSeed)
+            val graphInner = TestGraphs.generateRandomGraphWithSeed(numNodes, 10 min numNodes, randomSeed)
+            val graph = new GraphWithSimulatedCache(graphInner, (cachePct*numNodes).toInt, cacheMechanism)
 
             innerFn(graph)
 
@@ -88,7 +112,7 @@ object RandomWalkCache {
       stack
     }
 
-    iterate { graph:DirectedGraph =>
+    iterate { graph:Graph =>
       val numSteps = 1000L * 1000L
       val walkParams = RandomWalkParams(numSteps, 0.1, None, Some(2), None, false, GraphDir.OutDir, true)
       val graphUtils = new GraphUtils(graph)

@@ -96,7 +96,7 @@ object TestGraphs {
     ArrayBasedDirectedGraph( () => nodes.iterator, StoredGraphDir.BothInOut)
   }
 
-  def generateRandomGraphWithSimulatedCache(numNodes: Int, avgOutDegree: Int, cacheSize: Int, cacheMechanism: String, randomSeed: Long) = {
+  def generateRandomGraphWithSeed(numNodes: Int, avgOutDegree: Int, randomSeed: Long) = {
     val nodes = new mutable.ArrayBuffer[NodeIdEdgesMaxId]
     val rand = new Random(randomSeed)
     (0 until numNodes) foreach { source =>
@@ -104,6 +104,6 @@ object TestGraphs {
       val outNeighbors = (0 until numOutNeighbors).toArray.map { i: Int => rand.nextInt(numNodes) }
       nodes += NodeIdEdgesMaxId(source, outNeighbors)
     }
-    ArrayBasedDirectedGraphWithSimulatedCache( () => nodes.iterator, StoredGraphDir.BothInOut, cacheSize, cacheMechanism)
+    ArrayBasedDirectedGraph( () => nodes.iterator, StoredGraphDir.BothInOut)
   }
 }
