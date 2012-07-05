@@ -17,15 +17,15 @@ package com.twitter.cassovary.util
 import scala.collection.mutable
 
 class SimulatedCache(size: Int = 10) {
-  val cache = new mutable.HashMap[Int, Int]()
-  var misses = 0
-  var accesses = 0
+  val cache = new mutable.HashMap[Int, Long]()
+  var misses: Long = 0
+  var accesses: Long = 0
 
   def get(id: Int) = {
     if (!cache.contains(id)) {
       misses += 1
       if (cache.size == size) {
-        val (minKey, minValue) = cache.min(Ordering[Int].on[(_, Int)](_._2))
+        val (minKey, _) = cache.min(Ordering[Long].on[(_, Long)](_._2))
         cache.remove(minKey)
       }
     }
@@ -34,13 +34,7 @@ class SimulatedCache(size: Int = 10) {
   }
 
   def getStats(verbose: Boolean = true) = {
-    if (verbose) {
-      printf("Accesses: %s\tMisses: %s\nMiss Ratio: %s\n", accesses, misses, misses.toFloat / accesses)
-    }
-    else {
-      printf("%s", misses.toFloat / accesses)
-    }
-    misses.toFloat / accesses
+    (misses, accesses, misses.toDouble/accesses)
   }
 }
 
@@ -49,7 +43,7 @@ class MRUSimulatedCache(size: Int = 10) extends SimulatedCache {
     if (!cache.contains(id)) {
       misses += 1
       if (cache.size == size) {
-        val (minKey, minValue) = cache.max(Ordering[Int].on[(_, Int)](_._2))
+        val (minKey, minValue) = cache.max(Ordering[Long].on[(_, Long)](_._2))
         cache.remove(minKey)
       }
     }
@@ -88,7 +82,7 @@ class ClockSimulatedCache(size: Int = 10) extends SimulatedCache {
       clockCache.update(freeSlot, id)
     }
 
-    clockCount.update(cache(id), 1)
+    clockCount.update(cache(id).toInt, 1)
     accesses += 1
   }
 }

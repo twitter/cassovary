@@ -20,36 +20,10 @@
 import com.twitter.cassovary.graph._
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
-import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
-import com.twitter.cassovary.util.{SimulatedCache, MRUSimulatedCache, ClockSimulatedCache}
+import com.twitter.cassovary.util.GraphWithSimulatedCache
 import com.twitter.util.Duration
-import scala.collection.JavaConversions._
-import scala.collection.mutable
 import scala.util.Random
 import scala.collection.mutable
-
-class GraphWithSimulatedCache(g: Graph, val cacheSize: Int, val cacheMechanism: String) extends Graph {
-
-  val cache = cacheMechanism match {
-    case "clock" => new ClockSimulatedCache(cacheSize)
-    case "mru" => new MRUSimulatedCache(cacheSize)
-    case _ => new SimulatedCache(cacheSize)
-  }
-
-  override def getNodeById(id: Int) = {
-    cache.get(id) // TODO make sure id is valid!
-    g.getNodeById(id)
-  }
-
-  override def existsNodeId(id: Int) = {
-    g.existsNodeId(id)
-  }
-
-  def getStats(verbose: Boolean = true) = {
-    cache.getStats(verbose)
-  }
-
-}
 
 object RandomWalkCache {
   def main(args: Array[String]) {
@@ -60,12 +34,13 @@ object RandomWalkCache {
     def iterate (innerFn: (Graph => Unit)) = {
       // Table of results
       val table = new mutable.HashMap[(String,Double),Array[Double]]()
+      val output = new mutable.StringBuilder()
       // Iterate 10 times, foreach cache mechanism, foreach cache size (10%-100%)
       val rand = new Random()
       for (i <- 1 to 1) {
         val randomSeed = rand.nextLong()
         Seq("lru", "mru", "clock") map { cacheMechanism:String =>
-          printf("%s ", cacheMechanism)
+          output.append(cacheMechanism)
           (0.1 until 1.1 by 0.1) map { cachePct:Double =>
             if (!table.contains((cacheMechanism, cachePct))) {
               table.put((cacheMechanism, cachePct), new Array[Double](10))
@@ -77,12 +52,14 @@ object RandomWalkCache {
 
             innerFn(graph)
 
-            table((cacheMechanism,cachePct)).update(i-1, graph.getStats(false))
-            printf(" ")
+            table((cacheMechanism,cachePct)).update(i-1, graph.getStats(false)._3)
+            output.append(" %s".format(graph.getStats(false)))
           }
-          printf("\n")
+          output.append("\n")
         }
       }
+      // Print out regular
+      printf("%s", output.toString())
       // Print out averages
       printf("Means\n")
       table.toList.sortBy{_._1} map { x =>
