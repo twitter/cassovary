@@ -13,13 +13,21 @@
  */
 
 package com.twitter.cassovary.util
-
 import scala.collection.mutable
 
-class SimulatedCache(size: Int = 10) {
-  val cache = new mutable.HashMap[Int, Long]()
+abstract class SimulatedCache(size: Int = 10) {
   var misses: Long = 0
   var accesses: Long = 0
+
+  def get(id: Int)
+
+  def getStats(verbose: Boolean = true) = {
+    (misses, accesses, misses.toDouble/accesses)
+  }
+}
+
+class LRUSimulatedCache(size: Int = 10) extends SimulatedCache {
+  val cache = new mutable.HashMap[Int, Long]()
 
   def get(id: Int) = {
     if (!cache.contains(id)) {
@@ -32,13 +40,102 @@ class SimulatedCache(size: Int = 10) {
     cache.put(id, accesses)
     accesses += 1
   }
+}
 
-  def getStats(verbose: Boolean = true) = {
-    (misses, accesses, misses.toDouble/accesses)
+class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
+  // cacheNext, cachePrev, cacheHead, cacheTail make up a non-circular doubly linked list
+  // index 0 in all arrays should always be blank
+  // for convenience in referencing ids and because 0 indicates a null entry
+  val cacheNext = new Array[Int](size+1) // cache next pointers
+  val cachePrev = new Array[Int](size+1) // cache prev pointers
+  var cacheHead, cacheTail = 1 // pointers to the head and tail of the cache
+  var cacheSize = 0 // size of the cache
+  val cacheToId = new Array[Int](size+1) // cache index -> id
+  val idToCache = new Array[Int](maxId+1) // id -> cache index
+
+  def debug = {
+    printf("Cache Head: %s, Tail: %s\n", cacheHead, cacheTail)
+    println(cacheNext.toList)
+    println(cachePrev.toList)
+    println(cacheToId.toList)
+    println(idToCache.toList)
   }
+
+  override def get(id: Int) = {
+    // Increment accesses
+    accesses += 1
+
+    val idIndex = idToCache(id)
+
+    // Check if id exists in cache
+    if (idIndex == 0) { // If not, increment misses and check cache size
+      misses += 1
+      if (cacheSize == size) {
+        // Evict the tail by clearing it from cache, cacheToId, idToCache
+        val prevTail = cacheTail
+        val prevTailId = cacheToId(prevTail)
+        val nextPrevTail = cacheNext(prevTail)
+
+        // Update cacheToId and idToCache
+        idToCache(prevTailId) = 0
+        cacheToId(prevTail) = 0
+        // Update tail pointers
+        cachePrev(nextPrevTail) = 0
+        // Update cacheTail
+        cacheTail = nextPrevTail
+        // Add to head, add to cacheToId, add to idToCache
+        val newHead = prevTail
+        val prevHead = cacheHead
+        // Update head pointers
+        cacheNext(prevHead) = newHead
+        cacheNext(newHead) = 0
+        cachePrev(newHead) = prevHead
+        // Update cacheToId and idToCache
+        cacheToId(newHead) = id
+        idToCache(id) = newHead
+        // Update cacheHead
+        cacheHead = newHead
+      }
+      else { // Update the head and increment cacheSize, add to cacheId, idToCache
+        if (cacheSize == 0) { // The very first element
+          cacheToId(1) = id
+          idToCache(id) = 1
+        }
+        else { // Next elements until the cache is filled
+          cacheHead += 1
+          cachePrev(cacheHead) = cacheHead-1
+          cacheNext(cacheHead-1) = cacheHead
+          cacheToId(cacheHead) = id
+          idToCache(id) = cacheHead
+        }
+        cacheSize += 1
+      }
+    }
+    else {
+      // If so, move it to the head of the linked list
+      if (cacheHead != idIndex) {
+        val prev = cachePrev(idIndex)
+        val prevHead = cacheHead
+        val next = cacheNext(idIndex)
+        // Update prev and next's pointers
+        cachePrev(next) = prev
+        cacheNext(prev) = next
+        // Update idIndex's own pointers
+        cachePrev(idIndex) = prevHead
+        cacheNext(idIndex) = 0
+        // Update prevHead's pointers
+        cacheNext(prevHead) = idIndex
+        // Update cacheHead and cacheTail
+        cacheHead = idIndex
+        if (cacheTail == idIndex) cacheTail = next
+      }
+    }
+  }
+
 }
 
 class MRUSimulatedCache(size: Int = 10) extends SimulatedCache {
+  val cache = new mutable.HashMap[Int, Long]()
   override def get(id: Int) = {
     if (!cache.contains(id)) {
       misses += 1
@@ -53,10 +150,9 @@ class MRUSimulatedCache(size: Int = 10) extends SimulatedCache {
 }
 
 class ClockSimulatedCache(size: Int = 10) extends SimulatedCache {
-  val clockCache = new Array[Int](size)
-  // Nodes in the cache
-  val clockCount = new Array[Int](size)
-  // Recently used bit
+  val cache = new mutable.HashMap[Int, Int]()
+  val clockCache = new Array[Int](size) // Nodes in the cache
+  val clockCount = new Array[Int](size) // Recently used bit
   var clockPointer = 0 // Clock hand
 
   override def get(id: Int) = {

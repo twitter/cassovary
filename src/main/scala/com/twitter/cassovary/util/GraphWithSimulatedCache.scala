@@ -7,7 +7,7 @@ class GraphWithSimulatedCache(val g: Graph, val cacheSize: Int, val cacheMechani
   val cache = cacheMechanism match {
     case "clock" => new ClockSimulatedCache(cacheSize)
     case "mru" => new MRUSimulatedCache(cacheSize)
-    case _ => new SimulatedCache(cacheSize)
+    case _ => new LRUSimulatedCache(cacheSize)
   }
 
   override def getNodeById(id: Int) = {

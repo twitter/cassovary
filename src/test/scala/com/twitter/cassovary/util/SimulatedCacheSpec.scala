@@ -62,10 +62,47 @@ class SimulatedCacheSpec extends Specification {
     "LRU: replace the last recently seen node" in {
       var cache:SimulatedCache = null
       doBefore {
-        cache = new SimulatedCache(5)
+        cache = new LRUSimulatedCache(5)
       }
       "do badly in lru worst case" in {
         lruWorstCase(cache) mustEqual (11, 11, 1.0) // misses, accesses, misses/accesses
+      }
+      "do well in mru worst case" in {
+        mruWorstCase(cache) mustEqual (6, 10, 0.6)
+      }
+      "do okay in clock case" in {
+        clockCase(cache) mustEqual (8, 10, 0.8)
+      }
+      "do okay in clockdiff case" in {
+        clockDifferenceCase(cache) mustEqual (6, 8, 0.75)
+      }
+    }
+
+    "Fast LRU: replace the last recently seen node" in {
+      var cache:FastLRUSimulatedCache = null
+      doBefore {
+        cache = new FastLRUSimulatedCache(10, 5)
+      }
+      "work" in {
+        cache.get(5)
+        cache.cacheSize mustEqual 1
+        cache.get(6)
+        cache.cacheSize mustEqual 2
+        cache.get(5)
+        cache.cacheSize mustEqual 2
+      }
+      "replace 1 properly" in {
+        cache.get(1)
+        cache.get(2)
+        cache.get(3)
+        cache.get(4)
+        cache.get(5)
+        cache.get(6)
+        cache.get(5)
+        cache.cacheSize mustEqual 5
+      }
+      "do badly in lru worst case" in {
+        lruWorstCase(cache) mustEqual (11, 11, 1.0)
       }
       "do well in mru worst case" in {
         mruWorstCase(cache) mustEqual (6, 10, 0.6)
