@@ -18,8 +18,8 @@ class GraphWithAccessCounter(val g: DirectedGraph) extends Graph {
 
   def writeStats(fileName: String) = {
     printToFile(new File(fileName))(p => {
-      counter.indices.foreach({ i =>
-        p.println("%s %s".format(i, counter(i)))
+      counter.foreach({ i =>
+        p.println("%s".format(i))
       })
     })
   }

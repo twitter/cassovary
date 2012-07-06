@@ -43,9 +43,14 @@ class LRUSimulatedCache(size: Int = 10) extends SimulatedCache {
 }
 
 class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
-  // cacheNext, cachePrev, cacheHead, cacheTail make up a non-circular doubly linked list
-  // index 0 in all arrays should always be blank
-  // for convenience in referencing ids and because 0 indicates a null entry
+  // This version employs a doubly linked list as the cache
+  // ids are mapped to locations in the cache, and the linked list keeps track
+  // of the recentness of access.
+  // The linked list is implemented as a set of arrays and pointers:
+  // - cacheNext, cachePrev, cacheHead, cacheTail
+  // Index 0 in all arrays should always be blank
+  // - for convenience in referencing ids
+  // - and because 0 indicates a null entry
   val cacheNext = new Array[Int](size+1) // cache next pointers
   val cachePrev = new Array[Int](size+1) // cache prev pointers
   var cacheHead, cacheTail = 1 // pointers to the head and tail of the cache
