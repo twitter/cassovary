@@ -76,10 +76,9 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
         val prevTailId = cacheToId(prevTail)
         val nextPrevTail = cacheNext(prevTail)
 
-        // Update cacheToId and idToCache
-        idToCache(prevTailId) = 0
-        cacheToId(prevTail) = 0
-        // Update tail pointers
+        // Update idToCache
+        idToCache(prevTailId) = 0 // cacheToId(prevTail) = 0 is not needed because prevTail = newHead
+        // Update tail pointer
         cachePrev(nextPrevTail) = 0
         // Update cacheTail
         cacheTail = nextPrevTail
@@ -149,18 +148,22 @@ class MRUSimulatedCache(size: Int = 10) extends SimulatedCache {
   }
 }
 
-class ClockSimulatedCache(size: Int = 10) extends SimulatedCache {
-  val cache = new mutable.HashMap[Int, Int]()
-  val clockCache = new Array[Int](size) // Nodes in the cache
-  val clockCount = new Array[Int](size) // Recently used bit
+class ClockSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
+  // Note that idToCache uses 0 as a null marker, so that 1 must be subtracted from all values
+  val idToCache = new Array[Int](maxId+1) // id -> (cache index + 1)
+  val cacheToId = new Array[Int](size) // cache index -> id
+  val cacheBit = new Array[Boolean](size) // cache index -> recently used bit
   var clockPointer = 0 // Clock hand
+  var cacheSize = 0
 
   override def get(id: Int) = {
-    // Examine recently used bit and set to 0 if 1 and advance
-    // until 0 is seen, then return index
+    accesses += 1
+
+    // Examine recently used bit and set to false if true and advance
+    // until false is seen, then return index
     def findFreeSlot = {
-      while (clockCount(clockPointer) == 1) {
-        clockCount.update(clockPointer, 0)
+      while (cacheBit(clockPointer)) {
+        cacheBit(clockPointer) = false
         clockPointer = (clockPointer + 1) % size
       }
       val returnVal = clockPointer
@@ -168,17 +171,16 @@ class ClockSimulatedCache(size: Int = 10) extends SimulatedCache {
       returnVal
     }
 
-    if (!cache.contains(id)) {
-      val freeSlot = findFreeSlot
+    // If id doesn't exist in cache
+    if (idToCache(id) == 0) {
       misses += 1
-      if (cache.size == size) {
-        cache.remove(clockCache(freeSlot))
-      }
-      cache.put(id, freeSlot)
-      clockCache.update(freeSlot, id)
+      val freeSlot = findFreeSlot
+      if (cacheSize == size) idToCache(cacheToId(freeSlot)) = 0
+      else cacheSize += 1
+      idToCache(id) = freeSlot + 1
+      cacheToId.update(freeSlot, id)
     }
 
-    clockCount.update(cache(id).toInt, 1)
-    accesses += 1
+    cacheBit(idToCache(id)-1) = true
   }
 }

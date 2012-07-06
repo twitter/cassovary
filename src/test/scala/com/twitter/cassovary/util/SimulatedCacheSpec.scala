@@ -131,7 +131,7 @@ class SimulatedCacheSpec extends Specification {
     "Clock: replace nodes in a clock-like fashion" in {
       var cache:SimulatedCache = null
       doBefore {
-        cache = new ClockSimulatedCache(5)
+        cache = new ClockSimulatedCache(10, 5)
       }
       "do okay in clock case" in {
         clockCase(cache) mustEqual (8, 10, 0.8)
