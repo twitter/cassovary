@@ -1,15 +1,15 @@
 package com.twitter.cassovary.util
 
-import com.twitter.cassovary.graph.{DirectedGraph, Graph}
+import com.twitter.cassovary.graph.{ArrayBasedDirectedGraph, DirectedGraph, Graph, GraphDir}
 import java.io.File
 import net.lag.logging.Logger
 import com.twitter.ostrich.stats.Stats
-import com.twitter.cassovary.graph.GraphDir
 
-class GraphWithSimulatedCache(val g: Graph, val cacheSize: Int, val cacheMechanism: String, val statsInterval: Int) extends Graph {
+class GraphWithSimulatedCache(val g: DirectedGraph, val cacheSize: Int, val cacheMechanism: String, val statsInterval: Int)
+  extends DirectedGraph {
   
   protected val log = Logger.get
-  
+
   val cache:SimulatedCache = cacheMechanism match {
     case "clock" => {
       val dg = g.asInstanceOf[DirectedGraph]
@@ -30,21 +30,17 @@ class GraphWithSimulatedCache(val g: Graph, val cacheSize: Int, val cacheMechani
       Stats.addMetric("cache_accesses", a.toInt)
       log.info("simcache interval %s %s %s".format(m, a, r))
     }
-    
+
     g.getNodeById(id)
   }
 
-  override def existsNodeId(id: Int) = {
-    g.existsNodeId(id)
-  }
+  override def existsNodeId(id: Int) = g.existsNodeId(id)
 
-  def getStats = {
-    cache.getStats
-  }
-  
-  def diffStat = {
-    cache.diffStat
-  }
+  def graph = g
+
+  def getStats = cache.getStats
+
+  def diffStat = cache.diffStat
 
   def writeStats(fileName: String) = {
     val (misses, accesses, missRatio) = cache.getStats
@@ -53,17 +49,18 @@ class GraphWithSimulatedCache(val g: Graph, val cacheSize: Int, val cacheMechani
     })
   }
 
-  def graph = {
-    g
-  }
-
   private def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
     val p = new java.io.PrintWriter(f)
     try { op(p) } finally { p.close() }
   }
+
+  def nodeCount = g.nodeCount
+  val storedGraphDir = g.storedGraphDir
+  def edgeCount = g.edgeCount
+  def iterator = g.iterator
 }
 
-class GraphWithSimulatedVarCache(g: Graph, cacheSize: Int, cacheMechanism: String, statsInterval: Int)
+class GraphWithSimulatedVarCache(g: DirectedGraph, cacheSize: Int, cacheMechanism: String, statsInterval: Int)
   extends GraphWithSimulatedCache(g, cacheSize, cacheMechanism, statsInterval) {
   override def getNodeById(id: Int) = {
     val node = g.getNodeById(id)
@@ -77,6 +74,7 @@ class GraphWithSimulatedVarCache(g: Graph, cacheSize: Int, cacheMechanism: Strin
           log.info("simcache interval %s %s %s".format(m, a, r))
         }
       }
+      case _ => ()
     }
     node
   }
