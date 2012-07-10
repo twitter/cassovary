@@ -11,7 +11,7 @@ class GraphWithAccessCounterSpec extends Specification {
     var m:Int = 0
     val innerGraph = TestGraphs.g6
     doBefore {
-      g = new GraphWithAccessCounter(innerGraph)
+      g = new GraphWithAccessCounter(innerGraph, 5, "/Users/jcheng/temp/counter")
       n = innerGraph.randomNode
       m = innerGraph.randomNode
       while (n == m) n = innerGraph.randomNode
@@ -23,18 +23,19 @@ class GraphWithAccessCounterSpec extends Specification {
       g.getNodeById(m)
       (g.getStats)(n) mustEqual 3
       (g.getStats)(m) mustEqual 1
-      g.resetStats
+      g.getNodeById(n) // resets after this line
       g.getNodeById(n)
       (g.getStats)(n) mustEqual 1
       (g.getStats)(m) mustEqual 0
     }
 
     "write to file" in {
-      val writePath = "/Users/jcheng/test.txt"
       g.getNodeById(n)
       g.getNodeById(m)
-      g.writeStats(writePath)
-      val lines = Source.fromFile(writePath).getLines()
+      g.getNodeById(n)
+      g.getNodeById(n)
+      g.getNodeById(m) // resets after this line
+      val lines = Source.fromFile(g.outputDirectory+"/0.txt").getLines()
       lines.size mustEqual (innerGraph.maxNodeId+1)
     }
   }
