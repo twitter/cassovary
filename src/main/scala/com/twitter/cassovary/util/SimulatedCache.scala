@@ -16,29 +16,25 @@ package com.twitter.cassovary.util
 import scala.collection.mutable
 
 abstract class SimulatedCache(size: Int = 10) {
-  var misses: Long = 0
-  var accesses: Long = 0
+  var misses, accesses, prevMisses, prevAccesses: Long = 0
 
-  def get(id: Int)
+  def get(id: Int, eltSize: Int = 1):Unit
 
-  def getStats(verbose: Boolean = true) = {
+  def get(id: Int):Unit = {
+    get(id, 1)
+  }
+  
+  // Get cumulative statistics
+  def getStats = {
     (misses, accesses, misses.toDouble/accesses)
   }
-}
-
-class LRUSimulatedCache(size: Int = 10) extends SimulatedCache {
-  val cache = new mutable.HashMap[Int, Long]()
-
-  def get(id: Int) = {
-    if (!cache.contains(id)) {
-      misses += 1
-      if (cache.size == size) {
-        val (minKey, _) = cache.min(Ordering[Long].on[(_, Long)](_._2))
-        cache.remove(minKey)
-      }
-    }
-    cache.put(id, accesses)
-    accesses += 1
+  
+  // Return the difference in misses, accesses between now and the last time this function was called
+  def diffStat = {
+    val (m, a) = (misses-prevMisses, accesses-prevAccesses)
+    prevMisses = misses
+    prevAccesses = accesses
+    (m, a, m.toDouble/a)
   }
 }
 
@@ -56,6 +52,7 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
   var cacheHead, cacheTail = 1 // pointers to the head and tail of the cache
   var cacheSize = 0 // size of the cache
   val cacheToId = new Array[Int](size+1) // cache index -> id
+  val cacheToSize = new Array[Int](size+1) // cache index -> element size
   val idToCache = new Array[Int](maxId+1) // id -> cache index
 
   def debug = {
@@ -66,7 +63,7 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
     println(idToCache.toList)
   }
 
-  override def get(id: Int) = {
+  def get(id: Int, eltSize:Int) = {
     // Increment accesses
     accesses += 1
 
@@ -75,11 +72,14 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
     // Check if id exists in cache
     if (idIndex == 0) { // If not, increment misses and check cache size
       misses += 1
-      if (cacheSize == size) {
+      if (cacheSize + eltSize > size) {
         // Evict the tail by clearing it from cache, cacheToId, idToCache
         val prevTail = cacheTail
         val prevTailId = cacheToId(prevTail)
         val nextPrevTail = cacheNext(prevTail)
+        
+        // Adjust cache size
+        cacheSize += eltSize - cacheToSize(prevTail)
 
         // Update idToCache
         idToCache(prevTailId) = 0 // cacheToId(prevTail) = 0 is not needed because prevTail = newHead
@@ -96,13 +96,15 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
         cachePrev(newHead) = prevHead
         // Update cacheToId and idToCache
         cacheToId(newHead) = id
+        cacheToSize(newHead) = eltSize
         idToCache(id) = newHead
         // Update cacheHead
         cacheHead = newHead
       }
-      else { // Update the head and increment cacheSize, add to cacheId, idToCache
+      else { // Update the head and modify cacheSize, add to cacheId, idToCache
         if (cacheSize == 0) { // The very first element
           cacheToId(1) = id
+          cacheToSize(1) = eltSize
           idToCache(id) = 1
         }
         else { // Next elements until the cache is filled
@@ -110,9 +112,10 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
           cachePrev(cacheHead) = cacheHead-1
           cacheNext(cacheHead-1) = cacheHead
           cacheToId(cacheHead) = id
+          cacheToSize(cacheHead) = eltSize
           idToCache(id) = cacheHead
         }
-        cacheSize += 1
+        cacheSize += eltSize
       }
     }
     else {
@@ -140,6 +143,11 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
 
 class MRUSimulatedCache(size: Int = 10) extends SimulatedCache {
   val cache = new mutable.HashMap[Int, Long]()
+  
+  def get(id: Int, eltSize:Int) = {
+    throw new IllegalArgumentException("MRU doesn't work with variable element sizes")
+  }
+  
   override def get(id: Int) = {
     if (!cache.contains(id)) {
       misses += 1
@@ -160,6 +168,10 @@ class ClockSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
   val cacheBit = new Array[Boolean](size) // cache index -> recently used bit
   var clockPointer = 0 // Clock hand
   var cacheSize = 0
+  
+  def get(id: Int, eltSize:Int) = {
+    throw new IllegalArgumentException("Clock doesn't work with variable element sizes")
+  }
 
   override def get(id: Int) = {
     accesses += 1
