@@ -17,12 +17,12 @@ import scala.collection.mutable
 
 abstract class SimulatedCache(size: Int = 10) {
   var misses, accesses, prevMisses, prevAccesses: Long = 0
+  val one:Short = 1
 
-  def get(id: Int, eltSize: Int = 1):Unit
+  def get(id: Int, eltSize: Short):Unit
 
-  def get(id: Int):Unit = {
-    get(id, 1)
-  }
+  def get(id: Int, eltSize: Int):Unit = get(id, eltSize.toShort)
+  def get(id: Int):Unit = get(id, one)
   
   // Get cumulative statistics
   def getStats = {
@@ -52,7 +52,7 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
   var cacheHead, cacheTail = 1 // pointers to the head and tail of the cache
   var cacheSize = 0 // size of the cache
   val cacheToId = new Array[Int](size+1) // cache index -> id
-  val cacheToSize = new Array[Int](size+1) // cache index -> element size
+  val cacheToSize = new Array[Short](size+1) // cache index -> element size
   val idToCache = new Array[Int](maxId+1) // id -> cache index
 
   def debug = {
@@ -63,7 +63,7 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
     println(idToCache.toList)
   }
 
-  def get(id: Int, eltSize:Int) = {
+  def get(id: Int, eltSize:Short) = {
     // Increment accesses
     accesses += 1
 
@@ -144,7 +144,7 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
 class MRUSimulatedCache(size: Int = 10) extends SimulatedCache {
   val cache = new mutable.HashMap[Int, Long]()
   
-  def get(id: Int, eltSize:Int) = {
+  def get(id: Int, eltSize:Short) = {
     throw new IllegalArgumentException("MRU doesn't work with variable element sizes")
   }
   
@@ -169,7 +169,7 @@ class ClockSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
   var clockPointer = 0 // Clock hand
   var cacheSize = 0
   
-  def get(id: Int, eltSize:Int) = {
+  def get(id: Int, eltSize:Short) = {
     throw new IllegalArgumentException("Clock doesn't work with variable element sizes")
   }
 
