@@ -81,6 +81,9 @@ class MapBasedDirectedGraphSpec extends Specification {
       graph.edgeCount mustBe 5L
     }
     
+    "provide the correct max node id" in {
+      graph.maxNodeId mustBe 5
+    }
   }
 
   def getNode(id: Int): Option[Node] = graph.getNodeById(id)

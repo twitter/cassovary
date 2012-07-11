@@ -185,8 +185,7 @@ class MapBasedDirectedGraph private (val nodes: immutable.Map[Int, Node],
     override val nodeCount: Int, override val edgeCount: Long, 
     override val storedGraphDir: StoredGraphDir) extends DirectedGraph {
       
-  override lazy val maxNodeId = 
-    throw new Exception("SetBasedDirectedGraph doesn't support maxNodeId")
+  override lazy val maxNodeId = nodes.keys.max
   
   override def iterator = nodes.valuesIterator
   
