@@ -25,7 +25,7 @@ class GraphWithAccessCounterSpec extends Specification {
     var m:Int = 0
     val innerGraph = TestGraphs.g6
     doBefore {
-      g = new GraphWithAccessCounter(innerGraph, 5, "/Users/jcheng/temp/counter")
+      g = new GraphWithAccessCounter(innerGraph, 5, "/temp/counter")
       n = innerGraph.randomNode
       m = innerGraph.randomNode
       while (n == m) n = innerGraph.randomNode

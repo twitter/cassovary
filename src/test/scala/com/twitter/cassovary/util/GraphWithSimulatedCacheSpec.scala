@@ -27,7 +27,7 @@ class GraphWithSimulatedCacheSpec extends Specification {
   "GraphWithSimulatedCache" should {
     var g:GraphWithSimulatedCache = null
     doBefore {
-      g = new GraphWithSimulatedCache(innerGraph, 5, "lru", 5, "/Users/jcheng/temp/cache")
+      g = new GraphWithSimulatedCache(innerGraph, 5, "lru", 5, "/temp/cache")
     }
     
     "echo the correct stats" in {
@@ -59,7 +59,7 @@ class GraphWithSimulatedCacheSpec extends Specification {
   "GraphWithSimulatedVarCache" should {
     var g:GraphWithSimulatedVarCache = null
     doBefore {
-      g = new GraphWithSimulatedVarCache(innerGraph, 5, "lru", 5, "/Users/jcheng/temp/cache")
+      g = new GraphWithSimulatedVarCache(innerGraph, 5, "lru", 5, "/temp/cache")
     }
     
     "echo the correct stats" in {
