@@ -20,7 +20,7 @@ import net.lag.logging.Logger
 import com.twitter.ostrich.stats.Stats
 
 class GraphWithSimulatedCache(val g: DirectedGraph, val cacheSize: Int,
-                              val cacheMechanism: String, val statsInterval: Int,
+                              val cacheMechanism: String, val statsInterval: Long,
                               val outputDirectory: String) extends DirectedGraph {
   
   protected val log = Logger.get
@@ -84,7 +84,7 @@ class GraphWithSimulatedCache(val g: DirectedGraph, val cacheSize: Int,
 }
 
 class GraphWithSimulatedVarCache(g: DirectedGraph, cacheSize: Int,
-    cacheMechanism: String, statsInterval: Int, outputDirectory: String)
+    cacheMechanism: String, statsInterval: Long, outputDirectory: String)
   extends GraphWithSimulatedCache(g, cacheSize, cacheMechanism,
     statsInterval, outputDirectory) {
 

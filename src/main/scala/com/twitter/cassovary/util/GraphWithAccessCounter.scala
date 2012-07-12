@@ -18,11 +18,11 @@ import com.twitter.cassovary.graph.{Graph,DirectedGraph}
 import net.lag.logging.Logger
 import java.io._
 
-class GraphWithAccessCounter(val g: DirectedGraph, val statsInterval: Int,
+class GraphWithAccessCounter(val g: DirectedGraph, val statsInterval: Long,
                              val outputDirectory: String) extends DirectedGraph {
 
   var counter = new Array[Int](g.maxNodeId+1)
-  var accesses = 0
+  var accesses: Long = 0
   var writes = 0
 
   protected val log = Logger.get
