@@ -17,6 +17,8 @@ package com.twitter.cassovary.util
 import org.specs.Specification
 import com.twitter.cassovary.graph.TestGraphs
 import scala.io.Source
+import java.io.File
+import com.twitter.io.Files
 
 class GraphWithAccessCounterSpec extends Specification {
   "GraphWithAccessCounter" should {
@@ -24,12 +26,21 @@ class GraphWithAccessCounterSpec extends Specification {
     var n:Int = 0
     var m:Int = 0
     val innerGraph = TestGraphs.g6
+
+    doFirst {
+      new File("temp-cache/").mkdirs()
+    }
+    doLast {
+      Files.delete(new File("temp-cache/"))
+    }
+
     doBefore {
-      g = new GraphWithAccessCounter(innerGraph, 5, "/temp/counter")
+      g = new GraphWithAccessCounter(innerGraph, 5, "temp-cache")
       n = innerGraph.randomNode
       m = innerGraph.randomNode
       while (n == m) n = innerGraph.randomNode
     }
+
     "count properly even with reset" in {
       g.getNodeById(n)
       g.getNodeById(n)
