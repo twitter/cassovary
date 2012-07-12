@@ -20,8 +20,7 @@ import StoredGraphDir._
  * A class support dynamically adds new nodes and dynamically add/delete edges in existing nodes.
  * It currently doesn't support delete nodes
  */
-class SynchronizedDynamicGraph(val graphDir: StoredGraphDir)
+class SynchronizedDynamicGraph(val graphDir: StoredGraphDir = BothInOut)
     extends DynamicDirectedGraphHashMap(graphDir) {
-  def this() = this(BothInOut)
-  def nodeFactory(id: Int) = new SynchronizedDynamicNode(id)
+  override def nodeFactory(id: Int) = new SynchronizedDynamicNode(id)
 }
