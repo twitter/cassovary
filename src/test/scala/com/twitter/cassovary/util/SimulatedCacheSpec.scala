@@ -97,6 +97,35 @@ class SimulatedCacheSpec extends Specification {
       cache.getStats
     }
 
+    def sizableCase3(cache:FastLRUSimulatedCache) = {
+      cache.get(2, 1)
+      cache.get(3, 1)
+      cache.get(4, 1)
+      cache.get(5, 1)
+      cache.get(6, 1)
+      cache.get(1, 5)
+      cache.get(6, 1)
+      cache.get(5, 1)
+      cache.get(4, 1)
+      cache.get(3, 1)
+      cache.get(2, 1)
+      cache.getStats
+    }
+
+    def sizableCase4(cache:SimulatedCache) = {
+      cache.get(2, 1)
+      cache.get(3, 1)
+      cache.get(4, 1)
+      cache.get(5, 1)
+      cache.get(6, 1)
+      cache.get(1, 1)
+      cache.get(3, 1)
+      cache.get(4, 1)
+      cache.get(5, 1)
+      cache.get(6, 1)
+      cache.getStats
+    }
+
     "Fast LRU: replace the last recently seen node" in {
       var cache:FastLRUSimulatedCache = null
       doBefore {
@@ -104,11 +133,11 @@ class SimulatedCacheSpec extends Specification {
       }
       "work" in {
         cache.get(5)
-        cache.cacheSize mustEqual 1
+        cache.currRealCapacity mustEqual 1
         cache.get(6)
-        cache.cacheSize mustEqual 2
+        cache.currRealCapacity mustEqual 2
         cache.get(5)
-        cache.cacheSize mustEqual 2
+        cache.currRealCapacity mustEqual 2
       }
       "replace 1 properly" in {
         cache.get(1)
@@ -118,7 +147,7 @@ class SimulatedCacheSpec extends Specification {
         cache.get(5)
         cache.get(6)
         cache.get(5)
-        cache.cacheSize mustEqual 5
+        cache.currRealCapacity mustEqual 5
       }
       "do badly in lru worst case" in {
         lruWorstCase(cache) mustEqual (11, 11, 1.0)
@@ -137,6 +166,24 @@ class SimulatedCacheSpec extends Specification {
       }
       "do badly in sizable case 2" in {
         sizableCase2(cache) mustEqual (6, 9, 6.0/9)
+      }
+      "do badly in sizable case 3" in {
+        sizableCase3(cache) mustEqual (11, 11, 1.0)
+      }
+      "do badly in sizable case 4" in {
+        sizableCase4(cache) mustEqual (6, 10, 0.6)
+      }
+      "call multiple times and then replace" in {
+        cache.get(5, 2)
+        cache.get(5, 2)
+        cache.get(6, 3)
+        cache.get(7, 1)
+        cache.getStats mustEqual (3, 4, 0.75)
+        cache.get(8, 1)
+        cache.get(7, 1)
+        cache.get(6, 3)
+        cache.get(8, 1)
+        cache.getStats mustEqual (4, 8, 0.5)
       }
     }
 

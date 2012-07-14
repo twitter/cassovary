@@ -19,9 +19,8 @@ abstract class SimulatedCache(size: Int = 10) {
   var misses, accesses, prevMisses, prevAccesses: Long = 0
   val one:Short = 1
 
-  def get(id: Int, eltSize: Short):Unit
+  def get(id: Int, eltSize: Int):Unit
 
-  def get(id: Int, eltSize: Int):Unit = get(id, eltSize.toShort)
   def get(id: Int):Unit = get(id, one)
   
   // Get cumulative statistics
@@ -47,95 +46,115 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
   // Index 0 in all arrays should always be blank
   // - for convenience in referencing ids
   // - and because 0 indicates a null entry
-  val cacheNext = new Array[Int](size+1) // cache next pointers
-  val cachePrev = new Array[Int](size+1) // cache prev pointers
-  var cacheHead, cacheTail = 1 // pointers to the head and tail of the cache
-  var cacheSize = 0 // size of the cache
-  val cacheToId = new Array[Int](size+1) // cache index -> id
-  val cacheToSize = new Array[Short](size+1) // cache index -> element size
-  val idToCache = new Array[Int](maxId+1) // id -> cache index
+  val indexNext = new Array[Int](size+1) // cache next pointers
+  val indexPrev = new Array[Int](size+1) // cache prev pointers
+  var head, tail = 0 // pointers to the head and tail of the cache
+  var currRealCapacity = 0 // size of the cache
+  var currIndexCapacity = 0
+  val indexToId = new Array[Int](size+1) // cache index -> id
+  val idToIndex = new Array[Int](maxId+1) // id -> cache index
+  val indexToSize = new Array[Int](size+1) // cache index -> element size
+
+  // Initialize a linked list of free indices
+  val freeIndices = new Array[Int](size+1)
+  (0 until size+1).foreach { i => freeIndices(i) = i + 1}
+  freeIndices(size) = 0
 
   def debug = {
-    printf("Cache Head: %s, Tail: %s\n", cacheHead, cacheTail)
-    println(cacheNext.toList)
-    println(cachePrev.toList)
-    println(cacheToId.toList)
-    println(idToCache.toList)
+    printf("Cache Head: %s, Tail: %s\n", head, tail)
+    println("next", indexNext.toList)
+    println("prev", indexPrev.toList)
+    println("cacheToId", indexToId.toList)
+    println("idToCache", idToIndex.toList)
   }
 
-  def get(id: Int, eltSize:Short) = {
-    // Increment accesses
+  // Add an index to the free index list
+  private def addToFree(index:Int):Unit = {
+    currIndexCapacity -= 1
+    freeIndices(index) = freeIndices(0)
+    freeIndices(0) = index
+  }
+
+  // Pop an index from the free index list
+  private def popFromFree():Int = {
+    currIndexCapacity += 1
+    val popped = freeIndices(0)
+    freeIndices(0) = freeIndices(popped)
+    popped
+  }
+
+  def moveToHead(id:Int) {
+    // Cases to worry about:
+    // - moving an element in between the head and tail
+    // - only 1 element (head = tail)
+    // - moving the tail itself
+    // - moving the head itself
+    val idx = idToIndex(id)
+    if (idx != head) { // Implicitly means currIndexCapacity > 1
+      val prevIdx = indexPrev(idx)
+      val nextIdx = indexNext(idx)
+      val prevHeadIdx = head
+
+      // Point to the real tail if we moved the tail
+      // can add in && currentIndexCapacity > 1 if there's no idx != head check
+      if (tail == idx) tail = nextIdx
+
+      // Update pointers
+      indexNext(prevIdx) = nextIdx
+      indexPrev(nextIdx) = prevIdx
+      indexNext(idx) = 0
+      indexPrev(idx) = prevHeadIdx
+      indexNext(prevHeadIdx) = idx
+      head = idx
+    }
+  }
+
+  /**
+   * Adds an element to the list, removing another
+   * if there are too many elements
+   */
+  def addToHead(id:Int, eltSize:Int) {
+    // Cases - adding to 0 element, 1 element, >1 element list
+    val prevHeadIdx = head
+    while(currIndexCapacity == size || currRealCapacity + eltSize > size) {
+      removeFromTail()
+    }
+
+    currRealCapacity += eltSize
+    head = popFromFree()
+    idToIndex(id) = head
+    indexToSize(head) = eltSize
+    indexNext(prevHeadIdx) = head
+    indexPrev(head) = prevHeadIdx
+    indexToId(head) = id
+    indexNext(head) = 0
+
+    if (currIndexCapacity == 1) tail = head // Since tail gets set to 0 when last elt removed
+  }
+
+  // Remove an item from the cache
+  private def removeFromTail() {
+    // Cases - removing from >1 and 1 element list
+    val prevTail = tail
+    val prevId = indexToId(prevTail)
+    tail = indexNext(prevTail)
+    currRealCapacity -= indexToSize(prevTail)
+    addToFree(prevTail)
+    idToIndex(prevId) = 0
+    indexToId(prevTail) = 0
+    indexPrev(tail) = 0
+  }
+
+  def get(id: Int, eltSize:Int) = {
+    println("Getting", id)
     accesses += 1
 
-    val idIndex = idToCache(id)
-
-    // Check if id exists in cache
-    if (idIndex == 0) { // If not, increment misses and check cache size
+    if (idToIndex(id) == 0) {
       misses += 1
-      if (cacheSize + eltSize > size) {
-        // Evict the tail by clearing it from cache, cacheToId, idToCache
-        val prevTail = cacheTail
-        val prevTailId = cacheToId(prevTail)
-        val nextPrevTail = cacheNext(prevTail)
-        
-        // Adjust cache size
-        cacheSize += eltSize - cacheToSize(prevTail)
-
-        // Update idToCache
-        idToCache(prevTailId) = 0 // cacheToId(prevTail) = 0 is not needed because prevTail = newHead
-        // Update tail pointer
-        cachePrev(nextPrevTail) = 0
-        // Update cacheTail
-        cacheTail = nextPrevTail
-        // Add to head, add to cacheToId, add to idToCache
-        val newHead = prevTail
-        val prevHead = cacheHead
-        // Update head pointers
-        cacheNext(prevHead) = newHead
-        cacheNext(newHead) = 0
-        cachePrev(newHead) = prevHead
-        // Update cacheToId and idToCache
-        cacheToId(newHead) = id
-        cacheToSize(newHead) = eltSize
-        idToCache(id) = newHead
-        // Update cacheHead
-        cacheHead = newHead
-      }
-      else { // Update the head and modify cacheSize, add to cacheId, idToCache
-        if (cacheSize == 0) { // The very first element
-          cacheToId(1) = id
-          cacheToSize(1) = eltSize
-          idToCache(id) = 1
-        }
-        else { // Next elements until the cache is filled
-          cacheHead += 1
-          cachePrev(cacheHead) = cacheHead-1
-          cacheNext(cacheHead-1) = cacheHead
-          cacheToId(cacheHead) = id
-          cacheToSize(cacheHead) = eltSize
-          idToCache(id) = cacheHead
-        }
-        cacheSize += eltSize
-      }
+      addToHead(id, eltSize)
     }
     else {
-      // If so, move it to the head of the linked list
-      if (cacheHead != idIndex) {
-        val prev = cachePrev(idIndex)
-        val prevHead = cacheHead
-        val next = cacheNext(idIndex)
-        // Update prev and next's pointers
-        cachePrev(next) = prev
-        cacheNext(prev) = next
-        // Update idIndex's own pointers
-        cachePrev(idIndex) = prevHead
-        cacheNext(idIndex) = 0
-        // Update prevHead's pointers
-        cacheNext(prevHead) = idIndex
-        // Update cacheHead and cacheTail
-        cacheHead = idIndex
-        if (cacheTail == idIndex) cacheTail = next
-      }
+      moveToHead(id)
     }
   }
 
@@ -144,7 +163,7 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
 class MRUSimulatedCache(size: Int = 10) extends SimulatedCache {
   val cache = new mutable.HashMap[Int, Long]()
   
-  def get(id: Int, eltSize:Short) = {
+  def get(id: Int, eltSize:Int) = {
     throw new IllegalArgumentException("MRU doesn't work with variable element sizes")
   }
   
@@ -169,7 +188,7 @@ class ClockSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
   var clockPointer = 0 // Clock hand
   var cacheSize = 0
   
-  def get(id: Int, eltSize:Short) = {
+  def get(id: Int, eltSize:Int) = {
     throw new IllegalArgumentException("Clock doesn't work with variable element sizes")
   }
 
