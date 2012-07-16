@@ -83,6 +83,19 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
     popped
   }
 
+  // Remove an item from the cache
+  private def removeFromTail() {
+    // Cases - removing from >1 and 1 element list
+    val prevTail = tail
+    val prevId = indexToId(prevTail)
+    tail = indexNext(prevTail)
+    currRealCapacity -= indexToSize(prevTail)
+    addToFree(prevTail)
+    idToIndex(prevId) = 0
+    indexToId(prevTail) = 0
+    indexPrev(tail) = 0
+  }
+
   def moveToHead(id:Int) {
     // Cases to worry about:
     // - moving an element in between the head and tail
@@ -130,19 +143,6 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
     indexNext(head) = 0
 
     if (currIndexCapacity == 1) tail = head // Since tail gets set to 0 when last elt removed
-  }
-
-  // Remove an item from the cache
-  private def removeFromTail() {
-    // Cases - removing from >1 and 1 element list
-    val prevTail = tail
-    val prevId = indexToId(prevTail)
-    tail = indexNext(prevTail)
-    currRealCapacity -= indexToSize(prevTail)
-    addToFree(prevTail)
-    idToIndex(prevId) = 0
-    indexToId(prevTail) = 0
-    indexPrev(tail) = 0
   }
 
   def get(id: Int, eltSize:Int) = {
