@@ -146,7 +146,6 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
   }
 
   def get(id: Int, eltSize:Int) = {
-    println("Getting", id)
     accesses += 1
 
     if (idToIndex(id) == 0) {
