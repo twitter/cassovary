@@ -28,10 +28,12 @@ class GraphWithSimulatedCacheSpec extends Specification {
 
   "GraphWithSimulatedCache" should {
     doFirst {
-      new File("temp-cache/").mkdirs()
+      new File("temp-cache").mkdirs()
+      new File("temp-cache2").mkdirs()
     }
     doLast {
-      Files.delete(new File("temp-cache/"))
+      Files.delete(new File("temp-cache"))
+      Files.delete(new File("temp-cache2"))
     }
 
     "GraphWithSimulatedCache" in {
@@ -69,7 +71,7 @@ class GraphWithSimulatedCacheSpec extends Specification {
     "GraphWithSimulatedVarCache" in {
       var g:GraphWithSimulatedVarCache = null
       doBefore {
-        g = new GraphWithSimulatedVarCache(innerGraph, 5, "lru", 5, "temp-cache")
+        g = new GraphWithSimulatedVarCache(innerGraph, 5, "lru", 5, "temp-cache2")
       }
 
       "echo the correct stats" in {

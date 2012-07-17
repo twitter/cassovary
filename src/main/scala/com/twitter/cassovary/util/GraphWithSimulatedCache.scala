@@ -19,6 +19,14 @@ import java.io.File
 import net.lag.logging.Logger
 import com.twitter.ostrich.stats.Stats
 
+/**
+ * Wrapper around a graph to simulate a cache
+ * @param g The backing graph (the actual graph)
+ * @param cacheSize size of the cache you want
+ * @param cacheMechanism what cache mechanism to use ("lru", etc.)
+ * @param statsInterval how often stats should be logged
+ * @param outputDirectory which directory stats should be logged to
+ */
 class GraphWithSimulatedCache(val g: DirectedGraph, val cacheSize: Int,
                               val cacheMechanism: String, val statsInterval: Long,
                               val outputDirectory: String) extends DirectedGraph {
@@ -42,7 +50,7 @@ class GraphWithSimulatedCache(val g: DirectedGraph, val cacheSize: Int,
     val node = g.getNodeById(id)
     node match {
       case Some(n) => {
-        cache.get(id) // TODO make sure id is valid!
+        cache.getAndUpdate(id) // TODO make sure id is valid!
         if (cache.accesses % statsInterval == 0) {
           val (m, a, r) = cache.getStats
           Stats.addMetric("cache_misses", m.toInt)
@@ -83,6 +91,16 @@ class GraphWithSimulatedCache(val g: DirectedGraph, val cacheSize: Int,
   def iterator = g.iterator
 }
 
+/**
+ * Wrapper around a graph to simulate a cache. Similar to GraphWithSimulatedCache
+ * except that this takes into account the cost of storing graph edges, rather than
+ * treating each node as costing a single unit
+ * @param g The backing graph (the actual graph)
+ * @param cacheSize size of the cache you want
+ * @param cacheMechanism what cache mechanism to use ("lru", etc.)
+ * @param statsInterval how often stats should be logged
+ * @param outputDirectory which directory stats should be logged to
+ */
 class GraphWithSimulatedVarCache(g: DirectedGraph, cacheSize: Int,
     cacheMechanism: String, statsInterval: Long, outputDirectory: String)
   extends GraphWithSimulatedCache(g, cacheSize, cacheMechanism,
@@ -92,7 +110,7 @@ class GraphWithSimulatedVarCache(g: DirectedGraph, cacheSize: Int,
     val node = g.getNodeById(id)
     node match {
       case Some(n) => {
-        cache.get(id, n.neighborCount(GraphDir.OutDir))
+        cache.getAndUpdate(id, n.neighborCount(GraphDir.OutDir))
         if (cache.accesses % statsInterval == 0) {
           val (m, a, r) = cache.getStats
           Stats.addMetric("cache_misses", m.toInt)
