@@ -19,110 +19,110 @@ import org.specs.Specification
 class SimulatedCacheSpec extends Specification {
   "Caching Mechanisms" should {
     def lruWorstCase(cache:SimulatedCache) = {
-      cache.get(1)
-      cache.get(2)
-      cache.get(3)
-      cache.get(4)
-      cache.get(5)
-      cache.get(6) // m, replaces 1
-      cache.get(1) // m, replaces 2
-      cache.get(2) // m, replaces 3
-      cache.get(3) // m, replaces 4
-      cache.get(4) // m, replaces 5
-      cache.get(5) // m, replaces 6
+      cache.getAndUpdate(1)
+      cache.getAndUpdate(2)
+      cache.getAndUpdate(3)
+      cache.getAndUpdate(4)
+      cache.getAndUpdate(5)
+      cache.getAndUpdate(6) // m, replaces 1
+      cache.getAndUpdate(1) // m, replaces 2
+      cache.getAndUpdate(2) // m, replaces 3
+      cache.getAndUpdate(3) // m, replaces 4
+      cache.getAndUpdate(4) // m, replaces 5
+      cache.getAndUpdate(5) // m, replaces 6
       cache.getStats
     }
 
     def mruWorstCase(cache:SimulatedCache) = {
-      cache.get(1)
-      cache.get(2)
-      cache.get(3)
-      cache.get(4)
-      cache.get(5)
-      cache.get(6) // m, replaces 5
-      cache.get(5) // m
-      cache.get(6) // m
-      cache.get(5) // m
-      cache.get(6) // m
+      cache.getAndUpdate(1)
+      cache.getAndUpdate(2)
+      cache.getAndUpdate(3)
+      cache.getAndUpdate(4)
+      cache.getAndUpdate(5)
+      cache.getAndUpdate(6) // m, replaces 5
+      cache.getAndUpdate(5) // m
+      cache.getAndUpdate(6) // m
+      cache.getAndUpdate(5) // m
+      cache.getAndUpdate(6) // m
       cache.getStats
     }
 
     def clockCase(cache:SimulatedCache) = {
-      cache.get(1) // m
-      cache.get(2) // m
-      cache.get(3) // m
-      cache.get(4) // m
-      cache.get(5) // m
-      cache.get(6) // m, replaces 1
-      cache.get(2) // h
-      cache.get(7) // m, replaces 3
-      cache.get(3) // m, replaces 4
-      cache.get(2) // h
+      cache.getAndUpdate(1) // m
+      cache.getAndUpdate(2) // m
+      cache.getAndUpdate(3) // m
+      cache.getAndUpdate(4) // m
+      cache.getAndUpdate(5) // m
+      cache.getAndUpdate(6) // m, replaces 1
+      cache.getAndUpdate(2) // h
+      cache.getAndUpdate(7) // m, replaces 3
+      cache.getAndUpdate(3) // m, replaces 4
+      cache.getAndUpdate(2) // h
       cache.getStats
     }
 
     def clockDifferenceCase(cache:SimulatedCache) = {
-      cache.get(1)
-      cache.get(2)
-      cache.get(3)
-      cache.get(4)
-      cache.get(5)
-      cache.get(1)
-      cache.get(6) // clock will replace 1, but lru will replace 2
-      cache.get(1)
+      cache.getAndUpdate(1)
+      cache.getAndUpdate(2)
+      cache.getAndUpdate(3)
+      cache.getAndUpdate(4)
+      cache.getAndUpdate(5)
+      cache.getAndUpdate(1)
+      cache.getAndUpdate(6) // clock will replace 1, but lru will replace 2
+      cache.getAndUpdate(1)
       cache.getStats
     }
     
     def sizableCase(cache:SimulatedCache) = {
-      cache.get(1, 2) // m
-      cache.get(2, 3) // m
-      cache.get(1, 2) // h
-      cache.get(2, 3) // h
-      cache.get(3, 4) // m
-      cache.get(1, 2) // m
-      cache.get(2, 3) // m
+      cache.getAndUpdate(1, 2) // m
+      cache.getAndUpdate(2, 3) // m
+      cache.getAndUpdate(1, 2) // h
+      cache.getAndUpdate(2, 3) // h
+      cache.getAndUpdate(3, 4) // m
+      cache.getAndUpdate(1, 2) // m
+      cache.getAndUpdate(2, 3) // m
       cache.getStats
     }
     
     def sizableCase2(cache:SimulatedCache) = {
-      cache.get(1, 1) // m
-      cache.get(2, 1) // m
-      cache.get(3, 3) // m
-      cache.get(1, 1) // h
-      cache.get(2, 1) // h
-      cache.get(4, 1) // m, clock replaces 1, lru replaces 3, mru replaces 2
-      cache.get(5, 1) // m, clock replaces 2, lru replaces 1, mru replaces 4
-      cache.get(2, 1) // lru hits, clock misses, replaces 3, mru misses, replaces 5
-      cache.get(3, 3) // lru misses, replaces 4, clock misses, adds 3, mru hits
+      cache.getAndUpdate(1, 1) // m
+      cache.getAndUpdate(2, 1) // m
+      cache.getAndUpdate(3, 3) // m
+      cache.getAndUpdate(1, 1) // h
+      cache.getAndUpdate(2, 1) // h
+      cache.getAndUpdate(4, 1) // m, clock replaces 1, lru replaces 3, mru replaces 2
+      cache.getAndUpdate(5, 1) // m, clock replaces 2, lru replaces 1, mru replaces 4
+      cache.getAndUpdate(2, 1) // lru hits, clock misses, replaces 3, mru misses, replaces 5
+      cache.getAndUpdate(3, 3) // lru misses, replaces 4, clock misses, adds 3, mru hits
       cache.getStats
     }
 
     def sizableCase3(cache:FastLRUSimulatedCache) = {
-      cache.get(2, 1)
-      cache.get(3, 1)
-      cache.get(4, 1)
-      cache.get(5, 1)
-      cache.get(6, 1)
-      cache.get(1, 5)
-      cache.get(6, 1)
-      cache.get(5, 1)
-      cache.get(4, 1)
-      cache.get(3, 1)
-      cache.get(2, 1)
+      cache.getAndUpdate(2, 1)
+      cache.getAndUpdate(3, 1)
+      cache.getAndUpdate(4, 1)
+      cache.getAndUpdate(5, 1)
+      cache.getAndUpdate(6, 1)
+      cache.getAndUpdate(1, 5)
+      cache.getAndUpdate(6, 1)
+      cache.getAndUpdate(5, 1)
+      cache.getAndUpdate(4, 1)
+      cache.getAndUpdate(3, 1)
+      cache.getAndUpdate(2, 1)
       cache.getStats
     }
 
     def sizableCase4(cache:SimulatedCache) = {
-      cache.get(2, 1)
-      cache.get(3, 1)
-      cache.get(4, 1)
-      cache.get(5, 1)
-      cache.get(6, 1)
-      cache.get(1, 1)
-      cache.get(3, 1)
-      cache.get(4, 1)
-      cache.get(5, 1)
-      cache.get(6, 1)
+      cache.getAndUpdate(2, 1)
+      cache.getAndUpdate(3, 1)
+      cache.getAndUpdate(4, 1)
+      cache.getAndUpdate(5, 1)
+      cache.getAndUpdate(6, 1)
+      cache.getAndUpdate(1, 1)
+      cache.getAndUpdate(3, 1)
+      cache.getAndUpdate(4, 1)
+      cache.getAndUpdate(5, 1)
+      cache.getAndUpdate(6, 1)
       cache.getStats
     }
 
@@ -132,21 +132,21 @@ class SimulatedCacheSpec extends Specification {
         cache = new FastLRUSimulatedCache(10, 5)
       }
       "work" in {
-        cache.get(5)
+        cache.getAndUpdate(5)
         cache.currRealCapacity mustEqual 1
-        cache.get(6)
+        cache.getAndUpdate(6)
         cache.currRealCapacity mustEqual 2
-        cache.get(5)
+        cache.getAndUpdate(5)
         cache.currRealCapacity mustEqual 2
       }
       "replace 1 properly" in {
-        cache.get(1)
-        cache.get(2)
-        cache.get(3)
-        cache.get(4)
-        cache.get(5)
-        cache.get(6)
-        cache.get(5)
+        cache.getAndUpdate(1)
+        cache.getAndUpdate(2)
+        cache.getAndUpdate(3)
+        cache.getAndUpdate(4)
+        cache.getAndUpdate(5)
+        cache.getAndUpdate(6)
+        cache.getAndUpdate(5)
         cache.currRealCapacity mustEqual 5
       }
       "do badly in lru worst case" in {
@@ -174,15 +174,15 @@ class SimulatedCacheSpec extends Specification {
         sizableCase4(cache) mustEqual (6, 10, 0.6)
       }
       "call multiple times and then replace" in {
-        cache.get(5, 2)
-        cache.get(5, 2)
-        cache.get(6, 3)
-        cache.get(7, 1)
+        cache.getAndUpdate(5, 2)
+        cache.getAndUpdate(5, 2)
+        cache.getAndUpdate(6, 3)
+        cache.getAndUpdate(7, 1)
         cache.getStats mustEqual (3, 4, 0.75)
-        cache.get(8, 1)
-        cache.get(7, 1)
-        cache.get(6, 3)
-        cache.get(8, 1)
+        cache.getAndUpdate(8, 1)
+        cache.getAndUpdate(7, 1)
+        cache.getAndUpdate(6, 3)
+        cache.getAndUpdate(8, 1)
         cache.getStats mustEqual (4, 8, 0.5)
       }
     }
@@ -225,7 +225,7 @@ class SimulatedCacheSpec extends Specification {
       (m, a) mustEqual (0, 0)
       mruWorstCase(cache)
       cache.diffStat mustEqual (6, 10, 0.6)
-      cache.get(1)
+      cache.getAndUpdate(1)
       cache.diffStat mustEqual (1, 1, 1.0)
     }
     

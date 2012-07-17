@@ -15,96 +15,77 @@
 package com.twitter.cassovary.util
 import scala.collection.mutable
 
-abstract class SimulatedCache(size: Int = 10) {
-  var misses, accesses, prevMisses, prevAccesses: Long = 0
-  val one:Short = 1
-
-  def get(id: Int, eltSize: Int):Unit
-
-  def get(id: Int):Unit = get(id, one)
-  
-  // Get cumulative statistics
-  def getStats = {
-    (misses, accesses, misses.toDouble/accesses)
-  }
-  
-  // Return the difference in misses, accesses between now and the last time this function was called
-  def diffStat = {
-    val (m, a) = (misses-prevMisses, accesses-prevAccesses)
-    prevMisses = misses
-    prevAccesses = accesses
-    (m, a, m.toDouble/a)
-  }
-}
-
-class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
-  // This version employs a doubly linked list as the cache
-  // ids are mapped to locations in the cache, and the linked list keeps track
-  // of the recentness of access.
-  // The linked list is implemented as a set of arrays and pointers:
-  // - cacheNext, cachePrev, cacheHead, cacheTail
-  // Index 0 in all arrays should always be blank
-  // - for convenience in referencing ids
-  // - and because 0 indicates a null entry
-  val indexNext = new Array[Int](size+1) // cache next pointers
-  val indexPrev = new Array[Int](size+1) // cache prev pointers
-  var head, tail = 0 // pointers to the head and tail of the cache
-  var currRealCapacity = 0 // size of the cache
-  var currIndexCapacity = 0
-  val indexToId = new Array[Int](size+1) // cache index -> id
-  val idToIndex = new Array[Int](maxId+1) // id -> cache index
-  val indexToSize = new Array[Int](size+1) // cache index -> element size
+/**
+ * An Int -> Int map with a backing doubly linked list
+ * Especially useful in representing a cache
+ * The linked list is implemented as a set of arrays and pointers
+ * Any id added to the map should be > 0, as 0 indicates a null entry
+ * @param maxId the maximum id of any element that will be inserted
+ * @param size the size of this map
+ */
+class LinkedIntIntMap(maxId: Int, size: Int) {
+  private val indexNext = new Array[Int](size+1) // cache next pointers
+  private val indexPrev = new Array[Int](size+1) // cache prev pointers
+  private var head, tail = 0 // pointers to the head and tail of the cache
+  private var currentSize = 0
+  private val indexToId = new Array[Int](size+1) // cache index -> id
+  private val idToIndex = new Array[Int](maxId+1) // id -> cache index
 
   // Initialize a linked list of free indices
-  val freeIndices = new Array[Int](size+1)
+  private val freeIndices = new Array[Int](size+1)
   (0 until size+1).foreach { i => freeIndices(i) = i + 1}
   freeIndices(size) = 0
 
-  def debug = {
-    printf("Cache Head: %s, Tail: %s\n", head, tail)
-    println("next", indexNext.toList)
-    println("prev", indexPrev.toList)
-    println("cacheToId", indexToId.toList)
-    println("idToCache", idToIndex.toList)
-  }
-
-  // Add an index to the free index list
+  /**
+   * Add a free slot to the cache
+   * @param index index of free slot
+   */
   private def addToFree(index:Int):Unit = {
-    currIndexCapacity -= 1
+    currentSize -= 1
     freeIndices(index) = freeIndices(0)
     freeIndices(0) = index
   }
 
-  // Pop an index from the free index list
+  /**
+   * Get a free slot in the cache
+   * @return index of free slot
+   */
   private def popFromFree():Int = {
-    currIndexCapacity += 1
+    currentSize += 1
     val popped = freeIndices(0)
     freeIndices(0) = freeIndices(popped)
     popped
   }
 
-  // Remove an item from the cache
-  private def removeFromTail() {
-    // Cases - removing from >1 and 1 element list
+  /**
+   * Remove the tail element of the list and return it
+   * @return id of tail
+   */
+  def removeFromTail():Int = {
     val prevTail = tail
     val prevId = indexToId(prevTail)
     tail = indexNext(prevTail)
-    currRealCapacity -= indexToSize(prevTail)
     addToFree(prevTail)
     idToIndex(prevId) = 0
     indexToId(prevTail) = 0
     indexPrev(tail) = 0
+    prevId
   }
 
+  def getTailIndex:Int = tail
+  def getHeadIndex:Int = head
+  def contains(id:Int):Boolean = idToIndex(id) != 0
+
+  /**
+   * Move an element to the front of the linked list
+   * Cases - moving an element in between the head and tail, only 1 element,
+   * moving the tail itself, moving the head itself
+   * @param id element to move
+   */
   def moveToHead(id:Int) {
-    // Cases to worry about:
-    // - moving an element in between the head and tail
-    // - only 1 element (head = tail)
-    // - moving the tail itself
-    // - moving the head itself
     val idx = idToIndex(id)
     if (idx != head) { // Implicitly means currIndexCapacity > 1
-      val prevIdx = indexPrev(idx)
+    val prevIdx = indexPrev(idx)
       val nextIdx = indexNext(idx)
       val prevHeadIdx = head
 
@@ -123,50 +104,107 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
   }
 
   /**
-   * Adds an element to the list, removing another
-   * if there are too many elements
+   * Add an element to the head, removing elements if there are too many
+   * @param id
    */
-  def addToHead(id:Int, eltSize:Int) {
+  def addToHead(id:Int) {
     // Cases - adding to 0 element, 1 element, >1 element list
     val prevHeadIdx = head
-    while(currIndexCapacity == size || currRealCapacity + eltSize > size) {
+    while(currentSize == size) {
       removeFromTail()
     }
 
-    currRealCapacity += eltSize
     head = popFromFree()
     idToIndex(id) = head
-    indexToSize(head) = eltSize
     indexNext(prevHeadIdx) = head
     indexPrev(head) = prevHeadIdx
     indexToId(head) = id
     indexNext(head) = 0
 
-    if (currIndexCapacity == 1) tail = head // Since tail gets set to 0 when last elt removed
+    if (currentSize == 1) tail = head // Since tail gets set to 0 when last elt removed
   }
 
-  def get(id: Int, eltSize:Int) = {
-    accesses += 1
+}
 
-    if (idToIndex(id) == 0) {
+/**
+ * Basic methods for any simulated cache
+ * @param size
+ */
+abstract class SimulatedCache(size: Int = 10) {
+  var misses, accesses, prevMisses, prevAccesses: Long = 0
+  val one:Short = 1
+
+  def getAndUpdate(id: Int, eltSize: Int):Unit
+
+  def getAndUpdate(id: Int):Unit = getAndUpdate(id, one)
+  
+  // Get cumulative statistics
+  def getStats = {
+    (misses, accesses, misses.toDouble/accesses)
+  }
+  
+  // Return the difference in misses, accesses between now and the last time this function was called
+  def diffStat = {
+    val (m, a) = (misses-prevMisses, accesses-prevAccesses)
+    prevMisses = misses
+    prevAccesses = accesses
+    (m, a, m.toDouble/a)
+  }
+}
+
+/**
+ * Cache implemented with essentially a linked hash map, itself implemented as
+ * several int arrays. Cache evicts the least recently accessed id if the size of the
+ * cache is reached. An optional size can be specified when adding to the cache,
+ * so that it takes up more space
+
+ * @param maxId The largest id that will be added to the cache
+ * @param size Units of space available in the cache
+ */
+class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
+  var currRealCapacity = 0 // sum of sizes of elements in the cache
+  val indexToSize = new Array[Int](size+1) // cache index -> element size
+  val map = new LinkedIntIntMap(maxId, size)
+
+  /**
+   * The getAndUpdate function that you need that handles whether an id needs to be
+   * added or simply can be retrieved from the cache
+   * @param id the id of the element desired
+   * @param eltSize the size of this element
+   */
+  def getAndUpdate(id: Int, eltSize:Int) = {
+    accesses += 1
+    if (!map.contains(id)) {
       misses += 1
-      addToHead(id, eltSize)
+      // Keep cache size down
+      while(currRealCapacity + eltSize > size) {
+        currRealCapacity -= indexToSize(map.getTailIndex)
+        map.removeFromTail()
+      }
+      map.addToHead(id)
+      currRealCapacity += eltSize
+      indexToSize(map.getHeadIndex) = eltSize
     }
     else {
-      moveToHead(id)
+      map.moveToHead(id)
     }
   }
 
 }
 
+/**
+ * Most recently used cache implementation
+ * Significantly slower than FastLRU
+ * @param size
+ */
 class MRUSimulatedCache(size: Int = 10) extends SimulatedCache {
   val cache = new mutable.HashMap[Int, Long]()
   
-  def get(id: Int, eltSize:Int) = {
+  def getAndUpdate(id: Int, eltSize:Int) = {
     throw new IllegalArgumentException("MRU doesn't work with variable element sizes")
   }
   
-  override def get(id: Int) = {
+  override def getAndUpdate(id: Int) = {
     if (!cache.contains(id)) {
       misses += 1
       if (cache.size == size) {
@@ -187,11 +225,11 @@ class ClockSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
   var clockPointer = 0 // Clock hand
   var cacheSize = 0
   
-  def get(id: Int, eltSize:Int) = {
+  def getAndUpdate(id: Int, eltSize:Int) = {
     throw new IllegalArgumentException("Clock doesn't work with variable element sizes")
   }
 
-  override def get(id: Int) = {
+  override def getAndUpdate(id: Int) = {
     accesses += 1
 
     // Examine recently used bit and set to false if true and advance
