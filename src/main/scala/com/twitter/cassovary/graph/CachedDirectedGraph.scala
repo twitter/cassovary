@@ -15,12 +15,14 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.StoredGraphDir._
 import java.util.concurrent.{Future, ExecutorService}
-import com.twitter.cassovary.util.{ExecutorUtils, EdgeShardsWriter, EdgeShardsReader, ArrayBasedLRUCache}
+import com.twitter.cassovary.util._
 import node.ArrayBasedDirectedNode
 import com.google.common.annotations.VisibleForTesting
 import com.twitter.ostrich.stats.Stats
 import java.util.concurrent.atomic.AtomicLong
 import com.google.common.util.concurrent.MoreExecutors
+import scala.Some
+import com.twitter.cassovary.graph.MaxIdsEdges
 
 private case class MaxIdsEdges(localMaxId:Int, localNodeWithoutOutEdgesMaxId:Int, numEdges:Int)
 
@@ -107,7 +109,7 @@ object CachedDirectedGraph {
     }
 
     // Return our cool graph!
-    new CachedDirectedGraph(nodeIdSet, 10, 100, shardDirectory, numShards,
+    new CachedDirectedGraph(nodeIdSet, 2, 4, shardDirectory, numShards,
       idToIntOffsetAndNumEdges, maxId, numNodes, numEdges, storedGraphDir)
   }
 
@@ -139,7 +141,6 @@ class CachedDirectedGraph private (
     maxId: Int, val nodeCount: Int, val edgeCount: Long,
     val storedGraphDir: StoredGraphDir) extends DirectedGraph {
 
-  val cache = new ArrayBasedLRUCache[Node](cacheMaxNodes, cacheMaxEdges, maxId)
   val reader = new EdgeShardsReader(shardDirectory, numShards)
   val emptyArray = new Array[Int](0)
 
@@ -147,23 +148,38 @@ class CachedDirectedGraph private (
 
   def iterator = (0 to maxId).flatMap(getNodeById(_)).iterator
 
+  val indexToObject = new Array[Node](cacheMaxNodes+1)
+  val cache = new LinkedIntIntMap(maxId, cacheMaxNodes)
+  var currRealCapacity = 0
+
   def getNodeById(id: Int) = {
-    if (id > maxId || nodeIdSet(id) == 0) {
+    if (id > maxId || nodeIdSet(id) == 0) { // Invalid id
       None
     }
     else {
       if (cache.contains(id)) { // Cache hit
         cache.moveToHead(id)
-        Some(cache.get(id))
+        Some(indexToObject(cache.getIndexFromId(id)))
       }
       else { // Cache miss
         idToIntOffsetAndNumEdges(id) match {
           case null => Some(ArrayBasedDirectedNode(id, emptyArray, storedGraphDir))
           case (offset, numEdges) => {
+            // Read in the node from disk
             val intArray = new Array[Int](numEdges)
             reader.readIntegersFromOffsetIntoArray(id, offset, numEdges, intArray, 0)
             val node = ArrayBasedDirectedNode(id, intArray, storedGraphDir)
-            cache.addToHead(id, node)
+
+            // Evict any items in the cache if needed and add
+            val eltSize = node.neighborCount(GraphDir.OutDir) // ToDo Fix This!
+            while(cache.getCurrentSize == cacheMaxNodes || currRealCapacity + eltSize > cacheMaxEdges) {
+              currRealCapacity -= indexToObject(cache.getTailIndex).neighborCount(GraphDir.OutDir)
+              cache.removeFromTail()
+            }
+            currRealCapacity += eltSize
+            cache.addToHead(id)
+            indexToObject(cache.getHeadIndex) = node
+
             Some(node)
           }
         }

@@ -16,117 +16,6 @@ package com.twitter.cassovary.util
 import scala.collection.mutable
 
 /**
- * An Int -> Int map with a backing doubly linked list
- * Especially useful in representing a cache
- * The linked list is implemented as a set of arrays and pointers
- * Any id added to the map should be > 0, as 0 indicates a null entry
- * @param maxId the maximum id of any element that will be inserted
- * @param size the size of this map
- */
-class LinkedIntIntMap(maxId: Int, size: Int) {
-  private val indexNext = new Array[Int](size+1) // cache next pointers
-  private val indexPrev = new Array[Int](size+1) // cache prev pointers
-  private var head, tail = 0 // pointers to the head and tail of the cache
-  private var currentSize = 0
-  private val indexToId = new Array[Int](size+1) // cache index -> id
-  private val idToIndex = new Array[Int](maxId+1) // id -> cache index
-
-  // Initialize a linked list of free indices
-  private val freeIndices = new Array[Int](size+1)
-  (0 until size+1).foreach { i => freeIndices(i) = i + 1}
-  freeIndices(size) = 0
-
-  /**
-   * Add a free slot to the cache
-   * @param index index of free slot
-   */
-  private def addToFree(index:Int):Unit = {
-    currentSize -= 1
-    freeIndices(index) = freeIndices(0)
-    freeIndices(0) = index
-  }
-
-  /**
-   * Get a free slot in the cache
-   * @return index of free slot
-   */
-  private def popFromFree():Int = {
-    currentSize += 1
-    val popped = freeIndices(0)
-    freeIndices(0) = freeIndices(popped)
-    popped
-  }
-
-  /**
-   * Remove the tail element of the list and return it
-   * @return id of tail
-   */
-  def removeFromTail():Int = {
-    val prevTail = tail
-    val prevId = indexToId(prevTail)
-    tail = indexNext(prevTail)
-    addToFree(prevTail)
-    idToIndex(prevId) = 0
-    indexToId(prevTail) = 0
-    indexPrev(tail) = 0
-    prevId
-  }
-
-  def getTailIndex:Int = tail
-  def getHeadIndex:Int = head
-  def contains(id:Int):Boolean = idToIndex(id) != 0
-
-  /**
-   * Move an element to the front of the linked list
-   * Cases - moving an element in between the head and tail, only 1 element,
-   * moving the tail itself, moving the head itself
-   * @param id element to move
-   */
-  def moveToHead(id:Int) {
-    val idx = idToIndex(id)
-    if (idx != head) { // Implicitly means currIndexCapacity > 1
-    val prevIdx = indexPrev(idx)
-      val nextIdx = indexNext(idx)
-      val prevHeadIdx = head
-
-      // Point to the real tail if we moved the tail
-      // can add in && currentIndexCapacity > 1 if there's no idx != head check
-      if (tail == idx) tail = nextIdx
-
-      // Update pointers
-      indexNext(prevIdx) = nextIdx
-      indexPrev(nextIdx) = prevIdx
-      indexNext(idx) = 0
-      indexPrev(idx) = prevHeadIdx
-      indexNext(prevHeadIdx) = idx
-      head = idx
-    }
-  }
-
-  /**
-   * Add an element to the head, removing elements if there are too many
-   * @param id
-   */
-  def addToHead(id:Int) {
-    // Cases - adding to 0 element, 1 element, >1 element list
-    val prevHeadIdx = head
-    while(currentSize == size) {
-      removeFromTail()
-    }
-
-    head = popFromFree()
-    idToIndex(id) = head
-    indexNext(prevHeadIdx) = head
-    indexPrev(head) = prevHeadIdx
-    indexToId(head) = id
-    indexNext(head) = 0
-
-    if (currentSize == 1) tail = head // Since tail gets set to 0 when last elt removed
-  }
-
-}
-
-/**
  * Basic methods for any simulated cache
  * @param size
  */
@@ -177,7 +66,7 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
     if (!map.contains(id)) {
       misses += 1
       // Keep cache size down
-      while(currRealCapacity + eltSize > size) {
+      while(map.getCurrentSize == size || currRealCapacity + eltSize > size) {
         currRealCapacity -= indexToSize(map.getTailIndex)
         map.removeFromTail()
       }

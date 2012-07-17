@@ -28,14 +28,14 @@ class GraphWithAccessCounterSpec extends Specification {
     val innerGraph = TestGraphs.g6
 
     doFirst {
-      new File("temp-cache/").mkdirs()
+      new File("temp-cache3/").mkdirs()
     }
     doLast {
-      Files.delete(new File("temp-cache/"))
+      Files.delete(new File("temp-cache3/"))
     }
 
     doBefore {
-      g = new GraphWithAccessCounter(innerGraph, 5, "temp-cache")
+      g = new GraphWithAccessCounter(innerGraph, 5, "temp-cache3")
       n = innerGraph.randomNode
       m = innerGraph.randomNode
       while (n == m) n = innerGraph.randomNode
