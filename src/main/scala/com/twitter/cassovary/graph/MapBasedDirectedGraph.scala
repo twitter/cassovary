@@ -1,26 +1,42 @@
+/*
+* Copyright 2012 Twitter, Inc.
+*
+* Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+* file except in compliance with the License. You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software distributed
+* under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+* CONDITIONS OF ANY KIND, either express or implied. See the License for the
+* specific language governing permissions and limitations under the License.
+*/
+
 package com.twitter.cassovary.graph
 
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{ExecutorService, Future}
-import scala.collection.immutable
-import scala.collection.mutable
 import com.google.common.annotations.VisibleForTesting
 import com.google.common.util.concurrent.MoreExecutors
 import com.twitter.cassovary.graph.node._
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.ExecutorUtils
 import com.twitter.ostrich.stats.Stats
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{ExecutorService, Future}
 import net.lag.logging.Logger
+import scala.collection.immutable
+import scala.collection.mutable
 
 /**
 * MapBasedDirectedGraph is very similar to ArrayBasedDirectedGraph, but potentially
-* more suited for graphs with extremely large node id's. The Map circumvents the need
+* more suited for graphs with extremely large node id's that are non-sequential and
+* do not span the entire range of 0 - |V|. The Map circumvents the need
 * to create an extremely large Array in such a case. Different from SynchronizedDyanmicGraph
-* in that it is immutable.
+* in that it is immutable. Due to how hash maps are implemented however, it is not
+* as memory efficient as ArrayBasedDirectedGraph.
 */
 object MapBasedDirectedGraph {
   private lazy val log = Logger.get
-
+  
   def apply(iteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxId] ], executorService: ExecutorService,
       storedGraphDir: StoredGraphDir) = {
 
@@ -181,6 +197,16 @@ object MapBasedDirectedGraph {
     apply(Seq(iteratorFunc), MoreExecutors.sameThreadExecutor(), storedGraphDir)
 }
 
+/**
+* This class is an implementation of the directed graph trait that is backed by a map
+* The private constructor takes as its input a map of the integer node id to the corresponding
+* Node object, and stores it in an adjacency list style format.
+*
+* @param nodes the map where key = integer id and value = corresponding Node object 
+* @param nodeCount the number of nodes in the graph
+* @param edgeCount the number of edges in the graph
+* @param storedGraphDir the graph direction(s) stored
+*/
 class MapBasedDirectedGraph private (val nodes: immutable.Map[Int, Node], 
     override val nodeCount: Int, override val edgeCount: Long, 
     override val storedGraphDir: StoredGraphDir) extends DirectedGraph {
