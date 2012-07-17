@@ -81,7 +81,7 @@ trait DirectedGraph extends Graph with Iterable[Node] {
 
   /**
    * Get some random nodes in the graph. Node ids may repeat.
-   * @param number the number of random nodes to getAndUpdate
+   * @param number the number of random nodes to get
    * @return a list of node ids
    */
   def randomNodes(number:Int):List[Int] = {

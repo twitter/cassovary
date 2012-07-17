@@ -141,7 +141,7 @@ class GraphUtils(val graph: Graph) {
 
   /**
    * Calculates the reputation of graph nodes personalized to a given node based on a random walk.
-   * @param startNodeIds the ids of the node to getAndUpdate personalized reputations for
+   * @param startNodeIds the ids of the node to get personalized reputations for
    * @param walkParams the {@link RandomWalkParams} random walk parameters
    * @return a 2-tuple:
    *         1. List of (node's id, the number of visits made to the node) sorted in decreasing

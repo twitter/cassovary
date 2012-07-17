@@ -27,7 +27,7 @@ class DirectedPathCollection {
   // the current path being built
   private val currPath = DirectedPath.builder()
 
-  // pathCountsPerId.getAndUpdate(id).getAndUpdate(path) = count of #times path has been seen ending in id
+  // pathCountsPerId.get(id).get(path) = count of #times path has been seen ending in id
   private val pathCountsPerId = new Int2ObjectOpenHashMap[Object2IntOpenHashMap[DirectedPath]]
 
   /**
