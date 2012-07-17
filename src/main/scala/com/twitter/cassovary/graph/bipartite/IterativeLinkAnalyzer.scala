@@ -90,7 +90,7 @@ class IterativeLinkAnalyzer(graphUtils: GraphUtils, resetProbOnLeft: Double,
     }
   }
 
-  //TODO get a better return value type here!
+  //TODO getAndUpdate a better return value type here!
 
   /**
    * Carries out link analysis on a bipartite graph, by default sort its output

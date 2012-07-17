@@ -16,11 +16,11 @@ package com.twitter.cassovary.graph
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.tourist._
 import com.twitter.ostrich.stats.Stats
-
 import it.unimi.dsi.fastutil.ints.{Int2IntMap, Int2ObjectMap}
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 import net.lag.logging.Logger
 import scala.util.Random
+import com.twitter.cassovary.util.GraphWithSimulatedCache
 
 /**
  * This class contains some common graph utilities and convenience functions.
@@ -108,6 +108,12 @@ class GraphUtils(val graph: Graph) {
     }
 
     if (startNodesExist) {
+      
+      // Start tracking this request
+      if (graph.isInstanceOf[GraphWithSimulatedCache]) {
+        graph.asInstanceOf[GraphWithSimulatedCache].diffStat
+      }
+      
       val traversedNodes = new RandomBoundedTraverser(graph, dir, startNodeIds,
         walkParams.numSteps, walkParams)
 
@@ -119,13 +125,23 @@ class GraphUtils(val graph: Graph) {
           }
         })
       }
+      
+            
+      // End tracking of this particular request
+      if (graph.isInstanceOf[GraphWithSimulatedCache]) {
+        val (m, a, r) = graph.asInstanceOf[GraphWithSimulatedCache].diffStat
+        Stats.addMetric("random_walk_misses", m.toInt)
+        Stats.addMetric("random_walk_accesses", a.toInt)
+        log.info("simcache randomwalk %s %s %s".format(m, a, r))
+      }
+      
     }
     (visitsCounter, pathsCounterOption)
   }
 
   /**
    * Calculates the reputation of graph nodes personalized to a given node based on a random walk.
-   * @param startNodeIds the ids of the node to get personalized reputations for
+   * @param startNodeIds the ids of the node to getAndUpdate personalized reputations for
    * @param walkParams the {@link RandomWalkParams} random walk parameters
    * @return a 2-tuple:
    *         1. List of (node's id, the number of visits made to the node) sorted in decreasing

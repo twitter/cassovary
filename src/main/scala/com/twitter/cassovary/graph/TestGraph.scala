@@ -95,4 +95,15 @@ object TestGraphs {
     }
     ArrayBasedDirectedGraph( () => nodes.iterator, StoredGraphDir.BothInOut)
   }
+
+  def generateRandomGraphWithSeed(numNodes: Int, avgOutDegree: Int, randomSeed: Long) = {
+    val nodes = new mutable.ArrayBuffer[NodeIdEdgesMaxId]
+    val rand = new Random(randomSeed)
+    (0 until numNodes) foreach { source =>
+      val numOutNeighbors = rand.nextInt(2 * avgOutDegree + 1)
+      val outNeighbors = (0 until numOutNeighbors).toArray.map { i: Int => rand.nextInt(numNodes) }
+      nodes += NodeIdEdgesMaxId(source, outNeighbors)
+    }
+    ArrayBasedDirectedGraph( () => nodes.iterator, StoredGraphDir.BothInOut)
+  }
 }

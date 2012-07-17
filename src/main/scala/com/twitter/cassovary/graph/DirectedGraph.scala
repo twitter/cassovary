@@ -14,6 +14,7 @@
 package com.twitter.cassovary.graph
 
 import GraphDir._
+import scala.util.Random
 
 object StoredGraphDir extends Enumeration {
   type StoredGraphDir = Value
@@ -64,6 +65,27 @@ trait DirectedGraph extends Graph with Iterable[Node] {
    */
   lazy val maxNodeId = iterator.foldLeft(0) {
     (mx, node) => mx max node.id
+  }
+
+  /**
+   * Get a random node that exists in the graph by uniformly sampling from 0 to maxNodeId
+   */
+  def randomNode:Int = {
+    val rand = new Random()
+    def getValidNode(nodeId:Int):Int = getNodeById(nodeId) match {
+      case Some(n) => nodeId
+      case None => getValidNode(rand.nextInt(maxNodeId))
+    }
+    getValidNode(rand.nextInt(maxNodeId))
+  }
+
+  /**
+   * Get some random nodes in the graph. Node ids may repeat.
+   * @param number the number of random nodes to getAndUpdate
+   * @return a list of node ids
+   */
+  def randomNodes(number:Int):List[Int] = {
+    (1 to number).foldLeft(List[Int]()) { (l, _) => randomNode :: l}
   }
 
   /**
