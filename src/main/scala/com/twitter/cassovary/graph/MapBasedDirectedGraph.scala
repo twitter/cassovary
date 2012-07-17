@@ -208,12 +208,11 @@ object MapBasedDirectedGraph {
 * @param storedGraphDir the graph direction(s) stored
 */
 class MapBasedDirectedGraph private (val nodes: immutable.Map[Int, Node], 
-    override val nodeCount: Int, override val edgeCount: Long, 
-    override val storedGraphDir: StoredGraphDir) extends DirectedGraph {
+    val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir) extends DirectedGraph {
       
   override lazy val maxNodeId = nodes.keys.max
   
   override def iterator = nodes.valuesIterator
   
-  override def getNodeById(id: Int) = if (nodes contains id) Some(nodes(id)) else None
-} 
+  override def getNodeById(id: Int) = nodes.get(id) 
+}
