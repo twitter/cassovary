@@ -23,6 +23,9 @@ import java.util.concurrent.atomic.AtomicLong
 import com.google.common.util.concurrent.MoreExecutors
 import scala.Some
 import java.io.File
+import collection.mutable
+import net.lag.logging.Logger
+import com.google.common.cache.{LoadingCache, CacheLoader, Weigher, CacheBuilder}
 
 private case class MaxIdsEdges(localMaxId:Int, localNodeWithoutOutEdgesMaxId:Int, numEdges:Int, nodeCount:Int)
 
@@ -31,21 +34,30 @@ private case class MaxIdsEdges(localMaxId:Int, localNodeWithoutOutEdgesMaxId:Int
  */
 object CachedDirectedGraph {
 
+  private lazy val log = Logger.get("CacheDirectedGraph")
+
   def apply(iteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxId] ], executorService: ExecutorService,
             storedGraphDir: StoredGraphDir, cacheMaxNodes:Int, cacheMaxEdges:Int,
-            shardDirectory: String, numShards: Int):CachedDirectedGraph = {
+            shardDirectory: String, numShards: Int, cacheType: String = "guava"):CachedDirectedGraph = {
 
     var maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount = 0
     var numEdges = 0L
 
-    // Step 1 - Find maxId, nodeWithOutEdgesMaxId, numEdges
+    log.info("Cache Info: cacheMaxNodes is %s, cacheMaxEdges is %s, cacheType is %s".format(cacheMaxNodes, cacheMaxEdges, cacheType))
+    log.info("Disk Shard Info: directory is %s, numShards is %s".format(shardDirectory, numShards))
+
+    // Step 1
+    // Find maxId, nodeWithOutEdgesMaxId, numEdges
     // Needed so that we can initialize arrays with the appropriate sizes
-    val futures = Stats.time("reading_maxid_and_calculating_numedges") {
+    log.info("Reading maxId and Calculating numEdges...")
+    val futures = Stats.time("graph_load_reading_maxid_and_calculating_numedges") {
       def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) = {
         var localMaxId, localNodeWithOutEdgesMaxId, numEdges, nodeCount = 0
         iteratorFunc().foreach { item =>
+          // Keep track of Max IDs
           localMaxId = localMaxId max item.maxId
           localNodeWithOutEdgesMaxId = localNodeWithOutEdgesMaxId max item.id
+          // Update nodeCount and total edges
           numEdges += item.edges.length
           nodeCount += 1
         }
@@ -64,25 +76,52 @@ object CachedDirectedGraph {
     }
 
     // Step 2
-    // Generate and store shard offsets and # of edges for each node
-    // Generate shards themselves
     // Generate the lookup table for nodeIdSet
-    val nodeIdSet = new Array[Byte](maxId+1)
+    // Generate and store shard offsets and # of edges for each node
+    log.info("Generating offset tables...")
+    val nodeIdSet = new mutable.BitSet(maxId+1)
     val idToIntOffsetAndNumEdges = new Array[(Long,Int)](maxId+1)
     val edgeOffsets = new Array[AtomicLong](numShards)
-
     (0 until numShards).foreach { i => edgeOffsets(i) = new AtomicLong() }
-    Stats.time("calculating_offsets_and_writing_to_files") {
+    Stats.time("graph_load_generating_offset_tables") {
       def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) = {
         val esw = new EdgeShardsWriter(shardDirectory, numShards)
         iteratorFunc() foreach { item =>
           val id = item.id
-          val shardNum = id % numShards
-          val numEdges = item.edges.length
-          val edgeOffset = edgeOffsets(shardNum).getAndAdd(numEdges)
-          nodeIdSet(id) = 1
-          item.edges foreach { edge => nodeIdSet(edge) = 1 }
-          idToIntOffsetAndNumEdges(id) = (edgeOffset, numEdges)
+          val itemEdges = item.edges.length
+          // Update nodeId set
+          nodeIdSet(id) = true
+          item.edges foreach { edge => nodeIdSet(edge) = true }
+          // Store offsets
+          val edgeOffset = edgeOffsets(id % numShards).getAndAdd(itemEdges)
+          idToIntOffsetAndNumEdges(id) = (edgeOffset, itemEdges)
+        }
+        esw.close
+      }
+      ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxId], Unit](executorService,
+        iteratorSeq, readOutEdges)
+    }
+
+    // Step 3
+    // Allocating shards
+    log.info("Allocating shards...")
+    Stats.time("graph_load_allocating_shards") {
+      val esw = new EdgeShardsWriter(shardDirectory, numShards)
+      (0 until numShards).foreach { i =>
+        esw.shardWriters(i).allocate(edgeOffsets(i).get)
+      }
+      esw.close
+    }
+
+    // Step 4
+    // Generate shards on disk
+    log.info("Writing to shards...")
+    Stats.time("graph_load_writing_to_shards") {
+      def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) = {
+        val esw = new EdgeShardsWriter(shardDirectory, numShards)
+        iteratorFunc() foreach { item =>
+          val id = item.id
+          val (edgeOffset, _) = idToIntOffsetAndNumEdges(id)
           esw.writeIntegersAtOffset(id, edgeOffset * 4, item.edges)
         }
         esw.close
@@ -91,35 +130,57 @@ object CachedDirectedGraph {
         iteratorSeq, readOutEdges)
     }
 
+    // Step 5
     // Count number of nodes
+    log.info("Counting total number of nodes...")
     var numNodes = 0
     Stats.time("graph_load_count_total_num_of_nodes") {
       for ( id <- 0 to maxId )
-        if (nodeIdSet(id) == 1)
+        if (nodeIdSet(id))
           numNodes += 1
     }
 
     // Do the below only if we need both directions
     if (storedGraphDir == StoredGraphDir.BothInOut) {
       throw new UnsupportedOperationException("BothInOut not supported at the moment")
-
       // Step S1 - Calculate in-edge sizes
-
       // Step S2 - WritableCache
-
     }
 
     // Return our cool graph!
-    new CachedDirectedGraph(nodeIdSet, cacheMaxNodes, cacheMaxEdges, shardDirectory, numShards,
-      idToIntOffsetAndNumEdges,
-      maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
-      numNodes, numEdges, storedGraphDir)
+    cacheType match {
+      case "guava" => new GuavaCachedDirectedGraph(nodeIdSet, cacheMaxNodes+cacheMaxEdges,
+        shardDirectory, numShards, idToIntOffsetAndNumEdges,
+        maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+        numNodes, numEdges, storedGraphDir)
+      case _ => new FastLRUCachedDirectedGraph(nodeIdSet, cacheMaxNodes, cacheMaxEdges,
+        shardDirectory, numShards, idToIntOffsetAndNumEdges,
+        maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+        numNodes, numEdges, storedGraphDir)
+    }
   }
 
   @VisibleForTesting
   def apply(iteratorFunc: () => Iterator[NodeIdEdgesMaxId],
-      storedGraphDir: StoredGraphDir):CachedDirectedGraph =
-    apply(Seq(iteratorFunc), MoreExecutors.sameThreadExecutor(), storedGraphDir, 2, 4, "temp-shards", 10)
+      storedGraphDir: StoredGraphDir, cacheType:String):CachedDirectedGraph =
+    apply(Seq(iteratorFunc), MoreExecutors.sameThreadExecutor(),
+      storedGraphDir, 2, 4, "temp-shards", 10, cacheType)
+}
+
+abstract class CachedDirectedGraph(maxId: Int,
+    val nodeWithOutEdgesMaxId:Int, val nodeWithOutEdgesCount:Int) extends DirectedGraph {
+
+  override lazy val maxNodeId = maxId
+
+  def iterator = (0 to maxId).flatMap(getNodeById(_)).iterator
+
+  val graphDir = storedGraphDir match {
+    case(OnlyIn) => GraphDir.InDir
+    case(OnlyOut) => GraphDir.OutDir
+    case _ => throw new IllegalArgumentException("OnlyIn or OnlyOut accepted, but not both!")
+  }
+
+  def writeStats(fileName: String)
 }
 
 /**
@@ -136,29 +197,24 @@ object CachedDirectedGraph {
  * @param edgeCount number of edges in the graph
  * @param storedGraphDir the graph directions stored
  */
-class CachedDirectedGraph private (
-    val nodeIdSet:Array[Byte],
+class FastLRUCachedDirectedGraph (
+    val nodeIdSet:mutable.BitSet,
     val cacheMaxNodes:Int, val cacheMaxEdges:Int,
     val shardDirectory:String, val numShards:Int,
     val idToIntOffsetAndNumEdges:Array[(Long,Int)],
-    maxId: Int, val nodeWithOutEdgesMaxId: Int, val nodeWithOutEdgesCount: Int,
-    val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir) extends DirectedGraph {
+    maxId: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
+    val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir)
+    extends CachedDirectedGraph(maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
 
   val reader = new EdgeShardsReader(shardDirectory, numShards)
   val emptyArray = new Array[Int](0)
-
-  override lazy val maxNodeId = maxId
-
-  def iterator = (0 to maxId).flatMap(getNodeById(_)).iterator
-
   val indexToObject = new Array[Node](cacheMaxNodes+1)
   val cache = new LinkedIntIntMap(maxId, cacheMaxNodes)
   var currRealCapacity = 0
-
   var hits, misses = 0
 
   def getNodeById(id: Int) = Stats.time("cached_get_node_by_id") {
-    if (id > maxId || nodeIdSet(id) == 0) { // Invalid id
+    if (id > maxId || !nodeIdSet(id)) { // Invalid id
       None
     }
     else {
@@ -180,9 +236,9 @@ class CachedDirectedGraph private (
             val node = ArrayBasedDirectedNode(id, intArray, storedGraphDir)
 
             // Evict any items in the cache if needed and add
-            val eltSize = node.neighborCount(GraphDir.OutDir) // ToDo Fix This!
+            val eltSize = node.neighborCount(graphDir)
             while(cache.getCurrentSize == cacheMaxNodes || currRealCapacity + eltSize > cacheMaxEdges) {
-              currRealCapacity -= indexToObject(cache.getTailIndex).neighborCount(GraphDir.OutDir)
+              currRealCapacity -= indexToObject(cache.getTailIndex).neighborCount(graphDir)
               cache.removeFromTail()
             }
             currRealCapacity += eltSize
@@ -207,4 +263,73 @@ class CachedDirectedGraph private (
     try { op(p) } finally { p.close() }
   }
 
+}
+
+/**
+ * This is an implementation of the directed graph trait backed by a Google Guava cache
+ * and shards on disk
+ * @param nodeIdSet nodes with either outgoing or incoming edges
+ * @param cacheMaxNodesAndEdges maximum number of nodes and edges that the cache can store
+ * @param shardDirectory where shards live on disk
+ * @param numShards number of shards to split into
+ * @param idToIntOffsetAndNumEdges offset into a shard on disk and the number of edges
+ * @param maxId max node id in the graph
+ * @param nodeCount number of nodes in the graph
+ * @param edgeCount number of edges in the graph
+ * @param storedGraphDir the graph directions stored
+ */
+class GuavaCachedDirectedGraph (
+    val nodeIdSet:mutable.BitSet,
+    val cacheMaxNodesAndEdges:Int,
+    val shardDirectory:String, val numShards:Int,
+    val idToIntOffsetAndNumEdges:Array[(Long,Int)],
+    maxId: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
+    val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir)
+    extends CachedDirectedGraph(maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
+
+  val reader = new EdgeShardsReader(shardDirectory, numShards)
+  val emptyArray = new Array[Int](0)
+
+  // Load Noder (haha)
+  private def loadNode(id: Int):Node = {
+    idToIntOffsetAndNumEdges(id) match {
+      case null => ArrayBasedDirectedNode(id, emptyArray, storedGraphDir)
+      case (offset, numEdges) => {
+        // Read in the node from disk
+        val intArray = new Array[Int](numEdges)
+        reader.readIntegersFromOffsetIntoArray(id, offset, numEdges, intArray, 0)
+        ArrayBasedDirectedNode(id, intArray, storedGraphDir)
+      }
+    }
+  }
+
+  // Guava Cache
+  val cache:LoadingCache[Int,Node] = CacheBuilder.newBuilder()
+    .maximumWeight(cacheMaxNodesAndEdges)
+    .weigher(new Weigher[Int,Node] {
+      def weigh(k:Int, v:Node):Int = v.neighborCount(graphDir) + 1
+    })
+    .asInstanceOf[CacheBuilder[Int,Node]]
+    .build[Int,Node](new CacheLoader[Int,Node] {
+      def load(k:Int):Node = loadNode(k)
+    })
+
+  def getNodeById(id: Int) = Stats.time("cached_get_node_by_id") {
+    if (id > maxId || !nodeIdSet(id)) // Invalid id
+      None
+    else
+      Some(cache.get(id))
+  }
+
+  def writeStats(fileName: String) = {
+    val stats = cache.stats()
+    printToFile(new File(fileName))(p => {
+      p.println("%s\t%s\t%s\t%s".format(stats.missCount(), stats.requestCount(), stats.missRate(), stats.averageLoadPenalty()))
+    })
+  }
+
+  private def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
+    val p = new java.io.PrintWriter(f)
+    try { op(p) } finally { p.close() }
+  }
 }

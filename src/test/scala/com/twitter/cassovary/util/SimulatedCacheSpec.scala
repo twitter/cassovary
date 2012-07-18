@@ -97,7 +97,7 @@ class SimulatedCacheSpec extends Specification {
       cache.getStats
     }
 
-    def sizableCase3(cache:FastLRUSimulatedCache) = {
+    def sizableCase3(cache:SimulatedCache) = {
       cache.getAndUpdate(2, 1)
       cache.getAndUpdate(3, 1)
       cache.getAndUpdate(4, 1)

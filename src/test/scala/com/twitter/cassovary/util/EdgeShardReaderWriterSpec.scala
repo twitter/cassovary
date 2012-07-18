@@ -19,6 +19,7 @@ import java.util.concurrent.Executors
 import actors.Actor
 import java.util.concurrent.atomic.AtomicInteger
 import net.lag.logging.Logger
+import java.io.File
 
 class EdgeShardReaderWriterSpec extends Specification {
   val log = Logger.get
@@ -112,6 +113,7 @@ class EdgeShardReaderWriterSpec extends Specification {
         intArray(i*2) mustEqual i
         intArray(i*2+1) mustEqual i+1
       }
+      esr.close
     }
 
     "Non-sequential writes work" in {
@@ -126,6 +128,7 @@ class EdgeShardReaderWriterSpec extends Specification {
       esr.readIntegersFromOffsetIntoArray(24, 3, intArray, 1)
       val actualSeq = Seq(999, 5, 6, 42)
       (0 until 4).foreach { i => intArray(i) mustEqual actualSeq(i) }
+      esr.close
     }
 
     "Reading and writing nothing doesn't mess up" in {
@@ -142,6 +145,39 @@ class EdgeShardReaderWriterSpec extends Specification {
       esr.readIntegersFromOffsetIntoArray(28, 0, intArray, 0)
       intArray(0) mustEqual 6
       intArray(1) mustEqual 7
+      esr.close
+    }
+
+    "Multiple writes by different writers doesn't mess up" in {
+      val esw = new EdgeShardWriter("test.txt")
+      esw.writeIntegersAtOffset(8, Seq(9, 8))
+      esw.close
+
+      val ess = new EdgeShardReader("test.txt")
+      val intArray = new Array[Int](5)
+      ess.readIntegersFromOffsetIntoArray(8, 2, intArray, 0)
+      intArray(0) mustEqual 9
+      intArray(1) mustEqual 8
+      ess.close
+
+      val esv = new EdgeShardWriter("test.txt")
+      esv.writeIntegersAtOffset(0, Seq(5, 6, 7))
+      esv.writeIntegersAtOffset(16, Seq(9))
+      esv.close
+
+      val esr = new EdgeShardReader("test.txt")
+      esr.readIntegersFromOffsetIntoArray(8, 2, intArray, 0)
+      intArray(0) mustEqual 7
+      intArray(1) mustEqual 8
+      esr.close
+    }
+
+    "Successfully make a large file of the right size" in {
+      new File("test.txt").delete()
+      val esw = new EdgeShardWriter("test.txt")
+      esw.allocate(1000000)
+      esw.length mustEqual 1000000
+      esw.close
     }
   }
 
@@ -170,6 +206,7 @@ class EdgeShardReaderWriterSpec extends Specification {
       esr.readIntegersFromOffsetIntoArray(5, 0, 7, intArray, 3)
       val combined = oneSequence ::: twoSequence ::: sevenSequence
       (0 until 10).foreach { i => combined(i) mustEqual intArray(i) }
+      esr.close
     }
   }
 }

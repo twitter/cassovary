@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.util
 
-import java.io.{IOException, File, DataOutputStream, FileOutputStream}
+import java.io._
 
 /**
  * Write integers in binary to a single shard.
@@ -22,9 +22,7 @@ import java.io.{IOException, File, DataOutputStream, FileOutputStream}
  * @param filename
  */
 class EdgeShardWriter(val filename:String) {
-  private val fos = new FileOutputStream(filename)
-  private val fc = fos.getChannel()
-  private val dos = new DataOutputStream(fos)
+  private val fos = new RandomAccessFile(filename, "rw")
   private var offset = 0
 
   // TODO might want to preallocate space first to avoid fragmentation
@@ -48,7 +46,7 @@ class EdgeShardWriter(val filename:String) {
    */
   def writeIntegersSequentially(intList:Iterable[Int]):Long = {
     val returnOffset = offset // can use fc.position() but you must call dos.flush() first
-    intList.foreach(dos.writeInt(_))
+    intList.foreach(fos.writeInt(_))
     offset += intList.size * 4
     returnOffset
   }
@@ -59,11 +57,20 @@ class EdgeShardWriter(val filename:String) {
    * @param intList a list of integers
    */
   def writeIntegersAtOffset(writeOffset:Long, intList:Iterable[Int]) = {
-    fos.getChannel.position(writeOffset)
-    intList.foreach(dos.writeInt(_))
+    fos.seek(writeOffset)
+    intList.foreach(fos.writeInt(_))
   }
 
-  def close = dos.close()
+  def allocate(fileSize:Long) = {
+    if (fileSize > 0) {
+      fos.seek(fileSize-1)
+      fos.writeByte(1)
+    }
+  }
+
+  def length = fos.length
+
+  def close = fos.close()
 }
 
 /**

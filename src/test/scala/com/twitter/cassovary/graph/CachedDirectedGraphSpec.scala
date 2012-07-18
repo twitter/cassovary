@@ -25,7 +25,10 @@ class CachedDirectedGraphSpec extends Specification {
     NodeIdEdgesMaxId(6, Array(1,2,3,4))).iterator
 
   def makeGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
-    iteratorFunc, dir)
+    iteratorFunc, dir, "guava")
+
+  def makeFastLRUGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
+    iteratorFunc, dir, "fastlru")
 
   def getNode(id: Int): Option[Node] = graph.getNodeById(id)
 
@@ -37,7 +40,7 @@ class CachedDirectedGraphSpec extends Specification {
     graph = makeGraph(StoredGraphDir.OnlyIn)
   }
 
-  "graph containing only out edges" definedAs smallGraphOutOnly should {
+  "Guava-based graph containing only out edges" definedAs smallGraphOutOnly should {
     "map only out edges" in {
       getNode(1).get must DeepEqualsNode((NodeMaker(1, Array(2, 3, 4), Array())))
       getNode(2).get must DeepEqualsNode((NodeMaker(2, Array(1), Array())))
@@ -61,7 +64,7 @@ class CachedDirectedGraphSpec extends Specification {
     }
   }
 
-  "graph containing only in edges" definedAs smallGraphInOnly should {
+  "Guava-based graph containing only in edges" definedAs smallGraphInOnly should {
     "map only in edges" in {
       getNode(1).get must DeepEqualsNode((NodeMaker(1, Array(), Array(2, 3, 4))))
       getNode(2).get must DeepEqualsNode((NodeMaker(2, Array(), Array(1))))
@@ -89,105 +92,108 @@ class CachedDirectedGraphSpec extends Specification {
     }
   }
 
-  "graph containing only out edges" should {
+
+  "Guava-based graph containing only out edges" should {
+    var graphL: GuavaCachedDirectedGraph = null
     doBefore {
       graph = makeGraph(StoredGraphDir.OnlyOut)
+      graphL = graph.asInstanceOf[GuavaCachedDirectedGraph]
+    }
+
+    "Do stats even work?" in {
+      getNode(1)
+      getNode(2)
+      graphL.cache.stats().requestCount() mustEqual 2
+      graphL.cache.stats().missCount() mustEqual 2
+    }
+
+    "Do some values get cached?" in {
+      getNode(2)
+      getNode(3)
+      getNode(2)
+      getNode(3)
+      graphL.cache.stats().requestCount() mustEqual 4
+      graphL.cache.stats().missCount() mustEqual 2
+    }
+  }
+
+  "FastLRU-based graph containing only out edges" should {
+    var graphL: FastLRUCachedDirectedGraph = null
+    doBefore {
+      graph = makeFastLRUGraph(StoredGraphDir.OnlyOut)
+      graphL = graph.asInstanceOf[FastLRUCachedDirectedGraph]
+    }
+
+    "map only out edges" in {
+      getNode(1).get must DeepEqualsNode((NodeMaker(1, Array(2, 3, 4), Array())))
+      getNode(2).get must DeepEqualsNode((NodeMaker(2, Array(1), Array())))
+      getNode(3).get must DeepEqualsNode((NodeMaker(3, Array(1), Array())))
+      getNode(4).get must DeepEqualsNode((NodeMaker(4, Array())))
+      getNode(5).get must DeepEqualsNode((NodeMaker(5, Array(2), Array())))
+      getNode(6).get must DeepEqualsNode((NodeMaker(6, Array(1, 2, 3, 4), Array())))
+      getNode(7) mustEqual None
     }
 
     "be able to add a single node" in {
       getNode(1)
-      graph.cache.getCurrentSize mustEqual 1
-      graph.currRealCapacity mustEqual 3
-      graph.cache.contains(1) mustEqual true
-      graph.indexToObject(graph.cache.getIndexFromId(1)) must DeepEqualsNode((NodeMaker(1, Array(2, 3, 4), Array())))
-      graph.cache.contains(0) mustEqual false
-      graph.cache.contains(2) mustEqual false
+      graphL.cache.getCurrentSize mustEqual 1
+      graphL.currRealCapacity mustEqual 3
+      graphL.cache.contains(1) mustEqual true
+      graphL.indexToObject(graphL.cache.getIndexFromId(1)) must DeepEqualsNode((NodeMaker(1, Array(2, 3, 4), Array())))
+      graphL.cache.contains(0) mustEqual false
+      graphL.cache.contains(2) mustEqual false
     }
 
     "must evict in LRU order" in {
       getNode(2)
       getNode(5)
       getNode(2)
-      graph.cache.contains(1) mustEqual false
-      graph.cache.contains(2) mustEqual true
-      graph.cache.contains(5) mustEqual true
+      graphL.cache.contains(1) mustEqual false
+      graphL.cache.contains(2) mustEqual true
+      graphL.cache.contains(5) mustEqual true
       getNode(1) // bye 5
-      graph.cache.contains(1) mustEqual true
-      graph.cache.contains(2) mustEqual true
-      graph.cache.contains(5) mustEqual false
+      graphL.cache.contains(1) mustEqual true
+      graphL.cache.contains(2) mustEqual true
+      graphL.cache.contains(5) mustEqual false
     }
 
     "must obey index (max nodes/size of map) capacity" in {
       getNode(2)
       getNode(3)
-      graph.cache.contains(2) mustEqual true
-      graph.cache.contains(3) mustEqual true
-      graph.cache.contains(5) mustEqual false
+      graphL.cache.contains(2) mustEqual true
+      graphL.cache.contains(3) mustEqual true
+      graphL.cache.contains(5) mustEqual false
       getNode(5)
-      graph.cache.contains(2) mustEqual false
-      graph.cache.contains(3) mustEqual true
-      graph.cache.contains(5) mustEqual true
+      graphL.cache.contains(2) mustEqual false
+      graphL.cache.contains(3) mustEqual true
+      graphL.cache.contains(5) mustEqual true
     }
 
     "must obey real (max edges) capacity" in {
       getNode(6)
       getNode(6)
-      graph.cache.contains(1) mustEqual false
-      graph.cache.contains(6) mustEqual true
+      graphL.cache.contains(1) mustEqual false
+      graphL.cache.contains(6) mustEqual true
       getNode(1)
       getNode(1)
-      graph.cache.contains(1) mustEqual true
-      graph.cache.contains(6) mustEqual false
+      graphL.cache.contains(1) mustEqual true
+      graphL.cache.contains(6) mustEqual false
     }
 
     "must obey both index and real capacities" in {
       getNode(2)
       getNode(3)
       getNode(5) // bye 2, even though there's edge space
-      graph.cache.contains(2) mustEqual false
-      graph.cache.contains(3) mustEqual true
-      graph.cache.contains(5) mustEqual true
-      graph.cache.contains(6) mustEqual false
+      graphL.cache.contains(2) mustEqual false
+      graphL.cache.contains(3) mustEqual true
+      graphL.cache.contains(5) mustEqual true
+      graphL.cache.contains(6) mustEqual false
       getNode(6) // bye 3, 5
-      graph.cache.contains(2) mustEqual false
-      graph.cache.contains(3) mustEqual false
-      graph.cache.contains(5) mustEqual false
-      graph.cache.contains(6) mustEqual true
+      graphL.cache.contains(2) mustEqual false
+      graphL.cache.contains(3) mustEqual false
+      graphL.cache.contains(5) mustEqual false
+      graphL.cache.contains(6) mustEqual true
     }
-
-//    "must update the order of the list and obey real capacity" in {
-//      cache.addToHead(14, n14)
-//      cache.addToHead(13, n13)
-//      cache.addToHead(12, n12)
-//      cache.addToHead(10, n10)
-//      cache.moveToHead(14)
-//      cache.addToHead(15, n15) // bye 13
-//      cache.contains(10) mustEqual true
-//      cache.contains(11) mustEqual false
-//      cache.contains(12) mustEqual true
-//      cache.contains(13) mustEqual false
-//      cache.contains(14) mustEqual true
-//      cache.contains(15) mustEqual true
-//      cache.moveToHead(10)
-//      cache.addToHead(13, n13) // bye 12
-//      cache.contains(10) mustEqual true
-//      cache.contains(11) mustEqual false
-//      cache.contains(12) mustEqual false
-//      cache.contains(13) mustEqual true
-//      cache.contains(14) mustEqual true
-//      cache.contains(15) mustEqual true
-//      cache.map.getCurrentSize mustEqual 4
-//      cache.currRealCapacity mustEqual 8
-//      cache.addToHead(11, n11) // bye 14, 15
-//      cache.contains(10) mustEqual true
-//      cache.contains(11) mustEqual true
-//      cache.contains(12) mustEqual false
-//      cache.contains(13) mustEqual true
-//      cache.contains(14) mustEqual false
-//      cache.contains(15) mustEqual false
-//      cache.map.getCurrentSize mustEqual 3
-//      cache.currRealCapacity mustEqual 7
-//    }
   }
 
 }

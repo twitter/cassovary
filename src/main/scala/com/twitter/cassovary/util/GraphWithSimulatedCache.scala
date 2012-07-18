@@ -40,6 +40,7 @@ class GraphWithSimulatedCache(val g: DirectedGraph, val cacheSize: Int,
       new ClockSimulatedCache(dg.maxNodeId, cacheSize)
     }
     case "mru" => new MRUSimulatedCache(cacheSize)
+    case "guava" => new GuavaSimulatedCache(cacheSize, { i => g.getNodeById(i).get.neighborCount(GraphDir.OutDir) })
     case _ => {
       val dg = g.asInstanceOf[DirectedGraph]
       new FastLRUSimulatedCache(dg.maxNodeId, cacheSize)
@@ -115,7 +116,7 @@ class GraphWithSimulatedVarCache(g: DirectedGraph, cacheSize: Int,
           val (m, a, r) = cache.getStats
           Stats.addMetric("cache_misses", m.toInt)
           Stats.addMetric("cache_accesses", a.toInt)
-          log.info("simcache interval %s %s %s".format(m, a, r))
+          log.info("simcachevar interval %s %s %s".format(m, a, r))
           writeStats("%s/%s.txt".format(outputDirectory, writes))
           writes += 1
         }

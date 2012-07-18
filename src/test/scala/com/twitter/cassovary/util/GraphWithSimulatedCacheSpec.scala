@@ -30,10 +30,12 @@ class GraphWithSimulatedCacheSpec extends Specification {
     doFirst {
       new File("temp-cache").mkdirs()
       new File("temp-cache2").mkdirs()
+      new File("temp-cache4").mkdirs()
     }
     doLast {
       Files.delete(new File("temp-cache"))
       Files.delete(new File("temp-cache2"))
+      Files.delete(new File("temp-cache4"))
     }
 
     "GraphWithSimulatedCache" in {
@@ -65,6 +67,20 @@ class GraphWithSimulatedCacheSpec extends Specification {
         graphUtils.calculatePersonalizedReputation(10, walkParams)
         g.getStats mustEqual (4, 200, 0.02)
         Source.fromFile(g.outputDirectory+"/39.txt").mkString mustEqual "4\t200\t0.02\n"
+      }
+    }
+
+    "GraphWithSimulatedVarCacheGuava" in {
+      var g:GraphWithSimulatedVarCache = null
+      doBefore {
+        g = new GraphWithSimulatedVarCache(innerGraph, 5, "guava", 5, "temp-cache4")
+      }
+
+      "do something" in {
+        g.getNodeById(10)
+        g.getNodeById(11)
+        g.getNodeById(12)
+        g.getStats mustEqual (3, 3, 1.0)
       }
     }
 

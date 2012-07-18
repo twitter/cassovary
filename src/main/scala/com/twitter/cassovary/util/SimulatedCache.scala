@@ -14,6 +14,8 @@
 
 package com.twitter.cassovary.util
 import scala.collection.mutable
+import com.google.common.cache.{CacheLoader, LoadingCache, Weigher, CacheBuilder}
+import java.io.IOException
 
 /**
  * Basic methods for any simulated cache
@@ -79,6 +81,28 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
     }
   }
 
+}
+
+class GuavaSimulatedCache(size: Int, loader:(Int => Int)) extends SimulatedCache {
+  val cache:LoadingCache[Int,Int] = CacheBuilder.newBuilder().maximumWeight(size)
+    .weigher(new Weigher[Int,Int] {
+      def weigh(k:Int, v:Int):Int = v
+    })
+    .asInstanceOf[CacheBuilder[Int,Int]]
+    .build[Int,Int](new CacheLoader[Int,Int] {
+      def load(k:Int):Int = {
+        loader(k)
+      }
+    })
+
+  override def getStats = {
+    val stats = cache.stats()
+    (stats.missCount(), stats.requestCount(), stats.missRate())
+  }
+
+  def getAndUpdate(id: Int, eltSize: Int) = {
+    cache.get(id)
+  }
 }
 
 /**
