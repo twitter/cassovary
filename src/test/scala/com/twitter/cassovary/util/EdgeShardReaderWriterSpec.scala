@@ -113,6 +113,36 @@ class EdgeShardReaderWriterSpec extends Specification {
         intArray(i*2+1) mustEqual i+1
       }
     }
+
+    "Non-sequential writes work" in {
+      val esw = new EdgeShardWriter("test.txt")
+      esw.writeIntegersAtOffset(24, Seq(5,6))
+      esw.writeIntegersAtOffset(4, Seq(999))
+      esw.writeIntegersAtOffset(32, Seq(42))
+      esw.close
+      val esr = new EdgeShardReader("test.txt")
+      val intArray = new Array[Int](4)
+      esr.readIntegersFromOffsetIntoArray(4, 1, intArray, 0)
+      esr.readIntegersFromOffsetIntoArray(24, 3, intArray, 1)
+      val actualSeq = Seq(999, 5, 6, 42)
+      (0 until 4).foreach { i => intArray(i) mustEqual actualSeq(i) }
+    }
+
+    "Reading and writing nothing doesn't mess up" in {
+      val esw = new EdgeShardWriter("test.txt")
+      esw.writeIntegersAtOffset(24, Seq(5, 7))
+      esw.writeIntegersAtOffset(24, Seq())
+      esw.writeIntegersAtOffset(24, Seq(6))
+      esw.writeIntegersAtOffset(24, Seq())
+      esw.close
+      val esr = new EdgeShardReader("test.txt")
+      val intArray = new Array[Int](2)
+      esr.readIntegersFromOffsetIntoArray(20, 2, intArray, 0)
+      esr.readIntegersFromOffsetIntoArray(24, 2, intArray, 0)
+      esr.readIntegersFromOffsetIntoArray(28, 0, intArray, 0)
+      intArray(0) mustEqual 6
+      intArray(1) mustEqual 7
+    }
   }
 
   "EdgeShardsWriter and EdgeShardsReader" should {

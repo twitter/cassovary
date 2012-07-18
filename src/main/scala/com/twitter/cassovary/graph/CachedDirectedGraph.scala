@@ -22,9 +22,9 @@ import com.twitter.ostrich.stats.Stats
 import java.util.concurrent.atomic.AtomicLong
 import com.google.common.util.concurrent.MoreExecutors
 import scala.Some
-import com.twitter.cassovary.graph.MaxIdsEdges
+import java.io.File
 
-private case class MaxIdsEdges(localMaxId:Int, localNodeWithoutOutEdgesMaxId:Int, numEdges:Int)
+private case class MaxIdsEdges(localMaxId:Int, localNodeWithoutOutEdgesMaxId:Int, numEdges:Int, nodeCount:Int)
 
 /**
  * Methods for constructing a disk-cached directed graph
@@ -32,34 +32,35 @@ private case class MaxIdsEdges(localMaxId:Int, localNodeWithoutOutEdgesMaxId:Int
 object CachedDirectedGraph {
 
   def apply(iteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxId] ], executorService: ExecutorService,
-            storedGraphDir: StoredGraphDir, shardDirectory: String, numShards: Int):CachedDirectedGraph = {
+            storedGraphDir: StoredGraphDir, cacheMaxNodes:Int, cacheMaxEdges:Int,
+            shardDirectory: String, numShards: Int):CachedDirectedGraph = {
 
-    var maxId, nodeWithOutEdgesMaxId = 0
+    var maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount = 0
     var numEdges = 0L
 
     // Step 1 - Find maxId, nodeWithOutEdgesMaxId, numEdges
     // Needed so that we can initialize arrays with the appropriate sizes
-    val futures = {
+    val futures = Stats.time("reading_maxid_and_calculating_numedges") {
       def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) = {
-        var localMaxId = 0
-        var localNodeWithOutEdgesMaxId = 0
-        var numEdges = 0
+        var localMaxId, localNodeWithOutEdgesMaxId, numEdges, nodeCount = 0
         iteratorFunc().foreach { item =>
           localMaxId = localMaxId max item.maxId
           localNodeWithOutEdgesMaxId = localNodeWithOutEdgesMaxId max item.id
           numEdges += item.edges.length
+          nodeCount += 1
         }
-        MaxIdsEdges(localMaxId, localNodeWithOutEdgesMaxId, numEdges)
+        MaxIdsEdges(localMaxId, localNodeWithOutEdgesMaxId, numEdges, nodeCount)
       }
       ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxId], MaxIdsEdges](executorService,
         iteratorSeq, readOutEdges)
     }
     futures.toArray map { future =>
       val f = future.asInstanceOf[Future[MaxIdsEdges]]
-      val MaxIdsEdges(localMaxId, localNWOEMaxId, localNumEdges) = f.get
+      val MaxIdsEdges(localMaxId, localNWOEMaxId, localNumEdges, localNodeCount) = f.get
       maxId = maxId max localMaxId
       nodeWithOutEdgesMaxId = nodeWithOutEdgesMaxId max localNWOEMaxId
       numEdges += localNumEdges
+      nodeWithOutEdgesCount += localNodeCount
     }
 
     // Step 2
@@ -71,7 +72,7 @@ object CachedDirectedGraph {
     val edgeOffsets = new Array[AtomicLong](numShards)
 
     (0 until numShards).foreach { i => edgeOffsets(i) = new AtomicLong() }
-    Stats.time("Calculating offsets and writing to files") {
+    Stats.time("calculating_offsets_and_writing_to_files") {
       def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) = {
         val esw = new EdgeShardsWriter(shardDirectory, numShards)
         iteratorFunc() foreach { item =>
@@ -109,14 +110,16 @@ object CachedDirectedGraph {
     }
 
     // Return our cool graph!
-    new CachedDirectedGraph(nodeIdSet, 2, 4, shardDirectory, numShards,
-      idToIntOffsetAndNumEdges, maxId, numNodes, numEdges, storedGraphDir)
+    new CachedDirectedGraph(nodeIdSet, cacheMaxNodes, cacheMaxEdges, shardDirectory, numShards,
+      idToIntOffsetAndNumEdges,
+      maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+      numNodes, numEdges, storedGraphDir)
   }
 
   @VisibleForTesting
   def apply(iteratorFunc: () => Iterator[NodeIdEdgesMaxId],
       storedGraphDir: StoredGraphDir):CachedDirectedGraph =
-    apply(Seq(iteratorFunc), MoreExecutors.sameThreadExecutor(), storedGraphDir, "temp-shards", 10)
+    apply(Seq(iteratorFunc), MoreExecutors.sameThreadExecutor(), storedGraphDir, 2, 4, "temp-shards", 10)
 }
 
 /**
@@ -138,8 +141,8 @@ class CachedDirectedGraph private (
     val cacheMaxNodes:Int, val cacheMaxEdges:Int,
     val shardDirectory:String, val numShards:Int,
     val idToIntOffsetAndNumEdges:Array[(Long,Int)],
-    maxId: Int, val nodeCount: Int, val edgeCount: Long,
-    val storedGraphDir: StoredGraphDir) extends DirectedGraph {
+    maxId: Int, val nodeWithOutEdgesMaxId: Int, val nodeWithOutEdgesCount: Int,
+    val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir) extends DirectedGraph {
 
   val reader = new EdgeShardsReader(shardDirectory, numShards)
   val emptyArray = new Array[Int](0)
@@ -152,22 +155,28 @@ class CachedDirectedGraph private (
   val cache = new LinkedIntIntMap(maxId, cacheMaxNodes)
   var currRealCapacity = 0
 
-  def getNodeById(id: Int) = {
+  var hits, misses = 0
+
+  def getNodeById(id: Int) = Stats.time("cached_get_node_by_id") {
     if (id > maxId || nodeIdSet(id) == 0) { // Invalid id
       None
     }
     else {
       if (cache.contains(id)) { // Cache hit
+        hits += 1
         cache.moveToHead(id)
         Some(indexToObject(cache.getIndexFromId(id)))
       }
       else { // Cache miss
+        misses += 1
         idToIntOffsetAndNumEdges(id) match {
           case null => Some(ArrayBasedDirectedNode(id, emptyArray, storedGraphDir))
           case (offset, numEdges) => {
             // Read in the node from disk
             val intArray = new Array[Int](numEdges)
-            reader.readIntegersFromOffsetIntoArray(id, offset, numEdges, intArray, 0)
+            Stats.time("read_integers_from_disk_shard") {
+              reader.readIntegersFromOffsetIntoArray(id, offset, numEdges, intArray, 0)
+            }
             val node = ArrayBasedDirectedNode(id, intArray, storedGraphDir)
 
             // Evict any items in the cache if needed and add
@@ -185,6 +194,17 @@ class CachedDirectedGraph private (
         }
       }
     }
+  }
+
+  def writeStats(fileName: String) = {
+    printToFile(new File(fileName))(p => {
+      p.println("%s\t%s\t%s".format(misses, hits + misses, misses.toDouble / (hits+misses)))
+    })
+  }
+
+  private def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
+    val p = new java.io.PrintWriter(f)
+    try { op(p) } finally { p.close() }
   }
 
 }
