@@ -181,6 +181,58 @@ class EdgeShardReaderWriterSpec extends Specification {
     }
   }
 
+  "MemEdgeShardWriter" should {
+    "Write like EdgeShardWriter" in {
+      val esw = new MemEdgeShardWriter(10)
+      val its = (0 until 10).toArray
+      esw.writeIntegersAtOffsetFromOffset(5, its, 5, 5)
+      esw.writeIntegersAtOffsetFromOffset(0, its, 0, 5)
+      esw.writeToShard("test.txt")
+      val esr = new EdgeShardReader("test.txt")
+      val intArray = new Array[Int](10)
+      esr.readIntegersFromOffsetIntoArray(0, 10, intArray, 0)
+      (0 until 10).foreach { i => intArray(i) mustEqual i }
+      esr.close
+    }
+  }
+
+  "MemEdgeShardWriters" should {
+    "Work in rounds" in {
+      val its = new Array[Array[Int]](8)
+      (0 until 8).foreach { i =>
+        its(i) = new Array[Int](i)
+        (0 until i).foreach { j => its(i)(j) = j }
+      }
+      val shardSizes = Array[Int](4,6,8,10)
+      val msw = new MemEdgeShardsWriter("test-shards", 4, shardSizes, 2)
+      msw.startRound(0)
+      msw.writeIntegersAtOffsetFromOffset(0, 0, its(0), 0, 0)
+      msw.writeIntegersAtOffsetFromOffset(1, 0, its(1), 0, 1)
+      msw.writeIntegersAtOffsetFromOffset(4, 0, its(4), 0, 4)
+      msw.writeIntegersAtOffsetFromOffset(5, 1, its(5), 0, 5)
+      msw.endRound
+      msw.startRound(1)
+      msw.writeIntegersAtOffsetFromOffset(2, 0, its(2), 0, 2)
+      msw.writeIntegersAtOffsetFromOffset(3, 0, its(3), 0, 3)
+      msw.writeIntegersAtOffsetFromOffset(6, 2, its(6), 0, 6)
+      msw.writeIntegersAtOffsetFromOffset(7, 3, its(7), 0, 7)
+      msw.endRound
+      val esr = new EdgeShardsReader("test-shards", 4)
+
+      val intArray = new Array[Int](10)
+      esr.readIntegersFromOffsetIntoArray(1, 0, 1, intArray, 0)
+      intArray(0) mustEqual 0
+      esr.readIntegersFromOffsetIntoArray(6, 2*4, 6, intArray, 0)
+      intArray(3) mustEqual 3
+      intArray(4) mustEqual 4
+      intArray(5) mustEqual 5
+      esr.readIntegersFromOffsetIntoArray(7, 3*4, 7, intArray, 1)
+      intArray(1) mustEqual 0
+      intArray(7) mustEqual 6
+      esr.close
+    }
+  }
+
   "EdgeShardsWriter and EdgeShardsReader" should {
     "Read and write 1 integer" in {
       val esw = new EdgeShardsWriter("test-shards", 5)

@@ -1,6 +1,6 @@
 package com.twitter.cassovary.util
 
-import java.io.{DataInputStream, FileInputStream}
+import java.io.{RandomAccessFile, DataInputStream, FileInputStream}
 import java.nio.ByteBuffer
 
 /**
@@ -8,27 +8,26 @@ import java.nio.ByteBuffer
  * @param filename
  */
 class EdgeShardReader(val filename:String) {
-  private val fis = new FileInputStream(filename)
-  private val dis = new DataInputStream(fis)
+  private val rf = new RandomAccessFile(filename, "r") // Alternative - FileOutputStream and DataOutputStream
 
   /**
    * Read integers from this shard into an array
    * @param offset Byte offset in this shard
    * @param numEdges Number of integers to read out
    * @param intArray Integer array to write integers into
-   * @param intArrayOffset Offset to write into in the integer array
+   * @param intArrayOffset Integer offset to write into in the integer array
    */
   def readIntegersFromOffsetIntoArray(offset:Long, numEdges:Int, intArray:Array[Int], intArrayOffset:Int):Unit = {
-    fis.getChannel.position(offset)
+    rf.seek(offset)
     // Read into byte array, then copy from byte array to given int array
     val bytesToRead = 4 * numEdges
     val byteArray = new Array[Byte](bytesToRead)
-    dis.read(byteArray, 0, bytesToRead)
+    rf.read(byteArray, 0, bytesToRead)
     val ib = ByteBuffer.wrap(byteArray).asIntBuffer()
     ib.get(intArray, intArrayOffset, numEdges)
   }
 
-  def close = dis.close()
+  def close = rf.close()
 }
 
 /**
@@ -41,6 +40,16 @@ class EdgeShardsReader(val shardDirectory:String, val numShards:Int) {
     new EdgeShardReader("%s/%s.txt".format(shardDirectory, i))
   }
 
+  /**
+   * Read Integers from the given offset into a given array
+   * Note that the offset into the file is a byte offset,
+   * but the offset into the int array is an integer offset
+   * @param nodeId id of node desired
+   * @param offset byte offset in the file
+   * @param numEdges number of integers to read out
+   * @param intArray destination integer array to read into
+   * @param intArrayOffset offset of integer array to read to
+   */
   def readIntegersFromOffsetIntoArray(nodeId:Int, offset:Long, numEdges:Int, intArray:Array[Int], intArrayOffset:Int):Unit = {
     shardReaders(nodeId % numShards).readIntegersFromOffsetIntoArray(offset, numEdges, intArray, intArrayOffset)
   }

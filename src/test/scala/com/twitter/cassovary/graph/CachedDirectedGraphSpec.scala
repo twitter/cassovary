@@ -27,6 +27,9 @@ class CachedDirectedGraphSpec extends Specification {
   def makeGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
     iteratorFunc, dir, "guava")
 
+  def makeSameGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
+    iteratorFunc, dir, "guava", "temp-cached/sameGraph")
+
   def makeFastLRUGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
     iteratorFunc, dir, "fastlru")
 
@@ -92,6 +95,18 @@ class CachedDirectedGraphSpec extends Specification {
     }
   }
 
+  "Cached graph containing only out edges" should {
+    "Load a cached version successfully" in {
+      var g = makeSameGraph(StoredGraphDir.OnlyOut)
+      g must DeepEqualsNodeIterable((1 to 6).flatMap(g.getNodeById(_)))
+      g.nodeCount mustBe 6
+      g.edgeCount mustBe 10L
+      var g2 = makeSameGraph(StoredGraphDir.OnlyOut)
+      g2 must DeepEqualsNodeIterable((1 to 6).flatMap(g2.getNodeById(_)))
+      g2.nodeCount mustBe 6
+      g2.edgeCount mustBe 10L
+    }
+  }
 
   "Guava-based graph containing only out edges" should {
     var graphL: GuavaCachedDirectedGraph = null
