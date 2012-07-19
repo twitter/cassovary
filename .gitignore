@@ -15,3 +15,5 @@ project/plugins/project/
 project/plugins/src_managed/
 examples/java/classes
 examples/scala/classes
+temp*
+test*
