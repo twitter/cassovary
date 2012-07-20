@@ -47,6 +47,7 @@ object CachedDirectedGraph {
     log.info("---Beginning Load---")
     log.info("Cache Info: cacheMaxNodes is %s, cacheMaxEdges is %s, cacheType is %s".format(cacheMaxNodes, cacheMaxEdges, cacheType))
     log.info("Disk Shard Info: directory is %s, numShards is %s, numRounds is %s".format(shardDirectory, numShards, numRounds))
+    log.info("useCachedValues is %s, cacheDirectory is %s".format(useCachedValues, cacheDirectory))
 
     // Step 0
     // Initialize serializer
