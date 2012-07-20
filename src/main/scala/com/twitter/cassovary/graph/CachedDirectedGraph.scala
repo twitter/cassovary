@@ -56,8 +56,8 @@ object CachedDirectedGraph {
     // Step 1
     // Find maxId, nodeWithOutEdgesMaxId, numEdges
     // Needed so that we can initialize arrays with the appropriate sizes
+    log.info("Reading maxId and Calculating numEdges...")
     serializer.writeOrRead("step1.txt", { writer =>
-      log.info("Reading maxId and Calculating numEdges...")
       val futures = Stats.time("graph_load_reading_maxid_and_calculating_numedges") {
         def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) = {
           var localMaxId, localNodeWithOutEdgesMaxId, numEdges, nodeCount = 0
