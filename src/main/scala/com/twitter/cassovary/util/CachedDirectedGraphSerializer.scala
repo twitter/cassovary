@@ -41,7 +41,7 @@ class CachedDirectedGraphSerializer(var directory: String, useCachedValues: Bool
    */
   class CachedDirectedGraphSerializerWriter(filename: String) {
 
-    val fos = new FileOutputStream(filename)
+    val fos = new FileOutputStream(filename+".temp")
     val dos = new DataOutputStream(fos)
 
     def integers(integers: Iterable[Int]) = {
@@ -90,7 +90,10 @@ class CachedDirectedGraphSerializer(var directory: String, useCachedValues: Bool
       this
     }
 
-    def close = dos.close()
+    def close = {
+      dos.close()
+      new File(filename+".temp").renameTo(new File(filename))
+    }
   }
 
   /**
