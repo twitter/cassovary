@@ -87,6 +87,7 @@ object CachedDirectedGraph {
       nodeWithOutEdgesMaxId = reader.int
       nodeWithOutEdgesCount = reader.int
       numEdges = reader.long
+      reader.close
     })
 
     // Step 2
@@ -120,8 +121,9 @@ object CachedDirectedGraph {
       writer.bitSet(nodeIdSet).arrayOfLongInt(idToIntOffsetAndNumEdges).atomicLongArray(edgeOffsets).close
     }, { reader =>
       nodeIdSet = reader.bitSet()
-      idToIntOffsetAndNumEdges = reader.arrayOfLongInt(nodeWithOutEdgesCount)
+      idToIntOffsetAndNumEdges = reader.arrayOfLongInt()
       edgeOffsets = reader.atomicLongArray()
+      reader.close
     })
 
     // Step 3
@@ -136,7 +138,7 @@ object CachedDirectedGraph {
         esw.close
       }
       writer.integers(Seq(1)).close
-    }, { reader => () })
+    }, { reader => reader.close })
 
 
     // Step 4x
@@ -167,7 +169,7 @@ object CachedDirectedGraph {
         msw.endRound
       }
       writer.integers(Seq(1)).close
-    }, { reader => () })
+    }, { reader => reader.close })
 
 //    // Step 4
 //    // Generate shards on disk
@@ -199,6 +201,7 @@ object CachedDirectedGraph {
     }
     }, { reader =>
       numNodes = reader.int
+      reader.close
     })
 
     // Do the below only if we need both directions

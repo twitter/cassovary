@@ -20,6 +20,7 @@ import actors.Actor
 import java.util.concurrent.atomic.AtomicInteger
 import net.lag.logging.Logger
 import java.io.File
+import com.twitter.io.Files
 
 class EdgeShardReaderWriterSpec extends Specification {
   val log = Logger.get
@@ -197,6 +198,12 @@ class EdgeShardReaderWriterSpec extends Specification {
   }
 
   "MemEdgeShardWriters" should {
+    doFirst {
+      new File("test-shards").mkdirs()
+    }
+    doLast {
+      Files.delete(new File("test-shards"))
+    }
     "Work in rounds" in {
       val its = new Array[Array[Int]](8)
       (0 until 8).foreach { i =>
@@ -234,6 +241,12 @@ class EdgeShardReaderWriterSpec extends Specification {
   }
 
   "EdgeShardsWriter and EdgeShardsReader" should {
+    doFirst {
+      new File("test-shards").mkdirs()
+    }
+    doLast {
+      Files.delete(new File("test-shards"))
+    }
     "Read and write 1 integer" in {
       val esw = new EdgeShardsWriter("test-shards", 5)
       esw.writeIntegersSequentially(5, oneSequence)

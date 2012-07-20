@@ -114,7 +114,7 @@ class CachedDirectedGraphSerializer(var directory: String, useCachedValues: Bool
       (0 until length).map(_ => dos.readLong())
     }
 
-    def arrayOfLongInt(nodeWithOutEdgesCount: Int) = {
+    def arrayOfLongInt() = {
       //      val ali = new Array[(Long,Int)](dos.readInt())
       //      (0 until nodeWithOutEdgesCount).foreach { _ =>
       //        val index = dos.readInt()
