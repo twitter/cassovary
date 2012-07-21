@@ -119,7 +119,7 @@ object CachedDirectedGraph {
           iteratorSeq, readOutEdges)
       }
       log.info("Writing offset tables to file...")
-      writer.bitSet(nodeIdSet).arrayOfLongInt(idToIntOffsetAndNumEdges).atomicLongArray(edgeOffsets).close
+      writer.bitSet(nodeIdSet).arrayOfLongInt(idToIntOffsetAndNumEdges, nodeWithOutEdgesCount).atomicLongArray(edgeOffsets).close
     }, { reader =>
       nodeIdSet = reader.bitSet()
       idToIntOffsetAndNumEdges = reader.arrayOfLongInt()

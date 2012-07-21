@@ -14,6 +14,8 @@
 package com.twitter.cassovary.util
 
 import java.io._
+import java.nio.channels.FileChannel
+import java.nio.ByteBuffer
 
 /**
  * Write integers in binary to a single shard.
@@ -103,10 +105,13 @@ class MemEdgeShardWriter(val shardSize:Int) {
   }
 
   def writeToShard(filename:String) {
-    val fos = new FileOutputStream(filename)
-    val dos = new DataOutputStream(fos)
-    shard.foreach(dos.writeInt(_))
-    dos.close()
+    // Should be faster than DataOutputStream
+    val bb = ByteBuffer.allocateDirect(4 * shard.size)
+    shard.foreach(bb.putInt(_))
+    bb.rewind()
+    val fc = new FileOutputStream(filename).getChannel()
+    fc.write(bb)
+    fc.close()
   }
 }
 

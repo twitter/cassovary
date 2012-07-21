@@ -17,6 +17,7 @@ import net.lag.logging.Logger
 import java.io._
 import collection.mutable
 import java.util.concurrent.atomic.AtomicLong
+import java.nio.ByteBuffer
 
 /**
  * Convenience class for serializing stuff when loading a CachedDirectedGraph
@@ -42,6 +43,7 @@ class CachedDirectedGraphSerializer(var directory: String, useCachedValues: Bool
   class CachedDirectedGraphSerializerWriter(filename: String) {
 
     val fos = new FileOutputStream(filename+".temp")
+    val fc = fos.getChannel()
     val dos = new DataOutputStream(fos)
 
     def integers(integers: Iterable[Int]) = {
@@ -54,24 +56,54 @@ class CachedDirectedGraphSerializer(var directory: String, useCachedValues: Bool
       this
     }
 
-    def arrayOfLongInt(ali: Array[(Long, Int)]) = {
+    def arrayOfLongInt(ali: Array[(Long, Int)], notNullSize:Int) = {
+      println(fc.position())
+      dos.writeInt(ali.size)
+      dos.writeInt(notNullSize)
       dos.flush()
-      val oos = new ObjectOutputStream(fos)
-      oos.writeObject(ali)
-      oos.flush()
+      println(fc.position())
+
+      var numInsertions = 0
+      var remainingSize = notNullSize.toLong * 16
+      def makeBB = {
+        if (remainingSize - 16000000 >= 0) {
+          remainingSize -= 16000000
+          ByteBuffer.allocate(16000000)
+        }
+        else {
+          val bb = ByteBuffer.allocate(remainingSize.toInt)
+          remainingSize = 0
+          bb
+        }
+      }
+      var bb:ByteBuffer = makeBB
+
+      (0 until ali.size).foreach { i =>
+        ali(i) match {
+          case (j,k) => {
+            if (numInsertions == 1000000) {
+              bb.rewind()
+              fc.write(bb)
+              bb = makeBB
+              numInsertions = 0
+            }
+            bb.putInt(i)
+            bb.putLong(j)
+            bb.putInt(k)
+            numInsertions += 1
+          }
+          case _ => ()
+        }
+      }
+      if (numInsertions > 0) {
+        bb.rewind()
+        fc.write(bb)
+      }
+
+//      val oos = new ObjectOutputStream(fos)
+//      oos.writeObject(ali)
+//      oos.flush()
       this
-      //      dos.writeInt(ali.size)
-      //      (0 until ali.size).foreach { i =>
-      //        ali(i) match {
-      //          case (j:Long,k:Int) => {
-      //            dos.writeInt(i)
-      //            dos.writeLong(j)
-      //            dos.writeInt(k)
-      //          }
-      //          case _ => ()
-      //        }
-      //      }
-      //      this
     }
 
     def bitSet(bs: mutable.BitSet) = {
@@ -91,6 +123,7 @@ class CachedDirectedGraphSerializer(var directory: String, useCachedValues: Bool
     }
 
     def close = {
+      fc.close()
       dos.close()
       new File(filename+".temp").renameTo(new File(filename))
     }
@@ -103,7 +136,8 @@ class CachedDirectedGraphSerializer(var directory: String, useCachedValues: Bool
   class CachedDirectedGraphSerializerReader(filename: String) {
 
     val fos = new FileInputStream(filename)
-    val dos = new DataInputStream(fos)
+    val bos = new BufferedInputStream(fos)
+    val dos = new DataInputStream(bos)
 
     def int = dos.readInt()
 
@@ -118,23 +152,27 @@ class CachedDirectedGraphSerializer(var directory: String, useCachedValues: Bool
     }
 
     def arrayOfLongInt() = {
-      //      val ali = new Array[(Long,Int)](dos.readInt())
-      //      (0 until nodeWithOutEdgesCount).foreach { _ =>
-      //        val index = dos.readInt()
-      //        ali(index) = (dos.readLong(), dos.readInt())
-      //      }
-      //      ali
-      val ois = new ObjectInputStream(fos)
-      ois.readObject().asInstanceOf[Array[(Long, Int)]]
+//      val ois = new ObjectInputStream(fos)
+//      ois.readObject().asInstanceOf[Array[(Long, Int)]]
+      val size = dos.readInt()
+      val realSize = dos.readInt()
+      val ali = new Array[(Long,Int)](size)
+      (0 until realSize).foreach { _ =>
+        val idx = dos.readInt()
+        val lng = dos.readLong()
+        val itg = dos.readInt()
+        ali(idx) = (lng, itg)
+      }
+      ali
     }
 
     def bitSet(): mutable.BitSet = {
-      val ois = new ObjectInputStream(fos)
+      val ois = new ObjectInputStream(bos)
       ois.readObject().asInstanceOf[mutable.BitSet]
     }
 
     def atomicLongArray(): Array[AtomicLong] = {
-      val ois = new ObjectInputStream(fos)
+      val ois = new ObjectInputStream(bos)
       ois.readObject().asInstanceOf[Array[AtomicLong]]
     }
 

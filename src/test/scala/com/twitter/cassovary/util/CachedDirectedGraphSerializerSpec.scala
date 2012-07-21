@@ -31,7 +31,7 @@ class CachedDirectedGraphSerializerSpec extends Specification  {
       bs(999) = (1234567890L, 51)
 
       serializer.writeOrRead("array.txt", { writer =>
-        writer.arrayOfLongInt(bs).close
+        writer.arrayOfLongInt(bs, 2).close
       }, { reader => () })
 
       serializer.writeOrRead("array.txt", { writer => () }, { reader =>
@@ -67,7 +67,7 @@ class CachedDirectedGraphSerializerSpec extends Specification  {
       (0 until 21).foreach { i => aal(i) = new AtomicLong(); aal(i).set(i * 999999999L) }
 
       serializer.writeOrRead("few.txt", { writer =>
-        writer.arrayOfLongInt(ali).bitSet(bs).atomicLongArray(aal).close
+        writer.arrayOfLongInt(ali, 1000).bitSet(bs).atomicLongArray(aal).close
       }, { reader => () })
 
       serializer.writeOrRead("few.txt", { writer => () }, { reader =>
