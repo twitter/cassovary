@@ -128,6 +128,8 @@ class MemEdgeShardWriter(val shardSize:Int) {
  * @param rounds number of write rounds
  */
 class MemEdgeShardsWriter(val shardDirectory:String, val numShards:Int, val shardSizes:Array[Int], val rounds:Int=1) {
+  { val dir = new File(shardDirectory)
+    if (!dir.exists && !dir.mkdirs) throw new IOException("Unable to create EdgeShards directory!") }
 
   var roundNo = 0
   val writers = new Array[MemEdgeShardWriter](numShards)

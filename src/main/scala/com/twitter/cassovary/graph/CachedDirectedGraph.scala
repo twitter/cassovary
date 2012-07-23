@@ -116,7 +116,7 @@ object CachedDirectedGraph {
           esw.close
         }
         ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxId], Unit](executorService,
-          iteratorSeq, readOutEdges)
+          iteratorSeq, readOutEdges).toArray.map { future => future.asInstanceOf[Future[Unit]].get }
       }
       log.info("Writing offset tables to file...")
       writer.bitSet(nodeIdSet).arrayOfLongInt(idToIntOffsetAndNumEdges, nodeWithOutEdgesCount).atomicLongArray(edgeOffsets).close
@@ -144,7 +144,7 @@ object CachedDirectedGraph {
 
     // Step 4x
     // Generate shards on disk in rounds
-    // TODO maxSize of a shard is maxInt for now, not maxLong
+    // TODO maxSize of a shard is MAXINT * 4 bytes for now, not MAXLONG
     log.info("Writing to shards in rounds...")
     serializer.writeOrRead("step4.txt", { writer =>
       val shardSizes = edgeOffsets.map { i => i.get().toInt }
@@ -165,8 +165,9 @@ object CachedDirectedGraph {
             }
           }
           ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxId], Unit](executorService,
-            iteratorSeq, readOutEdges)
+            iteratorSeq, readOutEdges).toArray.map { future => future.asInstanceOf[Future[Unit]].get }
         }
+        log.info("Ending round %s...".format(roundNo))
         msw.endRound
       }
       writer.integers(Seq(1)).close
