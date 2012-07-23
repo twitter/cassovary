@@ -66,7 +66,7 @@ class GraphWithSimulatedCacheSpec extends Specification {
         g.getStats mustEqual (4, 100, 0.04)
         graphUtils.calculatePersonalizedReputation(10, walkParams)
         g.getStats mustEqual (4, 200, 0.02)
-        Source.fromFile(g.outputDirectory+"/39.txt").mkString mustEqual "4\t200\t0.02\n"
+        Source.fromFile(g.outputDirectory+"/39.txt").mkString mustEqual "4\t200\t0.02\t0\n"
       }
     }
 
@@ -103,7 +103,7 @@ class GraphWithSimulatedCacheSpec extends Specification {
         graphUtils.calculatePersonalizedReputation(10, walkParams)
         val (m, a, r) = g.getStats
         a mustEqual 100
-        Source.fromFile(g.outputDirectory+"/19.txt").mkString mustEqual "%s\t%s\t%s\n".format(m, a, r)
+        Source.fromFile(g.outputDirectory+"/19.txt").mkString mustEqual "%s\t%s\t%s\t%s\n".format(m, a, r, g.getCacheFullPoint)
       }
     }
   }

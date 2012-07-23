@@ -126,6 +126,27 @@ class SimulatedCacheSpec extends Specification {
       cache.getStats
     }
 
+    "Guava: replace the last recently seen node" in {
+      var cache:GuavaSimulatedCache = null
+      doBefore {
+        cache = new GuavaSimulatedCache(20, { i => i })
+      }
+
+      "set cacheFullPoint properly 1" in {
+        cache.getAndUpdate(1)
+        cache.getAndUpdate(20)
+        cache.getCacheFullPoint mustEqual 2
+      }
+
+      "set cacheFullPoint properly 2" in {
+        cache.getAndUpdate(1)
+        cache.getAndUpdate(2)
+        cache.getAndUpdate(30)
+        cache.getCacheFullPoint mustEqual 3
+      }
+
+    }
+
     "Fast LRU: replace the last recently seen node" in {
       var cache:FastLRUSimulatedCache = null
       doBefore {
@@ -151,6 +172,7 @@ class SimulatedCacheSpec extends Specification {
       }
       "do badly in lru worst case" in {
         lruWorstCase(cache) mustEqual (11, 11, 1.0)
+        cache.getCacheFullPoint mustEqual 6
       }
       "do well in mru worst case" in {
         mruWorstCase(cache) mustEqual (6, 10, 0.6)
@@ -163,6 +185,7 @@ class SimulatedCacheSpec extends Specification {
       }
       "do okay in sizable case" in {
         sizableCase(cache) mustEqual (5, 7, 5.0/7)
+        cache.getCacheFullPoint mustEqual 5
       }
       "do badly in sizable case 2" in {
         sizableCase2(cache) mustEqual (6, 9, 6.0/9)

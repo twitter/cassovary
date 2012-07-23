@@ -72,12 +72,20 @@ class GraphWithSimulatedCache(val g: DirectedGraph, val cacheSize: Int,
 
   def getStats = cache.getStats
 
+  def getCacheFullPoint = cache.getCacheFullPoint
+
   def diffStat = cache.diffStat
 
+  /**
+   * Write out statistics to a file in the format
+   * misses \t accesses \t missRatio \t cacheFullPoint
+   * Note that cacheFullPoint is 0 if the cache isn't full yet
+   * @param fileName
+   */
   def writeStats(fileName: String) = {
     val (misses, accesses, missRatio) = cache.getStats
     printToFile(new File(fileName))(p => {
-      p.println("%s\t%s\t%s".format(misses, accesses, missRatio))
+      p.println("%s\t%s\t%s\t%s".format(misses, accesses, missRatio, cache.getCacheFullPoint))
     })
   }
 

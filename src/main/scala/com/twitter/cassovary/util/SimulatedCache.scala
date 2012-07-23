@@ -14,7 +14,7 @@
 
 package com.twitter.cassovary.util
 import scala.collection.mutable
-import com.google.common.cache.{CacheLoader, LoadingCache, Weigher, CacheBuilder}
+import com.google.common.cache._
 import java.io.IOException
 
 /**
@@ -22,7 +22,7 @@ import java.io.IOException
  * @param size
  */
 abstract class SimulatedCache(size: Int = 10) {
-  var misses, accesses, prevMisses, prevAccesses: Long = 0
+  var misses, accesses, prevMisses, prevAccesses, fullAccesses: Long = 0
   val one:Short = 1
 
   def getAndUpdate(id: Int, eltSize: Int):Unit
@@ -33,7 +33,16 @@ abstract class SimulatedCache(size: Int = 10) {
   def getStats = {
     (misses, accesses, misses.toDouble/accesses)
   }
-  
+
+  def setCacheFullPointOnce = {
+    if (fullAccesses == 0)
+      fullAccesses = accesses
+  }
+
+  def getCacheFullPoint = {
+    fullAccesses
+  }
+
   // Return the difference in misses, accesses between now and the last time this function was called
   def diffStat = {
     val (m, a) = (misses-prevMisses, accesses-prevAccesses)
@@ -69,6 +78,7 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
       misses += 1
       // Keep cache size down
       while(map.getCurrentSize == size || currRealCapacity + eltSize > size) {
+        setCacheFullPointOnce
         currRealCapacity -= indexToSize(map.getTailIndex)
         map.removeFromTail()
       }
@@ -84,11 +94,21 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
 }
 
 class GuavaSimulatedCache(size: Int, loader:(Int => Int)) extends SimulatedCache {
+
+  val removalListener = new RemovalListener[Int,Int] {
+    def onRemoval(p1: RemovalNotification[Int, Int]) {
+      println("Evicting", p1.getKey())
+      if (fullAccesses == 0)
+        fullAccesses = cache.stats().requestCount() + 1
+    }
+  }
+
   val cache:LoadingCache[Int,Int] = CacheBuilder.newBuilder().maximumWeight(size)
     .weigher(new Weigher[Int,Int] {
       def weigh(k:Int, v:Int):Int = v
     })
     .asInstanceOf[CacheBuilder[Int,Int]]
+    .removalListener(removalListener)
     .build[Int,Int](new CacheLoader[Int,Int] {
       def load(k:Int):Int = {
         loader(k)
@@ -116,6 +136,10 @@ class MRUSimulatedCache(size: Int = 10) extends SimulatedCache {
   def getAndUpdate(id: Int, eltSize:Int) = {
     throw new IllegalArgumentException("MRU doesn't work with variable element sizes")
   }
+
+  override def getCacheFullPoint = {
+    throw new IllegalArgumentException("Clock doesn't work with getCacheFullPoint")
+  }
   
   override def getAndUpdate(id: Int) = {
     if (!cache.contains(id)) {
@@ -140,6 +164,10 @@ class ClockSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
   
   def getAndUpdate(id: Int, eltSize:Int) = {
     throw new IllegalArgumentException("Clock doesn't work with variable element sizes")
+  }
+
+  override def getCacheFullPoint = {
+    throw new IllegalArgumentException("Clock doesn't work with getCacheFullPoint")
   }
 
   override def getAndUpdate(id: Int) = {
