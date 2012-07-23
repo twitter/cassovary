@@ -356,14 +356,14 @@ class GuavaCachedDirectedGraph (
   val reader = new EdgeShardsReader(shardDirectory, numShards)
   val emptyArray = new Array[Int](0)
 
-  // Load Noder (haha)
+  // Node Loader
   private def loadNode(id: Int):Node = {
     idToIntOffsetAndNumEdges(id) match {
       case null => ArrayBasedDirectedNode(id, emptyArray, storedGraphDir)
       case (offset, numEdges) => {
         // Read in the node from disk
         val intArray = new Array[Int](numEdges)
-        reader.readIntegersFromOffsetIntoArray(id, offset, numEdges, intArray, 0)
+        reader.readIntegersFromOffsetIntoArray(id, offset * 4, numEdges, intArray, 0)
         ArrayBasedDirectedNode(id, intArray, storedGraphDir)
       }
     }
