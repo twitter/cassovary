@@ -4,9 +4,9 @@ import org.specs.Specification
 import scala.collection.mutable
 import java.util.concurrent.atomic.AtomicLong
 
-class CachedDirectedGraphSerializerSpec extends Specification  {
-  "CachedDirectedGraphSerializer" should {
-    val serializer = new CachedDirectedGraphSerializer("temp-cached/spectest", true)
+class LoaderSerializerSpec extends Specification  {
+  "LoaderSerializer" should {
+    val serializer = new LoaderSerializer("temp-cached/spectest", true)
 
     "Read and write a BitSet properly" in {
       val bs = new mutable.BitSet(999)

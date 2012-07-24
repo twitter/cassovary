@@ -20,15 +20,16 @@ import java.util.concurrent.atomic.AtomicLong
 import java.nio.ByteBuffer
 
 /**
- * Convenience class for serializing stuff when loading a CachedDirectedGraph
+ * Convenience class for caching stuff on disk when loading anything that takes a long time to load
+ * Example - storing maxNodeId so that you don't need to loop through the whole graph to find it
  * If a directory is not specified, or set to null, a random directory is generated
  * If useCachedValues is set to false, the serializer will always call writeFn and never readFn in writeOrRead
  * @param directory directory to store cached values in
  * @param useCachedValues use the reader if values are available?
  */
-class CachedDirectedGraphSerializer(var directory: String, useCachedValues: Boolean) {
+class LoaderSerializer(var directory: String, useCachedValues: Boolean) {
 
-  private lazy val log = Logger.get("CachedDirectedGraphSerializer")
+  private lazy val log = Logger.get("LoaderSerializer")
 
   if (directory == null) {
     directory = "temp-cached/" + System.nanoTime()
@@ -40,11 +41,21 @@ class CachedDirectedGraphSerializer(var directory: String, useCachedValues: Bool
    * Writer class that allows chaining
    * @param filename filename to write to
    */
-  class CachedDirectedGraphSerializerWriter(filename: String) {
+  class LoaderSerializerWriter(filename: String) {
 
     val fos = new FileOutputStream(filename+".temp")
     val fc = fos.getChannel()
     val dos = new DataOutputStream(fos)
+
+    def int(i: Int) = {
+      dos.writeInt(i)
+      this
+    }
+
+    def long(l: Long) = {
+      dos.writeLong(l)
+      this
+    }
 
     def integers(integers: Iterable[Int]) = {
       integers.foreach(dos.writeInt(_))
@@ -133,7 +144,7 @@ class CachedDirectedGraphSerializer(var directory: String, useCachedValues: Bool
    * Reader class, no chaining here
    * @param filename filename to read from
    */
-  class CachedDirectedGraphSerializerReader(filename: String) {
+  class LoaderSerializerReader(filename: String) {
 
     val fos = new FileInputStream(filename)
     val bos = new BufferedInputStream(fos)
@@ -179,12 +190,12 @@ class CachedDirectedGraphSerializer(var directory: String, useCachedValues: Bool
     def close = dos.close()
   }
 
-  private def write(filename: String): CachedDirectedGraphSerializerWriter = {
-    new CachedDirectedGraphSerializerWriter("%s/%s".format(directory, filename))
+  private def write(filename: String): LoaderSerializerWriter = {
+    new LoaderSerializerWriter("%s/%s".format(directory, filename))
   }
 
-  private def read(filename: String): CachedDirectedGraphSerializerReader = {
-    new CachedDirectedGraphSerializerReader("%s/%s".format(directory, filename))
+  private def read(filename: String): LoaderSerializerReader = {
+    new LoaderSerializerReader("%s/%s".format(directory, filename))
   }
 
   private def exists(filename: String): Boolean = {
@@ -200,8 +211,8 @@ class CachedDirectedGraphSerializer(var directory: String, useCachedValues: Bool
    * @param writeFn function that will be called if writing
    * @param readFn function that will be called if reading
    */
-  def writeOrRead(filename: String, writeFn: (CachedDirectedGraphSerializerWriter => Unit),
-                  readFn: (CachedDirectedGraphSerializerReader => Unit)) = {
+  def writeOrRead(filename: String, writeFn: (LoaderSerializerWriter => Unit),
+                  readFn: (LoaderSerializerReader => Unit)) = {
     if (!useCachedValues || !exists(filename)) {
       log.info("Recomputing...")
       writeFn(write(filename))

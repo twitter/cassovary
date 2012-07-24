@@ -51,7 +51,7 @@ object CachedDirectedGraph {
 
     // Step 0
     // Initialize serializer
-    val serializer = new CachedDirectedGraphSerializer(cacheDirectory, useCachedValues)
+    val serializer = new LoaderSerializer(cacheDirectory, useCachedValues)
 
     // Step 1
     // Find maxId, nodeWithOutEdgesMaxId, numEdges
