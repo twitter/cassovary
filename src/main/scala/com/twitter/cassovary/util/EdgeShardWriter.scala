@@ -79,8 +79,9 @@ class EdgeShardWriter(val filename:String) {
  * @param numShards
  */
 class EdgeShardsWriter(val shardDirectory:String, val numShards:Int) {
-  { val dir = new File(shardDirectory)
-    if (!dir.exists && !dir.mkdirs) throw new IOException("Unable to create EdgeShards directory %s".format(shardDirectory)) }
+  new File(shardDirectory).mkdirs()
+//  { val dir = new File(shardDirectory)
+//    if (!dir.exists && !dir.mkdirs) throw new IOException("Unable to create EdgeShards directory %s".format(shardDirectory)) }
 
   val shardWriters = (0 until numShards).map { i =>
     new EdgeShardWriter("%s/%s.txt".format(shardDirectory, i))
@@ -128,8 +129,9 @@ class MemEdgeShardWriter(val shardSize:Int) {
  * @param rounds number of write rounds
  */
 class MemEdgeShardsWriter(val shardDirectory:String, val numShards:Int, val shardSizes:Array[Int], val rounds:Int=1) {
-  { val dir = new File(shardDirectory)
-    if (!dir.exists && !dir.mkdirs) throw new IOException("Unable to create EdgeShards directory %s".format(shardDirectory)) }
+  new File(shardDirectory).mkdirs()
+//  { val dir = new File(shardDirectory)
+//    if (!dir.exists && !dir.mkdirs) throw new IOException("Unable to create EdgeShards directory %s".format(shardDirectory)) }
 
   var roundNo = 0
   val writers = new Array[MemEdgeShardWriter](numShards)

@@ -102,7 +102,6 @@ object CachedDirectedGraph {
       (0 until numShards).foreach { i => edgeOffsets(i) = new AtomicLong() }
       Stats.time("graph_load_generating_offset_tables") {
         def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) = {
-          val esw = new EdgeShardsWriter(shardDirectory, numShards)
           iteratorFunc() foreach { item =>
             val id = item.id
             val itemEdges = item.edges.length
@@ -113,7 +112,6 @@ object CachedDirectedGraph {
             val edgeOffset = edgeOffsets(id % numShards).getAndAdd(itemEdges)
             idToIntOffsetAndNumEdges(id) = (edgeOffset, itemEdges)
           }
-          esw.close
         }
         ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxId], Unit](executorService,
           iteratorSeq, readOutEdges).toArray.map { future => future.asInstanceOf[Future[Unit]].get }
