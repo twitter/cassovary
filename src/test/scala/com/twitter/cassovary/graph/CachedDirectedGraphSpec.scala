@@ -149,65 +149,68 @@ class CachedDirectedGraphSpec extends Specification {
       getNode(7) mustEqual None
     }
 
-    "be able to add a single node" in {
+    "be able to add a single node and only cache when neighborIds desired" in {
       getNode(1)
-      graphL.cache.getCurrentSize mustEqual 1
-      graphL.currRealCapacity mustEqual 3
-      graphL.cache.contains(1) mustEqual true
-      graphL.indexToObject(graphL.cache.getIndexFromId(1)) must DeepEqualsNode((NodeMaker(1, Array(2, 3, 4), Array())))
-      graphL.cache.contains(0) mustEqual false
-      graphL.cache.contains(2) mustEqual false
+      getNode(1).get.neighborCount(GraphDir.OutDir) mustEqual 3
+      graphL.cache.linkedMap.contains(1) mustEqual false
+      getNode(1).get.neighborIds(GraphDir.OutDir)
+      graphL.cache.linkedMap.getCurrentSize mustEqual 1
+      graphL.cache.currRealCapacity mustEqual 3
+      graphL.cache.linkedMap.contains(1) mustEqual true
+      getNode(1).get must DeepEqualsNode((NodeMaker(1, Array(2, 3, 4), Array())))
+      graphL.cache.linkedMap.contains(0) mustEqual false
+      graphL.cache.linkedMap.contains(2) mustEqual false
     }
 
     "must evict in LRU order" in {
-      getNode(2)
-      getNode(5)
-      getNode(2)
-      graphL.cache.contains(1) mustEqual false
-      graphL.cache.contains(2) mustEqual true
-      graphL.cache.contains(5) mustEqual true
-      getNode(1) // bye 5
-      graphL.cache.contains(1) mustEqual true
-      graphL.cache.contains(2) mustEqual true
-      graphL.cache.contains(5) mustEqual false
+      getNode(2).get.neighborIds(GraphDir.OutDir)
+      getNode(5).get.neighborIds(GraphDir.OutDir)
+      getNode(2).get.neighborIds(GraphDir.OutDir)
+      graphL.cache.linkedMap.contains(1) mustEqual false
+      graphL.cache.linkedMap.contains(2) mustEqual true
+      graphL.cache.linkedMap.contains(5) mustEqual true
+      getNode(1).get.neighborIds(GraphDir.OutDir) // bye 5
+      graphL.cache.linkedMap.contains(1) mustEqual true
+      graphL.cache.linkedMap.contains(2) mustEqual true
+      graphL.cache.linkedMap.contains(5) mustEqual false
     }
 
     "must obey index (max nodes/size of map) capacity" in {
-      getNode(2)
-      getNode(3)
-      graphL.cache.contains(2) mustEqual true
-      graphL.cache.contains(3) mustEqual true
-      graphL.cache.contains(5) mustEqual false
-      getNode(5)
-      graphL.cache.contains(2) mustEqual false
-      graphL.cache.contains(3) mustEqual true
-      graphL.cache.contains(5) mustEqual true
+      getNode(2).get.neighborIds(GraphDir.OutDir)
+      getNode(3).get.neighborIds(GraphDir.OutDir)
+      graphL.cache.linkedMap.contains(2) mustEqual true
+      graphL.cache.linkedMap.contains(3) mustEqual true
+      graphL.cache.linkedMap.contains(5) mustEqual false
+      getNode(5).get.neighborIds(GraphDir.OutDir)
+      graphL.cache.linkedMap.contains(2) mustEqual false
+      graphL.cache.linkedMap.contains(3) mustEqual true
+      graphL.cache.linkedMap.contains(5) mustEqual true
     }
 
     "must obey real (max edges) capacity" in {
-      getNode(6)
-      getNode(6)
-      graphL.cache.contains(1) mustEqual false
-      graphL.cache.contains(6) mustEqual true
-      getNode(1)
-      getNode(1)
-      graphL.cache.contains(1) mustEqual true
-      graphL.cache.contains(6) mustEqual false
+      getNode(6).get.neighborIds(GraphDir.OutDir)
+      getNode(6).get.neighborIds(GraphDir.OutDir)
+      graphL.cache.linkedMap.contains(1) mustEqual false
+      graphL.cache.linkedMap.contains(6) mustEqual true
+      getNode(1).get.neighborIds(GraphDir.OutDir)
+      getNode(1).get.neighborIds(GraphDir.OutDir)
+      graphL.cache.linkedMap.contains(1) mustEqual true
+      graphL.cache.linkedMap.contains(6) mustEqual false
     }
 
     "must obey both index and real capacities" in {
-      getNode(2)
-      getNode(3)
-      getNode(5) // bye 2, even though there's edge space
-      graphL.cache.contains(2) mustEqual false
-      graphL.cache.contains(3) mustEqual true
-      graphL.cache.contains(5) mustEqual true
-      graphL.cache.contains(6) mustEqual false
-      getNode(6) // bye 3, 5
-      graphL.cache.contains(2) mustEqual false
-      graphL.cache.contains(3) mustEqual false
-      graphL.cache.contains(5) mustEqual false
-      graphL.cache.contains(6) mustEqual true
+      getNode(2).get.neighborIds(GraphDir.OutDir)
+      getNode(3).get.neighborIds(GraphDir.OutDir)
+      getNode(5).get.neighborIds(GraphDir.OutDir) // bye 2, even though there's edge space
+      graphL.cache.linkedMap.contains(2) mustEqual false
+      graphL.cache.linkedMap.contains(3) mustEqual true
+      graphL.cache.linkedMap.contains(5) mustEqual true
+      graphL.cache.linkedMap.contains(6) mustEqual false
+      getNode(6).get.neighborIds(GraphDir.OutDir) // bye 3, 5
+      graphL.cache.linkedMap.contains(2) mustEqual false
+      graphL.cache.linkedMap.contains(3) mustEqual false
+      graphL.cache.linkedMap.contains(5) mustEqual false
+      graphL.cache.linkedMap.contains(6) mustEqual true
     }
   }
 

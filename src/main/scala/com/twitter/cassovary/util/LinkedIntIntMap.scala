@@ -150,6 +150,8 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
    */
   def getIndexFromId(id: Int): Int = idToIndex(id)
 
+  def getTailId: Int = indexToId(tail)
+
   /**
    * Get the number of elements in the map
    * @return number of elements in the map

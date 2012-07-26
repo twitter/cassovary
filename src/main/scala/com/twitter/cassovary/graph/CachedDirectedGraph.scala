@@ -15,7 +15,7 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.StoredGraphDir._
 import java.util.concurrent.{Future, ExecutorService}
-import node.ArrayBasedDirectedNode
+import node.{ArrayBasedDirectedNode, CachedDirectedNode}
 import com.google.common.annotations.VisibleForTesting
 import com.twitter.ostrich.stats.Stats
 import java.util.concurrent.atomic.AtomicLong
@@ -277,55 +277,38 @@ class FastLRUCachedDirectedGraph (
     val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir)
     extends CachedDirectedGraph(maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
 
-  val reader = new EdgeShardsReader(shardDirectory, numShards)
-  val emptyArray = new Array[Int](0)
-  val indexToObject = new Array[Node](cacheMaxNodes+1)
-  val cache = new LinkedIntIntMap(maxId, cacheMaxNodes)
-  var currRealCapacity = 0
-  var hits, misses = 0
+  val cache = new FastLRUIntArrayCache(shardDirectory, numShards,
+    maxId, cacheMaxNodes, cacheMaxEdges, idToIntOffsetAndNumEdges)
 
-  def getNodeById(id: Int) = Stats.time("cached_get_node_by_id") {
+  val nodeList = new Array[Option[Node]](maxId+1)
+  val emptyArray = new Array[Int](0)
+
+  def getNodeById(id: Int) = { // Stats.time("cached_get_node_by_id")
     if (id > maxId || !nodeIdSet(id)) { // Invalid id
       None
     }
     else {
-      if (cache.contains(id)) { // Cache hit
-        hits += 1
-        cache.moveToHead(id)
-        Some(indexToObject(cache.getIndexFromId(id)))
-      }
-      else { // Cache miss
-        misses += 1
-        idToIntOffsetAndNumEdges(id) match {
-          case null => Some(ArrayBasedDirectedNode(id, emptyArray, storedGraphDir))
-          case (offset, numEdges) => {
-            // Read in the node from disk
-            val intArray = new Array[Int](numEdges)
-            Stats.time("read_integers_from_disk_shard") {
-              reader.readIntegersFromOffsetIntoArray(id, offset, numEdges, intArray, 0)
-            }
-            val node = ArrayBasedDirectedNode(id, intArray, storedGraphDir)
-
-            // Evict any items in the cache if needed and add
-            val eltSize = node.neighborCount(graphDir)
-            while(cache.getCurrentSize == cacheMaxNodes || currRealCapacity + eltSize > cacheMaxEdges) {
-              currRealCapacity -= indexToObject(cache.getTailIndex).neighborCount(graphDir)
-              cache.removeFromTail()
-            }
-            currRealCapacity += eltSize
-            cache.addToHead(id)
-            indexToObject(cache.getHeadIndex) = node
-
-            Some(node)
+      nodeList(id) match {
+        case null =>
+          idToIntOffsetAndNumEdges(id) match {
+            case null =>
+              val node = Some(ArrayBasedDirectedNode(id, emptyArray, storedGraphDir))
+              nodeList(id) = node
+              node
+            case (offset, numEdges) =>
+              val node = Some(CachedDirectedNode(id, numEdges, storedGraphDir, cache))
+              nodeList(id) = node
+              node
           }
-        }
+        case n => n
       }
     }
   }
 
   def writeStats(fileName: String) {
     printToFile(new File(fileName))(p => {
-      p.println("%s\t%s\t%s".format(misses, hits + misses, misses.toDouble / (hits+misses)))
+      val (misses, hits, currentSize, currRealCapacity) = cache.getStats
+      p.println("%s\t%s\t%s\t%s\t%s".format(misses, hits + misses, misses.toDouble / (hits+misses), currentSize, currRealCapacity))
     })
   }
 }
@@ -379,7 +362,7 @@ class GuavaCachedDirectedGraph (
       def load(k:Int):Node = loadNode(k)
     })
 
-  def getNodeById(id: Int) = Stats.time("cached_get_node_by_id") {
+  def getNodeById(id: Int) = { // Stats.time("cached_get_node_by_id")
     if (id > maxId || !nodeIdSet(id)) // Invalid id
       None
     else
