@@ -37,7 +37,7 @@ object CachedDirectedGraph {
   private lazy val log = Logger.get("CachedDirectedGraph")
 
   def apply(iteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxId] ], executorService: ExecutorService,
-            storedGraphDir: StoredGraphDir, cacheType: String, cacheMaxNodes:Int, cacheMaxEdges:Int,
+            storedGraphDir: StoredGraphDir, cacheType: String, cacheMaxNodes:Int, cacheMaxEdges:Long,
             shardDirectory: String, numShards: Int, numRounds: Int,
             useCachedValues: Boolean, cacheDirectory: String):CachedDirectedGraph = {
 
@@ -270,7 +270,7 @@ abstract class CachedDirectedGraph(maxId: Int,
  */
 class FastLRUCachedDirectedGraph (
     val nodeIdSet:mutable.BitSet,
-    val cacheMaxNodes:Int, val cacheMaxEdges:Int,
+    val cacheMaxNodes:Int, val cacheMaxEdges:Long,
     val shardDirectory:String, val numShards:Int,
     val idToIntOffsetAndNumEdges:Array[(Long,Int)],
     maxId: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
@@ -328,7 +328,7 @@ class FastLRUCachedDirectedGraph (
  */
 class GuavaCachedDirectedGraph (
     val nodeIdSet:mutable.BitSet,
-    val cacheMaxNodesAndEdges:Int,
+    val cacheMaxNodesAndEdges: Long,
     val shardDirectory:String, val numShards:Int,
     val idToIntOffsetAndNumEdges:Array[(Long,Int)],
     maxId: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
@@ -338,35 +338,53 @@ class GuavaCachedDirectedGraph (
   val reader = new EdgeShardsReader(shardDirectory, numShards)
   val emptyArray = new Array[Int](0)
 
-  // Node Loader
-  private def loadNode(id: Int):Node = {
+  // Array Loader
+  private def loadArray(id: Int):Array[Int] = {
     idToIntOffsetAndNumEdges(id) match {
-      case null => ArrayBasedDirectedNode(id, emptyArray, storedGraphDir)
+      case null => throw new NullPointerException("Guava loadArray idToIntOffsetAndNumEdges %s".format(id))
       case (offset, numEdges) => {
         // Read in the node from disk
         val intArray = new Array[Int](numEdges)
         reader.readIntegersFromOffsetIntoArray(id, offset * 4, numEdges, intArray, 0)
-        ArrayBasedDirectedNode(id, intArray, storedGraphDir)
+        intArray
       }
     }
   }
 
   // Guava Cache
-  val cache:LoadingCache[Int,Node] = CacheBuilder.newBuilder()
+  val cache:LoadingCache[Int,Array[Int]] = CacheBuilder.newBuilder()
     .maximumWeight(cacheMaxNodesAndEdges)
-    .weigher(new Weigher[Int,Node] {
-      def weigh(k:Int, v:Node):Int = v.neighborCount(graphDir) + 1
+    .weigher(new Weigher[Int,Array[Int]] {
+      def weigh(k:Int, v:Array[Int]):Int = v.length
     })
-    .asInstanceOf[CacheBuilder[Int,Node]]
-    .build[Int,Node](new CacheLoader[Int,Node] {
-      def load(k:Int):Node = loadNode(k)
+    .asInstanceOf[CacheBuilder[Int,Array[Int]]]
+    .build[Int,Array[Int]](new CacheLoader[Int,Array[Int]] {
+      def load(k:Int):Array[Int] = loadArray(k)
     })
+  val cacheWrapper = new IntArrayCache {
+    def get(id: Int) = cache.get(id)
+  }
+
+  val nodeList = new Array[Option[Node]](maxId+1)
 
   def getNodeById(id: Int) = { // Stats.time("cached_get_node_by_id")
     if (id > maxId || !nodeIdSet(id)) // Invalid id
       None
     else
-      Some(cache.get(id))
+      nodeList(id) match {
+        case null =>
+          idToIntOffsetAndNumEdges(id) match {
+            case null =>
+              val node = Some(ArrayBasedDirectedNode(id, emptyArray, storedGraphDir))
+              nodeList(id) = node
+              node
+            case (offset, numEdges) =>
+              val node = Some(CachedDirectedNode(id, numEdges, storedGraphDir, cacheWrapper))
+              nodeList(id) = node
+              node
+          }
+        case n => n
+      }
   }
 
   def writeStats(fileName: String) {

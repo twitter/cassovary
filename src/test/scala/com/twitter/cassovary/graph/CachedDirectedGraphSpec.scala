@@ -118,15 +118,19 @@ class CachedDirectedGraphSpec extends Specification {
     "Do stats even work?" in {
       getNode(1)
       getNode(2)
+      graphL.cache.stats().requestCount() mustEqual 0
+      graphL.cache.stats().missCount() mustEqual 0
+      getNode(1).get.neighborIds(GraphDir.OutDir)
+      getNode(2).get.neighborIds(GraphDir.OutDir)
       graphL.cache.stats().requestCount() mustEqual 2
       graphL.cache.stats().missCount() mustEqual 2
     }
 
     "Do some values get cached?" in {
-      getNode(2)
-      getNode(3)
-      getNode(2)
-      getNode(3)
+      getNode(2).get.neighborIds(GraphDir.OutDir)
+      getNode(3).get.neighborIds(GraphDir.OutDir)
+      getNode(2).get.neighborIds(GraphDir.OutDir)
+      getNode(3).get.neighborIds(GraphDir.OutDir)
       graphL.cache.stats().requestCount() mustEqual 4
       graphL.cache.stats().missCount() mustEqual 2
     }
