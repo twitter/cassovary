@@ -219,10 +219,10 @@ object CachedDirectedGraph {
         shardDirectory, numShards, idToIntOffsetAndNumEdges,
         maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
         numNodes, numEdges, storedGraphDir)
-      case _ => new FastLRUCachedDirectedGraph(nodeIdSet, cacheMaxNodes, cacheMaxEdges,
+      case _ => new FastCachedDirectedGraph(nodeIdSet, cacheMaxNodes, cacheMaxEdges,
         shardDirectory, numShards, idToIntOffsetAndNumEdges,
         maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
-        numNodes, numEdges, storedGraphDir)
+        numNodes, numEdges, storedGraphDir, cacheType)
     }
   }
 
@@ -247,6 +247,7 @@ abstract class CachedDirectedGraph(maxId: Int,
   }
 
   def writeStats(fileName: String)
+  def statsString: String
 
   protected def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
     val p = new java.io.PrintWriter(f)
@@ -268,17 +269,21 @@ abstract class CachedDirectedGraph(maxId: Int,
  * @param edgeCount number of edges in the graph
  * @param storedGraphDir the graph directions stored
  */
-class FastLRUCachedDirectedGraph (
+class FastCachedDirectedGraph (
     val nodeIdSet:mutable.BitSet,
     val cacheMaxNodes:Int, val cacheMaxEdges:Long,
     val shardDirectory:String, val numShards:Int,
     val idToIntOffsetAndNumEdges:Array[(Long,Int)],
     maxId: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
-    val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir)
+    val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir, val cacheType: String="lru")
     extends CachedDirectedGraph(maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
 
-  val cache = new FastLRUIntArrayCache(shardDirectory, numShards,
-    maxId, cacheMaxNodes, cacheMaxEdges, idToIntOffsetAndNumEdges)
+  val cache = cacheType match {
+    case "lru" => new FastLRUIntArrayCache(shardDirectory, numShards,
+      maxId, cacheMaxNodes, cacheMaxEdges, idToIntOffsetAndNumEdges)
+    case _ => new FastClockIntArrayCache(shardDirectory, numShards,
+      maxId, cacheMaxNodes, cacheMaxEdges, idToIntOffsetAndNumEdges)
+  }
 
   val nodeList = new Array[Option[Node]](maxId+1)
   val emptyArray = new Array[Int](0)
@@ -305,10 +310,14 @@ class FastLRUCachedDirectedGraph (
     }
   }
 
+  def statsString: String = {
+    val (misses, hits, currentSize, currRealCapacity) = cache.getStats
+    "%s\t%s\t%s\t%s\t%s".format(misses, hits + misses, misses.toDouble / (hits+misses), currentSize, currRealCapacity)
+  }
+
   def writeStats(fileName: String) {
     printToFile(new File(fileName))(p => {
-      val (misses, hits, currentSize, currRealCapacity) = cache.getStats
-      p.println("%s\t%s\t%s\t%s\t%s".format(misses, hits + misses, misses.toDouble / (hits+misses), currentSize, currRealCapacity))
+      p.println(statsString)
     })
   }
 }
@@ -363,6 +372,7 @@ class GuavaCachedDirectedGraph (
     })
   val cacheWrapper = new IntArrayCache {
     def get(id: Int) = cache.get(id)
+    def getStats = throw new IllegalArgumentException("Can't call getStats on this!")
   }
 
   val nodeList = new Array[Option[Node]](maxId+1)
@@ -387,10 +397,15 @@ class GuavaCachedDirectedGraph (
       }
   }
 
+  def statsString: String = {
+    val stats = cache.stats()
+    "%s\t%s\t%s\t%s".format(stats.missCount(), stats.requestCount(), stats.missRate(), stats.averageLoadPenalty())
+  }
+
   def writeStats(fileName: String) {
     val stats = cache.stats()
     printToFile(new File(fileName))(p => {
-      p.println("%s\t%s\t%s\t%s".format(stats.missCount(), stats.requestCount(), stats.missRate(), stats.averageLoadPenalty()))
+      p.println(statsString)
     })
   }
 }

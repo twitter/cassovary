@@ -14,6 +14,7 @@
 package com.twitter.cassovary.graph
 
 import org.specs.Specification
+import com.twitter.cassovary.util.{FastClockIntArrayCache, FastLRUIntArrayCache}
 
 class CachedDirectedGraphSpec extends Specification {
   var graph: CachedDirectedGraph = _
@@ -31,7 +32,10 @@ class CachedDirectedGraphSpec extends Specification {
     iteratorFunc, dir, "guava", "temp-cached/sameGraph")
 
   def makeFastLRUGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
-    iteratorFunc, dir, "fastlru")
+    iteratorFunc, dir, "lru")
+
+  def makeFastClockGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
+    iteratorFunc, dir, "clock")
 
   def getNode(id: Int): Option[Node] = graph.getNodeById(id)
 
@@ -136,11 +140,13 @@ class CachedDirectedGraphSpec extends Specification {
     }
   }
 
-  "FastLRU-based graph containing only out edges" should {
-    var graphL: FastLRUCachedDirectedGraph = null
+  "FastClock-based graph containing only out edges" should {
+    var graphC: FastCachedDirectedGraph = null
+    var graphCCache: FastClockIntArrayCache = null
     doBefore {
-      graph = makeFastLRUGraph(StoredGraphDir.OnlyOut)
-      graphL = graph.asInstanceOf[FastLRUCachedDirectedGraph]
+      graph = makeFastClockGraph(StoredGraphDir.OnlyOut)
+      graphC = graph.asInstanceOf[FastCachedDirectedGraph]
+      graphCCache = graphC.cache.asInstanceOf[FastClockIntArrayCache]
     }
 
     "map only out edges" in {
@@ -156,65 +162,99 @@ class CachedDirectedGraphSpec extends Specification {
     "be able to add a single node and only cache when neighborIds desired" in {
       getNode(1)
       getNode(1).get.neighborCount(GraphDir.OutDir) mustEqual 3
-      graphL.cache.linkedMap.contains(1) mustEqual false
+      graphCCache.contains(1) mustEqual false
       getNode(1).get.neighborIds(GraphDir.OutDir)
-      graphL.cache.linkedMap.getCurrentSize mustEqual 1
-      graphL.cache.currRealCapacity mustEqual 3
-      graphL.cache.linkedMap.contains(1) mustEqual true
+      graphCCache.currNodeCapacity mustEqual 1
+      graphCCache.currRealCapacity mustEqual 3
+      graphCCache.contains(1) mustEqual true
       getNode(1).get must DeepEqualsNode((NodeMaker(1, Array(2, 3, 4), Array())))
-      graphL.cache.linkedMap.contains(0) mustEqual false
-      graphL.cache.linkedMap.contains(2) mustEqual false
+      graphCCache.contains(0) mustEqual false
+      graphCCache.contains(2) mustEqual false
+    }
+
+  }
+
+  "FastLRU-based graph containing only out edges" should {
+    var graphL: FastCachedDirectedGraph = null
+    var graphLCache: FastLRUIntArrayCache = null
+    doBefore {
+      graph = makeFastLRUGraph(StoredGraphDir.OnlyOut)
+      graphL = graph.asInstanceOf[FastCachedDirectedGraph]
+      graphLCache = graphL.cache.asInstanceOf[FastLRUIntArrayCache]
+    }
+
+    "map only out edges" in {
+      getNode(1).get must DeepEqualsNode((NodeMaker(1, Array(2, 3, 4), Array())))
+      getNode(2).get must DeepEqualsNode((NodeMaker(2, Array(1), Array())))
+      getNode(3).get must DeepEqualsNode((NodeMaker(3, Array(1), Array())))
+      getNode(4).get must DeepEqualsNode((NodeMaker(4, Array())))
+      getNode(5).get must DeepEqualsNode((NodeMaker(5, Array(2), Array())))
+      getNode(6).get must DeepEqualsNode((NodeMaker(6, Array(1, 2, 3, 4), Array())))
+      getNode(7) mustEqual None
+    }
+
+    "be able to add a single node and only cache when neighborIds desired" in {
+      getNode(1)
+      getNode(1).get.neighborCount(GraphDir.OutDir) mustEqual 3
+      graphLCache.linkedMap.contains(1) mustEqual false
+      getNode(1).get.neighborIds(GraphDir.OutDir)
+      graphLCache.linkedMap.getCurrentSize mustEqual 1
+      graphLCache.currRealCapacity mustEqual 3
+      graphLCache.linkedMap.contains(1) mustEqual true
+      getNode(1).get must DeepEqualsNode((NodeMaker(1, Array(2, 3, 4), Array())))
+      graphLCache.linkedMap.contains(0) mustEqual false
+      graphLCache.linkedMap.contains(2) mustEqual false
     }
 
     "must evict in LRU order" in {
       getNode(2).get.neighborIds(GraphDir.OutDir)
       getNode(5).get.neighborIds(GraphDir.OutDir)
       getNode(2).get.neighborIds(GraphDir.OutDir)
-      graphL.cache.linkedMap.contains(1) mustEqual false
-      graphL.cache.linkedMap.contains(2) mustEqual true
-      graphL.cache.linkedMap.contains(5) mustEqual true
+      graphLCache.linkedMap.contains(1) mustEqual false
+      graphLCache.linkedMap.contains(2) mustEqual true
+      graphLCache.linkedMap.contains(5) mustEqual true
       getNode(1).get.neighborIds(GraphDir.OutDir) // bye 5
-      graphL.cache.linkedMap.contains(1) mustEqual true
-      graphL.cache.linkedMap.contains(2) mustEqual true
-      graphL.cache.linkedMap.contains(5) mustEqual false
+      graphLCache.linkedMap.contains(1) mustEqual true
+      graphLCache.linkedMap.contains(2) mustEqual true
+      graphLCache.linkedMap.contains(5) mustEqual false
     }
 
     "must obey index (max nodes/size of map) capacity" in {
       getNode(2).get.neighborIds(GraphDir.OutDir)
       getNode(3).get.neighborIds(GraphDir.OutDir)
-      graphL.cache.linkedMap.contains(2) mustEqual true
-      graphL.cache.linkedMap.contains(3) mustEqual true
-      graphL.cache.linkedMap.contains(5) mustEqual false
+      graphLCache.linkedMap.contains(2) mustEqual true
+      graphLCache.linkedMap.contains(3) mustEqual true
+      graphLCache.linkedMap.contains(5) mustEqual false
       getNode(5).get.neighborIds(GraphDir.OutDir)
-      graphL.cache.linkedMap.contains(2) mustEqual false
-      graphL.cache.linkedMap.contains(3) mustEqual true
-      graphL.cache.linkedMap.contains(5) mustEqual true
+      graphLCache.linkedMap.contains(2) mustEqual false
+      graphLCache.linkedMap.contains(3) mustEqual true
+      graphLCache.linkedMap.contains(5) mustEqual true
     }
 
     "must obey real (max edges) capacity" in {
       getNode(6).get.neighborIds(GraphDir.OutDir)
       getNode(6).get.neighborIds(GraphDir.OutDir)
-      graphL.cache.linkedMap.contains(1) mustEqual false
-      graphL.cache.linkedMap.contains(6) mustEqual true
+      graphLCache.linkedMap.contains(1) mustEqual false
+      graphLCache.linkedMap.contains(6) mustEqual true
       getNode(1).get.neighborIds(GraphDir.OutDir)
       getNode(1).get.neighborIds(GraphDir.OutDir)
-      graphL.cache.linkedMap.contains(1) mustEqual true
-      graphL.cache.linkedMap.contains(6) mustEqual false
+      graphLCache.linkedMap.contains(1) mustEqual true
+      graphLCache.linkedMap.contains(6) mustEqual false
     }
 
     "must obey both index and real capacities" in {
       getNode(2).get.neighborIds(GraphDir.OutDir)
       getNode(3).get.neighborIds(GraphDir.OutDir)
       getNode(5).get.neighborIds(GraphDir.OutDir) // bye 2, even though there's edge space
-      graphL.cache.linkedMap.contains(2) mustEqual false
-      graphL.cache.linkedMap.contains(3) mustEqual true
-      graphL.cache.linkedMap.contains(5) mustEqual true
-      graphL.cache.linkedMap.contains(6) mustEqual false
+      graphLCache.linkedMap.contains(2) mustEqual false
+      graphLCache.linkedMap.contains(3) mustEqual true
+      graphLCache.linkedMap.contains(5) mustEqual true
+      graphLCache.linkedMap.contains(6) mustEqual false
       getNode(6).get.neighborIds(GraphDir.OutDir) // bye 3, 5
-      graphL.cache.linkedMap.contains(2) mustEqual false
-      graphL.cache.linkedMap.contains(3) mustEqual false
-      graphL.cache.linkedMap.contains(5) mustEqual false
-      graphL.cache.linkedMap.contains(6) mustEqual true
+      graphLCache.linkedMap.contains(2) mustEqual false
+      graphLCache.linkedMap.contains(3) mustEqual false
+      graphLCache.linkedMap.contains(5) mustEqual false
+      graphLCache.linkedMap.contains(6) mustEqual true
     }
   }
 
