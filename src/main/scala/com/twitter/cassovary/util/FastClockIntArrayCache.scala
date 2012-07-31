@@ -22,11 +22,12 @@ import scala.collection.mutable
  * @param maxId
  * @param cacheMaxNodes
  * @param cacheMaxEdges
- * @param idToIntOffsetAndNumEdges
+ * @param idToIntOffset
+ * @param idToNumEdges
  */
 class FastClockIntArrayCache(shardDirectory: String, numShards: Int,
                               maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
-                              idToIntOffsetAndNumEdges:Array[(Long,Int)]) extends IntArrayCache {
+                              idToIntOffset:Array[Long], idToNumEdges:Array[Int]) extends IntArrayCache {
 
   val reader = new EdgeShardsReader(shardDirectory, numShards)
   val clockBits = new mutable.BitSet(cacheMaxNodes) // In-use bit
@@ -83,19 +84,20 @@ class FastClockIntArrayCache(shardDirectory: String, numShards: Int,
     }
     else {
       misses += 1
-      idToIntOffsetAndNumEdges(id) match {
-        case (offset, numEdges) => {
-          // Read in array
-          val intArray = new Array[Int](numEdges)
-          reader.readIntegersFromOffsetIntoArray(id, offset * 4, numEdges, intArray, 0)
-          // Evict from cache
-          currNodeCapacity += 1
-          currRealCapacity += numEdges
-          replace(id, intArray)
-          // Return array
-          intArray
-        }
-        case null => throw new NullPointerException("FastLRUIntArrayCache idToIntOffsetAndNumEdges %s".format(id))
+      val numEdges = idToNumEdges(id)
+      if (numEdges == 0) {
+        throw new NullPointerException("FastLRUIntArrayCache idToIntOffsetAndNumEdges %s".format(id))
+      }
+      else {
+        // Read in array
+        val intArray = new Array[Int](numEdges)
+        reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id) * 4, numEdges, intArray, 0)
+        // Evict from cache
+        currNodeCapacity += 1
+        currRealCapacity += numEdges
+        replace(id, intArray)
+        // Return array
+        intArray
       }
     }
   }

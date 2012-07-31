@@ -4,10 +4,8 @@ import org.specs.Specification
 
 class FastClockIntArrayCacheSpec extends Specification {
   "FastClockIntArrayCache" should {
-    var off = new Array[(Long, Int)](5)
-    off(1) = (0L, 2)
-    off(2) = (0L, 2)
-    off(4) = (0L, 1)
+    val offset = Array[Long](0L, 0L, 0L, 0L, 0L)
+    val edges = Array[Int](0, 2, 2, 0, 1)
 
     doFirst {
       val writer = new EdgeShardsWriter("test-shards", 10)
@@ -18,7 +16,7 @@ class FastClockIntArrayCacheSpec extends Specification {
     }
 
     "Work" in {
-      val fc = new FastClockIntArrayCache("test-shards", 10, 4, 2, 3, off)
+      val fc = new FastClockIntArrayCache("test-shards", 10, 4, 2, 3, offset, edges)
       fc.get(1)(0) mustEqual 2
       fc.get(1)(1) mustEqual 3
       fc.misses mustEqual 1
@@ -26,7 +24,7 @@ class FastClockIntArrayCacheSpec extends Specification {
     }
 
     "Evict Properly" in {
-      val fc = new FastClockIntArrayCache("test-shards", 10, 4, 2, 3, off)
+      val fc = new FastClockIntArrayCache("test-shards", 10, 4, 2, 3, offset, edges)
       fc.get(1)
       fc.get(2)
       fc.get(1)
@@ -46,7 +44,7 @@ class FastClockIntArrayCacheSpec extends Specification {
     }
 
     "Is clock and not LRU" in {
-      val fc = new FastClockIntArrayCache("test-shards", 10, 4, 2, 4, off)
+      val fc = new FastClockIntArrayCache("test-shards", 10, 4, 2, 4, offset, edges)
       fc.get(1)
       fc.get(2)
       fc.get(1)

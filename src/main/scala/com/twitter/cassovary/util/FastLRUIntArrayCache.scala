@@ -30,11 +30,12 @@ trait IntArrayCache {
  * @param maxId
  * @param cacheMaxNodes
  * @param cacheMaxEdges
- * @param idToIntOffsetAndNumEdges
+ * @param idToIntOffset
+ * @param idToNumEdges
  */
 class FastLRUIntArrayCache(shardDirectory: String, numShards: Int,
                             maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
-                            idToIntOffsetAndNumEdges:Array[(Long,Int)]) extends IntArrayCache {
+                            idToIntOffset:Array[Long], idToNumEdges:Array[Int]) extends IntArrayCache {
 
   val reader = new EdgeShardsReader(shardDirectory, numShards)
   val idToArray = new Array[Array[Int]](maxId+1)
@@ -50,25 +51,26 @@ class FastLRUIntArrayCache(shardDirectory: String, numShards: Int,
     }
     else Stats.time("fastlru_miss") {
       misses += 1
-      idToIntOffsetAndNumEdges(id) match {
-        case (offset, numEdges) => {
-          // Read in array
-          val intArray = new Array[Int](numEdges)
-          reader.readIntegersFromOffsetIntoArray(id, offset * 4, numEdges, intArray, 0)
+      val numEdges = idToNumEdges(id)
+      if (numEdges == 0) {
+        throw new NullPointerException("FastLRUIntArrayCache idToIntOffsetAndNumEdges %s".format(id))
+      }
+      else {
+        // Read in array
+        val intArray = new Array[Int](numEdges)
+        reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id) * 4, numEdges, intArray, 0)
 
-          // Evict from cache
-          currRealCapacity += numEdges
-          while(linkedMap.getCurrentSize == cacheMaxNodes || currRealCapacity > cacheMaxEdges) {
-            val oldId = linkedMap.removeFromTail()
-            currRealCapacity -= idToArray(oldId).length
-            idToArray(oldId) = null
-          }
-
-          linkedMap.addToHead(id)
-          idToArray(id) = intArray
-          intArray
+        // Evict from cache
+        currRealCapacity += numEdges
+        while(linkedMap.getCurrentSize == cacheMaxNodes || currRealCapacity > cacheMaxEdges) {
+          val oldId = linkedMap.removeFromTail()
+          currRealCapacity -= idToArray(oldId).length
+          idToArray(oldId) = null
         }
-        case null => throw new NullPointerException("FastLRUIntArrayCache idToIntOffsetAndNumEdges %s".format(id))
+
+        linkedMap.addToHead(id)
+        idToArray(id) = intArray
+        intArray
       }
     }
   }
