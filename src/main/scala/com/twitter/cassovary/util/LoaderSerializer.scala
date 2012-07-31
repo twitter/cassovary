@@ -67,6 +67,78 @@ class LoaderSerializer(var directory: String, useCachedValues: Boolean) {
       this
     }
 
+    def arrayOfLong(al: Array[Long]) = {
+      dos.writeInt(al.size)
+      dos.flush()
+
+      var numInsertions = 0
+      var remainingSize = al.size * 8
+      def makeBB = {
+        if (remainingSize - 16000000 >= 0) {
+          remainingSize -= 16000000
+          ByteBuffer.allocate(16000000)
+        }
+        else {
+          val bb = ByteBuffer.allocate(remainingSize)
+          remainingSize = 0
+          bb
+        }
+      }
+      var bb:ByteBuffer = makeBB
+      al.foreach { i =>
+        if (numInsertions == 1000000) {
+          bb.rewind()
+          fc.write(bb)
+          bb = makeBB
+          numInsertions = 0
+        }
+        bb.putLong(i)
+        numInsertions += 1
+      }
+
+      if (numInsertions > 0) {
+        bb.rewind()
+        fc.write(bb)
+      }
+      this
+    }
+
+    def arrayOfInt(al: Array[Int]) = {
+      dos.writeInt(al.size)
+      dos.flush()
+
+      var numInsertions = 0
+      var remainingSize = al.size * 4
+      def makeBB = {
+        if (remainingSize - 16000000 >= 0) {
+          remainingSize -= 16000000
+          ByteBuffer.allocate(16000000)
+        }
+        else {
+          val bb = ByteBuffer.allocate(remainingSize)
+          remainingSize = 0
+          bb
+        }
+      }
+      var bb:ByteBuffer = makeBB
+      al.foreach { i =>
+        if (numInsertions == 1000000) {
+          bb.rewind()
+          fc.write(bb)
+          bb = makeBB
+          numInsertions = 0
+        }
+        bb.putInt(i)
+        numInsertions += 1
+      }
+
+      if (numInsertions > 0) {
+        bb.rewind()
+        fc.write(bb)
+      }
+      this
+    }
+
     def arrayOfLongInt(ali: Array[(Long, Int)], notNullSize:Int) = {
       println(fc.position())
       dos.writeInt(ali.size)
@@ -175,6 +247,24 @@ class LoaderSerializer(var directory: String, useCachedValues: Boolean) {
         ali(idx) = (lng, itg)
       }
       ali
+    }
+
+    def arrayOfInt(): Array[Int] = {
+      val size = dos.readInt()
+      val al = new Array[Int](size)
+      (0 until size).foreach { i =>
+        al(i) = dos.readInt()
+      }
+      al
+    }
+
+    def arrayOfLong(): Array[Long] = {
+      val size = dos.readInt()
+      val al = new Array[Long](size)
+      (0 until size).foreach { i =>
+        al(i) = dos.readLong()
+      }
+      al
     }
 
     def bitSet(): mutable.BitSet = {

@@ -25,6 +25,30 @@ class LoaderSerializerSpec extends Specification  {
       })
     }
 
+    "Read and write an Array of Long and an Array of Int" in {
+      val bs = new Array[Long](1000)
+      bs(999) = 999L
+      bs(998) = 91234567890L
+      val is = new Array[Int](1001)
+      is(0) = 100
+      is(1000) = 1999799979
+
+      serializer.writeOrRead("arraylong.txt", { writer =>
+        writer.arrayOfLong(bs).arrayOfInt(is).close
+      }, { reader => () })
+
+      serializer.writeOrRead("arraylong.txt", { writer => () }, { reader =>
+        val bos = reader.arrayOfLong()
+        val ios = reader.arrayOfInt()
+        bos(999) mustEqual 999L
+        bos(998) mustEqual 91234567890L
+        ios(0) mustEqual 100
+        ios(1000) mustEqual 1999799979
+        (0 until 1000).filterNot(i => i == 998 || i == 999).foreach { i => bos(i) mustEqual 0L }
+        (0 until 1001).filterNot(i => i == 0 || i == 1000).foreach { i => ios(i) mustEqual 0 }
+      })
+    }
+
     "Read and write a Array of Long,Int tuples properly" in {
       val bs = new Array[(Long, Int)](1000)
       bs(244) = (999999999999L, 12)
