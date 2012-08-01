@@ -24,7 +24,7 @@ trait Node {
   /**
    * The unique id of this node.
    */
-  val id: Int
+  def id: Int
 
   /**
    * Returns ids of all nodes pointing to this node.

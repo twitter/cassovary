@@ -15,6 +15,7 @@ package com.twitter.cassovary.graph
 
 import org.specs.Specification
 import com.twitter.cassovary.util.{FastClockIntArrayCache, FastLRUIntArrayCache}
+import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 
 class CachedDirectedGraphSpec extends Specification {
   var graph: CachedDirectedGraph = _
@@ -122,12 +123,12 @@ class CachedDirectedGraphSpec extends Specification {
     "Do stats even work?" in {
       getNode(1)
       getNode(2)
-      graphL.cache.stats().requestCount() mustEqual 0
-      graphL.cache.stats().missCount() mustEqual 0
+      graphL.cacheG.stats().requestCount() mustEqual 0
+      graphL.cacheG.stats().missCount() mustEqual 0
       getNode(1).get.neighborIds(GraphDir.OutDir)
       getNode(2).get.neighborIds(GraphDir.OutDir)
-      graphL.cache.stats().requestCount() mustEqual 2
-      graphL.cache.stats().missCount() mustEqual 2
+      graphL.cacheG.stats().requestCount() mustEqual 2
+      graphL.cacheG.stats().missCount() mustEqual 2
     }
 
     "Do some values get cached?" in {
@@ -135,8 +136,8 @@ class CachedDirectedGraphSpec extends Specification {
       getNode(3).get.neighborIds(GraphDir.OutDir)
       getNode(2).get.neighborIds(GraphDir.OutDir)
       getNode(3).get.neighborIds(GraphDir.OutDir)
-      graphL.cache.stats().requestCount() mustEqual 4
-      graphL.cache.stats().missCount() mustEqual 2
+      graphL.cacheG.stats().requestCount() mustEqual 4
+      graphL.cacheG.stats().missCount() mustEqual 2
     }
   }
 
@@ -255,6 +256,14 @@ class CachedDirectedGraphSpec extends Specification {
       graphLCache.linkedMap.contains(3) mustEqual false
       graphLCache.linkedMap.contains(5) mustEqual false
       graphLCache.linkedMap.contains(6) mustEqual true
+    }
+
+    "Do a random walk properly" in {
+      val walkParams = RandomWalkParams(15000, 0.2, Some(1500), None, None, false, GraphDir.OutDir, false, true)
+      val graphUtils = new GraphUtils(graphL)
+      val (a, b) = graphUtils.calculatePersonalizedReputation(2, walkParams)
+      println(a)
+      a.size() mustEqual 4
     }
   }
 
