@@ -46,9 +46,6 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
   }
   freeIndices(size) = 0
 
-  // BitSet for quick contains testing
-  protected val idBitSet = new mutable.BitSet(maxId + 1)
-
   /**
    * Add a free slot to the cache
    * @param index index of free slot
@@ -81,7 +78,7 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
     val prevId = indexToId(prevTail)
     tail = indexNext(prevTail)
     addToFree(prevTail)
-    idBitSet(prevId) = false // idToIndex(prevId) = 0
+    idToIndex(prevId) = 0
     // indexToId(prevTail) = 0 // probably don't need this
     indexPrev(tail) = 0
     prevId
@@ -128,7 +125,6 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
     val prevHeadIdx = head
     head = popFromFree()
     idToIndex(id) = head
-    idBitSet(id) = true
     indexNext(prevHeadIdx) = head
     indexPrev(head) = prevHeadIdx
     indexToId(head) = id
@@ -154,7 +150,7 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
    * @param id element to check
    * @return true if element exists in map
    */
-  def contains(id: Int): Boolean = idBitSet(id)
+  def contains(id: Int): Boolean = idToIndex(id) > 0
 
   /**
    * Get the array index of the given id, and id must exist
