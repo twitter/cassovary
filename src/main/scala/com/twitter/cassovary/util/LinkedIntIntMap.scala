@@ -39,12 +39,12 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
   // cache index -> id
   protected val idToIndex = new Array[Int](maxId + 1) // id -> cache index
 
-  // Initialize a linked list of free indices
-  protected val freeIndices = new Array[Int](size + 1)
-  (0 until size + 1).foreach {
-    i => freeIndices(i) = i + 1
+  // Initialize a linked list of free indices using the free slots of indexNext
+  (1 until size).foreach {
+    i => indexNext(i) = i + 1
   }
-  freeIndices(size) = 0
+  indexNext(size) = 0
+  protected var freePoint = 1
 
   /**
    * Add a free slot to the cache
@@ -52,8 +52,8 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
    */
   private def addToFree(index: Int): Unit = {
     currentSize -= 1
-    freeIndices(index) = freeIndices(0)
-    freeIndices(0) = index
+    indexNext(index) = freePoint
+    freePoint = index
   }
 
   /**
@@ -62,8 +62,8 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
    */
   private def popFromFree(): Int = {
     currentSize += 1
-    val popped = freeIndices(0)
-    freeIndices(0) = freeIndices(popped)
+    val popped = freePoint
+    freePoint = indexNext(freePoint)
     popped
   }
 
