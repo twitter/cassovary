@@ -14,8 +14,11 @@
 package com.twitter.cassovary.graph
 
 import org.specs.Specification
-import com.twitter.cassovary.util.{FastClockIntArrayCache, FastLRUIntArrayCache}
+import com.twitter.cassovary.util.{ExecutorUtils, FastClockIntArrayCache, FastLRUIntArrayCache}
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
+import com.google.common.util.concurrent.MoreExecutors
+import java.util.concurrent._
+import scala.util.Random
 
 class CachedDirectedGraphSpec extends Specification {
   var graph: CachedDirectedGraph = _
@@ -26,6 +29,10 @@ class CachedDirectedGraphSpec extends Specification {
     NodeIdEdgesMaxId(5, Array(2)),
     NodeIdEdgesMaxId(6, Array(1,2,3,4))).iterator
 
+  val edgeMap = Map(1 -> Array(2,3,4), 2 -> Array(1), 3 -> Array(1),
+    4 -> Array.empty, 5 -> Array(2), 6 -> Array(1,2,3,4))
+  val reachability = List(0, 4, 4, 4, 1, 5, 5)
+
   def makeGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
     iteratorFunc, dir, "guava")
 
@@ -34,6 +41,9 @@ class CachedDirectedGraphSpec extends Specification {
 
   def makeFastLRUGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
     iteratorFunc, dir, "lru")
+
+  def makeFastLRUGraphWithNodeArray(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
+    iteratorFunc, dir, "lru_na")
 
   def makeFastClockGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
     iteratorFunc, dir, "clock")
@@ -46,6 +56,36 @@ class CachedDirectedGraphSpec extends Specification {
 
   val smallGraphInOnly = beforeContext {
     graph = makeGraph(StoredGraphDir.OnlyIn)
+  }
+
+  def concurrentTest(graph: CachedDirectedGraph) = {
+    print("Concurrent test running...")
+    val walkParams = RandomWalkParams(15000, 0.2, Some(1500), None, None, false, GraphDir.OutDir, false, true)
+    val graphUtils = new GraphUtils(graph)
+    // Generate a sequence of random sequences
+    val r = new Random
+    val x = (0 until 10).map { _ =>
+      r.shuffle(Stream.continually((1 to 6).toList).flatten.take(10).toList)
+    }.toSeq
+    // Launch many threads each doing personalized reputation
+    val futures = ExecutorUtils.parallelWork[List[Int], List[Int]](Executors.newFixedThreadPool(10),
+    x,
+    { intList =>
+      intList.map { i =>
+        val (a, b) = graphUtils.debugCalculatePersonalizedReputation(i, walkParams, edgeMap)
+        //println(i, a)
+        a.size
+      }
+    })
+    // Wait for all threads to complete
+    val intLists = futures.toArray.map { f => f.asInstanceOf[Future[List[Int]]].get }
+    // Test reachability for all of them
+    (0 until 10).foreach { i =>
+      (0 until 10).foreach { j =>
+        intLists(i)(j) mustEqual reachability(x(i)(j))
+      }
+    }
+    print("done!\n")
   }
 
   "Guava-based graph containing only out edges" definedAs smallGraphOutOnly should {
@@ -173,6 +213,9 @@ class CachedDirectedGraphSpec extends Specification {
       graphCCache.contains(2) mustEqual false
     }
 
+    "Do a concurrent random walk properly" in {
+      concurrentTest(graph)
+    }
   }
 
   "FastLRU-based graph containing only out edges" should {
@@ -262,8 +305,18 @@ class CachedDirectedGraphSpec extends Specification {
       val walkParams = RandomWalkParams(15000, 0.2, Some(1500), None, None, false, GraphDir.OutDir, false, true)
       val graphUtils = new GraphUtils(graphL)
       val (a, b) = graphUtils.calculatePersonalizedReputation(2, walkParams)
-      println(a)
       a.size() mustEqual 4
+    }
+
+    "Do a concurrent random walk properly" in {
+      concurrentTest(graphL)
+    }
+  }
+
+  "Node Array FastLRU-based graph containing only out edges" should {
+    "Do a concurrent random walk properly" in {
+      graph = makeFastLRUGraphWithNodeArray(StoredGraphDir.OnlyOut)
+      concurrentTest(graph)
     }
   }
 

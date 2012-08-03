@@ -14,6 +14,7 @@
 package com.twitter.cassovary.util
 
 import com.twitter.ostrich.stats.Stats
+import concurrent.Lock
 
 /**
  * Definition of a cache of integer arrays
@@ -42,15 +43,19 @@ class FastLRUIntArrayCache(shardDirectory: String, numShards: Int,
   val linkedMap = new LinkedIntIntMap(maxId, cacheMaxNodes)
   var currRealCapacity: Long = 0
   var hits, misses: Long = 0
+  val lock = new Lock
 
-  def get(id: Int):Array[Int] = synchronized {
+  def get(id: Int):Array[Int] = {
+    lock.acquire
     if (linkedMap.contains(id)) {
       hits += 1
       linkedMap.moveToHead(id)
-      idToArray(id)
+      val a = idToArray(id)
+      lock.release
+      a
     }
     else Stats.time("fastlru_miss") {
-      misses += 1
+      lock.release
       val numEdges = idToNumEdges(id)
       if (numEdges == 0) {
         throw new NullPointerException("FastLRUIntArrayCache idToIntOffsetAndNumEdges %s".format(id))
@@ -58,19 +63,32 @@ class FastLRUIntArrayCache(shardDirectory: String, numShards: Int,
       else {
         // Read in array
         val intArray = new Array[Int](numEdges)
+
+        // Each EdgeShardReader is synchronized (i.e. 1 reader per shard)
         reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id) * 4, numEdges, intArray, 0)
 
-        // Evict from cache
-        currRealCapacity += numEdges
-        while(linkedMap.getCurrentSize == cacheMaxNodes || currRealCapacity > cacheMaxEdges) {
-          val oldId = linkedMap.removeFromTail()
-          currRealCapacity -= idToArray(oldId).length
-          idToArray(oldId) = null
+        lock.acquire
+        if (linkedMap.contains(id)) {
+          linkedMap.moveToHead(id)
+          val a = idToArray(id)
+          lock.release
+          a
         }
+        else {
+          misses += 1
+          // Evict from cache
+          currRealCapacity += numEdges
+          while(linkedMap.getCurrentSize == cacheMaxNodes || currRealCapacity > cacheMaxEdges) {
+            val oldId = linkedMap.removeFromTail()
+            currRealCapacity -= idToArray(oldId).length
+            idToArray(oldId) = null
+          }
 
-        linkedMap.addToHead(id)
-        idToArray(id) = intArray
-        intArray
+          linkedMap.addToHead(id)
+          idToArray(id) = intArray
+          lock.release
+          intArray
+        }
       }
     }
   }

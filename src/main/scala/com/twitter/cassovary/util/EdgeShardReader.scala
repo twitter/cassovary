@@ -2,6 +2,7 @@ package com.twitter.cassovary.util
 
 import java.io.{RandomAccessFile, DataInputStream, FileInputStream}
 import java.nio.ByteBuffer
+import com.twitter.ostrich.stats.Stats
 
 /**
  * Read binary integers from a file
@@ -17,14 +18,17 @@ class EdgeShardReader(val filename:String) {
    * @param intArray Integer array to write integers into
    * @param intArrayOffset Integer offset to write into in the integer array
    */
-  def readIntegersFromOffsetIntoArray(offset:Long, numEdges:Int, intArray:Array[Int], intArrayOffset:Int):Unit = {
-    rf.seek(offset)
-    // Read into byte array, then copy from byte array to given int array
-    val bytesToRead = 4 * numEdges
-    val byteArray = new Array[Byte](bytesToRead)
-    rf.read(byteArray, 0, bytesToRead)
-    val ib = ByteBuffer.wrap(byteArray).asIntBuffer()
-    ib.get(intArray, intArrayOffset, numEdges)
+  def readIntegersFromOffsetIntoArray(offset:Long, numEdges:Int, intArray:Array[Int],
+      intArrayOffset:Int):Unit = Stats.time("esr_fullread") {
+    synchronized {
+      rf.seek(offset)
+      // Read into byte array, then copy from byte array to given int array
+      val bytesToRead = 4 * numEdges
+      val byteArray = new Array[Byte](bytesToRead)
+      rf.read(byteArray, 0, bytesToRead)
+      val ib = ByteBuffer.wrap(byteArray).asIntBuffer()
+      ib.get(intArray, intArrayOffset, numEdges)
+    }
   }
 
   def close = rf.close()

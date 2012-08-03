@@ -71,33 +71,18 @@ class LoaderSerializer(var directory: String, useCachedValues: Boolean) {
       dos.writeInt(al.size)
       dos.flush()
 
-      var numInsertions = 0
-      var remainingSize = al.size * 8
-      def makeBB = {
-        if (remainingSize - 16000000 >= 0) {
-          remainingSize -= 16000000
-          ByteBuffer.allocate(16000000)
-        }
-        else {
-          val bb = ByteBuffer.allocate(remainingSize)
-          remainingSize = 0
-          bb
-        }
-      }
-      var bb:ByteBuffer = makeBB
+      var bb:ByteBuffer = ByteBuffer.allocate(1000000)
       al.foreach { i =>
-        if (numInsertions == 1000000) {
-          bb.rewind()
+        if (bb.remaining() < 8) {
+          bb.flip()
           fc.write(bb)
-          bb = makeBB
-          numInsertions = 0
+          bb.clear()
         }
         bb.putLong(i)
-        numInsertions += 1
       }
 
-      if (numInsertions > 0) {
-        bb.rewind()
+      if (bb.position() > 0) {
+        bb.flip()
         fc.write(bb)
       }
       this
@@ -107,35 +92,50 @@ class LoaderSerializer(var directory: String, useCachedValues: Boolean) {
       dos.writeInt(al.size)
       dos.flush()
 
-      var numInsertions = 0
-      var remainingSize = al.size * 4
-      def makeBB = {
-        if (remainingSize - 16000000 >= 0) {
-          remainingSize -= 16000000
-          ByteBuffer.allocate(16000000)
-        }
-        else {
-          val bb = ByteBuffer.allocate(remainingSize)
-          remainingSize = 0
-          bb
-        }
-      }
-      var bb:ByteBuffer = makeBB
+      var bb:ByteBuffer = ByteBuffer.allocate(1000000)
       al.foreach { i =>
-        if (numInsertions == 1000000) {
-          bb.rewind()
+        if (bb.remaining() < 4) {
+          bb.flip()
           fc.write(bb)
-          bb = makeBB
-          numInsertions = 0
+          bb.clear()
         }
         bb.putInt(i)
-        numInsertions += 1
       }
 
-      if (numInsertions > 0) {
-        bb.rewind()
+      if (bb.position() > 0) {
+        bb.flip()
         fc.write(bb)
       }
+
+//      var numInsertions = 0
+//      var remainingSize: Long = al.size * 4
+//      def makeBB = {
+//        if (remainingSize - 4000000 >= 0) {
+//          remainingSize -= 4000000
+//          ByteBuffer.allocate(4000000)
+//        }
+//        else {
+//          val bb = ByteBuffer.allocate(remainingSize.toInt)
+//          remainingSize = 0
+//          bb
+//        }
+//      }
+//      var bb:ByteBuffer = makeBB
+//      al.foreach { i =>
+//        if (numInsertions == 1000000) {
+//          bb.rewind()
+//          fc.write(bb)
+//          bb = makeBB
+//          numInsertions = 0
+//        }
+//        bb.putInt(i)
+//        numInsertions += 1
+//      }
+//
+//      if (numInsertions > 0) {
+//        bb.rewind()
+//        fc.write(bb)
+//      }
       this
     }
 
