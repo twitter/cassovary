@@ -39,7 +39,7 @@ class FastLRUIntArrayCache(shardDirectory: String, numShards: Int,
                             idToIntOffset:Array[Long], idToNumEdges:Array[Int]) extends IntArrayCache {
 
   val reader = new EdgeShardsReader(shardDirectory, numShards)
-  val idToArray = new Array[Array[Int]](maxId+1)
+  val indexToArray = new Array[Array[Int]](cacheMaxNodes+1)
   val linkedMap = new LinkedIntIntMap(maxId, cacheMaxNodes)
   var currRealCapacity: Long = 0
   var hits, misses: Long = 0
@@ -49,8 +49,9 @@ class FastLRUIntArrayCache(shardDirectory: String, numShards: Int,
     lock.acquire
     if (linkedMap.contains(id)) {
       hits += 1
-      linkedMap.moveToHead(id)
-      val a = idToArray(id)
+      val idx = linkedMap.getIndexFromId(id)
+      linkedMap.moveIndexToHead(idx)
+      val a = indexToArray(idx)
       lock.release
       a
     }
@@ -69,8 +70,9 @@ class FastLRUIntArrayCache(shardDirectory: String, numShards: Int,
 
         lock.acquire
         if (linkedMap.contains(id)) {
-          linkedMap.moveToHead(id)
-          val a = idToArray(id)
+          val idx = linkedMap.getIndexFromId(id)
+          linkedMap.moveIndexToHead(idx)
+          val a = indexToArray(idx)
           lock.release
           a
         }
@@ -79,13 +81,14 @@ class FastLRUIntArrayCache(shardDirectory: String, numShards: Int,
           // Evict from cache
           currRealCapacity += numEdges
           while(linkedMap.getCurrentSize == cacheMaxNodes || currRealCapacity > cacheMaxEdges) {
-            val oldId = linkedMap.removeFromTail()
-            currRealCapacity -= idToArray(oldId).length
-            idToArray(oldId) = null
+            val oldIndex = linkedMap.getTailIndex
+            currRealCapacity -= indexToArray(oldIndex).length
+            // indexToArray(oldIndex) = null // Don't need this because it will get overwritten
+            linkedMap.removeFromTail()
           }
 
           linkedMap.addToHead(id)
-          idToArray(id) = intArray
+          indexToArray(linkedMap.getHeadIndex) = intArray
           lock.release
           intArray
         }

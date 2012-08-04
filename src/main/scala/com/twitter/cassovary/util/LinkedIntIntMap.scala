@@ -92,6 +92,10 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
    */
   def moveToHead(id: Int) {
     val idx = idToIndex(id)
+    moveIndexToHead(idx)
+  }
+
+  def moveIndexToHead(idx: Int) {
     if (idx == 0) throw new IllegalArgumentException("Id doesn't exist in cache!")
 
     if (idx != head) {
