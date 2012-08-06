@@ -1,0 +1,26 @@
+#!/usr/bin/python
+
+import struct
+import sys
+
+
+def intize(f):
+  return struct.unpack(">i", f.read(4))[0] # Big Endian Decode
+
+def reverse_renumberer(filename):
+  renumber = {}
+  with open(filename, 'rb') as f:
+    size = intize(f)
+    for i in range(size):
+      renumber[intize(f)] = i
+    index = intize(f)
+  return renumber
+
+if len(sys.argv) < 2:
+  print """Produces the index to id mapping, given a list of indices
+    from STDIN and the path to the mapping as an argument"""
+  print "Example: cat list_of_ids.txt | map_ids_backward path/to/step2xr2.txt"
+else:
+  renumber = reverse_renumberer(sys.argv[1])
+  for l in sys.stdin:
+    print renumber[int(l)]
