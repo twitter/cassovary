@@ -33,20 +33,33 @@ class CachedDirectedGraphSpec extends Specification {
     4 -> Array.empty, 5 -> Array(2), 6 -> Array(1,2,3,4))
   val reachability = List(0, 4, 4, 4, 1, 5, 5)
 
+  val renumberedEdgeMap = Map(1 -> Array(2,3,6), 2 -> Array(1), 3 -> Array(1),
+    6 -> Array.empty, 4 -> Array(2), 5 -> Array(1,2,3,6))
+  val renumberedReachability = List(0, 4, 4, 4, 5, 5, 1)
+
   def makeGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
-    iteratorFunc, dir, "guava")
+    iteratorFunc, dir, "guava", renumber = false)
 
   def makeSameGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
-    iteratorFunc, dir, "guava", "temp-cached/sameGraph")
+    iteratorFunc, dir, "guava", "temp-cached/sameGraph", false)
 
   def makeFastLRUGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
-    iteratorFunc, dir, "lru")
+    iteratorFunc, dir, "lru", renumber = false)
 
   def makeFastLRUGraphWithNodeArray(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
-    iteratorFunc, dir, "lru_na")
+    iteratorFunc, dir, "lru_na", renumber = false)
 
   def makeFastClockGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
-    iteratorFunc, dir, "clock")
+    iteratorFunc, dir, "clock", renumber = false)
+
+  def makeRenumberedGuavaGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
+    iteratorFunc, dir, "guava", renumber = true)
+
+  def makeRenumberedFastLRUGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
+    iteratorFunc, dir, "lru", "temp-cached/sameGraph2", renumber = true)
+
+  def makeRenumberedFastLRUGraphWithNodeArray(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
+    iteratorFunc, dir, "lru_na", renumber = true)
 
   def getNode(id: Int): Option[Node] = graph.getNodeById(id)
 
@@ -58,7 +71,15 @@ class CachedDirectedGraphSpec extends Specification {
     graph = makeGraph(StoredGraphDir.OnlyIn)
   }
 
-  def concurrentTest(graph: CachedDirectedGraph) = {
+  val renumberedSmallGraphOutOnly = beforeContext {
+    graph = makeRenumberedGuavaGraph(StoredGraphDir.OnlyOut)
+  }
+
+  val renumberedSmallGraphInOnly = beforeContext {
+    graph = makeRenumberedGuavaGraph(StoredGraphDir.OnlyIn)
+  }
+
+  def concurrentTest(graph: CachedDirectedGraph, edgeMap: Map[Int, Array[_<:Int]], reachability: List[Int]) = {
     print("Concurrent test running...")
     val walkParams = RandomWalkParams(15000, 0.2, Some(1500), None, None, false, GraphDir.OutDir, false, true)
     val graphUtils = new GraphUtils(graph)
@@ -86,6 +107,129 @@ class CachedDirectedGraphSpec extends Specification {
       }
     }
     print("done!\n")
+  }
+
+  "Renumbered FastLRU-based graph containing only out edges" should {
+    var graphL: FastCachedDirectedGraph = null
+    var graphLCache: FastLRUIntArrayCache = null
+    doBefore {
+      graph = makeRenumberedFastLRUGraph(StoredGraphDir.OnlyOut)
+      graph = makeRenumberedFastLRUGraph(StoredGraphDir.OnlyOut)
+      graphL = graph.asInstanceOf[FastCachedDirectedGraph]
+      graphLCache = graphL.cache.asInstanceOf[FastLRUIntArrayCache]
+    }
+
+    "map only out edges" in {
+      getNode(1).get must DeepEqualsNode((NodeMaker(1, Array(2, 3, 6), Array())))
+      getNode(2).get must DeepEqualsNode((NodeMaker(2, Array(1), Array())))
+      getNode(3).get must DeepEqualsNode((NodeMaker(3, Array(1), Array())))
+      getNode(4).get must DeepEqualsNode((NodeMaker(4, Array(2), Array())))
+      getNode(5).get must DeepEqualsNode((NodeMaker(5, Array(1, 2, 3, 6), Array())))
+      getNode(6).get must DeepEqualsNode((NodeMaker(6, Array())))
+      getNode(7) mustEqual None
+      getNode(100) mustEqual None
+    }
+
+    "iterate over all nodes" in {
+      graph must DeepEqualsNodeIterable((1 to 6).flatMap(getNode(_)))
+    }
+
+    "provide the correct node count" in {
+      graph.nodeCount mustBe 6
+    }
+
+    "provide the correct edge count" in {
+      graph.edgeCount mustBe 10L
+    }
+
+    "Do a concurrent random walk properly" in {
+      concurrentTest(graphL, renumberedEdgeMap, renumberedReachability)
+    }
+  }
+
+  "Renumbered Node Array-based FastLRU-based graph containing only out edges" should {
+    var graphL: NodeArrayFastCachedDirectedGraph = null
+    var graphLCache: FastLRUIntArrayCache = null
+    doBefore {
+      graph = makeRenumberedFastLRUGraphWithNodeArray(StoredGraphDir.OnlyOut)
+      graphL = graph.asInstanceOf[NodeArrayFastCachedDirectedGraph]
+      graphLCache = graphL.cache.asInstanceOf[FastLRUIntArrayCache]
+    }
+
+    "map only out edges" in {
+      getNode(1).get must DeepEqualsNode((NodeMaker(1, Array(2, 3, 6), Array())))
+      getNode(2).get must DeepEqualsNode((NodeMaker(2, Array(1), Array())))
+      getNode(3).get must DeepEqualsNode((NodeMaker(3, Array(1), Array())))
+      getNode(4).get must DeepEqualsNode((NodeMaker(4, Array(2), Array())))
+      getNode(5).get must DeepEqualsNode((NodeMaker(5, Array(1, 2, 3, 6), Array())))
+      getNode(6).get must DeepEqualsNode((NodeMaker(6, Array())))
+      getNode(7) mustEqual None
+      getNode(100) mustEqual None
+    }
+
+    "iterate over all nodes" in {
+      graph must DeepEqualsNodeIterable((1 to 6).flatMap(getNode(_)))
+    }
+
+    "provide the correct node count" in {
+      graph.nodeCount mustBe 6
+    }
+
+    "provide the correct edge count" in {
+      graph.edgeCount mustBe 10L
+    }
+  }
+
+  "Renumbered guava-based graph containing only out edges" definedAs renumberedSmallGraphOutOnly should {
+    "map only out edges" in {
+      getNode(1).get must DeepEqualsNode((NodeMaker(1, Array(2, 3, 6), Array())))
+      getNode(2).get must DeepEqualsNode((NodeMaker(2, Array(1), Array())))
+      getNode(3).get must DeepEqualsNode((NodeMaker(3, Array(1), Array())))
+      getNode(4).get must DeepEqualsNode((NodeMaker(4, Array(2), Array())))
+      getNode(5).get must DeepEqualsNode((NodeMaker(5, Array(1, 2, 3, 6), Array())))
+      getNode(6).get must DeepEqualsNode((NodeMaker(6, Array())))
+      getNode(7) mustEqual None
+    }
+
+    "iterate over all nodes" in {
+      graph must DeepEqualsNodeIterable((1 to 6).flatMap(getNode(_)))
+    }
+
+    "provide the correct node count" in {
+      graph.nodeCount mustBe 6
+    }
+
+    "provide the correct edge count" in {
+      graph.edgeCount mustBe 10L
+    }
+  }
+
+  "Renumbered guava-based graph containing only in edges" definedAs renumberedSmallGraphInOnly should {
+    "map only in edges" in {
+      getNode(1).get must DeepEqualsNode((NodeMaker(1, Array(), Array(2, 3, 6))))
+      getNode(2).get must DeepEqualsNode((NodeMaker(2, Array(), Array(1))))
+      getNode(3).get must DeepEqualsNode((NodeMaker(3, Array(), Array(1))))
+      getNode(4).get must DeepEqualsNode((NodeMaker(4, Array(), Array(2))))
+      getNode(5).get must DeepEqualsNode((NodeMaker(5, Array(), Array(1, 2, 3, 6))))
+      getNode(6).get must DeepEqualsNode((NodeMaker(6, Array())))
+      getNode(7) mustEqual None
+    }
+
+    "iterate over all nodes" in {
+      graph must DeepEqualsNodeIterable((1 to 6).flatMap(getNode(_)))
+    }
+
+    "provide the correct node count" in {
+      graph.nodeCount mustBe 6
+    }
+
+    "provide the correct edge count" in {
+      graph.edgeCount mustBe 10L
+    }
+
+    "provide the correct max node id" in {
+      graph.maxNodeId mustBe 6
+    }
   }
 
   "Guava-based graph containing only out edges" definedAs smallGraphOutOnly should {
@@ -214,7 +358,7 @@ class CachedDirectedGraphSpec extends Specification {
     }
 
     "Do a concurrent random walk properly" in {
-      concurrentTest(graph)
+      concurrentTest(graph, edgeMap, reachability)
     }
   }
 
@@ -309,14 +453,14 @@ class CachedDirectedGraphSpec extends Specification {
     }
 
     "Do a concurrent random walk properly" in {
-      concurrentTest(graphL)
+      concurrentTest(graphL, edgeMap, reachability)
     }
   }
 
   "Node Array FastLRU-based graph containing only out edges" should {
     "Do a concurrent random walk properly" in {
       graph = makeFastLRUGraphWithNodeArray(StoredGraphDir.OnlyOut)
-      concurrentTest(graph)
+      concurrentTest(graph, edgeMap, reachability)
     }
   }
 

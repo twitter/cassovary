@@ -288,7 +288,7 @@ class LoaderSerializer(var directory: String, useCachedValues: Boolean) {
     new LoaderSerializerReader("%s/%s".format(directory, filename))
   }
 
-  private def exists(filename: String): Boolean = {
+  def exists(filename: String): Boolean = {
     new File("%s/%s".format(directory, filename)).exists
   }
 
