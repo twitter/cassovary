@@ -15,6 +15,7 @@ package com.twitter.cassovary.graph
 
 import GraphDir._
 import scala.util.Random
+import java.io.File
 
 object StoredGraphDir extends Enumeration {
   type StoredGraphDir = Value
@@ -101,4 +102,56 @@ trait DirectedGraph extends Graph with Iterable[Node] {
       accum + ( if (node != null) { "\n" + node } else "")
     }
   }
+
+  /**
+   * Write this directed graph to a directory, splitting into parts
+   * Each part is named part-r-XXXXX, and the format is
+   * node_id \t num_neighbors on one line,
+   * followed by num_neighbors subsequent lines, each with a single id
+   * @param directory Directory to write graph to
+   * @param parts Number of files to split graph into
+   */
+  def writeToDirectory(directory: String, parts: Int) = {
+    def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
+      val p = new java.io.PrintWriter(f)
+      try { op(p) } finally { p.close() }
+    }
+
+    new File(directory).mkdirs()
+
+    val dir = storedGraphDir match {
+      case StoredGraphDir.OnlyIn => GraphDir.InDir
+      case StoredGraphDir.OnlyOut => GraphDir.OutDir
+      case _ => GraphDir.OutDir
+    }
+
+    // Write nodes to part files
+    val it = this.iterator
+    val nodesPerPart = (this.nodeCount.toDouble / parts).ceil.toInt
+    var nodeCountCheck = 0
+    var j = 0
+    (0 until parts).foreach { i =>
+      j = 0
+      printToFile(new File(directory+"/part-r-%05d".format(i))) { p =>
+        while (it.hasNext && j < nodesPerPart ) {
+          val node: Node = it.next
+          p.println(node.id + "\t" + node.neighborCount(dir))
+          node.neighborIds(dir).foreach { id =>
+            p.println(id)
+          }
+          j += 1
+        }
+      }
+      nodeCountCheck += j
+    }
+
+    assert(nodeCountCheck == this.nodeCount) // Tiny sanity check
+
+    // Print done marker summary
+    printToFile(new File(directory+"/done_marker.summ")) { p =>
+      p.println(this.maxNodeId + "\t" + this.nodeCount + "\t" + this.edgeCount)
+    }
+
+  }
+
 }

@@ -132,6 +132,7 @@ object CachedDirectedGraph {
       // Renumber the out edges, then
       // Generate the lookup table for nodeIdSet
       // Generate and store shard offsets and # of edges for each node
+      log.info("Renumbering nodes, generating offsets...")
       var ren = new Renumberer(maxId)
       serializer.writeOrRead("step2xr.txt", { writer =>
 
