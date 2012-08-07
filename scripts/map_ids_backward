@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python27
 
 import struct
 import sys
@@ -23,4 +23,7 @@ if len(sys.argv) < 2:
 else:
   renumber = reverse_renumberer(sys.argv[1])
   for l in sys.stdin:
-    print renumber[int(l)]
+    try:
+      print renumber[int(l)]
+    except:
+      pass

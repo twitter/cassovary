@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python27
 
 import struct
 import sys
@@ -7,7 +7,7 @@ import sys
 def intize(f):
   return struct.unpack(">i", f.read(4))[0] # Big Endian Decode
 
-def reverse_renumberer(filename):
+def forward_renumberer(filename):
   renumber = {}
   with open(filename, 'rb') as f:
     size = intize(f)
@@ -21,6 +21,9 @@ if len(sys.argv) < 2:
     from STDIN and the path to the mapping as an argument"""
   print "Example: cat list_of_ids.txt | map_ids_forward path/to/step2xr2.txt"
 else:
-  renumber = reverse_renumberer(sys.argv[1])
+  renumber = forward_renumberer(sys.argv[1])
   for l in sys.stdin:
-    print renumber[int(l)]
+    try:
+      print renumber[int(l)]
+    except:
+      pass
