@@ -1,13 +1,17 @@
 package com.twitter.cassovary.util
 
+import net.lag.logging.Logger
+
 /**
  * Renumbers ids to integers (hereby referred to as indices) in increasing order
  * Useful when needing to "compact" a list of non-sequential integers
  * @param maxId
  */
 class Renumberer(var maxId: Int) {
-  private var indexToId = new Array[Int](maxId+1)
+  private var idToIndex = new Array[Int](maxId+1)
+  private var indexToId: Array[Int] = null
   private var index = 0
+  private val log = Logger.get("Renumberer")
 
   /**
    * Translates a given id to a unique identifying index
@@ -17,13 +21,13 @@ class Renumberer(var maxId: Int) {
    * @return index corresponding to id
    */
   def translate(id: Int): Int = synchronized {
-    if (indexToId(id) == 0) {
+    if (idToIndex(id) == 0) {
       index += 1
-      indexToId(id) = index
+      idToIndex(id) = index
       index
     }
     else {
-      indexToId(id)
+      idToIndex(id)
     }
   }
 
@@ -43,21 +47,27 @@ class Renumberer(var maxId: Int) {
 
   /**
    * Given an index, return the id
-   * Warning - very very slow! O(n)!!!
+   * The initial query may take some time as the reverse index is lazily built
    * @param index
    */
   def reverseTranslate(index: Int): Int = {
-    var found = 0
-    (1 until maxId).foreach { i =>
-      if (indexToId(i) == index) {
-        found = i
+    prepareReverse
+    indexToId(index)
+  }
+
+  /**
+   * (Re)build the reverse index whenever the forward index is updated
+   */
+  def prepareReverse {
+    if (indexToId == null || indexToId.size != index + 1) {
+      log.info("Rebuilding reverse index...")
+      indexToId = new Array[Int](index + 1)
+      var j = 0
+      idToIndex.foreach { i =>
+        indexToId(i) = j
+        j += 1
       }
-    }
-    if (found > 0) {
-      found
-    }
-    else {
-      throw new IllegalArgumentException("This index %s doesn't exist!".format(index))
+      log.info("Finished rebuilding")
     }
   }
 
@@ -66,7 +76,7 @@ class Renumberer(var maxId: Int) {
    * @param writer
    */
   def toWriter(writer:LoaderSerializerWriter) {
-    writer.arrayOfInt(indexToId)
+    writer.arrayOfInt(idToIndex)
     writer.int(index)
   }
 
@@ -76,8 +86,8 @@ class Renumberer(var maxId: Int) {
    * @param reader
    */
   def fromReader(reader:LoaderSerializerReader) {
-    indexToId = reader.arrayOfInt()
-    maxId = indexToId.size - 1
+    idToIndex = reader.arrayOfInt()
+    maxId = idToIndex.size - 1
     index = reader.int
   }
 }

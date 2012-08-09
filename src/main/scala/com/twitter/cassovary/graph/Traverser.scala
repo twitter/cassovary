@@ -109,7 +109,12 @@ class RandomTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
     }
     seenNodesTracker.recordInfo(nextNodeId, 0)
     pathLength += 1
-    currNode = getExistingNodeById(graph, nextNodeId)
+
+    try {
+      currNode = getExistingNodeById(graph, nextNodeId)
+    } catch {
+      case e => throw new Exception("curr"+currNode+"next"+nextNodeId)
+    }
 
     currNode
   }

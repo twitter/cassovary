@@ -21,7 +21,7 @@ import collection.mutable
  * Especially useful in representing a cache
  * The linked list is implemented as a set of arrays and pointers
  * Any id added to the map should be > 0, as 0 indicates a null entry
- * - O(1) get / even faster test for existence
+ * - O(1) get
  * - O(1) insert
  * - O(1) delete
  * @param maxId the maximum id of any element that will be inserted

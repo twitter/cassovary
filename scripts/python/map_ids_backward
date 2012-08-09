@@ -1,4 +1,4 @@
-#!/usr/bin/python27
+#!/usr/bin/python
 
 import struct
 import sys
