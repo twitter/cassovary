@@ -403,7 +403,8 @@ object CachedDirectedGraph {
 
     log.info("---Ended Load!---")
 
-    log.info("NumNodes is " + numNodes + " MaxId is " + maxId)
+    log.info("nodeWithOutEdgesCount is " + nodeWithOutEdgesCount +
+    " numNodes is " + numNodes + " (original) maxId is " + maxId)
 
     val nodeIdSetFn = if (renumber) {
       (i: Int) => { i > 0 && i <= numNodes }

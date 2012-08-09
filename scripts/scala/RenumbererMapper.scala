@@ -1,4 +1,5 @@
-import com.twitter.cassovary.util.{LoaderSerializerReader, Renumberer}
+import com.twitter.cassovary.util.{FileUtils, LoaderSerializerReader, Renumberer}
+import java.io.File
 
 object RenumbererMapper {
   def main(args: Array[String]) {
@@ -12,6 +13,14 @@ object RenumbererMapper {
         case e: Exception =>
           renumberer = new Renumberer(1)
           renumberer.fromReader(new LoaderSerializerReader(args(0)))
+      }
+    }
+
+    // RenumbererMapper path/to/mapping path/to/inputIds path/to/outputIndices
+    if (args.size > 2) {
+      println("Reading ids from %s and writing forward mappings to %s...".format(args(1), args(2)))
+      FileUtils.readLinesAndPrintToFile(args(1), args(2)) { (l, p) =>
+        p.println(renumberer.translate(l.toInt))
       }
     }
 

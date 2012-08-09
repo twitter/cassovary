@@ -14,6 +14,8 @@ libraryDependencies += "com.twitter" % "ostrich" % "4.8.0"
 
 libraryDependencies += "com.twitter" % "util-core" % "4.0.3"
 
+libraryDependencies += "com.twitter" % "util-logging" % "4.0.3"
+
 libraryDependencies += "com.google.guava" % "guava" % "11.0.2" withSources()
 
 libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided"

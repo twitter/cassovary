@@ -20,6 +20,7 @@ import com.twitter.cassovary.graph.{DirectedPath, GraphUtils, GraphDir}
 import util.Random
 import scala.collection.JavaConversions._
 import com.twitter.logging.Logger
+import scala.io.Source
 
 /**
  * "Server" that loads the graph and runs some arbitrary code, like PersonalizedReputation
@@ -39,18 +40,20 @@ class CachedDirectedGraphServer(config: CachedDirectedGraphServerConfig) extends
 //      "lru", 1000000, 200000000, "/tmp/shards_random", 256, 16, true, "/tmp/cached_random")
 
     // Do a random walk
-    val walkParams = RandomWalkParams(10000, 0.0, Some(1000), None, Some(3))
+    val walkParams = RandomWalkParams(10000, 0.0, Some(2000), None, Some(3), false, GraphDir.OutDir, false, true)
     val graphUtils = new GraphUtils(graph)
 
     val rand = new Random()
     var j = 0
-    rand.shuffle((1 to 3000000).toSeq).foreach { i =>
-      j += 1
-      log.info("PR for %d (id %d)".format(j, i))
-      graphUtils.calculatePersonalizedReputation(i, walkParams)
-      if (j % 1000 == 0) {
-        log.info("cache_miss_stats: " + graph.statsString)
-      }
+    Source.fromFile("/Volumes/Macintosh HD 2/daily_actives_20120704_mapped.txt").getLines().foreach(line => {
+      val i = line.toInt
+      if (graph.existsNodeId(i)) {
+        j += 1
+        log.info("PR for %d (id %d)".format(j, i))
+        graphUtils.calculatePersonalizedReputation(i, walkParams)
+        if (j % 1000 == 0) {
+          log.info("cache_miss_stats: " + graph.statsString)
+        }
 //      val (topNeighbors, paths) = graphUtils.calculatePersonalizedReputation(i, walkParams)
 //      topNeighbors.toList.sort((x1, x2) => x2._2.intValue < x1._2.intValue).take(10).foreach { case (id, numVisits) =>
 //        if (paths.isDefined) {
@@ -60,7 +63,8 @@ class CachedDirectedGraphServer(config: CachedDirectedGraphServerConfig) extends
 //          log.info("%8s%10s\t%s\n", id, numVisits, topPaths.mkString(" | "))
 //        }
 //      }
-    }
+      }
+    })
 
     //    val randomGraph = TestGraphs.generateRandomGraph(1000000, 200)
     //    randomGraph.writeToDirectory("/Volumes/Macintosh HD 2/graph_dump_random", 8)

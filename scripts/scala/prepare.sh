@@ -23,20 +23,23 @@ if [ $BUILD_PACKAGE = build ]; then
   sbt package
 fi
 
-JAVA_CP=(
-  $(find $root/target -name 'cassovary*.jar') \
-  $HOME/.sbt/boot/scala-2.8.1/lib/scala-library.jar \
-  $(find $root/lib_managed/jars/ -name '*.jar')
-)
+cd scripts/scala
 
+echo Copying into the jars folder...
+mkdir -p jars
+cp $HOME/.sbt/boot/scala-2.8.1/lib/scala-library.jar jars;
+find $root/target -name 'cassovary*.jar' -exec cp {} jars \;
+find $root/lib_managed/jars/ -name '*.jar' -exec cp {} jars \;
+
+JAVA_CP=(
+  $(find jars -name '*.jar')
+)
 JAVA_CP=$(echo ${JAVA_CP[@]} | tr ' ' ':')
 
-cd scripts/scala
 mkdir -p classes
 rm -rf classes/*
 echo Compiling $EXAMPLE ...
 scalac -cp $JAVA_CP -d classes $EXAMPLE.scala
 
-echo Running $EXAMPLE...
 JAVA_OPTS="-server -Xmx14g -Xms14g"
-java ${JAVA_OPTS} -cp $JAVA_CP:classes $EXAMPLE "$@"
+echo java ${JAVA_OPTS} -cp $JAVA_CP:classes $EXAMPLE "$@"

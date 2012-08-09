@@ -16,6 +16,7 @@ project/plugins/src_managed/
 examples/java/classes
 examples/scala/classes
 scripts/scala/classes
+scripts/scala/jars
 temp-*
 test-*
 test.txt
