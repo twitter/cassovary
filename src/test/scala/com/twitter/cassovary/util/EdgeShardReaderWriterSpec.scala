@@ -332,7 +332,7 @@ class EdgeShardReaderWriterSpec extends Specification {
         esw.writeIntegersAtOffset(i, i * 11, a)
       }
       esw.close
-      
+
       // Read those random numbers back
       val esr = new MultiDirEdgeShardsReader(directories, 4)
       val intArray = new Array[Int](11)

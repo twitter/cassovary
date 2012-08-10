@@ -44,7 +44,7 @@ object CachedDirectedGraph {
    * @param cacheType What kind of cache do you want to use? (lru, lru_na, clock, clock_na, guava)
    * @param cacheMaxNodes How many nodes should the cache store (at most)?
    * @param cacheMaxEdges How many edges should the cache store (at most)?
-   * @param shardDirectoryPrefix Where do you want generated shards to live?
+   * @param shardDirectoryPrefixes Where do you want generated shards to live?
    * @param numShards How many shards to generate?
    * @param numRounds How many rounds to generate the shards in? More rounds => less memory but takes longer
    * @param useCachedValues Reload everything? (i.e. ignore any cached objects).
@@ -54,20 +54,22 @@ object CachedDirectedGraph {
    */
   def apply(iteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxId] ], executorService: ExecutorService,
             storedGraphDir: StoredGraphDir, cacheType: String, cacheMaxNodes:Int, cacheMaxEdges:Long,
-            shardDirectoryPrefix: String, numShards: Int, numRounds: Int,
+            shardDirectoryPrefixes: Array[String], numShards: Int, numRounds: Int,
             useCachedValues: Boolean, cacheDirectory: String, renumber: Boolean):CachedDirectedGraph = {
 
     var maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount = 0
     var numEdges = 0L
-    val shardDirectory = if (renumber) {
-      shardDirectoryPrefix + "_renumbered"
-    } else {
-      shardDirectoryPrefix + "_regular"
+    val shardDirectories = shardDirectoryPrefixes.map { shardDirectoryPrefix =>
+        if (renumber) {
+        shardDirectoryPrefix + "_renumbered"
+      } else {
+        shardDirectoryPrefix + "_regular"
+      }
     }
 
     log.info("---Beginning Load---")
     log.info("Cache Info: cacheMaxNodes is %s, cacheMaxEdges is %s, cacheType is %s".format(cacheMaxNodes, cacheMaxEdges, cacheType))
-    log.info("Disk Shard Info: directory is %s, numShards is %s, numRounds is %s".format(shardDirectory, numShards, numRounds))
+    log.info("Disk Shard Info: directory is %s, numShards is %s, numRounds is %s".format(shardDirectories.deep.mkString(", "), numShards, numRounds))
     log.info("useCachedValues is %s, cacheDirectory is %s".format(useCachedValues, cacheDirectory))
 
 
@@ -228,7 +230,7 @@ object CachedDirectedGraph {
       log.info("Allocating shards (renumbered)...")
       serializer.writeOrRead("step3r.txt", { writer =>
         Stats.time("graph_load_allocating_shards") {
-          val esw = new EdgeShardsWriter(shardDirectory, numShards)
+          val esw = new MultiDirEdgeShardsWriter(shardDirectories, numShards)
           (0 until numShards).foreach { i =>
             esw.shardWriters(i).allocate(edgeOffsets(i).get * 4)
           }
@@ -244,7 +246,7 @@ object CachedDirectedGraph {
       log.info("Writing to shards in rounds (renumbered)...")
       serializer.writeOrRead("step4r.txt", { writer =>
         val shardSizes = edgeOffsets.map { i => i.get().toInt }
-        val msw = new MemEdgeShardsWriter(shardDirectory, numShards, shardSizes, numRounds)
+        val msw = new MultiDirMemEdgeShardsWriter(shardDirectories, numShards, shardSizes, numRounds)
         (0 until numRounds).foreach { roundNo =>
           log.info("Beginning round %s...".format(roundNo))
           msw.startRound(roundNo)
@@ -319,7 +321,7 @@ object CachedDirectedGraph {
       log.info("Allocating shards...")
       serializer.writeOrRead("step3.txt", { writer =>
         Stats.time("graph_load_allocating_shards") {
-          val esw = new EdgeShardsWriter(shardDirectory, numShards)
+          val esw = new MultiDirEdgeShardsWriter(shardDirectories, numShards)
           (0 until numShards).foreach { i =>
             esw.shardWriters(i).allocate(edgeOffsets(i).get * 4)
           }
@@ -335,7 +337,7 @@ object CachedDirectedGraph {
       log.info("Writing to shards in rounds...")
       serializer.writeOrRead("step4.txt", { writer =>
         val shardSizes = edgeOffsets.map { i => i.get().toInt }
-        val msw = new MemEdgeShardsWriter(shardDirectory, numShards, shardSizes, numRounds)
+        val msw = new MultiDirMemEdgeShardsWriter(shardDirectories, numShards, shardSizes, numRounds)
         (0 until numRounds).foreach { roundNo =>
           log.info("Beginning round %s...".format(roundNo))
           msw.startRound(roundNo)
@@ -424,23 +426,23 @@ object CachedDirectedGraph {
     // Return our graph!
     cacheType match {
       case "guava" => new GuavaCachedDirectedGraph(nodeIdSetFn, cacheMaxNodes+cacheMaxEdges,
-        shardDirectory, numShards, idToIntOffset, idToNumEdges,
+        shardDirectories, numShards, idToIntOffset, idToNumEdges,
         maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
         numNodes, numEdges, storedGraphDir)
       case "guava_na" => new NodeArrayGuavaCachedDirectedGraph(nodeIdSetFn, cacheMaxNodes+cacheMaxEdges,
-        shardDirectory, numShards, idToIntOffset, idToNumEdges,
+        shardDirectories, numShards, idToIntOffset, idToNumEdges,
         maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
         numNodes, numEdges, storedGraphDir)
       case "lru_na" => new NodeArrayFastCachedDirectedGraph(nodeIdSetFn, cacheMaxNodes, cacheMaxEdges,
-        shardDirectory, numShards, idToIntOffset, idToNumEdges,
+        shardDirectories, numShards, idToIntOffset, idToNumEdges,
         maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
         numNodes, numEdges, storedGraphDir, cacheType)
       case "clock_na" => new NodeArrayFastCachedDirectedGraph(nodeIdSetFn, cacheMaxNodes, cacheMaxEdges,
-        shardDirectory, numShards, idToIntOffset, idToNumEdges,
+        shardDirectories, numShards, idToIntOffset, idToNumEdges,
         maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
         numNodes, numEdges, storedGraphDir, cacheType)
       case _ => new FastCachedDirectedGraph(nodeIdSetFn, cacheMaxNodes, cacheMaxEdges,
-        shardDirectory, numShards, idToIntOffset, idToNumEdges,
+        shardDirectories, numShards, idToIntOffset, idToNumEdges,
         maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
         numNodes, numEdges, storedGraphDir, cacheType)
     }
@@ -452,7 +454,7 @@ object CachedDirectedGraph {
       cacheType:String, cacheDirectory:String = null,
       renumber: Boolean):CachedDirectedGraph =
     apply(Seq(iteratorFunc), MoreExecutors.sameThreadExecutor(),
-      storedGraphDir, cacheType, 2, 4, shardDirectory, 8, 2,
+      storedGraphDir, cacheType, 2, 4, Array(shardDirectory), 8, 2,
       useCachedValues = true, cacheDirectory = cacheDirectory, renumber = renumber)
 }
 
@@ -493,7 +495,7 @@ abstract class CachedDirectedGraph(maxId: Int, realMaxId: Int,
  * @param nodeIdSet nodes with either outgoing or incoming edges
  * @param cacheMaxNodes maximum number of nodes that the cache can store
  * @param cacheMaxEdges maximum number of edges that the cache can store
- * @param shardDirectory where shards live on disk
+ * @param shardDirectories where shards live on disk
  * @param numShards number of shards to split into
  * @param idToIntOffset offset into a shard on disk
  * @param idToNumEdges the number of edges
@@ -507,16 +509,16 @@ abstract class CachedDirectedGraph(maxId: Int, realMaxId: Int,
 class FastCachedDirectedGraph (
     val nodeIdSet:(Int => Boolean),
     val cacheMaxNodes:Int, val cacheMaxEdges:Long,
-    val shardDirectory:String, val numShards:Int,
+    val shardDirectories:Array[String], val numShards:Int,
     val idToIntOffset:Array[Long], val idToNumEdges:Array[Int],
     maxId: Int, realMaxId: Int, realMaxIdOutEdges: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
     val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir, val cacheType: String="lru")
     extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
 
   val cache = cacheType match {
-    case "lru" => new FastLRUIntArrayCache(shardDirectory, numShards,
+    case "lru" => new FastLRUIntArrayCache(shardDirectories, numShards,
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
-    case _ => new FastClockIntArrayCache(shardDirectory, numShards,
+    case _ => new FastClockIntArrayCache(shardDirectories, numShards,
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
   }
 
@@ -572,7 +574,7 @@ class FastCachedDirectedGraph (
  * @param nodeIdSet nodes with either outgoing or incoming edges
  * @param cacheMaxNodes maximum number of nodes that the cache can store
  * @param cacheMaxEdges maximum number of edges that the cache can store
- * @param shardDirectory where shards live on disk
+ * @param shardDirectories where shards live on disk
  * @param numShards number of shards to split into
  * @param idToIntOffset offset into a shard on disk
  * @param idToNumEdges the number of edges
@@ -586,16 +588,16 @@ class FastCachedDirectedGraph (
 class NodeArrayFastCachedDirectedGraph (
     val nodeIdSet:(Int => Boolean),
     val cacheMaxNodes:Int, val cacheMaxEdges:Long,
-    val shardDirectory:String, val numShards:Int,
+    val shardDirectories:Array[String], val numShards:Int,
     val idToIntOffset:Array[Long], val idToNumEdges:Array[Int],
     maxId: Int, realMaxId: Int, realMaxIdOutEdges: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
     val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir, val cacheType: String="lru")
   extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
 
   val cache = cacheType match {
-    case "lru_na" => new FastLRUIntArrayCache(shardDirectory, numShards,
+    case "lru_na" => new FastLRUIntArrayCache(shardDirectories, numShards,
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
-    case _ => new FastClockIntArrayCache(shardDirectory, numShards,
+    case _ => new FastClockIntArrayCache(shardDirectories, numShards,
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
   }
 
@@ -640,7 +642,7 @@ class NodeArrayFastCachedDirectedGraph (
  * caution! May introduce concurrency issues!
  * @param nodeIdSet nodes with either outgoing or incoming edges
  * @param cacheMaxNodesAndEdges maximum number of nodes and edges that the cache can store
- * @param shardDirectory where shards live on disk
+ * @param shardDirectories where shards live on disk
  * @param numShards number of shards to split into
  * @param idToIntOffset offset into a shard on disk
  * @param idToNumEdges offset into a shard on disk and the number of edges
@@ -654,13 +656,13 @@ class NodeArrayFastCachedDirectedGraph (
 class GuavaCachedDirectedGraph (
     val nodeIdSet:(Int => Boolean),
     val cacheMaxNodesAndEdges: Long,
-    val shardDirectory:String, val numShards:Int,
+    val shardDirectories:Array[String], val numShards:Int,
     val idToIntOffset:Array[Long], val idToNumEdges:Array[Int],
     maxId: Int, realMaxId: Int, realMaxIdOutEdges: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
     val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir)
     extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
 
-  val reader = new EdgeShardsReader(shardDirectory, numShards)
+  val reader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
 
   // Array Loader
   private def loadArray(id: Int):Array[Int] = {
@@ -743,7 +745,7 @@ class GuavaCachedDirectedGraph (
  * concurrency issues
  * @param nodeIdSet nodes with either outgoing or incoming edges
  * @param cacheMaxNodesAndEdges maximum number of nodes and edges that the cache can store
- * @param shardDirectory where shards live on disk
+ * @param shardDirectories where shards live on disk
  * @param numShards number of shards to split into
  * @param idToIntOffset offset into a shard on disk
  * @param idToNumEdges offset into a shard on disk and the number of edges
@@ -755,13 +757,13 @@ class GuavaCachedDirectedGraph (
 class NodeArrayGuavaCachedDirectedGraph (
                                  val nodeIdSet:(Int => Boolean),
                                  val cacheMaxNodesAndEdges: Long,
-                                 val shardDirectory:String, val numShards:Int,
+                                 val shardDirectories:Array[String], val numShards:Int,
                                  val idToIntOffset:Array[Long], val idToNumEdges:Array[Int],
                                  maxId: Int, realMaxId: Int, realMaxIdOutEdges: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
                                  val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir)
   extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
 
-  val reader = new EdgeShardsReader(shardDirectory, numShards)
+  val reader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
 
   // Array Loader
   private def loadArray(id: Int):Array[Int] = {

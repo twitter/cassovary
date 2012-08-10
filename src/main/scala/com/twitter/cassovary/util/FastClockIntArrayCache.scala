@@ -17,7 +17,7 @@ import scala.collection.mutable
 
 /**
  * Array-based Clock replacement algorithm implementation
- * @param shardDirectory
+ * @param shardDirectories
  * @param numShards
  * @param maxId
  * @param cacheMaxNodes
@@ -25,11 +25,11 @@ import scala.collection.mutable
  * @param idToIntOffset
  * @param idToNumEdges
  */
-class FastClockIntArrayCache(shardDirectory: String, numShards: Int,
+class FastClockIntArrayCache(shardDirectories: Array[String], numShards: Int,
                               maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
                               idToIntOffset:Array[Long], idToNumEdges:Array[Int]) extends IntArrayCache {
 
-  val reader = new EdgeShardsReader(shardDirectory, numShards)
+  val reader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
   val clockBits = new mutable.BitSet(cacheMaxNodes) // In-use bit
   val idBitSet = new mutable.BitSet(maxId+1) // Quick contains checking
   val indexToId = new Array[Int](cacheMaxNodes) // index -> id mapping

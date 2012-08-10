@@ -26,7 +26,7 @@ trait IntArrayCache {
 
 /**
  * Array-based LRU algorithm implementation
- * @param shardDirectory
+ * @param shardDirectories
  * @param numShards
  * @param maxId
  * @param cacheMaxNodes
@@ -34,11 +34,11 @@ trait IntArrayCache {
  * @param idToIntOffset
  * @param idToNumEdges
  */
-class FastLRUIntArrayCache(shardDirectory: String, numShards: Int,
+class FastLRUIntArrayCache(shardDirectories: Array[String], numShards: Int,
                             maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
                             idToIntOffset:Array[Long], idToNumEdges:Array[Int]) extends IntArrayCache {
 
-  val reader = new EdgeShardsReader(shardDirectory, numShards)
+  val reader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
   val indexToArray = new Array[Array[Int]](cacheMaxNodes+1)
   val linkedMap = new LinkedIntIntMap(maxId, cacheMaxNodes)
   var currRealCapacity: Long = 0

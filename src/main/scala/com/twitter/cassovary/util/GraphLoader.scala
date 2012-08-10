@@ -104,7 +104,7 @@ private class GraphLoader {
     // TODO Support OnlyIn as well
     CachedDirectedGraph(new RawEdgeShardsReader(directory).readers, Executors.newFixedThreadPool(8),
       StoredGraphDir.OnlyOut, cacheType, cacheMaxNodes, cacheMaxEdges,
-      shardDirectory, numShards, numRounds, useCachedValues, cacheDirectory, true)
+      Array(shardDirectory), numShards, numRounds, useCachedValues, cacheDirectory, true)
   }
 
 }

@@ -16,7 +16,7 @@ class FastClockIntArrayCacheSpec extends Specification {
     }
 
     "Work" in {
-      val fc = new FastClockIntArrayCache("test-shards", 10, 4, 2, 3, offset, edges)
+      val fc = new FastClockIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
       fc.get(1)(0) mustEqual 2
       fc.get(1)(1) mustEqual 3
       fc.misses mustEqual 1
@@ -24,7 +24,7 @@ class FastClockIntArrayCacheSpec extends Specification {
     }
 
     "Evict Properly" in {
-      val fc = new FastClockIntArrayCache("test-shards", 10, 4, 2, 3, offset, edges)
+      val fc = new FastClockIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
       fc.get(1)
       fc.get(2)
       fc.get(1)
@@ -44,7 +44,7 @@ class FastClockIntArrayCacheSpec extends Specification {
     }
 
     "Is clock and not LRU" in {
-      val fc = new FastClockIntArrayCache("test-shards", 10, 4, 2, 4, offset, edges)
+      val fc = new FastClockIntArrayCache(Array("test-shards"), 10, 4, 2, 4, offset, edges)
       fc.get(1)
       fc.get(2)
       fc.get(1)
