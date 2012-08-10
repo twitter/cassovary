@@ -60,3 +60,15 @@ class EdgeShardsReader(val shardDirectory:String, val numShards:Int) {
 
   def close = (0 until numShards).foreach { i => shardReaders(i).close }
 }
+
+class MultiDirEdgeShardsReader(val shardDirectories: Array[String], val numShards: Int) {
+  val shardReaders = (0 until numShards).map { i =>
+    new EdgeShardReader("%s/%s.txt".format(shardDirectories(i % shardDirectories.length), i))
+  }
+
+  def readIntegersFromOffsetIntoArray(nodeId:Int, offset:Long, numEdges:Int, intArray:Array[Int], intArrayOffset:Int):Unit = {
+    shardReaders(nodeId % numShards).readIntegersFromOffsetIntoArray(offset, numEdges, intArray, intArrayOffset)
+  }
+
+  def close = (0 until numShards).foreach { i => shardReaders(i).close }
+}

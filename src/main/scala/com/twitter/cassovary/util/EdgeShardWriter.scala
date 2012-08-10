@@ -98,6 +98,16 @@ class EdgeShardsWriter(val shardDirectory:String, val numShards:Int) {
   def close = (0 until numShards).foreach { i => shardWriters(i).close }
 }
 
+class MultiDirEdgeShardsWriter(val shardDirectories:Array[String], numShards:Int)
+  extends EdgeShardsWriter(shardDirectories(0), numShards) {
+
+  shardDirectories.foreach { shardDirectory => new File(shardDirectory).mkdirs() }
+
+  override val shardWriters = (0 until numShards).map { i =>
+    new EdgeShardWriter("%s/%s.txt".format(shardDirectories(i % shardDirectories.length), i))
+  }
+}
+
 class MemEdgeShardWriter(val shardSize:Int) {
   val shard = new Array[Int](shardSize)
 
@@ -182,6 +192,20 @@ class MemEdgeShardsWriter(val shardDirectory:String, val numShards:Int, val shar
     }
     else {
       throw new IllegalArgumentException("Invalid nodeId attempted to be written")
+    }
+  }
+
+}
+
+class MultiDirMemEdgeShardsWriter(val shardDirectories:Array[String], numShards:Int, shardSizes:Array[Int], rounds:Int=1)
+  extends MemEdgeShardsWriter(shardDirectories(0), numShards, shardSizes, rounds) {
+
+  shardDirectories.foreach { shardDirectory => new File(shardDirectory).mkdirs() }
+
+  override def endRound = {
+    (modStart until modEnd).foreach { i =>
+      writers(i).writeToShard("%s/%s.txt".format(shardDirectories(i % shardDirectories.length), i))
+      writers(i) = null
     }
   }
 
