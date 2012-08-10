@@ -19,6 +19,8 @@ import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.google.common.util.concurrent.MoreExecutors
 import java.util.concurrent._
 import scala.util.Random
+import com.twitter.io.Files
+import java.io.File
 
 class CachedDirectedGraphSpec extends Specification {
   var graph: CachedDirectedGraph = _
@@ -27,6 +29,13 @@ class CachedDirectedGraphSpec extends Specification {
     NodeIdEdgesMaxId(2, Array(1)),
     NodeIdEdgesMaxId(3, Array(1)),
     NodeIdEdgesMaxId(5, Array(2)),
+    NodeIdEdgesMaxId(6, Array(1,2,3,4))).iterator
+
+  val zeroIteratorFunc = () => Seq(NodeIdEdgesMaxId(0, Array(1,2,3)),
+    NodeIdEdgesMaxId(1, Array(0)),
+    NodeIdEdgesMaxId(2, Array(0)),
+    NodeIdEdgesMaxId(3, Array(2)),
+    NodeIdEdgesMaxId(5, Array(6)),
     NodeIdEdgesMaxId(6, Array(1,2,3,4))).iterator
 
   val edgeMap = Map(1 -> Array(2,3,4), 2 -> Array(1), 3 -> Array(1),
@@ -38,28 +47,31 @@ class CachedDirectedGraphSpec extends Specification {
   val renumberedReachability = List(0, 4, 4, 4, 5, 5, 1)
 
   def makeGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
-    iteratorFunc, dir, "guava", renumber = false)
+    iteratorFunc, dir, "temp-shards/1", "guava", renumber = false)
 
   def makeSameGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
-    iteratorFunc, dir, "guava", "temp-cached/sameGraph", false)
+    iteratorFunc, dir, "temp-shards/2", "guava", "temp-cached/sameGraph", false)
 
   def makeFastLRUGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
-    iteratorFunc, dir, "lru", renumber = false)
+    iteratorFunc, dir, "temp-shards/3", "lru", renumber = false)
 
   def makeFastLRUGraphWithNodeArray(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
-    iteratorFunc, dir, "lru_na", renumber = false)
+    iteratorFunc, dir, "temp-shards/4", "lru_na", renumber = false)
 
   def makeFastClockGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
-    iteratorFunc, dir, "clock", renumber = false)
+    iteratorFunc, dir, "temp-shards/5", "clock", renumber = false)
 
   def makeRenumberedGuavaGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
-    iteratorFunc, dir, "guava", renumber = true)
+    iteratorFunc, dir, "temp-shards/6", "guava", renumber = true)
 
   def makeRenumberedFastLRUGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
-    iteratorFunc, dir, "lru", "temp-cached/sameGraph2", renumber = true)
+    iteratorFunc, dir, "temp-shards/7", "lru", "temp-cached/sameGraph7", renumber = true)
+
+  def makeRenumberedFastLRUGraphWithZero(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
+    zeroIteratorFunc, dir, "temp-shards/8", "lru", "temp-cached/sameGraph8", renumber = true)
 
   def makeRenumberedFastLRUGraphWithNodeArray(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
-    iteratorFunc, dir, "lru_na", renumber = true)
+    iteratorFunc, dir, "temp-shards/9", "lru_na", renumber = true)
 
   def getNode(id: Int): Option[Node] = graph.getNodeById(id)
 
@@ -109,6 +121,11 @@ class CachedDirectedGraphSpec extends Specification {
     print("done!\n")
   }
 
+  doLast {
+    Files.delete(new File("temp-shards"))
+    Files.delete(new File("temp-cached"))
+  }
+
   "Renumbered FastLRU-based graph containing only out edges" should {
     var graphL: FastCachedDirectedGraph = null
     var graphLCache: FastLRUIntArrayCache = null
@@ -144,6 +161,41 @@ class CachedDirectedGraphSpec extends Specification {
 
     "Do a concurrent random walk properly" in {
       concurrentTest(graphL, renumberedEdgeMap, renumberedReachability)
+    }
+  }
+
+  "Zero-Renumbered FastLRU-based graph containing only out edges" should {
+    var graphL: FastCachedDirectedGraph = null
+    var graphLCache: FastLRUIntArrayCache = null
+    doBefore {
+      graph = makeRenumberedFastLRUGraphWithZero(StoredGraphDir.OnlyOut)
+      graph = makeRenumberedFastLRUGraphWithZero(StoredGraphDir.OnlyOut)
+      graphL = graph.asInstanceOf[FastCachedDirectedGraph]
+      graphLCache = graphL.cache.asInstanceOf[FastLRUIntArrayCache]
+    }
+
+    "map only out edges" in {
+      getNode(1).get must DeepEqualsNode((NodeMaker(1, Array(2, 3, 4), Array())))
+      getNode(2).get must DeepEqualsNode((NodeMaker(2, Array(1), Array())))
+      getNode(3).get must DeepEqualsNode((NodeMaker(3, Array(1), Array())))
+      getNode(4).get must DeepEqualsNode((NodeMaker(4, Array(3), Array())))
+      getNode(5).get must DeepEqualsNode((NodeMaker(5, Array(6), Array())))
+      getNode(6).get must DeepEqualsNode((NodeMaker(6, Array(2, 3, 4, 7), Array())))
+      getNode(7).get must DeepEqualsNode((NodeMaker(7, Array())))
+      getNode(8) mustEqual None
+      getNode(100) mustEqual None
+    }
+
+    "iterate over all nodes" in {
+      graph must DeepEqualsNodeIterable((1 to 7).flatMap(getNode(_)))
+    }
+
+    "provide the correct node count" in {
+      graph.nodeCount mustBe 7
+    }
+
+    "provide the correct edge count" in {
+      graph.edgeCount mustBe 11L
     }
   }
 
