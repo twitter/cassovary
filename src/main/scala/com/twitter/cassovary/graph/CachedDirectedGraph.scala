@@ -60,7 +60,7 @@ object CachedDirectedGraph {
     var maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount = 0
     var numEdges = 0L
     val shardDirectories = shardDirectoryPrefixes.map { shardDirectoryPrefix =>
-        if (renumber) {
+      if (renumber) {
         shardDirectoryPrefix + "_renumbered"
       } else {
         shardDirectoryPrefix + "_regular"

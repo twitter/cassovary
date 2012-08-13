@@ -3,13 +3,15 @@ package com.twitter.cassovary.util
 import java.io.{RandomAccessFile, DataInputStream, FileInputStream}
 import java.nio.ByteBuffer
 import com.twitter.ostrich.stats.Stats
+import collection.mutable
 
 /**
  * Read binary integers from a file
  * @param filename
  */
 class EdgeShardReader(val filename:String) {
-  private val rf = new RandomAccessFile(filename, "r") // Alternative - FileOutputStream and DataOutputStream
+  private val rfx = new RandomAccessFile(filename, "r") // Alternative - FileOutputStream and DataOutputStream
+  private val rfs = new mutable.HashMap[Long, RandomAccessFile]
 
   /**
    * Read integers from this shard into an array
@@ -20,18 +22,30 @@ class EdgeShardReader(val filename:String) {
    */
   def readIntegersFromOffsetIntoArray(offset:Long, numEdges:Int, intArray:Array[Int],
       intArrayOffset:Int):Unit = Stats.time("esr_fullread") {
-    synchronized {
-      rf.seek(offset)
-      // Read into byte array, then copy from byte array to given int array
-      val bytesToRead = 4 * numEdges
-      val byteArray = new Array[Byte](bytesToRead)
-      rf.read(byteArray, 0, bytesToRead)
-      val ib = ByteBuffer.wrap(byteArray).asIntBuffer()
-      ib.get(intArray, intArrayOffset, numEdges)
+
+    val rf: RandomAccessFile = try {
+      rfs(Thread.currentThread().getId)
+    } catch {
+      case e: NoSuchElementException => {
+        val raf = new RandomAccessFile(filename, "r")
+        rfs(Thread.currentThread().getId) = raf
+        raf
+      }
     }
+
+    rf.seek(offset)
+    // Read into byte array, then copy from byte array to given int array
+    val bytesToRead = 4 * numEdges
+    val byteArray = new Array[Byte](bytesToRead)
+    rf.read(byteArray, 0, bytesToRead)
+    val ib = ByteBuffer.wrap(byteArray).asIntBuffer()
+    ib.get(intArray, intArrayOffset, numEdges)
   }
 
-  def close = rf.close()
+  def close = {
+    rfx.close()
+    rfs.foreach { case (k, v) => v.close() }
+  }
 }
 
 /**
