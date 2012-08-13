@@ -19,7 +19,6 @@ import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.twitter.cassovary.graph._
 import scala.util.Random
 import scala.collection.JavaConversions._
-import com.twitter.logging.Logger
 import scala.io.Source
 import java.io.File
 import com.twitter.cassovary.graph.GraphDir
@@ -28,6 +27,7 @@ import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.twitter.cassovary.graph.GraphUtils
 import scala.Some
 import java.util.concurrent.{Future, Executors}
+import net.lag.logging.Logger
 
 /**
  * "Server" that loads the graph and runs some arbitrary code, like PersonalizedReputation
@@ -44,7 +44,7 @@ class CachedDirectedGraphServer(config: CachedDirectedGraphServerConfig) extends
 
     // Load the desired graph
     val graph = GraphLoader("/Volumes/Macintosh HD 2/graph_dump/current/OnlyOut",
-      "lru", 1000000, 200000000, "/tmp/shards", 256, 16, true, "/tmp/cached")
+      "lru", 1000000, 200000000, Array("/tmp/shards"), 256, 16, true, "/tmp/cached")
 
 //    val graph = GraphLoader("/Volumes/Macintosh HD 2/graph_dump_random",
 //      "lru", 1000000, 200000000, "/tmp/shards_random", 256, 16, true, "/tmp/cached_random")

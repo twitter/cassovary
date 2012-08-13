@@ -36,10 +36,10 @@ import com.twitter.cassovary.graph.StoredGraphDir._
  */
 object GraphLoader {
   def apply(directory: String, cacheType: String, cacheMaxNodes:Int, cacheMaxEdges:Long,
-            shardDirectory: String, numShards: Int, numRounds: Int,
+            shardDirectories: Array[String], numShards: Int, numRounds: Int,
             useCachedValues: Boolean, cacheDirectory: String) = {
     new GraphLoader().loadGraphFromDirectory(directory, cacheType, cacheMaxNodes, cacheMaxEdges,
-      shardDirectory, numShards, numRounds,
+      shardDirectories, numShards, numRounds,
       useCachedValues, cacheDirectory)
   }
 }
@@ -99,12 +99,12 @@ private class GraphLoader {
 
   // Return a CachedDirectedGraph object
   def loadGraphFromDirectory(directory: String, cacheType: String, cacheMaxNodes:Int, cacheMaxEdges:Long,
-                             shardDirectory: String, numShards: Int, numRounds: Int,
+                             shardDirectories: Array[String], numShards: Int, numRounds: Int,
                              useCachedValues: Boolean, cacheDirectory: String) = {
     // TODO Support OnlyIn as well
     CachedDirectedGraph(new RawEdgeShardsReader(directory).readers, Executors.newFixedThreadPool(8),
       StoredGraphDir.OnlyOut, cacheType, cacheMaxNodes, cacheMaxEdges,
-      Array(shardDirectory), numShards, numRounds, useCachedValues, cacheDirectory, true)
+      shardDirectories, numShards, numRounds, useCachedValues, cacheDirectory, true)
   }
 
 }
