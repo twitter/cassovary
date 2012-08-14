@@ -11,6 +11,21 @@ reduce the heap size. For example,
 
 Allows a maximum heap size of 8 GB and allows Java to start off with a heap size of 4 GB.
 
+
+### RenumberGraphDirectory [path/to/graph_dump] [path/to/target_output_directory] [path/to/mapping]
+Renumbers an input graph directory, providing the output as well as the mapping, which
+can also be used by RenumbererMapper. The input graph directory must contain "part-r-XXXXX" files,
+which contain edges in the following form:
+    5 2
+    6
+    19
+    23 1
+    18
+In the above example, the node with id 5 has 2 edges, namely to ids 6 and 19,
+and the node with id 23 has 1 edge to id 18. If an invalid directory is provided, the output
+is undefined.
+
+
 ### RenumbererMapper [maxId | path/to/step2xr2.txt] [path/to/inputIds path/to/outputIndices]
 
 interactive terminal for the renumberer. If you provide a number as the argument, an empty
@@ -21,9 +36,11 @@ If you provide input and output files, a forward mapping will be computed from i
 in the inputIds file to that of the outputIndices file. The inputIds file must have only
 a single integer per line.
 
-### RunCDGServer
 
-Runs a CachedDirectedGraph server to demonstrate Ostrich stats collection
+### RunCDGServer [config.json]
+
+Runs a CachedDirectedGraph server to demonstrate Ostrich stats collection. Provide a config.json
+file to configure the settings for this server.
 
 
 Python
