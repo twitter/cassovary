@@ -42,9 +42,6 @@ object GraphLoader {
       shardDirectories, numShards, numRounds,
       useCachedValues, cacheDirectory)
   }
-}
-
-private class GraphLoader {
 
   class RawEdgeShardReader(filename: String) extends Iterator[NodeIdEdgesMaxId] {
 
@@ -92,10 +89,16 @@ private class GraphLoader {
         }
       }).filterNot(f => f == null)
       validFiles.map({ filename =>
-        {() => new RawEdgeShardReader(directory + "/" + filename)}
+      {() => new RawEdgeShardReader(directory + "/" + filename)}
       }).toSeq
     }
   }
+
+}
+
+class GraphLoader {
+
+  import GraphLoader._
 
   // Return a CachedDirectedGraph object
   def loadGraphFromDirectory(directory: String, cacheType: String, cacheMaxNodes:Int, cacheMaxEdges:Long,

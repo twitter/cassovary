@@ -23,7 +23,9 @@ import collection.mutable
  * @param filename
  */
 class EdgeShardReader(val filename:String) {
-  private val rfx = new RandomAccessFile(filename, "r") // Alternative - FileOutputStream and DataOutputStream
+  // Test existence of the file
+  new RandomAccessFile(filename, "r").close() // Alternative - FileOutputStream and DataOutputStream
+
   private val rfs = new mutable.HashMap[Long, RandomAccessFile]
 
   /**
@@ -56,7 +58,6 @@ class EdgeShardReader(val filename:String) {
   }
 
   def close = {
-    rfx.close()
     rfs.foreach { case (k, v) => v.close() }
   }
 }

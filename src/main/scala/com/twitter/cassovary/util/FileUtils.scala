@@ -1,12 +1,16 @@
 package com.twitter.cassovary.util
 
 import io.Source
-import java.io.File
+import java.io.{PrintWriter, File}
 
 object FileUtils {
   def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
     val p = new java.io.PrintWriter(f)
     try { op(p) } finally { p.close() }
+  }
+
+  def printWriter(filename: String) = {
+    new PrintWriter(new File(filename))
   }
 
   def linesFromFile(filename: String)(op: String => Unit) {
