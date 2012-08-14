@@ -1,0 +1,14 @@
+{
+    "server": {
+        "nodelist": "/Volumes/Macintosh HD 2/split16",
+        "verbose": false,
+        "graph_dump": "/Volumes/Macintosh HD 2/graph_dump/current/OnlyOut",
+        "cache_type": "lru",
+        "num_nodes": 1000000,
+        "num_edges": 200000000,
+        "shard_directories": "/tmp/shards",
+        "num_shards": 256,
+        "num_rounds": 16,
+        "cache_directory": "/tmp/cached"
+    }
+}

@@ -22,6 +22,17 @@ import com.twitter.ostrich.admin.RuntimeEnvironment
 class CachedDirectedGraphServerConfig extends ServerConfig[CachedDirectedGraphServer] {
   var serverPort: Int = 9999
 
+  var nodeList = "/path/to/nodelist"
+  var verbose = false
+  var graphDump = "/path/to/graphdump"
+  var cacheType = "lru"
+  var numNodes: Int = 10
+  var numEdges: Long = 100L
+  var shardDirectories: Array[String] = Array("path/to/sharddirs")
+  var numShards = 256
+  var numRounds = 16
+  var cacheDirectory = "/path/to/cachedir"
+
   def apply(runtime: RuntimeEnvironment) = {
     new CachedDirectedGraphServer(this)
   }

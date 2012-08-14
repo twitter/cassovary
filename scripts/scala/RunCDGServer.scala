@@ -3,13 +3,18 @@ import com.twitter.cassovary.server.{CachedDirectedGraphServer, CachedDirectedGr
 import com.twitter.logging.config.{FileHandlerConfig, LoggerConfig, ConsoleHandlerConfig, Level}
 import com.twitter.ostrich.admin.ServiceTracker
 import com.twitter.logging.{Logger, Policy}
+import net.liftweb.json
 
 object RunCDGServer {
   val log = Logger.get(getClass.getName)
 
   def main(args: Array[String]) {
 
-    val runtime = RuntimeEnvironment(this, args)
+    if (args.length < 1) {
+      throw new Exception("Provide JSON config file as the first argument!")
+    }
+
+    val runtime = RuntimeEnvironment(this, args.drop(1))
     val server = if (runtime.configFile.exists) {
       runtime.loadRuntimeConfig[CachedDirectedGraphServer]
     } else {
@@ -36,6 +41,20 @@ object RunCDGServer {
         ServiceTracker.register(aggStats)
         deltaStats.start()
         aggStats.start()
+
+        // Load params
+        implicit val formats = net.liftweb.json.DefaultFormats
+        val sData = (json.parse(scala.io.Source.fromFile(args(0)).mkString) \ "server")
+        nodeList = (sData \ "nodelist").extract[String]
+        verbose = (sData \ "verbose").extract[Boolean]
+        graphDump = (sData \ "graph_dump").extract[String]
+        cacheType = (sData \ "cache_type").extract[String]
+        numNodes = (sData \ "num_nodes").extract[Int]
+        numEdges = (sData \ "num_edges").extract[Long]
+        shardDirectories = (sData \ "shard_directories").extract[String].split(":")
+        numShards = (sData \ "num_shards").extract[Int]
+        numRounds = (sData \ "num_rounds").extract[Int]
+        cacheDirectory = (sData \ "cache_directory").extract[String]
       })(runtime)
     }
 

@@ -39,12 +39,18 @@ class CachedDirectedGraphServer(config: CachedDirectedGraphServerConfig) extends
   def start() {
     log.info("Starting up...")
 
-    val nodeList = "/Volumes/Macintosh HD 2/mappedrand.txt"
-    val verbose = false
+    val nodeList = config.nodeList
+    val verbose = config.verbose
+
+    log.info("Nodelist is %s Verbose is %s".format(nodeList, verbose))
+    log.info("GraphDump is %s CacheType is %s".format(config.graphDump, config.cacheType))
+    log.info("NumNodes is %s NumEdges is %s NumShards is %s NumRounds is %s".format(config.numNodes, config.numEdges, config.numShards, config.numRounds))
+    log.info("ShardDirs is %s CacheDir is %s".format(config.shardDirectories.mkString(" "), config.cacheDirectory))
 
     // Load the desired graph
-    val graph = GraphLoader("/Volumes/Macintosh HD 2/graph_dump/current/OnlyOut",
-      "lru", 1000000, 200000000, Array("/tmp/shards"), 256, 16, true, "/tmp/cached")
+    val graph = GraphLoader(config.graphDump, config.cacheType,
+      config.numNodes, config.numEdges, config.shardDirectories,
+      config.numShards, config.numRounds, true, config.cacheDirectory)
 
 //    val graph = GraphLoader("/Volumes/Macintosh HD 2/graph_dump_random",
 //      "lru", 1000000, 200000000, "/tmp/shards_random", 256, 16, true, "/tmp/cached_random")
