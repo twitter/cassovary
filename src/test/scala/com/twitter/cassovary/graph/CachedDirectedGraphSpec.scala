@@ -73,6 +73,9 @@ class CachedDirectedGraphSpec extends Specification {
   def makeRenumberedFastLRUGraphWithNodeArray(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
     iteratorFunc, dir, "temp-shards/9", "lru_na", renumber = true)
 
+  def makeRenumberedBufferedFastLRUGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
+    iteratorFunc, dir, "temp-shards/10", "bufflru", renumber = false)
+
   def getNode(id: Int): Option[Node] = graph.getNodeById(id)
 
   val smallGraphOutOnly = beforeContext {
@@ -512,6 +515,13 @@ class CachedDirectedGraphSpec extends Specification {
   "Node Array FastLRU-based graph containing only out edges" should {
     "Do a concurrent random walk properly" in {
       graph = makeFastLRUGraphWithNodeArray(StoredGraphDir.OnlyOut)
+      concurrentTest(graph, edgeMap, reachability)
+    }
+  }
+
+  "BufferedFastLRU-based graph containing only out edges" should {
+    "Do a concurrent random walk properly" in {
+      graph = makeRenumberedBufferedFastLRUGraph(StoredGraphDir.OnlyOut)
       concurrentTest(graph, edgeMap, reachability)
     }
   }

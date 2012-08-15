@@ -518,6 +518,8 @@ class FastCachedDirectedGraph (
   val cache = cacheType match {
     case "lru" => new FastLRUIntArrayCache(shardDirectories, numShards,
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
+    case "bufflru" => new BufferedFastLRUIntArrayCache(shardDirectories, numShards,
+      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
     case _ => new FastClockIntArrayCache(shardDirectories, numShards,
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
   }
@@ -596,6 +598,8 @@ class NodeArrayFastCachedDirectedGraph (
 
   val cache = cacheType match {
     case "lru_na" => new FastLRUIntArrayCache(shardDirectories, numShards,
+      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
+    case "bufflru_na" => new BufferedFastLRUIntArrayCache(shardDirectories, numShards,
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
     case _ => new FastClockIntArrayCache(shardDirectories, numShards,
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
