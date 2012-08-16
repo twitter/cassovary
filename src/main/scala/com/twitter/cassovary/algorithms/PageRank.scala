@@ -43,6 +43,11 @@ object PageRank {
     val pr = new PageRank(graph, params)
     pr.run
   }
+
+  def iterate(graph:DirectedGraph, params:PageRankParams, prArray: Array[Double]) = {
+    val pr = new PageRank(graph, params)
+    pr.iterate(prArray: Array[Double])
+  }
 }
 
 private class PageRank(graph:DirectedGraph, params:PageRankParams) {
@@ -66,26 +71,31 @@ private class PageRank(graph:DirectedGraph, params:PageRankParams) {
     }
 
     (0 until params.iterations.get).foreach { i =>
-
       log.info("Beginning %sth iteration".format(i))
-      val afterPR = new Array[Double](graph.maxNodeId + 1)
-      graph.foreach { node =>
-        val givenPageRank = beforePR(node.id) / node.neighborCount(GraphDir.OutDir)
-        node.neighborIds(GraphDir.OutDir).foreach { neighborId =>
-          afterPR(neighborId) += givenPageRank
-        }
-      }
-
-      log.info("Damping %sth iteration".format(i))
-      if (dampingAmount > 0) {
-        graph.foreach { node =>
-          afterPR(node.id) = dampingAmount + dampingFactor * afterPR(node.id)
-        }
-        beforePR = afterPR
-      }
-
+      beforePR = iterate(beforePR)
     }
 
     beforePR
   }
+
+  def iterate(beforePR: Array[Double]): Array[Double] = {
+    val afterPR = new Array[Double](graph.maxNodeId + 1)
+
+    log.info("Calculating...")
+    graph.foreach { node =>
+      val givenPageRank = beforePR(node.id) / node.neighborCount(GraphDir.OutDir)
+      node.neighborIds(GraphDir.OutDir).foreach { neighborId =>
+        afterPR(neighborId) += givenPageRank
+      }
+    }
+
+    log.info("Damping...")
+    if (dampingAmount > 0) {
+      graph.foreach { node =>
+        afterPR(node.id) = dampingAmount + dampingFactor * afterPR(node.id)
+      }
+    }
+    afterPR
+  }
+
 }
