@@ -46,7 +46,9 @@ class FastClockIntArrayCache(shardDirectories: Array[String], numShards: Int,
    * @param id id to insert into the cache
    * @param array array to insert into the cache
    */
-  private def replace(id:Int, array:Array[Int]) = {
+  private def replace(id:Int, numEdges: Int, array:Array[Int]) = synchronized {
+    currNodeCapacity += 1
+    currRealCapacity += numEdges
     var replaced = false
     while(currNodeCapacity > cacheMaxNodes || currRealCapacity > cacheMaxEdges || !replaced) {
       // Find a slot which can be evicted
@@ -76,11 +78,12 @@ class FastClockIntArrayCache(shardDirectories: Array[String], numShards: Int,
     }
   }
 
-  def get(id: Int) = synchronized {
-    if (idBitSet(id)) {
+  def get(id: Int) = {
+    val a = idToArray(id)
+    if (a != null) {
       hits += 1
       clockBits(idToIndex(id)) = true
-      idToArray(id)
+      a
     }
     else {
       misses += 1
@@ -92,10 +95,10 @@ class FastClockIntArrayCache(shardDirectories: Array[String], numShards: Int,
         // Read in array
         val intArray = new Array[Int](numEdges)
         reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id) * 4, numEdges, intArray, 0)
+
         // Evict from cache
-        currNodeCapacity += 1
-        currRealCapacity += numEdges
-        replace(id, intArray)
+        replace(id, numEdges, intArray)
+
         // Return array
         intArray
       }
