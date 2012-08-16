@@ -22,7 +22,7 @@ import net.lag.logging.Logger
  * @param iterations How many PageRank iterations do you want?
  */
 case class PageRankParams(dampingFactor: Double = 0.85,
-                          iterations: Option[Int] = 10)
+                          iterations: Option[Int] = Some(10))
 
 /**
  * PageRank is a link analysis algorithm designed to measure the importance of nodes in a graph.
