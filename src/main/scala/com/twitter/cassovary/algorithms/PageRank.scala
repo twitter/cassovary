@@ -65,9 +65,14 @@ private class PageRank(graph:DirectedGraph, params:PageRankParams) {
 
     var beforePR = new Array[Double](graph.maxNodeId + 1)
     log.info("Initializing starting PageRank...")
+    var count = 0
     val initialPageRankValue = 1.0D / graph.nodeCount
     graph.foreach { node =>
       beforePR(node.id) = initialPageRankValue
+      count += 1
+      if (count % 65536 == 0) {
+        log.info("Processed %s nodes...".format(count))
+      }
     }
 
     (0 until params.iterations.get).foreach { i =>
@@ -82,17 +87,27 @@ private class PageRank(graph:DirectedGraph, params:PageRankParams) {
     val afterPR = new Array[Double](graph.maxNodeId + 1)
 
     log.info("Calculating...")
+    var count = 0
     graph.foreach { node =>
       val givenPageRank = beforePR(node.id) / node.neighborCount(GraphDir.OutDir)
       node.neighborIds(GraphDir.OutDir).foreach { neighborId =>
         afterPR(neighborId) += givenPageRank
       }
+      count += 1
+      if (count % 65536 == 0) {
+        log.info("Processed %s nodes...".format(count))
+      }
     }
 
     log.info("Damping...")
+    count = 0
     if (dampingAmount > 0) {
       graph.foreach { node =>
         afterPR(node.id) = dampingAmount + dampingFactor * afterPR(node.id)
+      }
+      count += 1
+      if (count % 65536 == 0) {
+        log.info("Processed %s nodes...".format(count))
       }
     }
     afterPR
