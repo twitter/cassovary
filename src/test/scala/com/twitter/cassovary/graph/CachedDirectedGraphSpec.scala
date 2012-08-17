@@ -510,6 +510,16 @@ class CachedDirectedGraphSpec extends Specification {
       a.size() mustEqual 4
     }
 
+    "When looping return the correct values" in {
+      var i = 0
+      val ids = graph.map { n =>
+        n.neighborCount(GraphDir.OutDir) mustEqual edgeMap(n.id).size
+        n.neighborIds(GraphDir.OutDir).toArray.deep mustEqual edgeMap(n.id).deep
+        n.id
+      }
+      ids.toArray.deep mustEqual Array(1, 2, 3, 4, 5, 6).deep
+    }
+
     "Do a concurrent random walk properly" in {
       concurrentTest(graphL, edgeMap, reachability)
     }

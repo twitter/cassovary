@@ -17,6 +17,22 @@ object FileUtils {
     Source.fromFile(filename).getLines().foreach(op)
   }
 
+  def makeDirs(directory: String) {
+    new File(directory).mkdirs()
+  }
+
+  def doubleArrayToFile(a:Array[Double], filename: String) {
+    printToFile(new File(filename)) { p =>
+      var i = 0
+      while (i < a.size) {
+        if (a(i) != 0) {
+          p.println("%s %s".format(i, a(i)))
+        }
+        i += 1
+      }
+    }
+  }
+
   def readLinesAndPrintToFile(inFilename: String, outFilename: String)
                              (op: (String, java.io.PrintWriter) => Unit) {
     printToFile(new File(outFilename)) { p =>

@@ -9,6 +9,9 @@
         "shard_directories": "/tmp/shards",
         "num_shards": 256,
         "num_rounds": 16,
-        "cache_directory": "/tmp/cached"
+        "cache_directory": "/tmp/cached",
+        "output_directory": "/Volumes/Macintosh HD 2/out",
+        "experiment": "ptc",
+        "iterations": 10
     }
 }

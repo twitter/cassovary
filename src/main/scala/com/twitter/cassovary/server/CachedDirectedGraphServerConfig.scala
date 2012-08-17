@@ -32,6 +32,9 @@ class CachedDirectedGraphServerConfig extends ServerConfig[CachedDirectedGraphSe
   var numShards = 256
   var numRounds = 16
   var cacheDirectory = "/path/to/cachedir"
+  var experiment = "ptc"
+  var iterations = 5
+  var outputDirectory = "/path/to/outputdir"
 
   def apply(runtime: RuntimeEnvironment) = {
     new CachedDirectedGraphServer(this)

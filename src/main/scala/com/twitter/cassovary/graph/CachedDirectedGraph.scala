@@ -463,7 +463,7 @@ abstract class CachedDirectedGraph(maxId: Int, realMaxId: Int,
 
   override lazy val maxNodeId = maxId
 
-  def iterator = (0 to realMaxId).flatMap(getNodeById(_)).iterator
+  def iterator = (0 to realMaxId).view.flatMap(getNodeById(_)).iterator
 
   val graphDir = storedGraphDir match {
     case(OnlyIn) => GraphDir.InDir
@@ -474,14 +474,9 @@ abstract class CachedDirectedGraph(maxId: Int, realMaxId: Int,
   def statsString: String
 
   def writeStats(fileName: String) {
-    printToFile(new File(fileName))(p => {
+    FileUtils.printToFile(new File(fileName))(p => {
       p.println(statsString)
     })
-  }
-
-  protected def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
-    val p = new java.io.PrintWriter(f)
-    try { op(p) } finally { p.close() }
   }
 }
 

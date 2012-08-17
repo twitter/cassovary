@@ -17,6 +17,7 @@ import com.twitter.ostrich.admin.Service
 import com.twitter.cassovary.util.{FileUtils, ExecutorUtils, GraphLoader}
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.twitter.cassovary.graph._
+import experiments.PtcExperiment
 import scala.util.Random
 import scala.collection.JavaConversions._
 import scala.io.Source
@@ -29,6 +30,11 @@ import scala.Some
 import java.util.concurrent.{Future, Executors}
 import net.lag.logging.Logger
 
+abstract class CachedDirectedGraphServerExperiment(val config: CachedDirectedGraphServerConfig,
+                                                   graph:CachedDirectedGraph) {
+  def run: Unit
+}
+
 /**
  * "Server" that loads the graph and runs some arbitrary code, like PersonalizedReputation
  * @param config
@@ -39,13 +45,11 @@ class CachedDirectedGraphServer(config: CachedDirectedGraphServerConfig) extends
   def start() {
     log.info("Starting up...")
 
-    val nodeList = config.nodeList
-    val verbose = config.verbose
-
-    log.info("Nodelist is %s Verbose is %s".format(nodeList, verbose))
+    log.info("Nodelist is %s Verbose is %s".format(config.nodeList, config.verbose))
     log.info("GraphDump is %s CacheType is %s".format(config.graphDump, config.cacheType))
     log.info("NumNodes is %s NumEdges is %s NumShards is %s NumRounds is %s".format(config.numNodes, config.numEdges, config.numShards, config.numRounds))
     log.info("ShardDirs is %s CacheDir is %s".format(config.shardDirectories.mkString(" "), config.cacheDirectory))
+    log.info("Experiment is %s".format(config.experiment))
 
     // Load the desired graph
     val graph = GraphLoader(config.graphDump, config.cacheType,
@@ -55,76 +59,13 @@ class CachedDirectedGraphServer(config: CachedDirectedGraphServerConfig) extends
 //    val graph = GraphLoader("/Volumes/Macintosh HD 2/graph_dump_random",
 //      "lru", 1000000, 200000000, "/tmp/shards_random", 256, 16, true, "/tmp/cached_random")
 
-    // Do a random walk
-    val walkParams = if (verbose)
-      RandomWalkParams(10000, 0.0, Some(2000), Some(1), Some(3), false, GraphDir.OutDir, false, true)
-    else
-      RandomWalkParams(10000, 0.0, Some(2000), None, Some(3), false, GraphDir.OutDir, false, true)
-    val graphUtils = new GraphUtils(graph)
-
-    val nodeFile = new File(nodeList)
-    if (nodeFile.isDirectory) {
-      val filelist = nodeFile.list
-      log.info("Concurrent Start with %s threads!".format(filelist.size))
-      val futures = ExecutorUtils.parallelWork[String, Unit](Executors.newFixedThreadPool(filelist.size), filelist,
-      { file =>
-        if (verbose)
-          ptcVerbose(nodeList+"/"+file, graph, graphUtils, walkParams)
-        else
-          ptc(nodeList+"/"+file, graph, graphUtils, walkParams)
-      })
-      futures.toArray.map { f => f.asInstanceOf[Future[Unit]].get }
-    }
-    else {
-      log.info("Single Threaded Start!")
-      if (verbose)
-        ptcVerbose(nodeList, graph, graphUtils, walkParams)
-      else
-        ptc(nodeList, graph, graphUtils, walkParams)
-    }
-
-    log.info("Finished starting up!")
-  }
-
-  def ptc(nodeList: String, graph: CachedDirectedGraph, graphUtils: GraphUtils, walkParams: RandomWalkParams) {
-    var j = 0
-    FileUtils.linesFromFile(nodeList) { line =>
-      val i = line.toInt
-      if (graph.existsNodeId(i)) {
-        j += 1
-        log.info("PR for %d (id %d)".format(j, i))
-        graphUtils.calculatePersonalizedReputation(i, walkParams)
-        if (j % 1000 == 0) {
-          log.info("cache_miss_stats: " + graph.statsString)
-        }
-      }
+    config.experiment match {
+      case "ptc" => new PtcExperiment(config, graph)
+      case "generate_random_graph" => generateRandomGraph
+      case _ => throw new Exception("Invalid experiment name provided")
     }
   }
 
-  def ptcVerbose(nodeList: String, graph: CachedDirectedGraph, graphUtils: GraphUtils, walkParams: RandomWalkParams) {
-    var j = 0
-    FileUtils.linesFromFile(nodeList) { line =>
-      val i = line.toInt
-      if (graph.existsNodeId(i)) {
-        j += 1
-        val sb = new StringBuilder
-        sb.append("PR for %d (id %d)\n".format(j, i))
-        val (topNeighbors, paths) = graphUtils.calculatePersonalizedReputation(i, walkParams)
-        topNeighbors.toList.sort((x1, x2) => x2._2.intValue < x1._2.intValue).take(10).foreach { case (id, numVisits) =>
-          if (paths.isDefined) {
-            val topPaths = paths.get.get(id).map { case (DirectedPath(nodes), count) =>
-              nodes.mkString("->") + " (%s)".format(count)
-            }
-            sb.append("%8s%10s\t%s\n".format(id, numVisits, topPaths.mkString(" | ")))
-          }
-        }
-        log.info(sb.toString)
-        if (j % 1000 == 0) {
-          log.info("cache_miss_stats: " + graph.statsString)
-        }
-      }
-    }
-  }
 
   def generateRandomGraph = {
     val randomGraph = TestGraphs.generateRandomGraph(1000000, 200)

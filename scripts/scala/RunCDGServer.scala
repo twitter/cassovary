@@ -55,6 +55,9 @@ object RunCDGServer {
         numShards = (sData \ "num_shards").extract[Int]
         numRounds = (sData \ "num_rounds").extract[Int]
         cacheDirectory = (sData \ "cache_directory").extract[String]
+        experiment = (sData \ "experiment").extract[String]
+        iterations = (sData \ "iterations").extract[Int]
+        outputDirectory = (sData \ "output_directory").extract[String]
       })(runtime)
     }
 
