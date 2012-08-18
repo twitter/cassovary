@@ -519,6 +519,8 @@ class FastCachedDirectedGraph (
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
     case "random" => new RandomizedIntArrayCache(shardDirectories, numShards,
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
+    case "locklessrandom" => new LocklessRandomizedIntArrayCache(shardDirectories, numShards,
+      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
     case _ => new FastClockIntArrayCache(shardDirectories, numShards,
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
   }
