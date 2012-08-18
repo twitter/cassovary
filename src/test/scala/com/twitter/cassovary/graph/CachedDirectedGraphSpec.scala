@@ -79,6 +79,9 @@ class CachedDirectedGraphSpec extends Specification {
   def makeLockfreeReadFastLRUGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
     iteratorFunc, dir, "temp-shards/11", "lockfreereadlru", renumber = false)
 
+  def makeRandomizedFastLRUGraph(dir: StoredGraphDir.StoredGraphDir) = CachedDirectedGraph(
+    iteratorFunc, dir, "temp-shards/12", "random", renumber = false)
+
   def getNode(id: Int): Option[Node] = graph.getNodeById(id)
 
   val smallGraphOutOnly = beforeContext {
@@ -542,6 +545,13 @@ class CachedDirectedGraphSpec extends Specification {
   "LockfreeReadFastLRU-based graph containing only out edges" should {
     "Do a concurrent random walk properly" in {
       graph = makeLockfreeReadFastLRUGraph(StoredGraphDir.OnlyOut)
+      concurrentTest(graph, edgeMap, reachability)
+    }
+  }
+
+  "RandomizedFastLRU-based graph containing only out edges" should {
+    "Do a concurrent random walk properly" in {
+      graph = makeRandomizedFastLRUGraph(StoredGraphDir.OnlyOut)
       concurrentTest(graph, edgeMap, reachability)
     }
   }

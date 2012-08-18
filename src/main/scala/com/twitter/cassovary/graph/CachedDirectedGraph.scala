@@ -517,6 +517,8 @@ class FastCachedDirectedGraph (
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
     case "lockfreereadlru" => new LockfreeReadFastLRUIntArrayCache(shardDirectories, numShards,
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
+    case "random" => new RandomizedIntArrayCache(shardDirectories, numShards,
+      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
     case _ => new FastClockIntArrayCache(shardDirectories, numShards,
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
   }
@@ -599,6 +601,8 @@ class NodeArrayFastCachedDirectedGraph (
     case "bufflru_na" => new BufferedFastLRUIntArrayCache(shardDirectories, numShards,
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
     case "lockfreereadlru_na" => new LockfreeReadFastLRUIntArrayCache(shardDirectories, numShards,
+      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
+    case "random_na" => new RandomizedIntArrayCache(shardDirectories, numShards,
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
     case _ => new FastClockIntArrayCache(shardDirectories, numShards,
       realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
