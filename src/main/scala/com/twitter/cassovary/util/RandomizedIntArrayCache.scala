@@ -15,6 +15,7 @@ package com.twitter.cassovary.util
 
 import util.Random
 import java.util.concurrent.atomic.{AtomicReference, AtomicLong, AtomicIntegerArray}
+import concurrent.Lock
 
 class RandomizedIntArrayCache(shardDirectories: Array[String], numShards: Int,
                               maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
@@ -22,21 +23,21 @@ class RandomizedIntArrayCache(shardDirectories: Array[String], numShards: Int,
 
   val reader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
   val rand = new Random
-  val idToArray = Array.fill(maxId+1){ new AtomicReference[Array[Int]](null) }
-  val indexToId = new AtomicIntegerArray(cacheMaxNodes)
-  var hits, misses: AtomicLong = new AtomicLong
-  var currRealCapacity: AtomicLong = new AtomicLong // how many edges are we storing?
+  val idToArray = new Array[Array[Int]](maxId+1)
+  val indexToId = new Array[Int](cacheMaxNodes)
+  var hits, misses: Long = 0L
+  var currRealCapacity: Long = 0L // how many edges are we storing?
+  var lock = new Lock
 
   def get(id: Int) = {
-    val a = idToArray(id).get
+    val a = idToArray(id)
     if (a != null) {
       // println(Thread.currentThread().getId+" Hit! " +id)
-      hits.incrementAndGet
+      hits += 1
       a
     }
     else {
-
-      misses.incrementAndGet
+      misses += 1
       val numEdges = idToNumEdges(id)
       if (numEdges == 0) {
         throw new NullPointerException("FastLRUIntArrayCache idToIntOffsetAndNumEdges %s".format(id))
@@ -48,49 +49,56 @@ class RandomizedIntArrayCache(shardDirectories: Array[String], numShards: Int,
         reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id) * 4, numEdges, intArray, 0)
 
         // Do this first so that once indexToId is set this element can be evicted
-        val arr = idToArray(id).getAndSet(intArray)
-        if (arr == null) {
-          currRealCapacity.addAndGet(numEdges)
+
+        lock.acquire
+        val a = idToArray(id)
+        if (a != null) {
+          lock.release
+          a
         }
+        else {
+          idToArray(id) = intArray
+          currRealCapacity += numEdges
 
-        // Evict as many elements as we need to get below capacity
+          // Evict as many elements as we need to get below capacity
 
-        // Initial random eviction to add this id into the cache
-        val idToEvict = indexToId.getAndSet(rand.nextInt(cacheMaxNodes), id)
-        // println(Thread.currentThread().getId+"Added " + id + " received " + idToEvict + " " + currRealCapacity.get + " " + cacheMaxEdges + " " + indexToId)
-        if (idToEvict > 0) {
-          val arr = idToArray(idToEvict).getAndSet(null)
-          if (arr != null) {
-            currRealCapacity.addAndGet(-arr.size)
-            // println(Thread.currentThread().getId+"Evicted" + idToEvict + " " + currRealCapacity.get + " " + cacheMaxEdges + " " + indexToId)
+          // Initial random eviction to add this id into the cache
+          val randIndex = rand.nextInt(cacheMaxNodes)
+          val idToEvict = indexToId(randIndex)
+          indexToId(randIndex) = id
+          // println(Thread.currentThread().getId+" Added " + id + " received " + idToEvict + " " + currRealCapacity + " " + cacheMaxEdges + " " + indexToId.deep.mkString("|"))
+          if (idToEvict > 0 && idToEvict != id) {
+            currRealCapacity -= idToArray(idToEvict).size
+            idToArray(idToEvict) = null
+            // println(Thread.currentThread().getId+" Evicted " + idToEvict + " " + currRealCapacity + " " + cacheMaxEdges + " " + indexToId.deep.mkString("|"))
           }
-        }
 
-        // Subsequent evictions if we're above our limit
-        while (currRealCapacity.get > cacheMaxEdges) {
-          var i = 1
-          val idToEvict = indexToId.getAndSet(rand.nextInt(cacheMaxNodes), 0)
-          if (idToEvict > 0) {
-            val arr = idToArray(idToEvict).getAndSet(null)
-            if (arr != null) {
-              currRealCapacity.addAndGet(-arr.size)
-              // println("Evicted" + idToEvict + " " + currRealCapacity.get + " " + cacheMaxEdges + " " + indexToId)
+          // Subsequent evictions if we're above our limit
+          while (currRealCapacity > cacheMaxEdges) {
+            val randIndex = rand.nextInt(cacheMaxNodes)
+            val idToEvict = indexToId(randIndex)
+            if (idToEvict > 0) {
+              indexToId(randIndex) = 0
+              currRealCapacity -= idToArray(idToEvict).size
+              idToArray(idToEvict) = null
+              // println(Thread.currentThread().getId+"Picked " + randIndex+ " Evicted " + idToEvict + " " + currRealCapacity + " " + cacheMaxEdges + " " + indexToId.deep.mkString("|"))
             }
+            // println("Whiling!")
           }
-          i += 1
-        }
 
-        intArray
+          lock.release
+          intArray
+        }
       }
     }
   }
 
   def debug = {
-    println(currRealCapacity.get + " " + cacheMaxEdges + " " + indexToId)
+    println(currRealCapacity + " " + cacheMaxEdges + " " + indexToId)
   }
 
   def getStats = {
-    (misses.get, hits.get, -1, currRealCapacity.get)
+    (misses, hits, -1, currRealCapacity)
   }
 
 }
