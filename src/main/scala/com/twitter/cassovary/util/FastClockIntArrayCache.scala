@@ -25,18 +25,28 @@ import scala.collection.mutable
  * @param idToIntOffset
  * @param idToNumEdges
  */
-class FastClockIntArrayCache(shardDirectories: Array[String], numShards: Int,
-                              maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
-                              idToIntOffset:Array[Long], idToNumEdges:Array[Int]) extends IntArrayCache {
+object FastClockIntArrayCache {
+  def apply(shardDirectories: Array[String], numShards: Int,
+            maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
+            idToIntOffset:Array[Long], idToNumEdges:Array[Int]): FastClockIntArrayCache = {
 
-  val reader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
+    new FastClockIntArrayCache(shardDirectories, numShards,
+      maxId, cacheMaxNodes, cacheMaxEdges,
+      idToIntOffset, idToNumEdges,
+      new MultiDirEdgeShardsReader(shardDirectories, numShards),
+      new IntArrayCacheNumbers,
+      new FastClockReplace(maxId, cacheMaxNodes, cacheMaxEdges))
+  }
+}
+
+class FastClockReplace(maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long) {
+
   val clockBits = new mutable.BitSet(cacheMaxNodes) // In-use bit
   val idBitSet = new mutable.BitSet(maxId+1) // Quick contains checking
   val indexToId = new Array[Int](cacheMaxNodes) // index -> id mapping
   val idToIndex = new Array[Int](maxId+1) // id -> index mapping
   val idToArray = new Array[Array[Int]](maxId+1) // id -> array mapping
   var pointer = 0 // clock hand
-  var hits, misses: Long = 0
   var currNodeCapacity: Int = 0 // how many nodes are we storing?
   var currRealCapacity: Long = 0 // how many edges are we storing?
 
@@ -46,7 +56,7 @@ class FastClockIntArrayCache(shardDirectories: Array[String], numShards: Int,
    * @param id id to insert into the cache
    * @param array array to insert into the cache
    */
-  private def replace(id:Int, numEdges: Int, array:Array[Int]) = synchronized {
+  def replace(id:Int, numEdges: Int, array:Array[Int]) = synchronized {
     currNodeCapacity += 1
     currRealCapacity += numEdges
     var replaced = false
@@ -77,16 +87,36 @@ class FastClockIntArrayCache(shardDirectories: Array[String], numShards: Int,
       pointer = (pointer + 1) % cacheMaxNodes
     }
   }
+}
+
+class FastClockIntArrayCache private (shardDirectories: Array[String], numShards: Int,
+                              maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
+                              idToIntOffset:Array[Long], idToNumEdges:Array[Int],
+                              val reader: MultiDirEdgeShardsReader,
+                              val numbers: IntArrayCacheNumbers,
+                              val replace: FastClockReplace) extends IntArrayCache {
+
+
+  val idToArray = replace.idToArray
+  val clockBits = replace.clockBits
+  val idToIndex = replace.idToIndex
+  val idBitSet = replace.idBitSet
+
+  def getThreadSafeChild = new FastClockIntArrayCache(shardDirectories, numShards,
+    maxId, cacheMaxNodes, cacheMaxEdges,
+    idToIntOffset, idToNumEdges,
+    new MultiDirEdgeShardsReader(shardDirectories, numShards),
+    numbers, replace)
 
   def get(id: Int) = {
     val a = idToArray(id)
     if (a != null) {
-      hits += 1
+      numbers.hits += 1
       clockBits(idToIndex(id)) = true
       a
     }
     else {
-      misses += 1
+      numbers.misses += 1
       val numEdges = idToNumEdges(id)
       if (numEdges == 0) {
         throw new NullPointerException("FastLRUIntArrayCache idToIntOffsetAndNumEdges %s".format(id))
@@ -97,7 +127,7 @@ class FastClockIntArrayCache(shardDirectories: Array[String], numShards: Int,
         reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id) * 4, numEdges, intArray, 0)
 
         // Evict from cache
-        replace(id, numEdges, intArray)
+        replace.replace(id, numEdges, intArray)
 
         // Return array
         intArray
@@ -115,7 +145,7 @@ class FastClockIntArrayCache(shardDirectories: Array[String], numShards: Int,
   }
 
   def getStats = {
-    (misses, hits, currNodeCapacity, currRealCapacity)
+    (numbers.misses, numbers.hits, replace.currNodeCapacity, replace.currRealCapacity)
   }
 
 }

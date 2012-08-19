@@ -15,7 +15,7 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.StoredGraphDir._
 import java.util.concurrent.{Future, ExecutorService}
-import node.{EmptyDirectedNode, ArrayBasedDirectedNode, CachedDirectedNode}
+import node._
 import com.google.common.annotations.VisibleForTesting
 import com.twitter.ostrich.stats.Stats
 import java.util.concurrent.atomic.AtomicLong
@@ -423,6 +423,14 @@ object CachedDirectedGraph {
     log.info("numNodes is %s, (original) maxId is %s".format(numNodes, maxId))
     log.info("realMaxId is %s, realMaxIdOutEdges is %s".format(realMaxId, realMaxIdOutEdges))
 
+    // Parse out cacheType and nodeType for FastCachedDirectedGraph
+    val (cType, nType) = if (cacheType.contains("_")) {
+      val a = cacheType.split("_")
+      (a(0), a(1))
+    } else {
+      (cacheType, "node")
+    }
+
     // Return our graph!
     cacheType match {
       case "guava" => new GuavaCachedDirectedGraph(nodeIdSetFn, cacheMaxNodes+cacheMaxEdges,
@@ -433,18 +441,10 @@ object CachedDirectedGraph {
         shardDirectories, numShards, idToIntOffset, idToNumEdges,
         maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
         numNodes, numEdges, storedGraphDir)
-      case "lru_na" => new NodeArrayFastCachedDirectedGraph(nodeIdSetFn, cacheMaxNodes, cacheMaxEdges,
+      case _ => FastCachedDirectedGraph(nodeIdSetFn, cacheMaxNodes, cacheMaxEdges,
         shardDirectories, numShards, idToIntOffset, idToNumEdges,
         maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
-        numNodes, numEdges, storedGraphDir, cacheType)
-      case "clock_na" => new NodeArrayFastCachedDirectedGraph(nodeIdSetFn, cacheMaxNodes, cacheMaxEdges,
-        shardDirectories, numShards, idToIntOffset, idToNumEdges,
-        maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
-        numNodes, numEdges, storedGraphDir, cacheType)
-      case _ => new FastCachedDirectedGraph(nodeIdSetFn, cacheMaxNodes, cacheMaxEdges,
-        shardDirectories, numShards, idToIntOffset, idToNumEdges,
-        maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
-        numNodes, numEdges, storedGraphDir, cacheType)
+        numNodes, numEdges, storedGraphDir, cType, nType)
     }
   }
 
@@ -478,60 +478,101 @@ abstract class CachedDirectedGraph(maxId: Int, realMaxId: Int,
       p.println(statsString)
     })
   }
+
+  def getThreadSafeChild: CachedDirectedGraph
 }
 
-/**
- * This is an implementation of the directed graph trait backed by a cache of int arrays
- * (and shards on the disk).
- * Assigns a couple of nodes per thread, and reuses the nodes each time getNodeById
- * is called.
- * Uses much less memory than NodeArray, but...
- * caution! May introduce concurrency issues!
- * @param nodeIdSet nodes with either outgoing or incoming edges
- * @param cacheMaxNodes maximum number of nodes that the cache can store
- * @param cacheMaxEdges maximum number of edges that the cache can store
- * @param shardDirectories where shards live on disk
- * @param numShards number of shards to split into
- * @param idToIntOffset offset into a shard on disk
- * @param idToNumEdges the number of edges
- * @param maxId max node id in the graph
- * @param realMaxId the actual maxId (only different if we renumbered)
- * @param realMaxIdOutEdges the actual maxId among Out Edges (only different if we renumbered)
- * @param nodeCount number of nodes in the graph
- * @param edgeCount number of edges in the graph
- * @param storedGraphDir the graph directions stored
- */
+object FastCachedDirectedGraph {
+  /**
+   * This is an implementation of the directed graph trait backed by a cache of int arrays
+   * (and shards on the disk).
+   * Assigns a couple of nodes per thread, and reuses the nodes each time getNodeById
+   * is called.
+   * Uses much less memory than NodeArray, but...
+   * caution! May introduce concurrency issues!
+   * @param nodeIdSet nodes with either outgoing or incoming edges
+   * @param cacheMaxNodes maximum number of nodes that the cache can store
+   * @param cacheMaxEdges maximum number of edges that the cache can store
+   * @param shardDirectories where shards live on disk
+   * @param numShards number of shards to split into
+   * @param idToIntOffset offset into a shard on disk
+   * @param idToNumEdges the number of edges
+   * @param maxId max node id in the graph
+   * @param realMaxId the actual maxId (only different if we renumbered)
+   * @param realMaxIdOutEdges the actual maxId among Out Edges (only different if we renumbered)
+   * @param nodeCount number of nodes in the graph
+   * @param edgeCount number of edges in the graph
+   * @param storedGraphDir the graph directions stored
+   * @param cacheType
+   * @param nodeType
+   */
+  def apply(nodeIdSet:(Int => Boolean),
+    cacheMaxNodes:Int, cacheMaxEdges:Long,
+    shardDirectories:Array[String], numShards:Int,
+    idToIntOffset:Array[Long], idToNumEdges:Array[Int],
+    maxId: Int, realMaxId: Int, realMaxIdOutEdges: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
+    nodeCount: Int, edgeCount: Long, storedGraphDir: StoredGraphDir,
+    cacheType: String = "lru", nodeType: String = "node"): CachedDirectedGraph = {
+
+    val cache = cacheType match {
+      case "lru" => FastLRUIntArrayCache(shardDirectories, numShards,
+        realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
+      case "bufflru" => new BufferedFastLRUIntArrayCache(shardDirectories, numShards,
+        realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
+      case "lockfreereadlru" => new LocklessReadFastLRUIntArrayCache(shardDirectories, numShards,
+        realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
+      case "random" => RandomizedIntArrayCache(shardDirectories, numShards,
+        realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
+      case "locklessrandom" => LocklessRandomizedIntArrayCache(shardDirectories, numShards,
+        realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
+      case "clock" => FastClockIntArrayCache(shardDirectories, numShards,
+        realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
+      case _ => throw new IllegalArgumentException("Unknown cacheType %s".format(nodeType))
+    }
+
+    nodeType match {
+      case "node" => new FastCachedDirectedGraph (nodeIdSet,
+        cacheMaxNodes, cacheMaxEdges,
+        shardDirectories, numShards,
+        idToIntOffset, idToNumEdges,
+        maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+        nodeCount, edgeCount, storedGraphDir, cache)
+      case "array" => new NodeArrayFastCachedDirectedGraph (nodeIdSet,
+        cacheMaxNodes, cacheMaxEdges,
+        shardDirectories, numShards,
+        idToIntOffset, idToNumEdges,
+        maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+        nodeCount, edgeCount, storedGraphDir, cache)
+      case _ => throw new IllegalArgumentException("Unknown nodeType %s".format(nodeType))
+    }
+  }
+}
+
 class FastCachedDirectedGraph (
     val nodeIdSet:(Int => Boolean),
     val cacheMaxNodes:Int, val cacheMaxEdges:Long,
     val shardDirectories:Array[String], val numShards:Int,
     val idToIntOffset:Array[Long], val idToNumEdges:Array[Int],
     maxId: Int, realMaxId: Int, realMaxIdOutEdges: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
-    val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir, val cacheType: String="lru")
+    val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir, val cache: IntArrayCache)
     extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
 
-  val cache = cacheType match {
-    case "lru" => new FastLRUIntArrayCache(shardDirectories, numShards,
-      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
-    case "bufflru" => new BufferedFastLRUIntArrayCache(shardDirectories, numShards,
-      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
-    case "lockfreereadlru" => new LockfreeReadFastLRUIntArrayCache(shardDirectories, numShards,
-      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
-    case "random" => new RandomizedIntArrayCache(shardDirectories, numShards,
-      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
-    case "locklessrandom" => new LocklessRandomizedIntArrayCache(shardDirectories, numShards,
-      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
-    case _ => new FastClockIntArrayCache(shardDirectories, numShards,
-      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
-  }
+  def getThreadSafeChild = new FastCachedDirectedGraph(nodeIdSet,
+    cacheMaxNodes, cacheMaxEdges,
+    shardDirectories, numShards,
+    idToIntOffset, idToNumEdges,
+    maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+    nodeCount, edgeCount, storedGraphDir, cache.getThreadSafeChild)
 
   def statsString: String = {
     val (misses, hits, currentSize, currRealCapacity) = cache.getStats
     "%s\t%s\t%s\t%s\t%s".format(misses, hits + misses, misses.toDouble / (hits+misses), currentSize, currRealCapacity)
   }
 
-  val nodeMap = new mutable.HashMap[Long,Option[CachedDirectedNode]]()
-  val emptyNodeMap = new mutable.HashMap[Long,Option[CachedDirectedNode]]()
+  val node = CachedDirectedNode(0, 0, storedGraphDir, cache)
+  val someNode = Some(node)
+  val emptyNode = EmptyDirectedNode(0, storedGraphDir)
+  val someEmptyNode = Some(emptyNode)
 
   def getNodeById(id: Int) = { // Stats.time("cached_get_node_by_id")
     if (id > realMaxId || !nodeIdSet(id)) { // Invalid id
@@ -539,76 +580,36 @@ class FastCachedDirectedGraph (
     }
     else {
       val numEdges = try { idToNumEdges(id) } catch { case _ => 0 }
-      try {
-        if (numEdges == 0) {
-          val node = emptyNodeMap(Thread.currentThread().getId)
-          node.get.id = id
-          node
-        }
-        else {
-          val node = nodeMap(Thread.currentThread().getId)
-          node.get.id = id
-          node.get.size = numEdges
-          node
-        }
-      } catch {
-        case e: NoSuchElementException => {
-          val node = Some(CachedDirectedNode(id, numEdges, storedGraphDir, cache))
-          val emptyNode = Some(EmptyDirectedNode(id, storedGraphDir))
-          nodeMap.put(Thread.currentThread().getId, node)
-          emptyNodeMap.put(Thread.currentThread().getId, emptyNode)
-          if (numEdges == 0)
-            emptyNode
-          else
-            node
-        }
+      if (numEdges == 0) {
+        emptyNode.id = id
+        someEmptyNode
+      }
+      else {
+        node.id = id
+        node.size = numEdges
+        someNode
       }
     }
   }
 
 }
 
-/**
- * This is an implementation of the directed graph trait backed by a cache of int arrays
- * (and shards on the disk).
- * Initializes an empty array, and fills it with node objects
- * Consumes significantly more memory than ReusableNode, although it does not suffer from
- * concurrency issues
- * @param nodeIdSet nodes with either outgoing or incoming edges
- * @param cacheMaxNodes maximum number of nodes that the cache can store
- * @param cacheMaxEdges maximum number of edges that the cache can store
- * @param shardDirectories where shards live on disk
- * @param numShards number of shards to split into
- * @param idToIntOffset offset into a shard on disk
- * @param idToNumEdges the number of edges
- * @param maxId max node id in the graph
- * @param realMaxId the actual maxId (only different if we renumbered)
- * @param realMaxIdOutEdges the actual maxId among Out Edges (only different if we renumbered)
- * @param nodeCount number of nodes in the graph
- * @param edgeCount number of edges in the graph
- * @param storedGraphDir the graph directions stored
- */
 class NodeArrayFastCachedDirectedGraph (
     val nodeIdSet:(Int => Boolean),
     val cacheMaxNodes:Int, val cacheMaxEdges:Long,
     val shardDirectories:Array[String], val numShards:Int,
     val idToIntOffset:Array[Long], val idToNumEdges:Array[Int],
     maxId: Int, realMaxId: Int, realMaxIdOutEdges: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
-    val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir, val cacheType: String="lru")
+    val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir,
+    val cache: IntArrayCache)
   extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
 
-  val cache = cacheType match {
-    case "lru_na" => new FastLRUIntArrayCache(shardDirectories, numShards,
-      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
-    case "bufflru_na" => new BufferedFastLRUIntArrayCache(shardDirectories, numShards,
-      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
-    case "lockfreereadlru_na" => new LockfreeReadFastLRUIntArrayCache(shardDirectories, numShards,
-      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
-    case "random_na" => new RandomizedIntArrayCache(shardDirectories, numShards,
-      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
-    case _ => new FastClockIntArrayCache(shardDirectories, numShards,
-      realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
-  }
+  def getThreadSafeChild = new NodeArrayFastCachedDirectedGraph(nodeIdSet,
+    cacheMaxNodes, cacheMaxEdges,
+    shardDirectories, numShards,
+    idToIntOffset, idToNumEdges,
+    maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+    nodeCount, edgeCount, storedGraphDir, cache.getThreadSafeChild)
 
   def statsString: String = {
     val (misses, hits, currentSize, currRealCapacity) = cache.getStats
@@ -621,7 +622,7 @@ class NodeArrayFastCachedDirectedGraph (
   def getNodeById(id: Int) = { // Stats.time("cached_get_node_by_id")
     if (id > realMaxId || !nodeIdSet(id)) // Invalid id
       None
-    else
+    else {
       nodeList(id) match {
         case null => {
           val numEdges = try { idToNumEdges(id) } catch { case _ => 0 }
@@ -638,6 +639,7 @@ class NodeArrayFastCachedDirectedGraph (
         }
         case n => n
       }
+    }
   }
 
 }
@@ -673,6 +675,8 @@ class GuavaCachedDirectedGraph (
 
   val reader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
 
+  def getThreadSafeChild = throw new Exception("No multithreaded Guava Cache")
+
   // Array Loader
   private def loadArray(id: Int):Array[Int] = {
     val numEdges = try { idToNumEdges(id) } catch { case _ => 0 }
@@ -701,6 +705,7 @@ class GuavaCachedDirectedGraph (
   val cache = new IntArrayCache {
     def get(id: Int) = cacheG.get(id)
     def getStats = throw new IllegalArgumentException("Can't call getStats on this!")
+    def getThreadSafeChild = this
   }
 
   def statsString: String = {
@@ -774,6 +779,8 @@ class NodeArrayGuavaCachedDirectedGraph (
 
   val reader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
 
+  def getThreadSafeChild = throw new Exception("No multithreaded Guava Cache")
+
   // Array Loader
   private def loadArray(id: Int):Array[Int] = {
     val numEdges = try { idToNumEdges(id) } catch { case _ => 0 }
@@ -802,6 +809,7 @@ class NodeArrayGuavaCachedDirectedGraph (
   val cache = new IntArrayCache {
     def get(id: Int) = cacheG.get(id)
     def getStats = throw new IllegalArgumentException("Can't call getStats on this!")
+    def getThreadSafeChild = this
   }
 
   def statsString: String = {

@@ -47,6 +47,8 @@ class BufferedFastLRUIntArrayCache(shardDirectories: Array[String], numShards: I
   val reader = rw.readLock
   val writer = rw.writeLock
 
+  def getThreadSafeChild = throw new Exception("Not implemented for BufferedFastLRUIntArrayCache")
+
   def addToBuffer(threadId: Long, index: Int) {
     try {
       moveHeadBufferMap(threadId)(moveHeadBufferMapPointer(threadId)) = index

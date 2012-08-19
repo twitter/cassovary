@@ -17,27 +17,48 @@ import util.Random
 import java.util.concurrent.atomic.{AtomicReference, AtomicLong, AtomicIntegerArray}
 import concurrent.Lock
 
-class RandomizedIntArrayCache(shardDirectories: Array[String], numShards: Int,
-                              maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
-                              idToIntOffset:Array[Long], idToNumEdges:Array[Int]) extends IntArrayCache {
+object RandomizedIntArrayCache {
+  def apply(shardDirectories: Array[String], numShards: Int,
+            maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
+            idToIntOffset:Array[Long], idToNumEdges:Array[Int]) = {
 
-  val reader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
+    new RandomizedIntArrayCache(shardDirectories, numShards,
+      maxId, cacheMaxNodes, cacheMaxEdges,
+      idToIntOffset, idToNumEdges,
+      new MultiDirEdgeShardsReader(shardDirectories, numShards),
+      new Array[Array[Int]](maxId+1),
+      new Array[Int](cacheMaxNodes),
+      new IntArrayCacheNumbers,
+      new Lock)
+  }
+}
+
+class RandomizedIntArrayCache private (shardDirectories: Array[String], numShards: Int,
+                              maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
+                              idToIntOffset:Array[Long], idToNumEdges:Array[Int],
+                              val reader: MultiDirEdgeShardsReader,
+                              val idToArray: Array[Array[Int]],
+                              val indexToId: Array[Int],
+                              val numbers: IntArrayCacheNumbers,
+                              val lock: Lock) extends IntArrayCache {
+
   val rand = new Random
-  val idToArray = new Array[Array[Int]](maxId+1)
-  val indexToId = new Array[Int](cacheMaxNodes)
-  var hits, misses: Long = 0L
-  var currRealCapacity: Long = 0L // how many edges are we storing?
-  var lock = new Lock
+
+  def getThreadSafeChild = new RandomizedIntArrayCache(shardDirectories, numShards,
+    maxId, cacheMaxNodes, cacheMaxEdges,
+    idToIntOffset, idToNumEdges,
+    new MultiDirEdgeShardsReader(shardDirectories, numShards),
+    idToArray, indexToId, numbers, lock)
 
   def get(id: Int) = {
     val a = idToArray(id)
     if (a != null) {
       // println(Thread.currentThread().getId+" Hit! " +id)
-      hits += 1
+      numbers.hits += 1
       a
     }
     else {
-      misses += 1
+      numbers.misses += 1
       val numEdges = idToNumEdges(id)
       if (numEdges == 0) {
         throw new NullPointerException("FastLRUIntArrayCache idToIntOffsetAndNumEdges %s".format(id))
@@ -58,7 +79,7 @@ class RandomizedIntArrayCache(shardDirectories: Array[String], numShards: Int,
         }
         else {
           idToArray(id) = intArray
-          currRealCapacity += numEdges
+          numbers.currRealCapacity += numEdges
 
           // Evict as many elements as we need to get below capacity
 
@@ -68,18 +89,18 @@ class RandomizedIntArrayCache(shardDirectories: Array[String], numShards: Int,
           indexToId(randIndex) = id
           // println(Thread.currentThread().getId+" Added " + id + " received " + idToEvict + " " + currRealCapacity + " " + cacheMaxEdges + " " + indexToId.deep.mkString("|"))
           if (idToEvict > 0 && idToEvict != id) {
-            currRealCapacity -= idToArray(idToEvict).size
+            numbers.currRealCapacity -= idToArray(idToEvict).size
             idToArray(idToEvict) = null
             // println(Thread.currentThread().getId+" Evicted " + idToEvict + " " + currRealCapacity + " " + cacheMaxEdges + " " + indexToId.deep.mkString("|"))
           }
 
           // Subsequent evictions if we're above our limit
-          while (currRealCapacity > cacheMaxEdges) {
+          while (numbers.currRealCapacity > cacheMaxEdges) {
             val randIndex = rand.nextInt(cacheMaxNodes)
             val idToEvict = indexToId(randIndex)
             if (idToEvict > 0) {
               indexToId(randIndex) = 0
-              currRealCapacity -= idToArray(idToEvict).size
+              numbers.currRealCapacity -= idToArray(idToEvict).size
               idToArray(idToEvict) = null
               // println(Thread.currentThread().getId+"Picked " + randIndex+ " Evicted " + idToEvict + " " + currRealCapacity + " " + cacheMaxEdges + " " + indexToId.deep.mkString("|"))
             }
@@ -94,11 +115,11 @@ class RandomizedIntArrayCache(shardDirectories: Array[String], numShards: Int,
   }
 
   def debug = {
-    println(currRealCapacity + " " + cacheMaxEdges + " " + indexToId)
+    println(numbers.currRealCapacity + " " + cacheMaxEdges + " " + indexToId)
   }
 
   def getStats = {
-    (misses, hits, -1, currRealCapacity)
+    (numbers.misses, numbers.hits, -1, numbers.currRealCapacity)
   }
 
 }

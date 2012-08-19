@@ -28,7 +28,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
  * @param idToIntOffset
  * @param idToNumEdges
  */
-class LockfreeReadFastLRUIntArrayCache(shardDirectories: Array[String], numShards: Int,
+class LocklessReadFastLRUIntArrayCache(shardDirectories: Array[String], numShards: Int,
                                        maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
                                        idToIntOffset: Array[Long], idToNumEdges: Array[Int]) extends IntArrayCache {
 
@@ -41,6 +41,8 @@ class LockfreeReadFastLRUIntArrayCache(shardDirectories: Array[String], numShard
 
   val moveHeadBufferMap = new mutable.HashMap[Long, Array[Int]]
   val moveHeadBufferMapPointer = new mutable.HashMap[Long, Int]
+
+  def getThreadSafeChild = throw new Exception("Not implemented for LocklessReadfastLruintarraycache")
 
   def addToBuffer(threadId: Long, index: Int) {
     try {

@@ -2,14 +2,6 @@ package com.twitter.cassovary.util
 
 import org.specs.Specification
 
-/**
- * Created with IntelliJ IDEA.
- * User: jcheng
- * Date: 8/17/12
- * Time: 2:55 PM
- * To change this template use File | Settings | File Templates.
- */
-
 class RandomizedIntArrayCacheSpec extends Specification {
   "RandomizedIntArrayCache" should {
     val offset = Array[Long](0L, 0L, 0L, 0L, 0L)
@@ -24,7 +16,7 @@ class RandomizedIntArrayCacheSpec extends Specification {
     }
 
     "Generally work" in {
-      val ri = new RandomizedIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
+      val ri = RandomizedIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
       ri.get(1)(0) mustEqual 2
       ri.get(1)(1) mustEqual 3
       val (rim, rih, _, _) = ri.getStats
@@ -33,7 +25,7 @@ class RandomizedIntArrayCacheSpec extends Specification {
     }
 
     "Successfully evict nodes" in {
-      val ri = new RandomizedIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
+      val ri = RandomizedIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
       ri.get(1)
       ri.get(2)
       ri.get(1)

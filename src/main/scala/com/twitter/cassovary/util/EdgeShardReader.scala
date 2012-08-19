@@ -15,8 +15,10 @@ package com.twitter.cassovary.util
 
 import java.io.{RandomAccessFile, DataInputStream, FileInputStream}
 import java.nio.ByteBuffer
+import java.util.concurrent.ConcurrentHashMap
 import com.twitter.ostrich.stats.Stats
 import collection.mutable
+import scala.collection.JavaConversions._
 
 /**
  * Read binary integers from a file
@@ -24,9 +26,9 @@ import collection.mutable
  */
 class EdgeShardReader(val filename:String) {
   // Test existence of the file
-  new RandomAccessFile(filename, "r").close() // Alternative - FileOutputStream and DataOutputStream
+  private val rf = new RandomAccessFile(filename, "r") // Alternative - FileOutputStream and DataOutputStream
 
-  private val rfs = new mutable.HashMap[Long, RandomAccessFile]
+  var testId = 0L
 
   /**
    * Read integers from this shard into an array
@@ -36,18 +38,12 @@ class EdgeShardReader(val filename:String) {
    * @param intArrayOffset Integer offset to write into in the integer array
    */
   def readIntegersFromOffsetIntoArray(offset:Long, numEdges:Int, intArray:Array[Int],
-      intArrayOffset:Int):Unit = Stats.time("esr_fullread") {
-
-    val rf: RandomAccessFile = try {
-      rfs(Thread.currentThread().getId)
-    } catch {
-      case e: NoSuchElementException => {
-        val raf = new RandomAccessFile(filename, "r")
-        rfs(Thread.currentThread().getId) = raf
-        raf
-      }
+      intArrayOffset:Int):Unit = Stats.time("esr_fullread") { synchronized {
+    if (testId == 0L)
+      testId = Thread.currentThread().getId
+    else if (testId != Thread.currentThread().getId) {
+      throw new Exception("MultiThread Access! %s %s".format(testId, Thread.currentThread().getId))
     }
-
     rf.seek(offset)
     // Read into byte array, then copy from byte array to given int array
     val bytesToRead = 4 * numEdges
@@ -55,10 +51,10 @@ class EdgeShardReader(val filename:String) {
     rf.read(byteArray, 0, bytesToRead)
     val ib = ByteBuffer.wrap(byteArray).asIntBuffer()
     ib.get(intArray, intArrayOffset, numEdges)
-  }
+  } }
 
   def close = {
-    rfs.foreach { case (k, v) => v.close() }
+    rf.close()
   }
 }
 

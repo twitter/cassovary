@@ -16,39 +16,52 @@ package com.twitter.cassovary.util
 import com.twitter.ostrich.stats.Stats
 import concurrent.Lock
 
-/**
- * Definition of a cache of integer arrays
- */
-trait IntArrayCache {
-  def get(id: Int):Array[Int]
-  def getStats:(Long, Long, Int, Long)
+object FastLRUIntArrayCache {
+  /**
+   * Array-based LRU algorithm implementation
+   * @param shardDirectories
+   * @param numShards
+   * @param maxId
+   * @param cacheMaxNodes
+   * @param cacheMaxEdges
+   * @param idToIntOffset
+   * @param idToNumEdges
+   */
+  def apply(shardDirectories: Array[String], numShards: Int,
+            maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
+            idToIntOffset:Array[Long], idToNumEdges:Array[Int]) = {
+
+    new FastLRUIntArrayCache(shardDirectories, numShards,
+      maxId, cacheMaxNodes, cacheMaxEdges,
+      idToIntOffset, idToNumEdges,
+      new MultiDirEdgeShardsReader(shardDirectories, numShards),
+      new Array[Array[Int]](cacheMaxNodes+1),
+      new LinkedIntIntMap(maxId, cacheMaxNodes),
+      new IntArrayCacheNumbers,
+      new Lock
+    )
+  }
 }
 
-/**
- * Array-based LRU algorithm implementation
- * @param shardDirectories
- * @param numShards
- * @param maxId
- * @param cacheMaxNodes
- * @param cacheMaxEdges
- * @param idToIntOffset
- * @param idToNumEdges
- */
-class FastLRUIntArrayCache(shardDirectories: Array[String], numShards: Int,
-                            maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
-                            idToIntOffset:Array[Long], idToNumEdges:Array[Int]) extends IntArrayCache {
+class FastLRUIntArrayCache private (shardDirectories: Array[String], numShards: Int,
+                           maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
+                           idToIntOffset:Array[Long], idToNumEdges:Array[Int],
+                           val reader: MultiDirEdgeShardsReader,
+                           val indexToArray: Array[Array[Int]],
+                           val linkedMap: LinkedIntIntMap,
+                           val numbers: IntArrayCacheNumbers,
+                           val lock: Lock) extends IntArrayCache {
 
-  val reader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
-  val indexToArray = new Array[Array[Int]](cacheMaxNodes+1)
-  val linkedMap = new LinkedIntIntMap(maxId, cacheMaxNodes)
-  var currRealCapacity: Long = 0
-  var hits, misses: Long = 0
-  val lock = new Lock
+  def getThreadSafeChild = new FastLRUIntArrayCache(shardDirectories, numShards,
+    maxId, cacheMaxNodes, cacheMaxEdges,
+    idToIntOffset, idToNumEdges,
+    new MultiDirEdgeShardsReader(shardDirectories, numShards),
+    indexToArray, linkedMap, numbers, lock)
 
   def get(id: Int):Array[Int] = {
     lock.acquire
     if (linkedMap.contains(id)) {
-      hits += 1
+      numbers.hits += 1
       val idx = linkedMap.getIndexFromId(id)
       linkedMap.moveIndexToHead(idx)
       val a = indexToArray(idx)
@@ -77,12 +90,12 @@ class FastLRUIntArrayCache(shardDirectories: Array[String], numShards: Int,
           a
         }
         else {
-          misses += 1
+          numbers.misses += 1
           // Evict from cache
-          currRealCapacity += numEdges
-          while(linkedMap.getCurrentSize == cacheMaxNodes || currRealCapacity > cacheMaxEdges) {
+          numbers.currRealCapacity += numEdges
+          while(linkedMap.getCurrentSize == cacheMaxNodes || numbers.currRealCapacity > cacheMaxEdges) {
             val oldIndex = linkedMap.getTailIndex
-            currRealCapacity -= indexToArray(oldIndex).length
+            numbers.currRealCapacity -= indexToArray(oldIndex).length
             // indexToArray(oldIndex) = null // Don't need this because it will get overwritten
             linkedMap.removeFromTail()
           }
@@ -97,7 +110,6 @@ class FastLRUIntArrayCache(shardDirectories: Array[String], numShards: Int,
   }
 
   def getStats = {
-    (misses, hits, linkedMap.getCurrentSize, currRealCapacity)
+    (numbers.misses, numbers.hits, linkedMap.getCurrentSize, numbers.currRealCapacity)
   }
-
 }

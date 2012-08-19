@@ -16,47 +16,47 @@ class FastClockIntArrayCacheSpec extends Specification {
     }
 
     "Work" in {
-      val fc = new FastClockIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
+      val fc = FastClockIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
       fc.get(1)(0) mustEqual 2
       fc.get(1)(1) mustEqual 3
-      fc.misses mustEqual 1
-      fc.hits mustEqual 1
+      fc.numbers.misses mustEqual 1
+      fc.numbers.hits mustEqual 1
     }
 
     "Evict Properly" in {
-      val fc = new FastClockIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
+      val fc = FastClockIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
       fc.get(1)
       fc.get(2)
       fc.get(1)
       fc.get(2)
-      fc.misses mustEqual 4
-      fc.hits mustEqual 0
+      fc.numbers.misses mustEqual 4
+      fc.numbers.hits mustEqual 0
       fc.get(4)
       fc.get(2)
       fc.get(4)
-      fc.misses mustEqual 5
-      fc.hits mustEqual 2
+      fc.numbers.misses mustEqual 5
+      fc.numbers.hits mustEqual 2
       fc.get(4)
       fc.get(4)
       fc.get(2)
-      fc.misses mustEqual 5
-      fc.hits mustEqual 5
+      fc.numbers.misses mustEqual 5
+      fc.numbers.hits mustEqual 5
     }
 
     "Is clock and not LRU" in {
-      val fc = new FastClockIntArrayCache(Array("test-shards"), 10, 4, 2, 4, offset, edges)
+      val fc = FastClockIntArrayCache(Array("test-shards"), 10, 4, 2, 4, offset, edges)
       fc.get(1)
       fc.get(2)
       fc.get(1)
 
-      fc.misses mustEqual 2
-      fc.hits mustEqual 1
+      fc.numbers.misses mustEqual 2
+      fc.numbers.hits mustEqual 1
 
       val four = fc.get(4)
       val two = fc.get(2)
 
-      fc.misses mustEqual 3 // Since clock evicts 1 instead of 2
-      fc.hits mustEqual 2
+      fc.numbers.misses mustEqual 3 // Since clock evicts 1 instead of 2
+      fc.numbers.hits mustEqual 2
 
       four(0) mustEqual 1
       two(0) mustEqual 3

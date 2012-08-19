@@ -78,7 +78,6 @@ class PtcExperiment(config: CachedDirectedGraphServerConfig,
       RandomWalkParams(10000, 0.0, Some(2000), Some(1), Some(3), false, GraphDir.OutDir, false, true)
     else
       RandomWalkParams(10000, 0.0, Some(2000), None, Some(3), false, GraphDir.OutDir, false, true)
-    val graphUtils = new GraphUtils(graph)
 
     val nodeFile = new File(nodeList)
     if (nodeFile.isDirectory) {
@@ -86,15 +85,19 @@ class PtcExperiment(config: CachedDirectedGraphServerConfig,
       log.info("Concurrent Start with %s threads!".format(filelist.size))
       val futures = ExecutorUtils.parallelWork[String, Unit](Executors.newFixedThreadPool(filelist.size), filelist,
       { file =>
+        val cGraph = graph.getThreadSafeChild
+        val graphUtils = new GraphUtils(cGraph)
+
         if (verbose)
-          ptcVerbose(nodeList+"/"+file, graph, graphUtils, walkParams)
+          ptcVerbose(nodeList+"/"+file, cGraph, graphUtils, walkParams)
         else
-          ptc(nodeList+"/"+file, graph, graphUtils, walkParams)
+          ptc(nodeList+"/"+file, cGraph, graphUtils, walkParams)
       })
       futures.toArray.map { f => f.asInstanceOf[Future[Unit]].get }
     }
     else {
       log.info("Single Threaded Start!")
+      val graphUtils = new GraphUtils(graph)
       if (verbose)
         ptcVerbose(nodeList, graph, graphUtils, walkParams)
       else
