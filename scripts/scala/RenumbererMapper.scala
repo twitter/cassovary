@@ -30,10 +30,18 @@ object RenumbererMapper {
     }
 
     // RenumbererMapper path/to/mapping path/to/inputIds path/to/outputIndices
-    if (args.size > 2) {
+    if (args.size == 3) {
       println("Reading ids from %s and writing forward mappings to %s...".format(args(1), args(2)))
       FileUtils.readLinesAndPrintToFile(args(1), args(2)) { (l, p) =>
         p.println(renumberer.translate(l.toInt))
+      }
+    }
+
+    if (args.size == 4) {
+      println("Reading ids from %s and writing backward mappings to %s...".format(args(1), args(2)))
+      FileUtils.readLinesAndPrintToFile(args(1), args(2)) { (l, p) =>
+        val splat = l.split("""\s""", 2)
+        p.println("%s\t%s".format(renumberer.reverseTranslate(splat(0).toInt), splat(1)))
       }
     }
 
