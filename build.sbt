@@ -14,6 +14,8 @@ libraryDependencies += "com.twitter" % "ostrich" % "4.8.0"
 
 libraryDependencies += "com.twitter" % "util-core" % "4.0.3"
 
+libraryDependencies += "com.twitter" % "util-logging" % "4.0.3"
+
 libraryDependencies += "com.google.guava" % "guava" % "11.0.2" withSources()
 
 libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided"
@@ -23,6 +25,8 @@ libraryDependencies += "net.lag" % "configgy" % "2.0.2"
 libraryDependencies += "org.mockito" % "mockito-all" % "1.8.5" % "test" withSources()
 
 libraryDependencies += "org.scala-tools.testing" % "specs_2.8.1" % "1.6.6" % "test" withSources()
+
+libraryDependencies += "net.liftweb" % "lift-json_2.8.1" % "2.4"
 
 publishMavenStyle := true
 
