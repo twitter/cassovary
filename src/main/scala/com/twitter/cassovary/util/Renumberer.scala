@@ -65,7 +65,12 @@ class Renumberer(var maxId: Int) {
    */
   def reverseTranslate(index: Int): Int = {
     prepareReverse
-    indexToId(index)
+    try {
+      indexToId(index)
+    }
+    catch {
+      case e: ArrayIndexOutOfBoundsException => 0
+    }
   }
 
   /**
