@@ -19,10 +19,13 @@ import com.google.common.annotations.VisibleForTesting
  * An Int -> Int map with a backing doubly linked list
  * Especially useful in representing a cache
  * The linked list is implemented as a set of arrays and pointers
- * Any id added to the map should be > 0, as 0 indicates a null entry
+ * Any id added to the map must be > 0, as 0 indicates a null entry
+ * If 0 is added, behavior is undefined
  * - O(1) get
  * - O(1) insert
  * - O(1) delete
+ * The size of this map is O(3n+m),
+ * where n is the size of the map, and m is maxId
  * @param maxId the maximum id of any element that will be inserted
  * @param size the size of this map
  */
@@ -87,13 +90,17 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
    * Move an element to the front of the linked list
    * Cases - moving an element in between the head and tail, only 1 element,
    * moving the tail itself, moving the head itself
-   * @param id element to move
+   * @param id id of element to move
    */
   def moveToHead(id: Int) {
     val idx = idToIndex(id)
     moveIndexToHead(idx)
   }
 
+  /**
+   * Move an element at the given cache index to the front of the linked list
+   * @param idx index of element to move
+   */
   def moveIndexToHead(idx: Int) {
     if (idx == 0) throw new IllegalArgumentException("Id doesn't exist in cache!")
 

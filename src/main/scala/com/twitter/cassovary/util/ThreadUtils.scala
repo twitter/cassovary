@@ -15,13 +15,14 @@ package com.twitter.cassovary.util
 
 /**
  * Test whether multiple threads are accessing this function
+ * Useful in debugging synchronization errors caused by threads accessing objects they're not supposed to
  */
 class MultiThreadAccess {
 
   var testId = 0L
 
   /**
-   * Call the test - will fail if multiple threads access this function
+   * The test will fail if multiple threads call this function on a MultiThreadAccess object
    */
   def test {
     if (testId == 0L)

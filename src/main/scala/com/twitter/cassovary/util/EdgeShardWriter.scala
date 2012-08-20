@@ -74,8 +74,9 @@ class EdgeShardWriter(val filename:String) {
 
 /**
  * Class to write nodes to disk, sharding them according to their id
- * @param shardDirectory
- * @param numShards
+ * A node with the id N is written to shard (N mod numShards).txt
+ * @param shardDirectory Directory to write shards to
+ * @param numShards Number of shards to generate
  */
 class EdgeShardsWriter(val shardDirectory:String, val numShards:Int) {
   new File(shardDirectory).mkdirs()
@@ -97,6 +98,12 @@ class EdgeShardsWriter(val shardDirectory:String, val numShards:Int) {
   def close = (0 until numShards).foreach { i => shardWriters(i).close }
 }
 
+/**
+ * Write out shards to different directories
+ * Shard N is written to the directory at index (N mod NUMBER_OF_DIRECTORIES)
+ * @param shardDirectories Array of directory strings
+ * @param numShards Number of shards to generate
+ */
 class MultiDirEdgeShardsWriter(val shardDirectories:Array[String], numShards:Int)
   extends EdgeShardsWriter(shardDirectories(0), numShards) {
 
@@ -107,6 +114,11 @@ class MultiDirEdgeShardsWriter(val shardDirectories:Array[String], numShards:Int
   }
 }
 
+/**
+ * Used by MemEdgeShardsWriter
+ * This is an in-memory shard, which can be written to disk if so desired.
+ * @param shardSize
+ */
 class MemEdgeShardWriter(val shardSize:Int) {
   val shard = new Array[Int](shardSize)
 
@@ -127,10 +139,12 @@ class MemEdgeShardWriter(val shardSize:Int) {
 
 /**
  * Convenience class to write shards to disk in rounds
- * For each round, call startRound to initialize the in-memory shards, then write to memory the appropriate ids
- * i.e. when modded is in roundRange = [modStart,modEnd)
- * using using writeIntegersAtOffsetFromOffset.
- * Call endRound to write the shards to disk
+ * How to use:
+ * 1) For each round, call startRound to initialize the in-memory shards.
+ * 2) Using writeIntegersAtOffsetFromOffset, write to these in-memory shards the nodes of appropriate ids
+ *    - Only ids which when mod numShards, are in roundRange = [modStart, modEnd) are written to an in-memory shard
+ *    - Ex. if the current roundRange is [0, 2) and numShards is 6, ids 1 & 6 are written but id 3 is ignored.
+ * 3) Call endRound to write the shards to disk
  * Do not create multiple copies of this class that write to the same directory - behavior is undefined.
  * @param shardDirectory shard directory
  * @param numShards the number of shards
@@ -196,6 +210,13 @@ class MemEdgeShardsWriter(val shardDirectory:String, val numShards:Int, val shar
 
 }
 
+/**
+ * Version of MemEdgeShardsWriter that writes to multiple directories
+ * @param shardDirectories an array of directory strings
+ * @param numShards the number of shards
+ * @param shardSizes the size of each shard
+ * @param rounds number of write rounds
+ */
 class MultiDirMemEdgeShardsWriter(val shardDirectories:Array[String], numShards:Int, shardSizes:Array[Int], rounds:Int=1)
   extends MemEdgeShardsWriter(shardDirectories(0), numShards, shardSizes, rounds) {
 

@@ -21,6 +21,8 @@ import com.twitter.ostrich.stats.Stats
 
 /**
  * Wrapper around a graph to simulate a cache
+ * Note here that unlike the real CachedDirectedGraph, nodes are "retrieved" from the cache once
+ * getNodeById is called. In CachedDirectedGraph, the cache is accessed only when retrieving neighbor ids.
  * @param g The backing graph (the actual graph)
  * @param cacheSize size of the cache you want
  * @param cacheMechanism what cache mechanism to use ("lru", etc.)
@@ -84,14 +86,9 @@ class GraphWithSimulatedCache(val g: DirectedGraph, val cacheSize: Int,
    */
   def writeStats(fileName: String) = {
     val (misses, accesses, missRatio) = cache.getStats
-    printToFile(new File(fileName))(p => {
+    FileUtils.printToFile(new File(fileName))(p => {
       p.println("%s\t%s\t%s\t%s".format(misses, accesses, missRatio, cache.getCacheFullPoint))
     })
-  }
-
-  private def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
-    val p = new java.io.PrintWriter(f)
-    try { op(p) } finally { p.close() }
   }
 
   def nodeCount = g.nodeCount

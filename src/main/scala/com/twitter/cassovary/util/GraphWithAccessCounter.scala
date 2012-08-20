@@ -18,6 +18,12 @@ import com.twitter.cassovary.graph.DirectedGraph
 import net.lag.logging.Logger
 import java.io._
 
+/**
+ * Graph which keeps an access counter of how many times a given node is accessed.
+ * @param g Input graph
+ * @param statsInterval How often to write stats to disk
+ * @param outputDirectory Directory to write stats to
+ */
 class GraphWithAccessCounter(val g: DirectedGraph, val statsInterval: Long,
                              val outputDirectory: String) extends DirectedGraph {
 
@@ -48,7 +54,7 @@ class GraphWithAccessCounter(val g: DirectedGraph, val statsInterval: Long,
   def iterator = g.iterator
 
   def writeStats(fileName: String) = {
-    printToFile(new File(fileName))(p => {
+    FileUtils.printToFile(new File(fileName))(p => {
       counter.foreach({ i => p.println(i) })
     })
   }
@@ -58,10 +64,4 @@ class GraphWithAccessCounter(val g: DirectedGraph, val statsInterval: Long,
   private def resetStats = { counter = new Array[Int](g.maxNodeId+1) }
 
   def graph = g
-
-  private def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
-    val p = new java.io.PrintWriter(f)
-    try { op(p) } finally { p.close() }
-  }
-
 }

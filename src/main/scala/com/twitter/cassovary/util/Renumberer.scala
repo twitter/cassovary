@@ -16,7 +16,7 @@ package com.twitter.cassovary.util
 import net.lag.logging.Logger
 
 /**
- * Renumbers ids to integers (hereby referred to as indices) in increasing order
+ * Renumber integer ids to integers in increasing order (hereby referred to as indices)
  * Useful when needing to "compact" a list of non-sequential integers
  * @param maxId
  */
@@ -30,6 +30,7 @@ class Renumberer(var maxId: Int) {
    * Translates a given id to a unique identifying index
    * For any Renumberer object, the same id always returns the same index
    * This isn't the case for different Renumberer objects
+   * The renumbered indices start from 1
    * @param id id to map/translate
    * @return index corresponding to id
    */
@@ -61,6 +62,7 @@ class Renumberer(var maxId: Int) {
   /**
    * Given an index, return the id
    * The initial query may take some time as the reverse index is lazily built
+   * Will return 0 if a given id doesn't exist in the index
    * @param index
    */
   def reverseTranslate(index: Int): Int = {

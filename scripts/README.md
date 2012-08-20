@@ -26,7 +26,7 @@ and the node with id 23 has 1 edge to id 18. If an invalid directory is provided
 is undefined.
 
 
-### RenumbererMapper [maxId | path/to/step2xr2.txt] [path/to/inputIds path/to/outputIndices]
+### RenumbererMapper [maxId | path/to/step2xr2.txt] [path/to/inputIds path/to/outputIndices [reverse]]
 
 interactive terminal for the renumberer. If you provide a number as the argument, an empty
 Renumberer is initialized with that capacity. If you provide a path to a Renumberer dump file
@@ -35,6 +35,10 @@ Renumberer is initialized with that capacity. If you provide a path to a Renumbe
 If you provide input and output files, a forward mapping will be computed from integers
 in the inputIds file to that of the outputIndices file. The inputIds file must have only
 a single integer per line.
+
+If you provide a 4th argument, then a reverse mapping will be computed for the first element on each line.
+For example, if there is a mapping from 1 -> 4, and the line "4 3 2 1 0" is provided,
+then the line "1 3 2 1 0" is returned.
 
 
 ### RunCDGServer [config.json]

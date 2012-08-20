@@ -37,6 +37,7 @@ object RenumbererMapper {
       }
     }
 
+    // RenumbererMapper path/to/mapping path/to/inputIds path/to/outputIndices reverse
     if (args.size == 4) {
       println("Reading ids from %s and writing backward mappings to %s...".format(args(1), args(2)))
       FileUtils.readLinesAndPrintToFile(args(1), args(2)) { (l, p) =>

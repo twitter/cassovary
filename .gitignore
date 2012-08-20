@@ -17,6 +17,7 @@ examples/java/classes
 examples/scala/classes
 scripts/scala/classes
 scripts/scala/jars
+scripts/scala/test_*
 temp-*
 test-*
 test.txt

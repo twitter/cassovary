@@ -11,12 +11,13 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-
 package com.twitter.cassovary.util
 import scala.collection.mutable
 import com.google.common.cache._
 
 /**
+ * A Simulated Cache, as the name implies, simulates a caching mechanism, and stores statistics
+ * which can be later queried
  * Basic methods for any simulated cache
  * @param size
  */
@@ -24,8 +25,17 @@ abstract class SimulatedCache(size: Int = 10) {
   var misses, accesses, prevMisses, prevAccesses, fullAccesses: Long = 0
   val one:Short = 1
 
+  /**
+   * "Retrieve" an element of a given size
+   * @param id
+   * @param eltSize
+   */
   def getAndUpdate(id: Int, eltSize: Int):Unit
 
+  /**
+   * "Retrieve" an element of size 1
+   * @param id
+   */
   def getAndUpdate(id: Int):Unit = getAndUpdate(id, one)
   
   // Get cumulative statistics
@@ -38,11 +48,17 @@ abstract class SimulatedCache(size: Int = 10) {
       fullAccesses = accesses
   }
 
+  /**
+   * When did the cache become full?
+   * @return # of accesses when the cache became full
+   */
   def getCacheFullPoint = {
     fullAccesses
   }
 
-  // Return the difference in misses, accesses between now and the last time this function was called
+  /**
+   * Return the difference in misses, accesses between now and the last time this function was called
+   */
   def diffStat = {
     val (m, a) = (misses-prevMisses, accesses-prevAccesses)
     prevMisses = misses
@@ -153,6 +169,11 @@ class MRUSimulatedCache(size: Int = 10) extends SimulatedCache {
   }
 }
 
+/**
+ * Simulated cache using a Clock algorithm
+ * @param maxId
+ * @param size
+ */
 class ClockSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
   // Note that idToCache uses 0 as a null marker, so that 1 must be subtracted from all values
   val idToCache = new Array[Int](maxId+1) // id -> (cache index + 1)

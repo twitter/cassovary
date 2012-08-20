@@ -31,6 +31,13 @@ object PageRank {
     pr.run
   }
 
+  /**
+   * Execute a single iteration of PageRank, given the previous PageRank array
+   * @param graph A DirectedGraph instance
+   * @param params PageRankParams
+   * @param prArray An array of doubles, with indices corresponding to node ids
+   * @return The updated array
+   */
   def iterate(graph:DirectedGraph, params:PageRankParams, prArray: Array[Double]) = {
     val pr = new PageRank(graph, params)
     pr.iterate(prArray: Array[Double])
@@ -44,6 +51,10 @@ private class PageRank(graph:DirectedGraph, params:PageRankParams) {
   val dampingFactor = params.dampingFactor
   val dampingAmount = (1.0D - dampingFactor) / graph.nodeCount
 
+  /**
+   * Execute PageRank with the desired params
+   * @return An array of PageRank values
+   */
   def run: Array[Double] = {
 
     // Let the user know if they can save memory!
@@ -70,6 +81,11 @@ private class PageRank(graph:DirectedGraph, params:PageRankParams) {
     beforePR
   }
 
+  /**
+   * Execute a single iteration of PageRank on the input array
+   * @param beforePR PageRank values before the iteration
+   * @return PageRank values after the iteration
+   */
   def iterate(beforePR: Array[Double]): Array[Double] = {
     val afterPR = new Array[Double](graph.maxNodeId + 1)
 

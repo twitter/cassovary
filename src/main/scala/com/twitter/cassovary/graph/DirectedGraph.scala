@@ -16,6 +16,7 @@ package com.twitter.cassovary.graph
 import GraphDir._
 import scala.util.Random
 import java.io.File
+import com.twitter.cassovary.util.FileUtils
 
 object StoredGraphDir extends Enumeration {
   type StoredGraphDir = Value
@@ -112,11 +113,6 @@ trait DirectedGraph extends Graph with Iterable[Node] {
    * @param parts Number of files to split graph into
    */
   def writeToDirectory(directory: String, parts: Int) = {
-    def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
-      val p = new java.io.PrintWriter(f)
-      try { op(p) } finally { p.close() }
-    }
-
     new File(directory).mkdirs()
 
     val dir = storedGraphDir match {
@@ -132,7 +128,7 @@ trait DirectedGraph extends Graph with Iterable[Node] {
     var j = 0
     (0 until parts).foreach { i =>
       j = 0
-      printToFile(new File(directory+"/part-r-%05d".format(i))) { p =>
+      FileUtils.printToFile(new File(directory+"/part-r-%05d".format(i))) { p =>
         while (it.hasNext && j < nodesPerPart ) {
           val node: Node = it.next
           p.println(node.id + "\t" + node.neighborCount(dir))
@@ -148,7 +144,7 @@ trait DirectedGraph extends Graph with Iterable[Node] {
     assert(nodeCountCheck == this.nodeCount) // Tiny sanity check
 
     // Print done marker summary
-    printToFile(new File(directory+"/done_marker.summ")) { p =>
+    FileUtils.printToFile(new File(directory+"/done_marker.summ")) { p =>
       p.println(this.maxNodeId + "\t" + this.nodeCount + "\t" + this.edgeCount)
     }
 
