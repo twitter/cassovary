@@ -16,7 +16,7 @@ package com.twitter.cassovary.server
 import com.twitter.ostrich.admin.Service
 import com.twitter.cassovary.util.GraphLoader
 import com.twitter.cassovary.graph._
-import experiments.PtcExperiment
+import experiments.{PageRankExperiment, PtcExperiment}
 import com.twitter.cassovary.graph.CachedDirectedGraph
 import net.lag.logging.Logger
 
@@ -49,11 +49,14 @@ class CachedDirectedGraphServer(config: CachedDirectedGraphServerConfig) extends
 //    val graph = GraphLoader("/Volumes/Macintosh HD 2/graph_dump_random",
 //      "lru", 1000000, 200000000, "/tmp/shards_random", 256, 16, true, "/tmp/cached_random")
 
-    config.experiment match {
+    val exp: CachedDirectedGraphServerExperiment = config.experiment match {
       case "ptc" => new PtcExperiment(config, graph)
-      case "generate_random_graph" => generateRandomGraph
+      case "pagerank" => new PageRankExperiment(config, graph)
       case _ => throw new Exception("Invalid experiment name provided")
     }
+
+    log.info("Starting experiment!")
+    exp.run
   }
 
 

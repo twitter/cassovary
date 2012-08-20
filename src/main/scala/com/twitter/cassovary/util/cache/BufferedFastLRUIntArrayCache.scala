@@ -69,11 +69,13 @@ class BufferedFastLRUIntArrayCache private(shardDirectories: Array[String], numS
   }
 
   def emptyBuffer(threadId: Long) = {
-    for (i <- 0 until bufferPointer) {
+    var i = 0
+    while (i < bufferPointer) {
       val id = bufferArray(i)
       if (linkedMap.contains(id)) {
         linkedMap.moveToHead(id)
       }
+      i += 1
     }
     bufferPointer = 0
   }
