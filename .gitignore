@@ -13,4 +13,11 @@ project/build/target
 .DS_Store
 project/plugins/project/
 project/plugins/src_managed/
-examples/classes
+examples/java/classes
+examples/scala/classes
+scripts/scala/classes
+scripts/scala/jars
+scripts/scala/test_*
+temp-*
+test-*
+test.txt

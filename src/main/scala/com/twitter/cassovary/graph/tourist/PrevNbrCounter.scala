@@ -14,7 +14,6 @@
 package com.twitter.cassovary.graph.tourist
 
 import it.unimi.dsi.fastutil.ints._
-import java.util.Comparator
 
 /**
  * A NodeTourist that keeps track of the previous immediate neighbor of a

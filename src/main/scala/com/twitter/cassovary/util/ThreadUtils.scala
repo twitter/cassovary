@@ -11,21 +11,25 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.graph.tourist
-
-import com.twitter.cassovary.graph.Node
+package com.twitter.cassovary.util
 
 /**
- * Represents the processing done when visiting a node.
+ * Test whether multiple threads are accessing this function
+ * Useful in debugging synchronization errors caused by threads accessing objects they're not supposed to
  */
-trait NodeTourist {
-  /**
-   * Visit a node by its {@code id}
-   */
-  def visit(id: Int)
+class MultiThreadAccess {
+
+  var testId = 0L
 
   /**
-   * Visit a {@code node}
+   * The test will fail if multiple threads call this function on a MultiThreadAccess object
    */
-  def visit(node: Node) { visit(node.id) }
+  def test {
+    if (testId == 0L)
+      testId = Thread.currentThread().getId
+    else if (testId != Thread.currentThread().getId) {
+      throw new Exception("MultiThread Access! %s %s".format(testId, Thread.currentThread().getId))
+    }
+  }
+
 }
