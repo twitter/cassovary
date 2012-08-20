@@ -11,36 +11,36 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.util
+package com.twitter.cassovary.util.cache
 
 import util.Random
-import java.util.concurrent.atomic.{AtomicReference, AtomicLong, AtomicIntegerArray}
 import concurrent.Lock
+import com.twitter.cassovary.util.MultiDirEdgeShardsReader
 
 object RandomizedIntArrayCache {
   def apply(shardDirectories: Array[String], numShards: Int,
             maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
-            idToIntOffset:Array[Long], idToNumEdges:Array[Int]) = {
+            idToIntOffset: Array[Long], idToNumEdges: Array[Int]) = {
 
     new RandomizedIntArrayCache(shardDirectories, numShards,
       maxId, cacheMaxNodes, cacheMaxEdges,
       idToIntOffset, idToNumEdges,
       new MultiDirEdgeShardsReader(shardDirectories, numShards),
-      new Array[Array[Int]](maxId+1),
+      new Array[Array[Int]](maxId + 1),
       new Array[Int](cacheMaxNodes),
       new IntArrayCacheNumbers,
       new Lock)
   }
 }
 
-class RandomizedIntArrayCache private (shardDirectories: Array[String], numShards: Int,
-                              maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
-                              idToIntOffset:Array[Long], idToNumEdges:Array[Int],
-                              val reader: MultiDirEdgeShardsReader,
-                              val idToArray: Array[Array[Int]],
-                              val indexToId: Array[Int],
-                              val numbers: IntArrayCacheNumbers,
-                              val lock: Lock) extends IntArrayCache {
+class RandomizedIntArrayCache private(shardDirectories: Array[String], numShards: Int,
+                                      maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
+                                      idToIntOffset: Array[Long], idToNumEdges: Array[Int],
+                                      val reader: MultiDirEdgeShardsReader,
+                                      val idToArray: Array[Array[Int]],
+                                      val indexToId: Array[Int],
+                                      val numbers: IntArrayCacheNumbers,
+                                      val lock: Lock) extends IntArrayCache {
 
   val rand = new Random
 

@@ -15,7 +15,6 @@
 package com.twitter.cassovary.util
 import scala.collection.mutable
 import com.google.common.cache._
-import java.io.IOException
 
 /**
  * Basic methods for any simulated cache

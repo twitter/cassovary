@@ -11,10 +11,11 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.util
+package com.twitter.cassovary.util.cache
 
 import com.twitter.ostrich.stats.Stats
 import concurrent.Lock
+import com.twitter.cassovary.util.{LinkedIntIntMap, MultiDirEdgeShardsReader}
 
 object FastLRUIntArrayCache {
   /**
@@ -29,13 +30,13 @@ object FastLRUIntArrayCache {
    */
   def apply(shardDirectories: Array[String], numShards: Int,
             maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
-            idToIntOffset:Array[Long], idToNumEdges:Array[Int]) = {
+            idToIntOffset: Array[Long], idToNumEdges: Array[Int]) = {
 
     new FastLRUIntArrayCache(shardDirectories, numShards,
       maxId, cacheMaxNodes, cacheMaxEdges,
       idToIntOffset, idToNumEdges,
       new MultiDirEdgeShardsReader(shardDirectories, numShards),
-      new Array[Array[Int]](cacheMaxNodes+1),
+      new Array[Array[Int]](cacheMaxNodes + 1),
       new LinkedIntIntMap(maxId, cacheMaxNodes),
       new IntArrayCacheNumbers,
       new Lock
@@ -43,14 +44,14 @@ object FastLRUIntArrayCache {
   }
 }
 
-class FastLRUIntArrayCache private (shardDirectories: Array[String], numShards: Int,
-                           maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
-                           idToIntOffset:Array[Long], idToNumEdges:Array[Int],
-                           val reader: MultiDirEdgeShardsReader,
-                           val indexToArray: Array[Array[Int]],
-                           val linkedMap: LinkedIntIntMap,
-                           val numbers: IntArrayCacheNumbers,
-                           val lock: Lock) extends IntArrayCache {
+class FastLRUIntArrayCache private(shardDirectories: Array[String], numShards: Int,
+                                   maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
+                                   idToIntOffset: Array[Long], idToNumEdges: Array[Int],
+                                   val reader: MultiDirEdgeShardsReader,
+                                   val indexToArray: Array[Array[Int]],
+                                   val linkedMap: LinkedIntIntMap,
+                                   val numbers: IntArrayCacheNumbers,
+                                   val lock: Lock) extends IntArrayCache {
 
   def getThreadSafeChild = new FastLRUIntArrayCache(shardDirectories, numShards,
     maxId, cacheMaxNodes, cacheMaxEdges,
@@ -58,7 +59,7 @@ class FastLRUIntArrayCache private (shardDirectories: Array[String], numShards: 
     new MultiDirEdgeShardsReader(shardDirectories, numShards),
     indexToArray, linkedMap, numbers, lock)
 
-  def get(id: Int):Array[Int] = {
+  def get(id: Int): Array[Int] = {
     lock.acquire
     if (linkedMap.contains(id)) {
       numbers.hits += 1
@@ -93,7 +94,7 @@ class FastLRUIntArrayCache private (shardDirectories: Array[String], numShards: 
           numbers.misses += 1
           // Evict from cache
           numbers.currRealCapacity += numEdges
-          while(linkedMap.getCurrentSize == cacheMaxNodes || numbers.currRealCapacity > cacheMaxEdges) {
+          while (linkedMap.getCurrentSize == cacheMaxNodes || numbers.currRealCapacity > cacheMaxEdges) {
             val oldIndex = linkedMap.getTailIndex
             numbers.currRealCapacity -= indexToArray(oldIndex).length
             // indexToArray(oldIndex) = null // Don't need this because it will get overwritten

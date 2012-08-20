@@ -20,7 +20,6 @@ import com.twitter.ostrich.stats.Stats
 import it.unimi.dsi.fastutil.ints.IntArrayList
 import it.unimi.dsi.fastutil.objects.ObjectArrayList
 import net.lag.logging.Logger
-import scala.collection.mutable
 import scala.util.Random
 
 /**

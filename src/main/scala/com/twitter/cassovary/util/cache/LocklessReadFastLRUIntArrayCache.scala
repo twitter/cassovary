@@ -11,12 +11,27 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.util
+package com.twitter.cassovary.util.cache
 
 import com.twitter.ostrich.stats.Stats
 import concurrent.Lock
-import scala.collection.mutable
-import java.util.concurrent.locks.ReentrantReadWriteLock
+import com.twitter.cassovary.util.{LinkedIntIntMap, MultiDirEdgeShardsReader}
+
+object LocklessReadFastLRUIntArrayCache {
+  def apply(shardDirectories: Array[String], numShards: Int,
+            maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
+            idToIntOffset: Array[Long], idToNumEdges: Array[Int]): LocklessReadFastLRUIntArrayCache = {
+
+    new LocklessReadFastLRUIntArrayCache(shardDirectories, numShards,
+      maxId, cacheMaxNodes, cacheMaxEdges,
+      idToIntOffset, idToNumEdges,
+      new MultiDirEdgeShardsReader(shardDirectories, numShards),
+      new Array[Array[Int]](maxId + 1),
+      new LinkedIntIntMap(maxId, cacheMaxNodes),
+      new IntArrayCacheNumbers,
+      new Lock)
+  }
+}
 
 /**
  * Array-based LRU algorithm implementation
@@ -28,49 +43,38 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
  * @param idToIntOffset
  * @param idToNumEdges
  */
-class LocklessReadFastLRUIntArrayCache(shardDirectories: Array[String], numShards: Int,
-                                       maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
-                                       idToIntOffset: Array[Long], idToNumEdges: Array[Int]) extends IntArrayCache {
+class LocklessReadFastLRUIntArrayCache private(shardDirectories: Array[String], numShards: Int,
+                                               maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
+                                               idToIntOffset: Array[Long], idToNumEdges: Array[Int],
+                                               val shardReader: MultiDirEdgeShardsReader,
+                                               val idToArray: Array[Array[Int]],
+                                               val linkedMap: LinkedIntIntMap,
+                                               val numbers: IntArrayCacheNumbers,
+                                               val lock: Lock) extends IntArrayCache {
 
-  val shardReader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
-  val idToArray = new Array[Array[Int]](maxId + 1)
-  val linkedMap = new LinkedIntIntMap(maxId, cacheMaxNodes)
-  var currRealCapacity: Long = 0
-  var hits, misses: Long = 0
-  val lock = new Lock
 
-  val moveHeadBufferMap = new mutable.HashMap[Long, Array[Int]]
-  val moveHeadBufferMapPointer = new mutable.HashMap[Long, Int]
+  val bufferArray = new Array[Int](10)
+  var bufferPointer = 0
 
-  def getThreadSafeChild = throw new Exception("Not implemented for LocklessReadfastLruintarraycache")
+  def getThreadSafeChild = new LocklessReadFastLRUIntArrayCache(shardDirectories, numShards,
+    maxId, cacheMaxNodes, cacheMaxEdges,
+    idToIntOffset, idToNumEdges,
+    new MultiDirEdgeShardsReader(shardDirectories, numShards),
+    idToArray, linkedMap, numbers, lock)
 
   def addToBuffer(threadId: Long, index: Int) {
-    try {
-      moveHeadBufferMap(threadId)(moveHeadBufferMapPointer(threadId)) = index
-      moveHeadBufferMapPointer(threadId) += 1
-    }
-    catch {
-      case _ => {
-        moveHeadBufferMap(threadId) = new Array[Int](10)
-        moveHeadBufferMap(threadId)(0) = index
-        moveHeadBufferMapPointer(threadId) = 1
-      }
-    }
+    bufferArray(bufferPointer) = index
+    bufferPointer += 1
   }
 
   def emptyBuffer(threadId: Long) = {
-    if (moveHeadBufferMap.contains(threadId)) {
-      for (i <- 0 until moveHeadBufferMapPointer(threadId)) {
-        val id = moveHeadBufferMap(threadId)(i)
-        if (linkedMap.contains(id)) {
-          linkedMap.moveToHead(id)
-        }
+    for (i <- 0 until bufferPointer) {
+      val id = bufferArray(i)
+      if (linkedMap.contains(id)) {
+        linkedMap.moveToHead(id)
       }
     }
-  }
-
-  def bufferIsFull(threadId: Long) = {
-    moveHeadBufferMapPointer(threadId) == 10
+    bufferPointer = 0
   }
 
   def get(id: Int): Array[Int] = {
@@ -80,7 +84,7 @@ class LocklessReadFastLRUIntArrayCache(shardDirectories: Array[String], numShard
     if (a != null) {
       // Manage buffer
       addToBuffer(threadId, id)
-      if (bufferIsFull(threadId)) {
+      if (bufferPointer == 10) {
         lock.acquire
         emptyBuffer(threadId)
         lock.release
@@ -107,7 +111,7 @@ class LocklessReadFastLRUIntArrayCache(shardDirectories: Array[String], numShard
           intArray
         }
         else {
-          misses += 1
+          numbers.misses += 1
 
           //println("Going to empty...")
           // Empty buffer
@@ -115,10 +119,10 @@ class LocklessReadFastLRUIntArrayCache(shardDirectories: Array[String], numShard
           //println("Emptied buffer!")
 
           // Evict from cache
-          currRealCapacity += numEdges
-          while (linkedMap.getCurrentSize == cacheMaxNodes || currRealCapacity > cacheMaxEdges) {
+          numbers.currRealCapacity += numEdges
+          while (linkedMap.getCurrentSize == cacheMaxNodes || numbers.currRealCapacity > cacheMaxEdges) {
             val oldId = linkedMap.getTailId
-            currRealCapacity -= idToArray(oldId).length
+            numbers.currRealCapacity -= idToArray(oldId).length
             idToArray(oldId) = null // Don't need this because it will get overwritten
             linkedMap.removeFromTail()
           }
@@ -134,7 +138,7 @@ class LocklessReadFastLRUIntArrayCache(shardDirectories: Array[String], numShard
   }
 
   def getStats = {
-    (misses, hits, linkedMap.getCurrentSize, currRealCapacity)
+    (numbers.misses, numbers.hits, linkedMap.getCurrentSize, numbers.currRealCapacity)
   }
 
 }

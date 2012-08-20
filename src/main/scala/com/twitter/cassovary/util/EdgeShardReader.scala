@@ -13,12 +13,9 @@
  */
 package com.twitter.cassovary.util
 
-import java.io.{RandomAccessFile, DataInputStream, FileInputStream}
+import java.io.RandomAccessFile
 import java.nio.ByteBuffer
-import java.util.concurrent.ConcurrentHashMap
 import com.twitter.ostrich.stats.Stats
-import collection.mutable
-import scala.collection.JavaConversions._
 
 /**
  * Read binary integers from a file
@@ -28,8 +25,6 @@ class EdgeShardReader(val filename:String) {
   // Test existence of the file
   private val rf = new RandomAccessFile(filename, "r") // Alternative - FileOutputStream and DataOutputStream
 
-  var testId = 0L
-
   /**
    * Read integers from this shard into an array
    * @param offset Byte offset in this shard
@@ -38,12 +33,7 @@ class EdgeShardReader(val filename:String) {
    * @param intArrayOffset Integer offset to write into in the integer array
    */
   def readIntegersFromOffsetIntoArray(offset:Long, numEdges:Int, intArray:Array[Int],
-      intArrayOffset:Int):Unit = Stats.time("esr_fullread") { synchronized {
-    if (testId == 0L)
-      testId = Thread.currentThread().getId
-    else if (testId != Thread.currentThread().getId) {
-      throw new Exception("MultiThread Access! %s %s".format(testId, Thread.currentThread().getId))
-    }
+      intArrayOffset:Int):Unit = Stats.time("esr_fullread") {
     rf.seek(offset)
     // Read into byte array, then copy from byte array to given int array
     val bytesToRead = 4 * numEdges
@@ -51,7 +41,7 @@ class EdgeShardReader(val filename:String) {
     rf.read(byteArray, 0, bytesToRead)
     val ib = ByteBuffer.wrap(byteArray).asIntBuffer()
     ib.get(intArray, intArrayOffset, numEdges)
-  } }
+  }
 
   def close = {
     rf.close()
@@ -60,6 +50,7 @@ class EdgeShardReader(val filename:String) {
 
 /**
  * Read binary integers from shards
+ * Shards must be in the form N.txt, where N is from 0 to numShards-1
  * @param shardDirectory
  * @param numShards
  */
@@ -85,6 +76,17 @@ class EdgeShardsReader(val shardDirectory:String, val numShards:Int) {
   def close = (0 until numShards).foreach { i => shardReaders(i).close }
 }
 
+/**
+ * Read binary integers from shards located in multiple directories
+ * Shards must be in the form N.txt, where N is from 0 to numShards-1
+ * Shard N is accessed from the directory at index (N mod NUMBER_OF_DIRECTORIES)
+ * I.e., for some shard N.txt, N must be located in the directory at index N mod NUMBER_OF_DIRECTORIES
+ * For example, if 4 directories are provided, shard 6.txt must be located in the third directory
+ * An easy way if you don't really care about disk space is to simply replicate the whole original shard directory
+ * to all desired directories
+ * @param shardDirectories Array of shard directories
+ * @param numShards Total number of shards
+ */
 class MultiDirEdgeShardsReader(val shardDirectories: Array[String], val numShards: Int) {
   val shardReaders = (0 until numShards).map { i =>
     new EdgeShardReader("%s/%s.txt".format(shardDirectories(i % shardDirectories.length), i))

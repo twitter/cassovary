@@ -11,13 +11,27 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.util
+package com.twitter.cassovary.util.cache
 
 import com.twitter.ostrich.stats.Stats
-import concurrent.Lock
-import scala.collection.mutable
-import util.control.Exception
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import com.twitter.cassovary.util.{LinkedIntIntMap, MultiDirEdgeShardsReader}
+
+object BufferedFastLRUIntArrayCache {
+  def apply(shardDirectories: Array[String], numShards: Int,
+            maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
+            idToIntOffset: Array[Long], idToNumEdges: Array[Int]): BufferedFastLRUIntArrayCache = {
+
+    new BufferedFastLRUIntArrayCache(shardDirectories, numShards,
+      maxId, cacheMaxNodes, cacheMaxEdges,
+      idToIntOffset, idToNumEdges,
+      new MultiDirEdgeShardsReader(shardDirectories, numShards),
+      new Array[Array[Int]](cacheMaxNodes + 1),
+      new LinkedIntIntMap(maxId, cacheMaxNodes),
+      new IntArrayCacheNumbers,
+      new ReentrantReadWriteLock)
+  }
+}
 
 /**
  * Array-based LRU algorithm implementation
@@ -29,68 +43,54 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
  * @param idToIntOffset
  * @param idToNumEdges
  */
-class BufferedFastLRUIntArrayCache(shardDirectories: Array[String], numShards: Int,
-                           maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
-                           idToIntOffset:Array[Long], idToNumEdges:Array[Int]) extends IntArrayCache {
+class BufferedFastLRUIntArrayCache private(shardDirectories: Array[String], numShards: Int,
+                                           maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
+                                           idToIntOffset: Array[Long], idToNumEdges: Array[Int],
+                                           val shardReader: MultiDirEdgeShardsReader,
+                                           val indexToArray: Array[Array[Int]],
+                                           val linkedMap: LinkedIntIntMap,
+                                           val numbers: IntArrayCacheNumbers,
+                                           val rw: ReentrantReadWriteLock) extends IntArrayCache {
 
-  val shardReader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
-  val indexToArray = new Array[Array[Int]](cacheMaxNodes+1)
-  val linkedMap = new LinkedIntIntMap(maxId, cacheMaxNodes)
-  var currRealCapacity: Long = 0
-  var hits, misses: Long = 0
-  val lock = new Lock
-
-  val moveHeadBufferMap = new mutable.HashMap[Long,Array[Int]]
-  val moveHeadBufferMapPointer = new mutable.HashMap[Long,Int]
-
-  val rw = new ReentrantReadWriteLock
+  val bufferArray = new Array[Int](10)
+  var bufferPointer = 0
   val reader = rw.readLock
   val writer = rw.writeLock
 
-  def getThreadSafeChild = throw new Exception("Not implemented for BufferedFastLRUIntArrayCache")
+  def getThreadSafeChild = new BufferedFastLRUIntArrayCache(shardDirectories, numShards,
+    maxId, cacheMaxNodes, cacheMaxEdges,
+    idToIntOffset, idToNumEdges,
+    new MultiDirEdgeShardsReader(shardDirectories, numShards),
+    indexToArray, linkedMap, numbers, rw)
 
   def addToBuffer(threadId: Long, index: Int) {
-    try {
-      moveHeadBufferMap(threadId)(moveHeadBufferMapPointer(threadId)) = index
-      moveHeadBufferMapPointer(threadId) += 1
-    }
-    catch {
-      case _ => {
-        moveHeadBufferMap(threadId) = new Array[Int](10)
-        moveHeadBufferMap(threadId)(0) = index
-        moveHeadBufferMapPointer(threadId) = 1
-      }
-    }
+    bufferArray(bufferPointer) = index
+    bufferPointer += 1
   }
 
   def emptyBuffer(threadId: Long) = {
-    if (moveHeadBufferMap.contains(threadId)) {
-      for (i <- 0 until moveHeadBufferMapPointer(threadId)) {
-        val id = moveHeadBufferMap(threadId)(i)
-        if (linkedMap.contains(id)) {
-          linkedMap.moveToHead(id)
-        }
+    for (i <- 0 until bufferPointer) {
+      val id = bufferArray(i)
+      if (linkedMap.contains(id)) {
+        linkedMap.moveToHead(id)
       }
     }
+    bufferPointer = 0
   }
 
-  def bufferIsFull(threadId: Long) = {
-    moveHeadBufferMapPointer(threadId) == 10
-  }
-
-  def get(id: Int):Array[Int] = {
+  def get(id: Int): Array[Int] = {
     val threadId = Thread.currentThread.getId
     reader.lock()
 
     if (linkedMap.contains(id)) {
-      hits += 1
+      numbers.hits += 1
       val idx = linkedMap.getIndexFromId(id)
       val a = indexToArray(idx)
       reader.unlock()
 
       // Add to buffer and empty if it's full
       addToBuffer(threadId, id)
-      if (bufferIsFull(threadId)) {
+      if (bufferPointer == 10) {
         writer.lock()
         emptyBuffer(threadId)
         writer.unlock()
@@ -118,7 +118,7 @@ class BufferedFastLRUIntArrayCache(shardDirectories: Array[String], numShards: I
           intArray
         }
         else {
-          misses += 1
+          numbers.misses += 1
 
           //println("Going to empty...")
 
@@ -128,10 +128,10 @@ class BufferedFastLRUIntArrayCache(shardDirectories: Array[String], numShards: I
           //println("Emptied buffer!")
 
           // Evict from cache
-          currRealCapacity += numEdges
-          while(linkedMap.getCurrentSize == cacheMaxNodes || currRealCapacity > cacheMaxEdges) {
+          numbers.currRealCapacity += numEdges
+          while (linkedMap.getCurrentSize == cacheMaxNodes || numbers.currRealCapacity > cacheMaxEdges) {
             val oldIndex = linkedMap.getTailIndex
-            currRealCapacity -= indexToArray(oldIndex).length
+            numbers.currRealCapacity -= indexToArray(oldIndex).length
             // indexToArray(oldIndex) = null // Don't need this because it will get overwritten
             linkedMap.removeFromTail()
           }
@@ -147,7 +147,7 @@ class BufferedFastLRUIntArrayCache(shardDirectories: Array[String], numShards: I
   }
 
   def getStats = {
-    (misses, hits, linkedMap.getCurrentSize, currRealCapacity)
+    (numbers.misses, numbers.hits, linkedMap.getCurrentSize, numbers.currRealCapacity)
   }
 
 }

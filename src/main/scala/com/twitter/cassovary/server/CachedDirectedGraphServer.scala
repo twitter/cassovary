@@ -14,20 +14,10 @@
 package com.twitter.cassovary.server
 
 import com.twitter.ostrich.admin.Service
-import com.twitter.cassovary.util.{FileUtils, ExecutorUtils, GraphLoader}
-import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
+import com.twitter.cassovary.util.GraphLoader
 import com.twitter.cassovary.graph._
 import experiments.PtcExperiment
-import scala.util.Random
-import scala.collection.JavaConversions._
-import scala.io.Source
-import java.io.File
-import com.twitter.cassovary.graph.GraphDir
 import com.twitter.cassovary.graph.CachedDirectedGraph
-import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
-import com.twitter.cassovary.graph.GraphUtils
-import scala.Some
-import java.util.concurrent.{Future, Executors}
 import net.lag.logging.Logger
 
 abstract class CachedDirectedGraphServerExperiment(val config: CachedDirectedGraphServerConfig,

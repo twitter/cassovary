@@ -25,6 +25,7 @@ import collection.mutable
 import net.lag.logging.Logger
 import com.google.common.cache.{LoadingCache, CacheLoader, Weigher, CacheBuilder}
 import com.twitter.cassovary.util._
+import cache._
 import scala.Some
 
 private case class MaxIdsEdges(localMaxId:Int, localNodeWithoutOutEdgesMaxId:Int, numEdges:Int, nodeCount:Int)
@@ -503,8 +504,8 @@ object FastCachedDirectedGraph {
    * @param nodeCount number of nodes in the graph
    * @param edgeCount number of edges in the graph
    * @param storedGraphDir the graph directions stored
-   * @param cacheType
-   * @param nodeType
+   * @param cacheType the type of cache (clock, lru, random, etc.)
+   * @param nodeType how nodes are returned (node, array, etc.)
    */
   def apply(nodeIdSet:(Int => Boolean),
     cacheMaxNodes:Int, cacheMaxEdges:Long,
@@ -517,9 +518,9 @@ object FastCachedDirectedGraph {
     val cache = cacheType match {
       case "lru" => FastLRUIntArrayCache(shardDirectories, numShards,
         realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
-      case "bufflru" => new BufferedFastLRUIntArrayCache(shardDirectories, numShards,
+      case "bufflru" => BufferedFastLRUIntArrayCache(shardDirectories, numShards,
         realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
-      case "lockfreereadlru" => new LocklessReadFastLRUIntArrayCache(shardDirectories, numShards,
+      case "lockfreereadlru" => LocklessReadFastLRUIntArrayCache(shardDirectories, numShards,
         realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)
       case "random" => RandomizedIntArrayCache(shardDirectories, numShards,
         realMaxIdOutEdges, cacheMaxNodes, cacheMaxEdges, idToIntOffset, idToNumEdges)

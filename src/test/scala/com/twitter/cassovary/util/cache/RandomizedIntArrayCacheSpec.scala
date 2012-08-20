@@ -1,6 +1,7 @@
-package com.twitter.cassovary.util
+package com.twitter.cassovary.util.cache
 
 import org.specs.Specification
+import com.twitter.cassovary.util.EdgeShardsWriter
 
 class RandomizedIntArrayCacheSpec extends Specification {
   "RandomizedIntArrayCache" should {

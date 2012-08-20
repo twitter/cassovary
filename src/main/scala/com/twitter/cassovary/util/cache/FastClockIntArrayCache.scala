@@ -11,9 +11,10 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.util
+package com.twitter.cassovary.util.cache
 
 import scala.collection.mutable
+import com.twitter.cassovary.util.MultiDirEdgeShardsReader
 
 /**
  * Array-based Clock replacement algorithm implementation
@@ -28,7 +29,7 @@ import scala.collection.mutable
 object FastClockIntArrayCache {
   def apply(shardDirectories: Array[String], numShards: Int,
             maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
-            idToIntOffset:Array[Long], idToNumEdges:Array[Int]): FastClockIntArrayCache = {
+            idToIntOffset: Array[Long], idToNumEdges: Array[Int]): FastClockIntArrayCache = {
 
     new FastClockIntArrayCache(shardDirectories, numShards,
       maxId, cacheMaxNodes, cacheMaxEdges,
@@ -41,13 +42,20 @@ object FastClockIntArrayCache {
 
 class FastClockReplace(maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long) {
 
-  val clockBits = new mutable.BitSet(cacheMaxNodes) // In-use bit
-  val idBitSet = new mutable.BitSet(maxId+1) // Quick contains checking
-  val indexToId = new Array[Int](cacheMaxNodes) // index -> id mapping
-  val idToIndex = new Array[Int](maxId+1) // id -> index mapping
-  val idToArray = new Array[Array[Int]](maxId+1) // id -> array mapping
-  var pointer = 0 // clock hand
-  var currNodeCapacity: Int = 0 // how many nodes are we storing?
+  val clockBits = new mutable.BitSet(cacheMaxNodes)
+  // In-use bit
+  val idBitSet = new mutable.BitSet(maxId + 1)
+  // Quick contains checking
+  val indexToId = new Array[Int](cacheMaxNodes)
+  // index -> id mapping
+  val idToIndex = new Array[Int](maxId + 1)
+  // id -> index mapping
+  val idToArray = new Array[Array[Int]](maxId + 1)
+  // id -> array mapping
+  var pointer = 0
+  // clock hand
+  var currNodeCapacity: Int = 0
+  // how many nodes are we storing?
   var currRealCapacity: Long = 0 // how many edges are we storing?
 
   /**
@@ -56,11 +64,11 @@ class FastClockReplace(maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long) {
    * @param id id to insert into the cache
    * @param array array to insert into the cache
    */
-  def replace(id:Int, numEdges: Int, array:Array[Int]) = synchronized {
+  def replace(id: Int, numEdges: Int, array: Array[Int]) = synchronized {
     currNodeCapacity += 1
     currRealCapacity += numEdges
     var replaced = false
-    while(currNodeCapacity > cacheMaxNodes || currRealCapacity > cacheMaxEdges || !replaced) {
+    while (currNodeCapacity > cacheMaxNodes || currRealCapacity > cacheMaxEdges || !replaced) {
       // Find a slot which can be evicted
       while (clockBits(pointer) == true) {
         clockBits(pointer) = false
@@ -89,12 +97,12 @@ class FastClockReplace(maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long) {
   }
 }
 
-class FastClockIntArrayCache private (shardDirectories: Array[String], numShards: Int,
-                              maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
-                              idToIntOffset:Array[Long], idToNumEdges:Array[Int],
-                              val reader: MultiDirEdgeShardsReader,
-                              val numbers: IntArrayCacheNumbers,
-                              val replace: FastClockReplace) extends IntArrayCache {
+class FastClockIntArrayCache private(shardDirectories: Array[String], numShards: Int,
+                                     maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
+                                     idToIntOffset: Array[Long], idToNumEdges: Array[Int],
+                                     val reader: MultiDirEdgeShardsReader,
+                                     val numbers: IntArrayCacheNumbers,
+                                     val replace: FastClockReplace) extends IntArrayCache {
 
 
   val idToArray = replace.idToArray

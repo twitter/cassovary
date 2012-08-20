@@ -17,7 +17,7 @@ import com.google.common.annotations.VisibleForTesting
 import com.google.common.util.concurrent.MoreExecutors
 import com.twitter.cassovary.graph.node._
 import com.twitter.cassovary.graph.StoredGraphDir._
-import com.twitter.cassovary.util.{ClockSimulatedCache, MRUSimulatedCache, SimulatedCache, ExecutorUtils}
+import com.twitter.cassovary.util.ExecutorUtils
 import com.twitter.ostrich.stats.Stats
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ExecutorService, Future}

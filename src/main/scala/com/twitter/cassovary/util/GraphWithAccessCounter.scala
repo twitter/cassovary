@@ -14,7 +14,7 @@
 
 package com.twitter.cassovary.util
 
-import com.twitter.cassovary.graph.{Graph,DirectedGraph}
+import com.twitter.cassovary.graph.DirectedGraph
 import net.lag.logging.Logger
 import java.io._
 

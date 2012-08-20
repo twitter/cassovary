@@ -1,4 +1,4 @@
-package com.twitter.cassovary.util
+package com.twitter.cassovary.util.cache
 
 /**
  * Definition of a cache of integer arrays
@@ -9,7 +9,7 @@ trait IntArrayCache {
    * @param id
    * @return
    */
-  def get(id: Int):Array[Int]
+  def get(id: Int): Array[Int]
 
   /**
    * Get statistics, namely
@@ -19,7 +19,7 @@ trait IntArrayCache {
    * # of edges in the cache
    * @return
    */
-  def getStats:(Long, Long, Int, Long)
+  def getStats: (Long, Long, Int, Long)
 
   /**
    * Spawn a child class that accesses the same cache in a thread-safe way
@@ -27,6 +27,7 @@ trait IntArrayCache {
    */
   def getThreadSafeChild: IntArrayCache
 }
+
 
 /**
  * Facilitate passing around of primitives

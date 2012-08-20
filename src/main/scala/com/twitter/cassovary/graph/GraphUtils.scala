@@ -20,8 +20,6 @@ import it.unimi.dsi.fastutil.ints.{Int2IntMap, Int2ObjectMap}
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 import net.lag.logging.Logger
 import scala.util.Random
-import com.twitter.cassovary.util.GraphWithSimulatedCache
-import collection.mutable
 
 /**
  * This class contains some common graph utilities and convenience functions.

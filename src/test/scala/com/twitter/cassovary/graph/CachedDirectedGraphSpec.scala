@@ -14,13 +14,13 @@
 package com.twitter.cassovary.graph
 
 import org.specs.Specification
-import com.twitter.cassovary.util.{ExecutorUtils, FastClockIntArrayCache, FastLRUIntArrayCache}
+import com.twitter.cassovary.util.ExecutorUtils
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
-import com.google.common.util.concurrent.MoreExecutors
 import java.util.concurrent._
 import scala.util.Random
 import com.twitter.io.Files
 import java.io.File
+import com.twitter.cassovary.util.cache.{FastClockIntArrayCache, FastLRUIntArrayCache}
 
 class CachedDirectedGraphSpec extends Specification {
   var graph: CachedDirectedGraph = _
@@ -539,19 +539,19 @@ class CachedDirectedGraphSpec extends Specification {
      }
   }
 
-  // "BufferedFastLRU-based graph containing only out edges" should {
-  //   "Do a concurrent random walk properly" in {
-  //     graph = makeRenumberedBufferedFastLRUGraph(StoredGraphDir.OnlyOut)
-  //     concurrentTest(graph, edgeMap, reachability)
-  //   }
-  // }
+  "BufferedFastLRU-based graph containing only out edges" should {
+     "Do a concurrent random walk properly" in {
+       graph = makeRenumberedBufferedFastLRUGraph(StoredGraphDir.OnlyOut)
+       concurrentTest(graph, edgeMap, reachability)
+     }
+  }
 
-  // "LockfreeReadFastLRU-based graph containing only out edges" should {
-  //   "Do a concurrent random walk properly" in {
-  //     graph = makeLockfreeReadFastLRUGraph(StoredGraphDir.OnlyOut)
-  //     concurrentTest(graph, edgeMap, reachability)
-  //   }
-  // }
+  "LocklessReadFastLRU-based graph containing only out edges" should {
+     "Do a concurrent random walk properly" in {
+       graph = makeLockfreeReadFastLRUGraph(StoredGraphDir.OnlyOut)
+       concurrentTest(graph, edgeMap, reachability)
+     }
+  }
 
   "RandomizedFastLRU-based graph containing only out edges" should {
      "Do a concurrent random walk properly" in {
@@ -563,9 +563,7 @@ class CachedDirectedGraphSpec extends Specification {
   "LocklessRandomizedFastLRU-based graph containing only out edges" should {
     "Do a concurrent random walk properly" in {
       graph = makeLocklessRandomizedFastLRUGraph(StoredGraphDir.OnlyOut)
-      (0 to 20).foreach { i =>
-        concurrentTest(graph, edgeMap, reachability)
-      }
+      concurrentTest(graph, edgeMap, reachability)
     }
   }
 

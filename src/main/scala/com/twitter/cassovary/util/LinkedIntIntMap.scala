@@ -14,7 +14,6 @@
 package com.twitter.cassovary.util
 
 import com.google.common.annotations.VisibleForTesting
-import collection.mutable
 
 /**
  * An Int -> Int map with a backing doubly linked list

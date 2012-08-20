@@ -11,18 +11,19 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.util
+package com.twitter.cassovary.util.cache
 
 import util.Random
 import java.util.concurrent.atomic.{AtomicReferenceArray, AtomicLong, AtomicIntegerArray}
+import com.twitter.cassovary.util.MultiDirEdgeShardsReader
 
 object LocklessRandomizedIntArrayCache {
   def apply(shardDirectories: Array[String], numShards: Int,
             maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
-            idToIntOffset:Array[Long], idToNumEdges:Array[Int]) = {
+            idToIntOffset: Array[Long], idToNumEdges: Array[Int]) = {
     val reader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
     val rand = new Random
-    val idToArray = new AtomicReferenceArray[Array[Int]](maxId+1)
+    val idToArray = new AtomicReferenceArray[Array[Int]](maxId + 1)
     val indexToId = new AtomicIntegerArray(cacheMaxNodes)
     var hits, misses: Long = 0L
     var currRealCapacity: AtomicLong = new AtomicLong // how many edges are we storing?
@@ -31,7 +32,7 @@ object LocklessRandomizedIntArrayCache {
       maxId, cacheMaxNodes, cacheMaxEdges,
       idToIntOffset, idToNumEdges,
       new MultiDirEdgeShardsReader(shardDirectories, numShards),
-      new AtomicReferenceArray[Array[Int]](maxId+1),
+      new AtomicReferenceArray[Array[Int]](maxId + 1),
       new AtomicIntegerArray(cacheMaxNodes),
       new IntArrayCacheNumbers,
       new AtomicLong
@@ -39,14 +40,14 @@ object LocklessRandomizedIntArrayCache {
   }
 }
 
-class LocklessRandomizedIntArrayCache private (shardDirectories: Array[String], numShards: Int,
-                              maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
-                              idToIntOffset:Array[Long], idToNumEdges:Array[Int],
-                              val reader: MultiDirEdgeShardsReader,
-                              val idToArray: AtomicReferenceArray[Array[Int]],
-                              val indexToId: AtomicIntegerArray,
-                              val numbers: IntArrayCacheNumbers,
-                              val currRealCapacity: AtomicLong) extends IntArrayCache {
+class LocklessRandomizedIntArrayCache private(shardDirectories: Array[String], numShards: Int,
+                                              maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
+                                              idToIntOffset: Array[Long], idToNumEdges: Array[Int],
+                                              val reader: MultiDirEdgeShardsReader,
+                                              val idToArray: AtomicReferenceArray[Array[Int]],
+                                              val indexToId: AtomicIntegerArray,
+                                              val numbers: IntArrayCacheNumbers,
+                                              val currRealCapacity: AtomicLong) extends IntArrayCache {
 
   val mappy = Map(0 -> 0, 1 -> 3, 2 -> 1, 3 -> 1, 4 -> 0, 5 -> 1, 6 -> 4)
 
@@ -88,7 +89,8 @@ class LocklessRandomizedIntArrayCache private (shardDirectories: Array[String], 
           // Location to place new id must be constant so that we don't evict an id multiple times
           val idToEvict = indexToId.getAndSet(id % cacheMaxNodes, id)
           // println(Thread.currentThread().getId+" Added " + id + " received " + idToEvict + " " + numbers.currRealCapacity + " " + cacheMaxEdges + " " + indexToId)
-          if (idToEvict > 0) { // Deference idToEvict only if they aren't the same
+          if (idToEvict > 0) {
+            // Deference idToEvict only if they aren't the same
             if (idToEvict != id) {
               val array = idToArray.getAndSet(idToEvict, null)
               if (array != null) {
@@ -104,7 +106,7 @@ class LocklessRandomizedIntArrayCache private (shardDirectories: Array[String], 
             // println(Thread.currentThread().getId+" Evicted " + idToEvict + " " + numbers.currRealCapacity + " " + cacheMaxEdges + " " + indexToId)
           }
 
-        
+
 
           // Then keep evicting until we go under the capacity limit
           var whileCount = 0
@@ -121,7 +123,7 @@ class LocklessRandomizedIntArrayCache private (shardDirectories: Array[String], 
               }
               whileCount += 1
               if (whileCount % 1000 == 0) {
-                println(Thread.currentThread().getId+" Stuck " + currRealCapacity + " " + cacheMaxEdges + " " + indexToId)
+                println(Thread.currentThread().getId + " Stuck " + currRealCapacity + " " + cacheMaxEdges + " " + indexToId)
               }
             }
           }
