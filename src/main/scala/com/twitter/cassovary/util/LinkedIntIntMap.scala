@@ -125,11 +125,14 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
   }
 
   /**
-   * Add an element to the head, removing elements if there are too many
+   * Add an element to the head
+   * Behavior is undefined if the same id is added several times to the head
+   * Will throw an error if the cache is full
    * Cases - adding to 0 element, 1 element, >1 element list
    * @param id
    */
   def addToHead(id: Int) {
+    // TODO Consider checking if the id already exists
     if (currentSize == size) throw new IllegalArgumentException("Cache has no space!")
 
     val prevHeadIdx = head
@@ -169,6 +172,16 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
    */
   def getIndexFromId(id: Int): Int = idToIndex(id)
 
+  /**
+   * Get the id at the head (most recently accessed)
+   * @return
+   */
+  def getHeadId: Int = indexToId(head)
+
+  /**
+   * Get the id at the tail (next to be evicted)
+   * @return
+   */
   def getTailId: Int = indexToId(tail)
 
   /**
