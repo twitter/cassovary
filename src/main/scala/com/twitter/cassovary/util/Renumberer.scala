@@ -18,6 +18,7 @@ import net.lag.logging.Logger
 /**
  * Renumber integer ids to integers in increasing order (hereby referred to as indices)
  * Useful when needing to "compact" a list of non-sequential integers
+ * Any translations must be on ids >= 1, or the reverse mapping is undefined.
  * @param maxId
  */
 class Renumberer(var maxId: Int) {
