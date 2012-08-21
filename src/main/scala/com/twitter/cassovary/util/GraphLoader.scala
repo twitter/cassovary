@@ -17,6 +17,7 @@ import com.twitter.cassovary.graph.{StoredGraphDir, NodeIdEdgesMaxId, CachedDire
 import io.Source
 import java.io.File
 import java.util.concurrent.Executors
+import readwrite.AdjacencyListGraphReader
 
 /**
  * Loads a graph from a directory
@@ -41,70 +42,16 @@ object GraphLoader {
       shardDirectories, numShards, numRounds,
       useCachedValues, cacheDirectory)
   }
-
-  class RawEdgeShardReader(filename: String) extends Iterator[NodeIdEdgesMaxId] {
-
-    private val outEdgePattern = """^(?:src= )?(\d+)[\cA\t ](?:#= )?(\d+)""".r
-    val lines = Source.fromFile(filename).getLines()
-    private val holder = NodeIdEdgesMaxId(-1, null, -1)
-
-    override def hasNext: Boolean = lines.hasNext
-
-    override def next(): NodeIdEdgesMaxId = {
-      val outEdgePattern(id, outEdgeCount) = lines.next.trim
-      var i = 0
-      var currIndex = 0
-      val outEdgeCountInt = outEdgeCount.toInt
-      val idInt = id.toInt
-
-      var newMaxId = idInt
-      val outEdgesArr = new Array[Int](outEdgeCountInt)
-      while (i < outEdgeCountInt) {
-        val edgeId = lines.next.trim.toInt
-        newMaxId = newMaxId max edgeId
-        outEdgesArr(currIndex) = edgeId
-        currIndex += 1
-        i += 1
-      }
-
-      holder.id = idInt
-      holder.edges = outEdgesArr
-      holder.maxId = newMaxId
-      holder
-    }
-
-  }
-
-  class RawEdgeShardsReader(directory: String) {
-    val dir = new File(directory)
-
-    def readers: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
-      val validFiles = dir.list().map({ filename =>
-        if (filename.startsWith("part")) {
-          filename
-        }
-        else {
-          null
-        }
-      }).filterNot(f => f == null)
-      validFiles.map({ filename =>
-      {() => new RawEdgeShardReader(directory + "/" + filename)}
-      }).toSeq
-    }
-  }
-
 }
 
 class GraphLoader {
-
-  import GraphLoader._
 
   // Return a CachedDirectedGraph object
   def loadGraphFromDirectory(directory: String, cacheType: String, cacheMaxNodes:Int, cacheMaxEdges:Long,
                              shardDirectories: Array[String], numShards: Int, numRounds: Int,
                              useCachedValues: Boolean, cacheDirectory: String) = {
     // TODO Support OnlyIn as well
-    CachedDirectedGraph(new RawEdgeShardsReader(directory).readers, Executors.newFixedThreadPool(8),
+    CachedDirectedGraph(new AdjacencyListGraphReader(directory, "part").iteratorSeq, Executors.newFixedThreadPool(8),
       StoredGraphDir.OnlyOut, cacheType, cacheMaxNodes, cacheMaxEdges,
       shardDirectories, numShards, numRounds, useCachedValues, cacheDirectory, true)
   }
