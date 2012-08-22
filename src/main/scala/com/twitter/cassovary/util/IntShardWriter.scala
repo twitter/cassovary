@@ -28,7 +28,7 @@ class IntShardWriter(val filename:String) {
 
   /**
    * Read a list of integers to this particular shard and return
-   * a byte offset into this particular file indicating where the intList was written
+   * an int offset into this particular file indicating where the intList was written
    * Will write from wherever the write position is at
    *
    * @param intList the list of integers to write to this shard
@@ -36,30 +36,42 @@ class IntShardWriter(val filename:String) {
   def writeIntegersSequentially(intList: Iterable[Int]) = {
     val returnOffset = offset // can use fos.position() but you must call dos.flush() first
     intList.foreach(fos.writeInt(_))
-    offset += intList.size * 4
+    offset += intList.size
     returnOffset
   }
 
   /**
    * Write a list of integers from an iterable at the given byte offset
    *
-   * @param writeOffset Byte offset to start writing at
+   * @param intOffset Int offset to start writing at
    * @param intList a list of integers
    */
-  def writeIntegersAtOffset(writeOffset: Long, intList: Iterable[Int]) = {
-    fos.seek(writeOffset)
+  def writeIntegersAtOffset(intOffset: Long, intList: Iterable[Int]) = {
+    fos.seek(intOffset * 4)
     intList.foreach(fos.writeInt(_))
-    offset = writeOffset + intList.size * 4
+    offset = intOffset + intList.size
   }
 
-  def allocate(fileSize: Long) = {
-    if (fileSize > 0) {
-      fos.seek(fileSize-1)
+  /**
+   * Allocate disk space for this many integers
+   * @param intFileSize Number of integers to reserve space for
+   */
+  def allocate(intFileSize: Long) = {
+    if (intFileSize > 0) {
+      fos.seek(intFileSize * 4 - 1)
       fos.writeByte(1)
     }
   }
 
-  def length = fos.length
+  /**
+   * Get length of this file in bytes
+   */
+  def rawLength = fos.length
+
+  /**
+   * Get integer length of this file
+   */
+  def length = fos.length / 4
 
   def close = fos.close()
 }
@@ -67,6 +79,7 @@ class IntShardWriter(val filename:String) {
 /**
  * Class to write nodes to disk, sharding them according to their id
  * A node with the id N is written to shard (N mod numShards).txt
+ *
  * @param shardDirectory Directory to write shards to
  * @param numShards Number of shards to generate
  */
@@ -82,8 +95,8 @@ class IntShardsWriter(val shardDirectory: String, val numShards: Int) {
     shardWriters(nodeId % numShards).writeIntegersSequentially(intList)
   }
 
-  def writeIntegersAtOffset(nodeId: Int, writeOffset: Long, intList: Iterable[Int]) = {
-    shardWriters(nodeId % numShards).writeIntegersAtOffset(writeOffset, intList)
+  def writeIntegersAtOffset(nodeId: Int, intOffset: Long, intList: Iterable[Int]) = {
+    shardWriters(nodeId % numShards).writeIntegersAtOffset(intOffset, intList)
   }
 
   def close = (0 until numShards).foreach { i => shardWriters(i).close }
@@ -92,6 +105,7 @@ class IntShardsWriter(val shardDirectory: String, val numShards: Int) {
 /**
  * Write out shards to different directories
  * Shard N is written to the directory at index (N mod NUMBER_OF_DIRECTORIES)
+ *
  * @param shardDirectories Array of directory strings
  * @param numShards Number of shards to generate
  */
@@ -108,14 +122,15 @@ class MultiDirIntShardsWriter(val shardDirectories: Array[String], numShards: In
 /**
  * Used by MemIntShardsWriter
  * This is an in-memory shard, which can be written to disk if so desired.
+ *
  * @param shardSize
  */
 class MemIntShardWriter(val shardSize:Int) {
   val shard = new Array[Int](shardSize)
 
-  def writeIntegersAtOffsetFromOffset(writeIntOffset: Int, sourceArray: Array[Int],
+  def writeIntegersAtOffsetFromOffset(intOffset: Int, sourceArray: Array[Int],
                                       sourceIntOffset: Int, sourceLength: Int) = {
-    Array.copy(sourceArray, sourceIntOffset, shard, writeIntOffset, sourceLength)
+    Array.copy(sourceArray, sourceIntOffset, shard, intOffset, sourceLength)
   }
 
   def writeToShard(filename: String) {
@@ -187,16 +202,16 @@ class MemIntShardsWriter(val shardDirectory: String, val numShards: Int,
    * write into an int array
    *
    * @param nodeId Id of edges to write
-   * @param writeIntOffset Integer offset to write to
+   * @param intOffset Integer offset to write to
    * @param sourceArray Source array to read from
    * @param sourceIntOffset Offset in source array to read from
    * @param sourceLength Number of integers to read from the source array
    */
-  def writeIntegersAtOffsetFromOffset(nodeId: Int, writeIntOffset: Int, sourceArray: Array[Int],
+  def writeIntegersAtOffsetFromOffset(nodeId: Int, intOffset: Int, sourceArray: Array[Int],
                                       sourceIntOffset: Int, sourceLength: Int) = {
     val shardNum = nodeId % numShards
     if (modStart <= shardNum && shardNum < modEnd) {
-      writers(shardNum).writeIntegersAtOffsetFromOffset(writeIntOffset, sourceArray, sourceIntOffset, sourceLength)
+      writers(shardNum).writeIntegersAtOffsetFromOffset(intOffset, sourceArray, sourceIntOffset, sourceLength)
     }
     else {
       throw new IllegalArgumentException("Invalid nodeId attempted to be written")
@@ -207,12 +222,14 @@ class MemIntShardsWriter(val shardDirectory: String, val numShards: Int,
 
 /**
  * Version of MemIntShardsWriter that writes to multiple directories
+ *
  * @param shardDirectories an array of directory strings
  * @param numShards the number of shards
  * @param shardSizes the size of each shard
  * @param rounds number of write rounds
  */
-class MultiDirMemIntShardsWriter(val shardDirectories:Array[String], numShards:Int, shardSizes:Array[Int], rounds:Int=1)
+class MultiDirMemIntShardsWriter(val shardDirectories: Array[String], numShards: Int,
+                                 shardSizes: Array[Int], rounds: Int = 1)
   extends MemIntShardsWriter(shardDirectories(0), numShards, shardSizes, rounds) {
 
   shardDirectories.foreach { shardDirectory => FileUtils.makeDirs(shardDirectory) }

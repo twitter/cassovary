@@ -15,6 +15,7 @@ package com.twitter.cassovary.util
 
 import scala.io.Source
 import java.io.{IOException, PrintWriter, File}
+import com.twitter.io.Files
 
 /**
  * Miscellaneous convenience functions for working with files
@@ -61,6 +62,17 @@ object FileUtils {
     val dir = new File(directory)
     if (!dir.exists && !dir.mkdirs) {
       throw new IOException("Unable to create %s".format(directory))
+    }
+  }
+
+  /**
+   * Delete a list of files or directories
+   *
+   * @param filenames
+   */
+  def delete(filenames: String*) {
+    filenames.foreach { filename =>
+      Files.delete(new File(filename))
     }
   }
 

@@ -233,7 +233,7 @@ object CachedDirectedGraph {
         Stats.time("graph_load_allocating_shards") {
           val esw = new MultiDirIntShardsWriter(shardDirectories, numShards)
           (0 until numShards).foreach { i =>
-            esw.shardWriters(i).allocate(edgeOffsets(i).get * 4)
+            esw.shardWriters(i).allocate(edgeOffsets(i).get)
           }
           esw.close
         }
@@ -324,7 +324,7 @@ object CachedDirectedGraph {
         Stats.time("graph_load_allocating_shards") {
           val esw = new MultiDirIntShardsWriter(shardDirectories, numShards)
           (0 until numShards).foreach { i =>
-            esw.shardWriters(i).allocate(edgeOffsets(i).get * 4)
+            esw.shardWriters(i).allocate(edgeOffsets(i).get)
           }
           esw.close
         }
@@ -373,7 +373,7 @@ object CachedDirectedGraph {
       //        iteratorFunc() foreach { item =>
       //          val id = item.id
       //          val (edgeOffset, _) = idToIntOffsetAndNumEdges(id)
-      //          esw.writeIntegersAtOffset(id, edgeOffset * 4, item.edges)
+      //          esw.writeIntegersAtOffset(id, edgeOffset, item.edges)
       //        }
       //        esw.close
       //      }
@@ -687,7 +687,7 @@ class GuavaCachedDirectedGraph (
     else {
       // Read in the node from disk
       val intArray = new Array[Int](numEdges)
-      reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id) * 4, numEdges, intArray, 0)
+      reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id), numEdges, intArray, 0)
       intArray
     }
   }
@@ -791,7 +791,7 @@ class NodeArrayGuavaCachedDirectedGraph (
     else {
       // Read in the node from disk
       val intArray = new Array[Int](numEdges)
-      reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id) * 4, numEdges, intArray, 0)
+      reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id), numEdges, intArray, 0)
       intArray
     }
   }

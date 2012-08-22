@@ -112,7 +112,7 @@ class BufferedFastLRUIntArrayCache private(shardDirectories: Array[String], numS
         val intArray = new Array[Int](numEdges)
 
         // Each IntShardReader is synchronized (i.e. 1 reader per shard)
-        shardReader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id) * 4, numEdges, intArray, 0)
+        shardReader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id), numEdges, intArray, 0)
 
         writer.lock()
         if (linkedMap.contains(id)) {

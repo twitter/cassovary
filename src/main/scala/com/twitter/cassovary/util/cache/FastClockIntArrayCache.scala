@@ -132,7 +132,7 @@ class FastClockIntArrayCache private(shardDirectories: Array[String], numShards:
       else {
         // Read in array
         val intArray = new Array[Int](numEdges)
-        reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id) * 4, numEdges, intArray, 0)
+        reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id), numEdges, intArray, 0)
 
         // Evict from cache
         replace.replace(id, numEdges, intArray)

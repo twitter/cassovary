@@ -59,7 +59,7 @@ class IntShardReaderWriterSpec extends Specification {
       val esr = new IntShardReader("test.txt")
       val intArray = new Array[Int](10)
       (0 until 7).reverse.foreach { i =>
-        esr.readIntegersFromOffsetIntoArray(i*4, 1, intArray, 3)
+        esr.readIntegersFromOffsetIntoArray(i, 1, intArray, 3)
         intArray(3) mustEqual sevenSequence(i)
       }
       esr.close
@@ -70,9 +70,9 @@ class IntShardReaderWriterSpec extends Specification {
       esw.close
       val esr = new IntShardReader("test.txt")
       val intArray = new Array[Int](10)
-      esr.readIntegersFromOffsetIntoArray(3*4, 3, intArray, 3)
+      esr.readIntegersFromOffsetIntoArray(3, 3, intArray, 3)
       (0 until 3).foreach { i => intArray(3+i) mustEqual sevenSequence(3+i) }
-      esr.readIntegersFromOffsetIntoArray(6*4, 1, intArray, 7)
+      esr.readIntegersFromOffsetIntoArray(6, 1, intArray, 7)
       intArray(7) mustEqual sevenSequence(6)
       esr.close
     }
@@ -87,7 +87,7 @@ class IntShardReaderWriterSpec extends Specification {
           while (true) {
             receive {
               case Hello(x) => {
-                esw.writeIntegersAtOffset(x * 4 * 2, Seq(x,x+1)) // Write 2 integers at some location
+                esw.writeIntegersAtOffset(x * 2, Seq(x,x+1)) // Write 2 integers at some location
                 a.incrementAndGet()
               }
             }
@@ -109,7 +109,7 @@ class IntShardReaderWriterSpec extends Specification {
       // Read and ensure that everything was written correctly
       val esr = new IntShardReader("test.txt")
       val intArray = new Array[Int](10000)
-      esr.readIntegersFromOffsetIntoArray(8, 9998, intArray, 2)
+      esr.readIntegersFromOffsetIntoArray(2, 9998, intArray, 2)
       (1 until 5000).foreach { i =>
         intArray(i*2) mustEqual i
         intArray(i*2+1) mustEqual i+1
@@ -119,14 +119,14 @@ class IntShardReaderWriterSpec extends Specification {
 
     "Non-sequential writes work" in {
       val esw = new IntShardWriter("test.txt")
-      esw.writeIntegersAtOffset(24, Seq(5,6))
-      esw.writeIntegersAtOffset(4, Seq(999))
-      esw.writeIntegersAtOffset(32, Seq(42))
+      esw.writeIntegersAtOffset(6, Seq(5,6))
+      esw.writeIntegersAtOffset(1, Seq(999))
+      esw.writeIntegersAtOffset(8, Seq(42))
       esw.close
       val esr = new IntShardReader("test.txt")
       val intArray = new Array[Int](4)
-      esr.readIntegersFromOffsetIntoArray(4, 1, intArray, 0)
-      esr.readIntegersFromOffsetIntoArray(24, 3, intArray, 1)
+      esr.readIntegersFromOffsetIntoArray(1, 1, intArray, 0)
+      esr.readIntegersFromOffsetIntoArray(6, 3, intArray, 1)
       val actualSeq = Seq(999, 5, 6, 42)
       (0 until 4).foreach { i => intArray(i) mustEqual actualSeq(i) }
       esr.close
@@ -134,16 +134,16 @@ class IntShardReaderWriterSpec extends Specification {
 
     "Reading and writing nothing doesn't mess up" in {
       val esw = new IntShardWriter("test.txt")
-      esw.writeIntegersAtOffset(24, Seq(5, 7))
-      esw.writeIntegersAtOffset(24, Seq())
-      esw.writeIntegersAtOffset(24, Seq(6))
-      esw.writeIntegersAtOffset(24, Seq())
+      esw.writeIntegersAtOffset(6, Seq(5, 7))
+      esw.writeIntegersAtOffset(6, Seq())
+      esw.writeIntegersAtOffset(6, Seq(6))
+      esw.writeIntegersAtOffset(6, Seq())
       esw.close
       val esr = new IntShardReader("test.txt")
       val intArray = new Array[Int](2)
-      esr.readIntegersFromOffsetIntoArray(20, 2, intArray, 0)
-      esr.readIntegersFromOffsetIntoArray(24, 2, intArray, 0)
-      esr.readIntegersFromOffsetIntoArray(28, 0, intArray, 0)
+      esr.readIntegersFromOffsetIntoArray(5, 2, intArray, 0)
+      esr.readIntegersFromOffsetIntoArray(6, 2, intArray, 0)
+      esr.readIntegersFromOffsetIntoArray(7, 0, intArray, 0)
       intArray(0) mustEqual 6
       intArray(1) mustEqual 7
       esr.close
@@ -151,23 +151,23 @@ class IntShardReaderWriterSpec extends Specification {
 
     "Multiple writes by different writers doesn't mess up" in {
       val esw = new IntShardWriter("test.txt")
-      esw.writeIntegersAtOffset(8, Seq(9, 8))
+      esw.writeIntegersAtOffset(2, Seq(9, 8))
       esw.close
 
       val ess = new IntShardReader("test.txt")
       val intArray = new Array[Int](5)
-      ess.readIntegersFromOffsetIntoArray(8, 2, intArray, 0)
+      ess.readIntegersFromOffsetIntoArray(2, 2, intArray, 0)
       intArray(0) mustEqual 9
       intArray(1) mustEqual 8
       ess.close
 
       val esv = new IntShardWriter("test.txt")
       esv.writeIntegersAtOffset(0, Seq(5, 6, 7))
-      esv.writeIntegersAtOffset(16, Seq(9))
+      esv.writeIntegersAtOffset(4, Seq(9))
       esv.close
 
       val esr = new IntShardReader("test.txt")
-      esr.readIntegersFromOffsetIntoArray(8, 2, intArray, 0)
+      esr.readIntegersFromOffsetIntoArray(2, 2, intArray, 0)
       intArray(0) mustEqual 7
       intArray(1) mustEqual 8
       esr.close
@@ -229,11 +229,11 @@ class IntShardReaderWriterSpec extends Specification {
       val intArray = new Array[Int](10)
       esr.readIntegersFromOffsetIntoArray(1, 0, 1, intArray, 0)
       intArray(0) mustEqual 0
-      esr.readIntegersFromOffsetIntoArray(6, 2*4, 6, intArray, 0)
+      esr.readIntegersFromOffsetIntoArray(6, 2, 6, intArray, 0)
       intArray(3) mustEqual 3
       intArray(4) mustEqual 4
       intArray(5) mustEqual 5
-      esr.readIntegersFromOffsetIntoArray(7, 3*4, 7, intArray, 1)
+      esr.readIntegersFromOffsetIntoArray(7, 3, 7, intArray, 1)
       intArray(1) mustEqual 0
       intArray(7) mustEqual 6
       esr.close
@@ -265,8 +265,8 @@ class IntShardReaderWriterSpec extends Specification {
       esw.close
       val esr = new IntShardsReader("test-shards", 5)
       val intArray = new Array[Int](10)
-      offset mustEqual 7 * 4
-      esr.readIntegersFromOffsetIntoArray(999999990, 7*4, 1, intArray, 0)
+      offset mustEqual 7
+      esr.readIntegersFromOffsetIntoArray(999999990, 7, 1, intArray, 0)
       esr.readIntegersFromOffsetIntoArray(1212121212, 0, 2, intArray, 1)
       esr.readIntegersFromOffsetIntoArray(5, 0, 7, intArray, 3)
       val combined = oneSequence ::: twoSequence ::: sevenSequence
@@ -306,11 +306,11 @@ class IntShardReaderWriterSpec extends Specification {
       val intArray = new Array[Int](10)
       esr.readIntegersFromOffsetIntoArray(1, 0, 1, intArray, 0)
       intArray(0) mustEqual 0
-      esr.readIntegersFromOffsetIntoArray(6, 2*4, 6, intArray, 0)
+      esr.readIntegersFromOffsetIntoArray(6, 2, 6, intArray, 0)
       intArray(3) mustEqual 3
       intArray(4) mustEqual 4
       intArray(5) mustEqual 5
-      esr.readIntegersFromOffsetIntoArray(7, 3*4, 7, intArray, 1)
+      esr.readIntegersFromOffsetIntoArray(7, 3, 7, intArray, 1)
       intArray(1) mustEqual 0
       intArray(7) mustEqual 6
       esr.close

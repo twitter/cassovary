@@ -106,7 +106,7 @@ class LocklessReadFastLRUIntArrayCache private(shardDirectories: Array[String], 
         val intArray = new Array[Int](numEdges)
 
         // Each IntShardReader is synchronized (i.e. 1 reader per shard)
-        shardReader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id) * 4, numEdges, intArray, 0)
+        shardReader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id), numEdges, intArray, 0)
 
         lock.acquire
         if (linkedMap.contains(id)) {

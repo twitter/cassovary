@@ -76,7 +76,7 @@ class LocklessRandomizedIntArrayCache private(shardDirectories: Array[String], n
         // println(Thread.currentThread().getId+" Missed! " +id)
         // Read in array
         val intArray = new Array[Int](numEdges)
-        reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id) * 4, numEdges, intArray, 0)
+        reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id), numEdges, intArray, 0)
 
         val a = idToArray.getAndSet(id, intArray)
         if (a == null) {

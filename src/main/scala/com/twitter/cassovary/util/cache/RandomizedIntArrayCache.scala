@@ -67,7 +67,7 @@ class RandomizedIntArrayCache private(shardDirectories: Array[String], numShards
         // println(Thread.currentThread().getId+" Missed! " +id)
         // Read in array
         val intArray = new Array[Int](numEdges)
-        reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id) * 4, numEdges, intArray, 0)
+        reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id), numEdges, intArray, 0)
 
         // Do this first so that once indexToId is set this element can be evicted
 

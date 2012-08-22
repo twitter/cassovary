@@ -14,13 +14,13 @@
 package com.twitter.cassovary.graph
 
 import org.specs.Specification
-import com.twitter.cassovary.util.ExecutorUtils
-import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
+import com.twitter.cassovary.util.{FileUtils, ExecutorUtils}
 import java.util.concurrent._
 import scala.util.Random
-import com.twitter.io.Files
-import java.io.File
 import com.twitter.cassovary.util.cache.{FastClockIntArrayCache, FastLRUIntArrayCache}
+import scala.Some
+import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
+import com.google.common.util.concurrent.MoreExecutors
 
 class CachedDirectedGraphSpec extends Specification {
   var graph: CachedDirectedGraph = _
@@ -134,9 +134,18 @@ class CachedDirectedGraphSpec extends Specification {
     print("done!\n")
   }
 
-  doLast {
-    Files.delete(new File("temp-shards"))
-    Files.delete(new File("temp-cached"))
+  "CachedDirectedGraph" should {
+    "be able to be saved and read back without errors" in {
+      def loadOnce {
+        val cdg = CachedDirectedGraph(Seq(iteratorFunc), MoreExecutors.sameThreadExecutor(),
+          StoredGraphDir.OnlyOut, "lru", 2, 4, Array("temp-shards/c"), 2, 2, true, "temp-cached/twoshards", false)
+        iteratorFunc().foreach { case NodeIdEdgesMaxId(id, neighbors, _) =>
+          cdg.getNodeById(id).get.outboundNodes().toSet mustEqual neighbors.toSet
+        }
+      }
+      loadOnce
+      loadOnce
+    }
   }
 
   "Renumbered FastLRU-based graph containing only out edges" should {

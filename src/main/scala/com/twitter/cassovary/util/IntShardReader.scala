@@ -26,17 +26,17 @@ class IntShardReader(val filename:String) {
 
   /**
    * Read a specified number of integers from this shard, starting
-   * at some offset, into an an array, starting at some other offset.
+   * at some integer offset, into an an array, starting at some other offset.
    * Behavior is undefined if attempting to read past the end of the file.
    *
-   * @param offset Byte offset in this shard
+   * @param intOffset int offset in this shard
    * @param numInts Number of integers to read out
    * @param intArray Integer array to write integers into
    * @param intArrayOffset Integer offset to write into in the integer array
    */
-  def readIntegersFromOffsetIntoArray(offset: Long, numInts: Int, intArray: Array[Int],
+  def readIntegersFromOffsetIntoArray(intOffset: Long, numInts: Int, intArray: Array[Int],
       intArrayOffset: Int) = Stats.time("esr_fullread") {
-    rf.seek(offset)
+    rf.seek(intOffset * 4)
     // Read into byte array, then copy from byte array to given int array
     val bytesToRead = 4 * numInts
     val byteArray = new Array[Byte](bytesToRead)
@@ -62,19 +62,18 @@ class IntShardsReader(val shardDirectory: String, val numShards: Int) {
   }
 
   /**
-   * Read Integers from the given offset into a given array
-   * Note that the offset into the file is a byte offset,
-   * but the offset into the int array is an integer offset
+   * Read some number of integers from the given integer offset into a given array
+   * starting at some offset in that array. Does not check file or array bounds.
    *
    * @param nodeId id of node desired
-   * @param offset byte offset in the file
+   * @param intOffset int offset in the file
    * @param numInts number of integers to read out
    * @param intArray destination integer array to read into
    * @param intArrayOffset offset of integer array to read to
    */
-  def readIntegersFromOffsetIntoArray(nodeId: Int, offset: Long, numInts: Int,
+  def readIntegersFromOffsetIntoArray(nodeId: Int, intOffset: Long, numInts: Int,
                                       intArray: Array[Int], intArrayOffset: Int):Unit = {
-    shardReaders(nodeId % numShards).readIntegersFromOffsetIntoArray(offset, numInts, intArray, intArrayOffset)
+    shardReaders(nodeId % numShards).readIntegersFromOffsetIntoArray(intOffset, numInts, intArray, intArrayOffset)
   }
 
   def close = (0 until numShards).foreach { i => shardReaders(i).close }
@@ -87,7 +86,8 @@ class IntShardsReader(val shardDirectory: String, val numShards: Int) {
  * I.e., for some shard N.txt, N must be located in the directory at index N mod NUMBER_OF_DIRECTORIES
  * For example, if 4 directories are provided, shard 6.txt must be located in the third directory
  * An easy way if you don't really care about disk space is to simply replicate the whole original shard directory
- * to all desired directories
+ * to all desired directories.
+ *
  * @param shardDirectories Array of shard directories
  * @param numShards Total number of shards
  */
@@ -96,8 +96,8 @@ class MultiDirIntShardsReader(val shardDirectories: Array[String], val numShards
     new IntShardReader("%s/%s.txt".format(shardDirectories(i % shardDirectories.length), i))
   }
 
-  def readIntegersFromOffsetIntoArray(nodeId:Int, offset:Long, numInts:Int, intArray:Array[Int], intArrayOffset:Int):Unit = {
-    shardReaders(nodeId % numShards).readIntegersFromOffsetIntoArray(offset, numInts, intArray, intArrayOffset)
+  def readIntegersFromOffsetIntoArray(nodeId:Int, intOffset:Long, numInts:Int, intArray:Array[Int], intArrayOffset:Int):Unit = {
+    shardReaders(nodeId % numShards).readIntegersFromOffsetIntoArray(intOffset, numInts, intArray, intArrayOffset)
   }
 
   def close = (0 until numShards).foreach { i => shardReaders(i).close }
