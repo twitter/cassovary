@@ -11,22 +11,26 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.util.readwrite
+package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph._
-import java.util.concurrent.ExecutorService
 import com.google.common.util.concurrent.MoreExecutors
 import com.twitter.cassovary.graph.StoredGraphDir
 import com.twitter.cassovary.graph.StoredGraphDir.StoredGraphDir
+import java.util.concurrent.ExecutorService
 
 /**
- * Trait that classes should implement to read in graphs
- * A reader class only needs to implement iteratorSeq, which should
- * return a sequence of () => Iterator[NodeIdEdgesMaxId]
+ * Trait that classes should implement to read in graphs.
  *
- * Optionally, a class or instance can override storedGraphDir which
- * defines the direction being read in, as well as executorService
- * (which can change how many threads to use).
+ * The reader class is only required to implement iteratorSeq, a method
+ * which returns a sequence of functions that themselves return an Iterator
+ * over NodeIdEdgesMaxId (see its type signature below as well).
+ *
+ * NodeIdEdgesMaxId is a case class defined in ArrayBasedDirectedGraph
+ * that stores 1) the id of a node, 2) the ids of its neighbors,
+ * and 3) the maximum id of itself and its neighbors.
+ *
+ * One useful reference implementation is AdjacencyListGraphReader.
  */
 trait GraphReader {
 
@@ -55,6 +59,7 @@ trait GraphReader {
   /**
    * Create a SharedArrayBasedDirectedGraph
    * @param numShards Number of shards to split the in-memory array into
+   *                  128 is an arbitrary default
    */
   def toSharedArrayBasedDirectedGraph(numShards: Int = 128) = {
     SharedArrayBasedDirectedGraph(iteratorSeq, executorService, storedGraphDir, numShards)

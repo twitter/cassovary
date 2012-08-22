@@ -13,11 +13,9 @@
  */
 package com.twitter.cassovary.util
 
-import com.twitter.cassovary.graph.{StoredGraphDir, NodeIdEdgesMaxId, CachedDirectedGraph}
-import io.Source
-import java.io.File
+import com.twitter.cassovary.graph.{StoredGraphDir, CachedDirectedGraph}
 import java.util.concurrent.Executors
-import readwrite.AdjacencyListGraphReader
+import io.AdjacencyListGraphReader
 
 /**
  * Loads a graph from a directory

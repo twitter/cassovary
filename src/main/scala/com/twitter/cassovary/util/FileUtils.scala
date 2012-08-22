@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.util
 
-import io.Source
+import scala.io.Source
 import java.io.{PrintWriter, File}
 
 /**
