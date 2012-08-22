@@ -18,10 +18,12 @@ import com.twitter.cassovary.util.IntShardsWriter
 
 class FastLRUIntArrayCacheSpec extends Specification {
 
-  "FastLRUIntArrayCache" should {
-    val offset = Array[Long](0L, 0L, 0L, 0L, 0L)
-    val edges = Array[Int](0, 2, 2, 0, 1)
+  var l: IntArrayCache = _
+  var l2: IntArrayCache = _
+  val offset = Array[Long](0L, 0L, 0L, 0L, 0L)
+  val edges = Array[Int](0, 2, 2, 0, 1)
 
+  def likeAnLRU = {
     doFirst {
       val writer = new IntShardsWriter("test-shards", 10)
       writer.writeIntegersAtOffset(1, 0, List(2, 3))
@@ -31,26 +33,50 @@ class FastLRUIntArrayCacheSpec extends Specification {
     }
 
     "Work" in {
-      val l = FastLRUIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
       l.get(1)(0) mustEqual 2
       l.get(1)(1) mustEqual 3
-      l.numbers.misses mustEqual 1
-      l.numbers.hits mustEqual 1
+      l.getStats._1 mustEqual 1
+      l.getStats._2 mustEqual 1
     }
 
     "Evict in LRU order" in {
-      val l = FastLRUIntArrayCache(Array("test-shards"), 10, 4, 2, 4, offset, edges)
-      l.get(1)
-      l.get(2)
-      l.get(1)
-      l.numbers.misses mustEqual 2
-      l.numbers.hits mustEqual 1
-      l.get(4)
-      l.get(1)
-      l.numbers.misses mustEqual 3
-      l.numbers.hits mustEqual 2
+      l2.get(1)
+      l2.get(2)
+      l2.get(1)
+      l2.getStats._1 mustEqual 2
+      l2.getStats._2 mustEqual 1
+      l2.get(4)
+      l2.get(1)
+      l2.getStats._1 mustEqual 3
+      l2.getStats._2 mustEqual 2
     }
+  }
 
+  val fastLRU = beforeContext {
+    l = FastLRUIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
+    l2 = FastLRUIntArrayCache(Array("test-shards"), 10, 4, 2, 4, offset, edges)
+  }
+
+  val buffFastLRU = beforeContext {
+    l = BufferedFastLRUIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
+    l2 = BufferedFastLRUIntArrayCache(Array("test-shards"), 10, 4, 2, 4, offset, edges)
+  }
+
+  val locklessFastLRU = beforeContext {
+    l = LocklessReadFastLRUIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
+    l2 = LocklessReadFastLRUIntArrayCache(Array("test-shards"), 10, 4, 2, 4, offset, edges)
+  }
+
+  "FastLRUIntArrayCache" definedAs fastLRU should {
+    "be like an LRU cache" in { likeAnLRU }
+  }
+
+  "BufferedFastLRUIntArrayCache" definedAs buffFastLRU should {
+    "be like an LRU cache" in { likeAnLRU }
+  }
+
+  "LocklessReadFastLRUIntArrayCache" definedAs locklessFastLRU should {
+    "be like an LRU cache" in { likeAnLRU }
   }
 
 }

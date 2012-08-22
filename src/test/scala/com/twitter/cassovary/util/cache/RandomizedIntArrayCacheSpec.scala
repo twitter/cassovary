@@ -17,10 +17,13 @@ import org.specs.Specification
 import com.twitter.cassovary.util.IntShardsWriter
 
 class RandomizedIntArrayCacheSpec extends Specification {
-  "RandomizedIntArrayCache" should {
-    val offset = Array[Long](0L, 0L, 0L, 0L, 0L)
-    val edges = Array[Int](0, 2, 2, 0, 1)
 
+  var ri: IntArrayCache = _
+  var ri2: IntArrayCache = _
+  val offset = Array[Long](0L, 0L, 0L, 0L, 0L)
+  val edges = Array[Int](0, 2, 2, 0, 1)
+
+  def likeARandomizedCache {
     doFirst {
       val writer = new IntShardsWriter("test-shards", 10)
       writer.writeIntegersAtOffset(1, 0, List(2, 3))
@@ -30,7 +33,6 @@ class RandomizedIntArrayCacheSpec extends Specification {
     }
 
     "Generally work" in {
-      val ri = RandomizedIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
       ri.get(1)(0) mustEqual 2
       ri.get(1)(1) mustEqual 3
       val (rim, rih, _, _) = ri.getStats
@@ -39,14 +41,32 @@ class RandomizedIntArrayCacheSpec extends Specification {
     }
 
     "Successfully evict nodes" in {
-      val ri = RandomizedIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
-      ri.get(1)
-      ri.get(2)
-      ri.get(1)
-      ri.get(2)
-      val (rim, rih, _, _) = ri.getStats
+      ri2.get(1)
+      ri2.get(2)
+      ri2.get(1)
+      ri2.get(2)
+      val (rim, rih, _, _) = ri2.getStats
       rim must beGreaterThan(2L)
       rih must beLessThan(2L)
     }
   }
+
+  def randomizedCache = beforeContext {
+    ri = RandomizedIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
+    ri2 = RandomizedIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
+  }
+
+  def locklessRandomizedCache = beforeContext {
+    ri = LocklessRandomizedIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
+    ri2 = LocklessRandomizedIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
+  }
+
+  "RandomizedIntArrayCache" definedAs randomizedCache should {
+    "be like a randomized cache" in { likeARandomizedCache }
+  }
+
+  "LocklessRandomizedIntArrayCache" definedAs locklessRandomizedCache should {
+    "be like a randomized cache" in { likeARandomizedCache }
+  }
+
 }
