@@ -8,6 +8,10 @@ of edges in this graph. You can run this script by just typing ```examples/scala
 which will build and run the HelloGraph.scala example with default options. You can also run
 other examples for instance by running ```examples/scala/build_run_example.sh RandomWalk 10000```
 
+* HelloGraph - a "Hello World" example
+* HelloLoadGraph - load in a graph from two adjacency list text files
+* RandomWalk [numSteps] - do a random walk on a random graph
+
 ## Building a tiny example using Java
 The ```java``` directory contains the same examples, but written in Java. See ```build_run_example.sh```
 in that directory to see how to build HelloGraph.java. As above, you can also run other examples like

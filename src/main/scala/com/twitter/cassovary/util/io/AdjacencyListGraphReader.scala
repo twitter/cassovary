@@ -85,14 +85,14 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "")
     val dir = new File(directory)
 
     def readers: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
-      val validFiles = dir.list().map({ filename =>
+      val validFiles = dir.list().flatMap({ filename =>
         if (filename.startsWith(prefixFileNames)) {
-          filename
+          Some(filename)
         }
         else {
-          null
+          None
         }
-      }).filterNot(f => f == null)
+      })
       validFiles.map({ filename =>
       {() => new OneShardReader(directory + "/" + filename)}
       }).toSeq
