@@ -23,15 +23,13 @@ class RandomizedIntArrayCacheSpec extends Specification {
   val offset = Array[Long](0L, 0L, 0L, 0L, 0L)
   val edges = Array[Int](0, 2, 2, 0, 1)
 
-  def likeARandomizedCache {
-    doFirst {
-      val writer = new IntShardsWriter("test-shards", 10)
-      writer.writeIntegersAtOffset(1, 0, List(2, 3))
-      writer.writeIntegersAtOffset(2, 0, List(3, 4))
-      writer.writeIntegersAtOffset(4, 0, List(1))
-      writer.close
-    }
+  val writer = new IntShardsWriter("test-shards", 10)
+  writer.writeIntegersAtOffset(1, 0, List(2, 3))
+  writer.writeIntegersAtOffset(2, 0, List(3, 4))
+  writer.writeIntegersAtOffset(4, 0, List(1))
+  writer.close
 
+  def likeARandomizedCache {
     "Generally work" in {
       ri.get(1)(0) mustEqual 2
       ri.get(1)(1) mustEqual 3

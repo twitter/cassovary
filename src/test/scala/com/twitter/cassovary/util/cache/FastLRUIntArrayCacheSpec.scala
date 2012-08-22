@@ -23,14 +23,13 @@ class FastLRUIntArrayCacheSpec extends Specification {
   val offset = Array[Long](0L, 0L, 0L, 0L, 0L)
   val edges = Array[Int](0, 2, 2, 0, 1)
 
+  val writer = new IntShardsWriter("test-shards", 10)
+  writer.writeIntegersAtOffset(1, 0, List(2, 3))
+  writer.writeIntegersAtOffset(2, 0, List(3, 4))
+  writer.writeIntegersAtOffset(4, 0, List(1))
+  writer.close
+
   def likeAnLRU = {
-    doFirst {
-      val writer = new IntShardsWriter("test-shards", 10)
-      writer.writeIntegersAtOffset(1, 0, List(2, 3))
-      writer.writeIntegersAtOffset(2, 0, List(3, 4))
-      writer.writeIntegersAtOffset(4, 0, List(1))
-      writer.close
-    }
 
     "Work" in {
       l.get(1)(0) mustEqual 2
