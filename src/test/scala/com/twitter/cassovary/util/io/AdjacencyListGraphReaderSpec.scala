@@ -11,11 +11,11 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.util.readwrite
+package com.twitter.cassovary.util.io
 
-import org.specs.Specification
 import com.twitter.cassovary.graph.DirectedGraph
 import java.util.concurrent.Executors
+import org.specs.Specification
 
 class AdjacencyListGraphReaderSpec extends Specification  {
 
