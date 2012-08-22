@@ -14,7 +14,7 @@
 package com.twitter.cassovary.util
 
 import scala.io.Source
-import java.io.{PrintWriter, File}
+import java.io.{IOException, PrintWriter, File}
 
 /**
  * Miscellaneous convenience functions for working with files
@@ -23,6 +23,7 @@ object FileUtils {
 
   /**
    * Return a Java PrintWriter to be used in a function
+   *
    * @param f File to act on
    * @param op Function that accepts a PrintWriter
    */
@@ -33,6 +34,7 @@ object FileUtils {
 
   /**
    * Return a Java PrintWriter but don't close
+   *
    * @param filename Filename to act on
    * @return a PrintWriter
    */
@@ -42,6 +44,7 @@ object FileUtils {
 
   /**
    * Read lines in from a file
+   *
    * @param filename Filename to read from
    * @param op Function that accepts single lines
    */
@@ -51,18 +54,23 @@ object FileUtils {
 
   /**
    * Make directories recursively if they don't exist
+   *
    * @param directory
    */
   def makeDirs(directory: String) {
-    new File(directory).mkdirs()
+    val dir = new File(directory)
+    if (!dir.exists && !dir.mkdirs) {
+      throw new IOException("Unable to create %s".format(directory))
+    }
   }
 
   /**
    * Write out an array of doubles to a file
+   *
    * @param a Double array
    * @param filename filename to write to
    */
-  def doubleArrayToFile(a:Array[Double], filename: String) {
+  def writeDoubleArrayToFile(a:Array[Double], filename: String) {
     printToFile(new File(filename)) { p =>
       var i = 0
       while (i < a.size) {
@@ -76,6 +84,7 @@ object FileUtils {
 
   /**
    * Read in lines from a file and provide a PrintWriter to another
+   *
    * @param inFilename file to read in lines from
    * @param outFilename file to which PrintWriter is attached
    * @param op function that accepts a read-in line and the PrintWriter object

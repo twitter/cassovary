@@ -15,13 +15,13 @@ package com.twitter.cassovary.util.cache
 
 import util.Random
 import java.util.concurrent.atomic.{AtomicReferenceArray, AtomicLong, AtomicIntegerArray}
-import com.twitter.cassovary.util.MultiDirEdgeShardsReader
+import com.twitter.cassovary.util.MultiDirIntShardsReader
 
 object LocklessRandomizedIntArrayCache {
   def apply(shardDirectories: Array[String], numShards: Int,
             maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
             idToIntOffset: Array[Long], idToNumEdges: Array[Int]) = {
-    val reader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
+    val reader = new MultiDirIntShardsReader(shardDirectories, numShards)
     val rand = new Random
     val idToArray = new AtomicReferenceArray[Array[Int]](maxId + 1)
     val indexToId = new AtomicIntegerArray(cacheMaxNodes)
@@ -31,7 +31,7 @@ object LocklessRandomizedIntArrayCache {
     new LocklessRandomizedIntArrayCache(shardDirectories, numShards,
       maxId, cacheMaxNodes, cacheMaxEdges,
       idToIntOffset, idToNumEdges,
-      new MultiDirEdgeShardsReader(shardDirectories, numShards),
+      new MultiDirIntShardsReader(shardDirectories, numShards),
       new AtomicReferenceArray[Array[Int]](maxId + 1),
       new AtomicIntegerArray(cacheMaxNodes),
       new IntArrayCacheNumbers,
@@ -43,7 +43,7 @@ object LocklessRandomizedIntArrayCache {
 class LocklessRandomizedIntArrayCache private(shardDirectories: Array[String], numShards: Int,
                                               maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
                                               idToIntOffset: Array[Long], idToNumEdges: Array[Int],
-                                              val reader: MultiDirEdgeShardsReader,
+                                              val reader: MultiDirIntShardsReader,
                                               val idToArray: AtomicReferenceArray[Array[Int]],
                                               val indexToId: AtomicIntegerArray,
                                               val numbers: IntArrayCacheNumbers,
@@ -56,7 +56,7 @@ class LocklessRandomizedIntArrayCache private(shardDirectories: Array[String], n
   def getThreadSafeChild = new LocklessRandomizedIntArrayCache(shardDirectories, numShards,
     maxId, cacheMaxNodes, cacheMaxEdges,
     idToIntOffset, idToNumEdges,
-    new MultiDirEdgeShardsReader(shardDirectories, numShards),
+    new MultiDirIntShardsReader(shardDirectories, numShards),
     idToArray, indexToId, numbers, currRealCapacity)
 
   def get(id: Int) = {

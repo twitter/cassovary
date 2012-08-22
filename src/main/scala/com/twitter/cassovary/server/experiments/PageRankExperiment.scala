@@ -35,7 +35,7 @@ class PageRankExperiment(config: CachedDirectedGraphServerConfig,
         log.info("Beginning iteration %s".format(i))
         pr = PageRank.iterate(graph, new PageRankParams(iterations = Some(1)), pr)
         log.info("Writing to file...")
-        FileUtils.doubleArrayToFile(pr, "%s/%s_%s.txt".format(config.outputDirectory, System.nanoTime(), i))
+        FileUtils.writeDoubleArrayToFile(pr, "%s/%s_%s.txt".format(config.outputDirectory, System.nanoTime(), i))
       }
     }
     else {
@@ -45,7 +45,7 @@ class PageRankExperiment(config: CachedDirectedGraphServerConfig,
       val pr = PageRank(graph, params)
       FileUtils.makeDirs(config.outputDirectory)
       log.info("Writing to file...")
-      FileUtils.doubleArrayToFile(pr, "%s/%s_%s.txt".format(config.outputDirectory, System.nanoTime(), i))
+      FileUtils.writeDoubleArrayToFile(pr, "%s/%s_%s.txt".format(config.outputDirectory, System.nanoTime(), i))
     }
   }
 

@@ -23,6 +23,8 @@ trait Node {
 
   /**
    * The unique id of this node.
+   * Does not place restrictions on the mutability of node id of a class extending this trait.
+   * However, if an object of that type is cast as a Node, id is still seen as immutable.
    */
   def id: Int
 

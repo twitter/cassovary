@@ -15,7 +15,7 @@ package com.twitter.cassovary.util.cache
 
 import com.twitter.ostrich.stats.Stats
 import concurrent.Lock
-import com.twitter.cassovary.util.{LinkedIntIntMap, MultiDirEdgeShardsReader}
+import com.twitter.cassovary.util.{LinkedIntIntMap, MultiDirIntShardsReader}
 
 object FastLRUIntArrayCache {
   /**
@@ -35,7 +35,7 @@ object FastLRUIntArrayCache {
     new FastLRUIntArrayCache(shardDirectories, numShards,
       maxId, cacheMaxNodes, cacheMaxEdges,
       idToIntOffset, idToNumEdges,
-      new MultiDirEdgeShardsReader(shardDirectories, numShards),
+      new MultiDirIntShardsReader(shardDirectories, numShards),
       new Array[Array[Int]](cacheMaxNodes + 1),
       new LinkedIntIntMap(maxId, cacheMaxNodes),
       new IntArrayCacheNumbers,
@@ -47,7 +47,7 @@ object FastLRUIntArrayCache {
 class FastLRUIntArrayCache private(shardDirectories: Array[String], numShards: Int,
                                    maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
                                    idToIntOffset: Array[Long], idToNumEdges: Array[Int],
-                                   val reader: MultiDirEdgeShardsReader,
+                                   val reader: MultiDirIntShardsReader,
                                    val indexToArray: Array[Array[Int]],
                                    val linkedMap: LinkedIntIntMap,
                                    val numbers: IntArrayCacheNumbers,
@@ -56,7 +56,7 @@ class FastLRUIntArrayCache private(shardDirectories: Array[String], numShards: I
   def getThreadSafeChild = new FastLRUIntArrayCache(shardDirectories, numShards,
     maxId, cacheMaxNodes, cacheMaxEdges,
     idToIntOffset, idToNumEdges,
-    new MultiDirEdgeShardsReader(shardDirectories, numShards),
+    new MultiDirIntShardsReader(shardDirectories, numShards),
     indexToArray, linkedMap, numbers, lock)
 
   def get(id: Int): Array[Int] = {
@@ -79,7 +79,7 @@ class FastLRUIntArrayCache private(shardDirectories: Array[String], numShards: I
         // Read in array
         val intArray = new Array[Int](numEdges)
 
-        // Each EdgeShardReader is synchronized (i.e. 1 reader per shard)
+        // Each IntShardReader is synchronized (i.e. 1 reader per shard)
         reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id) * 4, numEdges, intArray, 0)
 
         lock.acquire

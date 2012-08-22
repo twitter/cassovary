@@ -14,7 +14,7 @@
 package com.twitter.cassovary.util.cache
 
 import scala.collection.mutable
-import com.twitter.cassovary.util.MultiDirEdgeShardsReader
+import com.twitter.cassovary.util.MultiDirIntShardsReader
 
 /**
  * Array-based Clock replacement algorithm implementation
@@ -34,7 +34,7 @@ object FastClockIntArrayCache {
     new FastClockIntArrayCache(shardDirectories, numShards,
       maxId, cacheMaxNodes, cacheMaxEdges,
       idToIntOffset, idToNumEdges,
-      new MultiDirEdgeShardsReader(shardDirectories, numShards),
+      new MultiDirIntShardsReader(shardDirectories, numShards),
       new IntArrayCacheNumbers,
       new FastClockReplace(maxId, cacheMaxNodes, cacheMaxEdges))
   }
@@ -100,7 +100,7 @@ class FastClockReplace(maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long) {
 class FastClockIntArrayCache private(shardDirectories: Array[String], numShards: Int,
                                      maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
                                      idToIntOffset: Array[Long], idToNumEdges: Array[Int],
-                                     val reader: MultiDirEdgeShardsReader,
+                                     val reader: MultiDirIntShardsReader,
                                      val numbers: IntArrayCacheNumbers,
                                      val replace: FastClockReplace) extends IntArrayCache {
 
@@ -113,7 +113,7 @@ class FastClockIntArrayCache private(shardDirectories: Array[String], numShards:
   def getThreadSafeChild = new FastClockIntArrayCache(shardDirectories, numShards,
     maxId, cacheMaxNodes, cacheMaxEdges,
     idToIntOffset, idToNumEdges,
-    new MultiDirEdgeShardsReader(shardDirectories, numShards),
+    new MultiDirIntShardsReader(shardDirectories, numShards),
     numbers, replace)
 
   def get(id: Int) = {

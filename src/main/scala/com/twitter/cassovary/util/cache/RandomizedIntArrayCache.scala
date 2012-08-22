@@ -15,7 +15,7 @@ package com.twitter.cassovary.util.cache
 
 import util.Random
 import concurrent.Lock
-import com.twitter.cassovary.util.MultiDirEdgeShardsReader
+import com.twitter.cassovary.util.MultiDirIntShardsReader
 
 object RandomizedIntArrayCache {
   def apply(shardDirectories: Array[String], numShards: Int,
@@ -25,7 +25,7 @@ object RandomizedIntArrayCache {
     new RandomizedIntArrayCache(shardDirectories, numShards,
       maxId, cacheMaxNodes, cacheMaxEdges,
       idToIntOffset, idToNumEdges,
-      new MultiDirEdgeShardsReader(shardDirectories, numShards),
+      new MultiDirIntShardsReader(shardDirectories, numShards),
       new Array[Array[Int]](maxId + 1),
       new Array[Int](cacheMaxNodes),
       new IntArrayCacheNumbers,
@@ -36,7 +36,7 @@ object RandomizedIntArrayCache {
 class RandomizedIntArrayCache private(shardDirectories: Array[String], numShards: Int,
                                       maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
                                       idToIntOffset: Array[Long], idToNumEdges: Array[Int],
-                                      val reader: MultiDirEdgeShardsReader,
+                                      val reader: MultiDirIntShardsReader,
                                       val idToArray: Array[Array[Int]],
                                       val indexToId: Array[Int],
                                       val numbers: IntArrayCacheNumbers,
@@ -47,7 +47,7 @@ class RandomizedIntArrayCache private(shardDirectories: Array[String], numShards
   def getThreadSafeChild = new RandomizedIntArrayCache(shardDirectories, numShards,
     maxId, cacheMaxNodes, cacheMaxEdges,
     idToIntOffset, idToNumEdges,
-    new MultiDirEdgeShardsReader(shardDirectories, numShards),
+    new MultiDirIntShardsReader(shardDirectories, numShards),
     idToArray, indexToId, numbers, lock)
 
   def get(id: Int) = {

@@ -22,41 +22,41 @@ import net.lag.logging.Logger
 import java.io.File
 import com.twitter.io.Files
 
-class EdgeShardReaderWriterSpec extends Specification {
+class IntShardReaderWriterSpec extends Specification {
   val log = Logger.get
   val largeNumber = 1234567890
   val oneSequence = List(2000200200)
   val twoSequence = List(7, 7)
   val sevenSequence = List(132435, 243546, 354657, 999999999, 2000000000, 909909909, 1)
-  "EdgeShardWriter and EdgeShardReader" should {
+  "IntShardWriter and IntShardReader" should {
     "R/W 1 integer" in {
-      val esw = new EdgeShardWriter("test.txt")
+      val esw = new IntShardWriter("test.txt")
       esw.writeIntegersSequentially(List(largeNumber))
       esw.close
-      val esr = new EdgeShardReader("test.txt")
+      val esr = new IntShardReader("test.txt")
       val intArray = new Array[Int](2)
       esr.readIntegersFromOffsetIntoArray(0, 1, intArray, 1)
       esr.close
       intArray(1) mustEqual largeNumber
     }
     "R/W 7 integers" in {
-      val esw = new EdgeShardWriter("test.txt")
+      val esw = new IntShardWriter("test.txt")
       esw.writeIntegersSequentially(sevenSequence)
       esw.close
-      val esr = new EdgeShardReader("test.txt")
+      val esr = new IntShardReader("test.txt")
       val intArray = new Array[Int](10)
       esr.readIntegersFromOffsetIntoArray(0, 7, intArray, 3)
       esr.close
       (0 until 7).foreach { i => intArray(3+i) mustEqual sevenSequence(i) }
     }
     "W 3,3,1 integers, R 1 integer 7 times" in {
-      val esw = new EdgeShardWriter("test.txt")
+      val esw = new IntShardWriter("test.txt")
       esw.writeIntegersSequentially(sevenSequence)
       esw.writeIntegersSequentially(sevenSequence.slice(0,3))
       esw.writeIntegersSequentially(sevenSequence.slice(3,3))
       esw.writeIntegersSequentially(sevenSequence.slice(6,1))
       esw.close
-      val esr = new EdgeShardReader("test.txt")
+      val esr = new IntShardReader("test.txt")
       val intArray = new Array[Int](10)
       (0 until 7).reverse.foreach { i =>
         esr.readIntegersFromOffsetIntoArray(i*4, 1, intArray, 3)
@@ -65,10 +65,10 @@ class EdgeShardReaderWriterSpec extends Specification {
       esr.close
     }
     "W 7 integers, seek 3 integers, read 3 integers, then 1 integer successfully" in {
-      val esw = new EdgeShardWriter("test.txt")
+      val esw = new IntShardWriter("test.txt")
       esw.writeIntegersSequentially(sevenSequence)
       esw.close
-      val esr = new EdgeShardReader("test.txt")
+      val esr = new IntShardReader("test.txt")
       val intArray = new Array[Int](10)
       esr.readIntegersFromOffsetIntoArray(3*4, 3, intArray, 3)
       (0 until 3).foreach { i => intArray(3+i) mustEqual sevenSequence(3+i) }
@@ -82,7 +82,7 @@ class EdgeShardReaderWriterSpec extends Specification {
       val a = new AtomicInteger()
 
       class WriteActor extends Actor {
-        val esw = new EdgeShardWriter("test.txt")
+        val esw = new IntShardWriter("test.txt")
         def act() {
           while (true) {
             receive {
@@ -107,7 +107,7 @@ class EdgeShardReaderWriterSpec extends Specification {
       }
       actors.foreach { a => a.close }
       // Read and ensure that everything was written correctly
-      val esr = new EdgeShardReader("test.txt")
+      val esr = new IntShardReader("test.txt")
       val intArray = new Array[Int](10000)
       esr.readIntegersFromOffsetIntoArray(8, 9998, intArray, 2)
       (1 until 5000).foreach { i =>
@@ -118,12 +118,12 @@ class EdgeShardReaderWriterSpec extends Specification {
     }
 
     "Non-sequential writes work" in {
-      val esw = new EdgeShardWriter("test.txt")
+      val esw = new IntShardWriter("test.txt")
       esw.writeIntegersAtOffset(24, Seq(5,6))
       esw.writeIntegersAtOffset(4, Seq(999))
       esw.writeIntegersAtOffset(32, Seq(42))
       esw.close
-      val esr = new EdgeShardReader("test.txt")
+      val esr = new IntShardReader("test.txt")
       val intArray = new Array[Int](4)
       esr.readIntegersFromOffsetIntoArray(4, 1, intArray, 0)
       esr.readIntegersFromOffsetIntoArray(24, 3, intArray, 1)
@@ -133,13 +133,13 @@ class EdgeShardReaderWriterSpec extends Specification {
     }
 
     "Reading and writing nothing doesn't mess up" in {
-      val esw = new EdgeShardWriter("test.txt")
+      val esw = new IntShardWriter("test.txt")
       esw.writeIntegersAtOffset(24, Seq(5, 7))
       esw.writeIntegersAtOffset(24, Seq())
       esw.writeIntegersAtOffset(24, Seq(6))
       esw.writeIntegersAtOffset(24, Seq())
       esw.close
-      val esr = new EdgeShardReader("test.txt")
+      val esr = new IntShardReader("test.txt")
       val intArray = new Array[Int](2)
       esr.readIntegersFromOffsetIntoArray(20, 2, intArray, 0)
       esr.readIntegersFromOffsetIntoArray(24, 2, intArray, 0)
@@ -150,23 +150,23 @@ class EdgeShardReaderWriterSpec extends Specification {
     }
 
     "Multiple writes by different writers doesn't mess up" in {
-      val esw = new EdgeShardWriter("test.txt")
+      val esw = new IntShardWriter("test.txt")
       esw.writeIntegersAtOffset(8, Seq(9, 8))
       esw.close
 
-      val ess = new EdgeShardReader("test.txt")
+      val ess = new IntShardReader("test.txt")
       val intArray = new Array[Int](5)
       ess.readIntegersFromOffsetIntoArray(8, 2, intArray, 0)
       intArray(0) mustEqual 9
       intArray(1) mustEqual 8
       ess.close
 
-      val esv = new EdgeShardWriter("test.txt")
+      val esv = new IntShardWriter("test.txt")
       esv.writeIntegersAtOffset(0, Seq(5, 6, 7))
       esv.writeIntegersAtOffset(16, Seq(9))
       esv.close
 
-      val esr = new EdgeShardReader("test.txt")
+      val esr = new IntShardReader("test.txt")
       esr.readIntegersFromOffsetIntoArray(8, 2, intArray, 0)
       intArray(0) mustEqual 7
       intArray(1) mustEqual 8
@@ -175,21 +175,21 @@ class EdgeShardReaderWriterSpec extends Specification {
 
     "Successfully make a large file of the right size" in {
       new File("test.txt").delete()
-      val esw = new EdgeShardWriter("test.txt")
+      val esw = new IntShardWriter("test.txt")
       esw.allocate(1000000)
       esw.length mustEqual 1000000
       esw.close
     }
   }
 
-  "MemEdgeShardWriter" should {
-    "Write like EdgeShardWriter" in {
-      val esw = new MemEdgeShardWriter(10)
+  "MemIntShardWriter" should {
+    "Write like IntShardWriter" in {
+      val esw = new MemIntShardWriter(10)
       val its = (0 until 10).toArray
       esw.writeIntegersAtOffsetFromOffset(5, its, 5, 5)
       esw.writeIntegersAtOffsetFromOffset(0, its, 0, 5)
       esw.writeToShard("test.txt")
-      val esr = new EdgeShardReader("test.txt")
+      val esr = new IntShardReader("test.txt")
       val intArray = new Array[Int](10)
       esr.readIntegersFromOffsetIntoArray(0, 10, intArray, 0)
       (0 until 10).foreach { i => intArray(i) mustEqual i }
@@ -211,7 +211,7 @@ class EdgeShardReaderWriterSpec extends Specification {
         (0 until i).foreach { j => its(i)(j) = j }
       }
       val shardSizes = Array[Int](4,6,8,10)
-      val msw = new MemEdgeShardsWriter("test-shards", 4, shardSizes, 2)
+      val msw = new MemIntShardsWriter("test-shards", 4, shardSizes, 2)
       msw.startRound(0)
       msw.writeIntegersAtOffsetFromOffset(0, 0, its(0), 0, 0)
       msw.writeIntegersAtOffsetFromOffset(1, 0, its(1), 0, 1)
@@ -224,7 +224,7 @@ class EdgeShardReaderWriterSpec extends Specification {
       msw.writeIntegersAtOffsetFromOffset(6, 2, its(6), 0, 6)
       msw.writeIntegersAtOffsetFromOffset(7, 3, its(7), 0, 7)
       msw.endRound
-      val esr = new EdgeShardsReader("test-shards", 4)
+      val esr = new IntShardsReader("test-shards", 4)
 
       val intArray = new Array[Int](10)
       esr.readIntegersFromOffsetIntoArray(1, 0, 1, intArray, 0)
@@ -240,7 +240,7 @@ class EdgeShardReaderWriterSpec extends Specification {
     }
   }
 
-  "EdgeShardsWriter and EdgeShardsReader" should {
+  "IntShardsWriter and IntShardsReader" should {
     doFirst {
       new File("test-shards").mkdirs()
     }
@@ -248,22 +248,22 @@ class EdgeShardReaderWriterSpec extends Specification {
       Files.delete(new File("test-shards"))
     }
     "Read and write 1 integer" in {
-      val esw = new EdgeShardsWriter("test-shards", 5)
+      val esw = new IntShardsWriter("test-shards", 5)
       esw.writeIntegersSequentially(5, oneSequence)
       esw.close
-      val esr = new EdgeShardsReader("test-shards", 5)
+      val esr = new IntShardsReader("test-shards", 5)
       val intArray = new Array[Int](1)
       esr.readIntegersFromOffsetIntoArray(5, 0, 1, intArray, 0)
       esr.close
       intArray(0) mustEqual oneSequence(0)
     }
     "Read and write 3 sets of integers in different orders" in {
-      val esw = new EdgeShardsWriter("test-shards", 5)
+      val esw = new IntShardsWriter("test-shards", 5)
       esw.writeIntegersSequentially(1212121212, twoSequence)
       esw.writeIntegersSequentially(5, sevenSequence)
       val offset = esw.writeIntegersSequentially(999999990, oneSequence)
       esw.close
-      val esr = new EdgeShardsReader("test-shards", 5)
+      val esr = new IntShardsReader("test-shards", 5)
       val intArray = new Array[Int](10)
       offset mustEqual 7 * 4
       esr.readIntegersFromOffsetIntoArray(999999990, 7*4, 1, intArray, 0)
@@ -275,7 +275,7 @@ class EdgeShardReaderWriterSpec extends Specification {
     }
   }
 
-  "MultiDirMemEdgeShardsWriter and MultiDirEdgeShardsReader" should {
+  "MultiDirMemIntShardsWriter and MultiDirIntShardsReader" should {
     val directories = Array("test-shards-1", "test-shards-2")
     doLast {
       directories.foreach { directory => Files.delete(new File(directory)) }
@@ -288,7 +288,7 @@ class EdgeShardReaderWriterSpec extends Specification {
         (0 until i).foreach { j => its(i)(j) = j }
       }
       val shardSizes = Array(4, 6, 8, 10)
-      val msw = new MultiDirMemEdgeShardsWriter(directories, 4, shardSizes, 2)
+      val msw = new MultiDirMemIntShardsWriter(directories, 4, shardSizes, 2)
       msw.startRound(0)
       msw.writeIntegersAtOffsetFromOffset(0, 0, its(0), 0, 0)
       msw.writeIntegersAtOffsetFromOffset(1, 0, its(1), 0, 1)
@@ -302,7 +302,7 @@ class EdgeShardReaderWriterSpec extends Specification {
       msw.writeIntegersAtOffsetFromOffset(7, 3, its(7), 0, 7)
       msw.endRound
 
-      val esr = new MultiDirEdgeShardsReader(directories, 4)
+      val esr = new MultiDirIntShardsReader(directories, 4)
       val intArray = new Array[Int](10)
       esr.readIntegersFromOffsetIntoArray(1, 0, 1, intArray, 0)
       intArray(0) mustEqual 0
@@ -318,7 +318,7 @@ class EdgeShardReaderWriterSpec extends Specification {
 
   }
 
-  "MultiDirEdgeShardsWriter and MultiDirEdgeShardsReader" should {
+  "MultiDirIntShardsWriter and MultiDirIntShardsReader" should {
     val directories = Array("test-shards-4", "test-shards-5")
     doLast {
       directories.foreach { directory => Files.delete(new File(directory)) }
@@ -326,7 +326,7 @@ class EdgeShardReaderWriterSpec extends Specification {
 
     "Work" in {
       // Write some random numbers
-      val esw = new MultiDirEdgeShardsWriter(directories, 4)
+      val esw = new MultiDirIntShardsWriter(directories, 4)
       (0 to 10).foreach { i =>
         val a = (0 to i).map{ j => j * i }.toArray
         esw.writeIntegersAtOffset(i, i * 11, a)
@@ -334,7 +334,7 @@ class EdgeShardReaderWriterSpec extends Specification {
       esw.close
 
       // Read those random numbers back
-      val esr = new MultiDirEdgeShardsReader(directories, 4)
+      val esr = new MultiDirIntShardsReader(directories, 4)
       val intArray = new Array[Int](11)
       (0 to 10).foreach { i =>
         esr.readIntegersFromOffsetIntoArray(i, i * 11, i + 1, intArray, 0)

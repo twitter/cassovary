@@ -15,7 +15,7 @@ package com.twitter.cassovary.util.cache
 
 import com.twitter.ostrich.stats.Stats
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import com.twitter.cassovary.util.{LinkedIntIntMap, MultiDirEdgeShardsReader}
+import com.twitter.cassovary.util.{LinkedIntIntMap, MultiDirIntShardsReader}
 
 object BufferedFastLRUIntArrayCache {
   def apply(shardDirectories: Array[String], numShards: Int,
@@ -25,7 +25,7 @@ object BufferedFastLRUIntArrayCache {
     new BufferedFastLRUIntArrayCache(shardDirectories, numShards,
       maxId, cacheMaxNodes, cacheMaxEdges,
       idToIntOffset, idToNumEdges,
-      new MultiDirEdgeShardsReader(shardDirectories, numShards),
+      new MultiDirIntShardsReader(shardDirectories, numShards),
       new Array[Array[Int]](cacheMaxNodes + 1),
       new LinkedIntIntMap(maxId, cacheMaxNodes),
       new IntArrayCacheNumbers,
@@ -46,7 +46,7 @@ object BufferedFastLRUIntArrayCache {
 class BufferedFastLRUIntArrayCache private(shardDirectories: Array[String], numShards: Int,
                                            maxId: Int, cacheMaxNodes: Int, cacheMaxEdges: Long,
                                            idToIntOffset: Array[Long], idToNumEdges: Array[Int],
-                                           val shardReader: MultiDirEdgeShardsReader,
+                                           val shardReader: MultiDirIntShardsReader,
                                            val indexToArray: Array[Array[Int]],
                                            val linkedMap: LinkedIntIntMap,
                                            val numbers: IntArrayCacheNumbers,
@@ -60,7 +60,7 @@ class BufferedFastLRUIntArrayCache private(shardDirectories: Array[String], numS
   def getThreadSafeChild = new BufferedFastLRUIntArrayCache(shardDirectories, numShards,
     maxId, cacheMaxNodes, cacheMaxEdges,
     idToIntOffset, idToNumEdges,
-    new MultiDirEdgeShardsReader(shardDirectories, numShards),
+    new MultiDirIntShardsReader(shardDirectories, numShards),
     indexToArray, linkedMap, numbers, rw)
 
   def addToBuffer(threadId: Long, index: Int) {
@@ -111,7 +111,7 @@ class BufferedFastLRUIntArrayCache private(shardDirectories: Array[String], numS
         // Read in array
         val intArray = new Array[Int](numEdges)
 
-        // Each EdgeShardReader is synchronized (i.e. 1 reader per shard)
+        // Each IntShardReader is synchronized (i.e. 1 reader per shard)
         shardReader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id) * 4, numEdges, intArray, 0)
 
         writer.lock()

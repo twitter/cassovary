@@ -79,9 +79,9 @@ object CachedDirectedGraph {
     val serializer = new LoaderSerializer(cacheDirectory, useCachedValues)
 
     // Step 1
-    // Find maxId, nodeWithOutEdgesMaxId, numEdges
+    // Find maxId, nodeWithOutEdgesMaxId, numInts
     // Needed so that we can initialize arrays with the appropriate sizes
-    log.info("Reading maxId and Calculating numEdges...")
+    log.info("Reading maxId and Calculating numInts...")
     serializer.writeOrRead("step1.txt", { writer =>
       val futures = Stats.time("graph_load_reading_maxid_and_calculating_numedges") {
         def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) = {
@@ -231,7 +231,7 @@ object CachedDirectedGraph {
       log.info("Allocating shards (renumbered)...")
       serializer.writeOrRead("step3r.txt", { writer =>
         Stats.time("graph_load_allocating_shards") {
-          val esw = new MultiDirEdgeShardsWriter(shardDirectories, numShards)
+          val esw = new MultiDirIntShardsWriter(shardDirectories, numShards)
           (0 until numShards).foreach { i =>
             esw.shardWriters(i).allocate(edgeOffsets(i).get * 4)
           }
@@ -247,7 +247,7 @@ object CachedDirectedGraph {
       log.info("Writing to shards in rounds (renumbered)...")
       serializer.writeOrRead("step4r.txt", { writer =>
         val shardSizes = edgeOffsets.map { i => i.get().toInt }
-        val msw = new MultiDirMemEdgeShardsWriter(shardDirectories, numShards, shardSizes, numRounds)
+        val msw = new MultiDirMemIntShardsWriter(shardDirectories, numShards, shardSizes, numRounds)
         (0 until numRounds).foreach { roundNo =>
           log.info("Beginning round %s...".format(roundNo))
           msw.startRound(roundNo)
@@ -322,7 +322,7 @@ object CachedDirectedGraph {
       log.info("Allocating shards...")
       serializer.writeOrRead("step3.txt", { writer =>
         Stats.time("graph_load_allocating_shards") {
-          val esw = new MultiDirEdgeShardsWriter(shardDirectories, numShards)
+          val esw = new MultiDirIntShardsWriter(shardDirectories, numShards)
           (0 until numShards).foreach { i =>
             esw.shardWriters(i).allocate(edgeOffsets(i).get * 4)
           }
@@ -338,7 +338,7 @@ object CachedDirectedGraph {
       log.info("Writing to shards in rounds...")
       serializer.writeOrRead("step4.txt", { writer =>
         val shardSizes = edgeOffsets.map { i => i.get().toInt }
-        val msw = new MultiDirMemEdgeShardsWriter(shardDirectories, numShards, shardSizes, numRounds)
+        val msw = new MultiDirMemIntShardsWriter(shardDirectories, numShards, shardSizes, numRounds)
         (0 until numRounds).foreach { roundNo =>
           log.info("Beginning round %s...".format(roundNo))
           msw.startRound(roundNo)
@@ -369,7 +369,7 @@ object CachedDirectedGraph {
       //    log.info("Writing to shards...")
       //    Stats.time("graph_load_writing_to_shards") {
       //      def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) = {
-      //        val esw = new EdgeShardsWriter(shardDirectory, numShards)
+      //        val esw = new IntShardsWriter(shardDirectory, numShards)
       //        iteratorFunc() foreach { item =>
       //          val id = item.id
       //          val (edgeOffset, _) = idToIntOffsetAndNumEdges(id)
@@ -674,7 +674,7 @@ class GuavaCachedDirectedGraph (
     val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir)
     extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
 
-  val reader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
+  val reader = new MultiDirIntShardsReader(shardDirectories, numShards)
 
   def getThreadSafeChild = throw new Exception("No multithreaded Guava Cache")
 
@@ -778,7 +778,7 @@ class NodeArrayGuavaCachedDirectedGraph (
                                  val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir)
   extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
 
-  val reader = new MultiDirEdgeShardsReader(shardDirectories, numShards)
+  val reader = new MultiDirIntShardsReader(shardDirectories, numShards)
 
   def getThreadSafeChild = throw new Exception("No multithreaded Guava Cache")
 

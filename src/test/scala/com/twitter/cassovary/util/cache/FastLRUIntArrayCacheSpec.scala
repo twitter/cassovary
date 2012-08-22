@@ -14,7 +14,7 @@
 package com.twitter.cassovary.util.cache
 
 import org.specs.Specification
-import com.twitter.cassovary.util.EdgeShardsWriter
+import com.twitter.cassovary.util.IntShardsWriter
 
 class FastLRUIntArrayCacheSpec extends Specification {
 
@@ -23,7 +23,7 @@ class FastLRUIntArrayCacheSpec extends Specification {
     val edges = Array[Int](0, 2, 2, 0, 1)
 
     doFirst {
-      val writer = new EdgeShardsWriter("test-shards", 10)
+      val writer = new IntShardsWriter("test-shards", 10)
       writer.writeIntegersAtOffset(1, 0, List(2, 3))
       writer.writeIntegersAtOffset(2, 0, List(3, 4))
       writer.writeIntegersAtOffset(4, 0, List(1))

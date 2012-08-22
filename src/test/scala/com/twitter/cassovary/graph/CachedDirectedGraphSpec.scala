@@ -118,7 +118,7 @@ class CachedDirectedGraphSpec extends Specification {
       val graphUtils = new GraphUtils(graph.getThreadSafeChild)
 
       intList.map { i =>
-        val (a, b) = graphUtils.debugCalculatePersonalizedReputation(i, walkParams, edgeMap)
+        val (a, b) = graphUtils.safeCalculatePersonalizedReputation(i, walkParams, edgeMap)
         //println(i, a)
         a.size
       }
