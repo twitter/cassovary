@@ -199,10 +199,10 @@ class IntShardReaderWriterSpec extends Specification {
 
   "MemEdgeShardWriters" should {
     doFirst {
-      new File("test-shards").mkdirs()
+      new File("test-shards2").mkdirs()
     }
     doLast {
-      Files.delete(new File("test-shards"))
+      Files.delete(new File("test-shards2"))
     }
     "Work in rounds" in {
       val its = new Array[Array[Int]](8)
@@ -211,7 +211,7 @@ class IntShardReaderWriterSpec extends Specification {
         (0 until i).foreach { j => its(i)(j) = j }
       }
       val shardSizes = Array[Int](4,6,8,10)
-      val msw = new MemIntShardsWriter("test-shards", 4, shardSizes, 2)
+      val msw = new MemIntShardsWriter("test-shards2", 4, shardSizes, 2)
       msw.startRound(0)
       msw.writeIntegersAtOffsetFromOffset(0, 0, its(0), 0, 0)
       msw.writeIntegersAtOffsetFromOffset(1, 0, its(1), 0, 1)
@@ -224,7 +224,7 @@ class IntShardReaderWriterSpec extends Specification {
       msw.writeIntegersAtOffsetFromOffset(6, 2, its(6), 0, 6)
       msw.writeIntegersAtOffsetFromOffset(7, 3, its(7), 0, 7)
       msw.endRound
-      val esr = new IntShardsReader("test-shards", 4)
+      val esr = new IntShardsReader("test-shards2", 4)
 
       val intArray = new Array[Int](10)
       esr.readIntegersFromOffsetIntoArray(1, 0, 1, intArray, 0)
@@ -242,28 +242,28 @@ class IntShardReaderWriterSpec extends Specification {
 
   "IntShardsWriter and IntShardsReader" should {
     doFirst {
-      new File("test-shards").mkdirs()
+      new File("test-shards3").mkdirs()
     }
     doLast {
-      Files.delete(new File("test-shards"))
+      Files.delete(new File("test-shards3"))
     }
     "Read and write 1 integer" in {
-      val esw = new IntShardsWriter("test-shards", 5)
+      val esw = new IntShardsWriter("test-shards3", 5)
       esw.writeIntegersSequentially(5, oneSequence)
       esw.close
-      val esr = new IntShardsReader("test-shards", 5)
+      val esr = new IntShardsReader("test-shards3", 5)
       val intArray = new Array[Int](1)
       esr.readIntegersFromOffsetIntoArray(5, 0, 1, intArray, 0)
       esr.close
       intArray(0) mustEqual oneSequence(0)
     }
     "Read and write 3 sets of integers in different orders" in {
-      val esw = new IntShardsWriter("test-shards", 5)
+      val esw = new IntShardsWriter("test-shards3", 5)
       esw.writeIntegersSequentially(1212121212, twoSequence)
       esw.writeIntegersSequentially(5, sevenSequence)
       val offset = esw.writeIntegersSequentially(999999990, oneSequence)
       esw.close
-      val esr = new IntShardsReader("test-shards", 5)
+      val esr = new IntShardsReader("test-shards3", 5)
       val intArray = new Array[Int](10)
       offset mustEqual 7
       esr.readIntegersFromOffsetIntoArray(999999990, 7, 1, intArray, 0)

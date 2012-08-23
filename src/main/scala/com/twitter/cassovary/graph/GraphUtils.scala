@@ -33,7 +33,7 @@ class GraphUtils(val graph: Graph) {
   /**
    * Do a walk on the {@code nodes} in a graph.
    * @param nodes the nodes to visit in this walk
-   * @param tourists each tourist maintains some state and updates that state on visiting a node
+   * @param walkFunc each tourist maintains some state and updates that state on visiting a node
    * @return Seq of tourist-specific-returned information
    */
 
@@ -87,12 +87,12 @@ class GraphUtils(val graph: Graph) {
    * The walk maintains a count of the number of times that nodes have been visited
    * during the walk.
    * @param startNodeIds nodes to start the random walk from
-   * @param walkParams the {@link RandomWalkParams} random walk parameters
-   * @return a tuple of two elements.
+   * @param walkParams the RandomWalkParams random walk parameters
+   @return a tuple of two elements.
    *         The first is a counter tracking a visited node's id to the number of visits to that node.
    *         The second is a counter tracking a visited node's id to the paths visited while hitting
    *         that node. The paths are sorted in decreasing order by occurrence
-   *         Each path is kept as a {@link DirectedPath}.
+   *         Each path is kept as a DirectedPath.
    */
   def randomWalk(dir: GraphDir, startNodeIds: Seq[Int], walkParams: RandomWalkParams)():
       (VisitsCounter, Option[PathsCounter]) = {
@@ -125,12 +125,12 @@ class GraphUtils(val graph: Graph) {
   /**
    * Calculates the reputation of graph nodes personalized to a given node based on a random walk.
    * @param startNodeIds the ids of the node to get personalized reputations for
-   * @param walkParams the {@link RandomWalkParams} random walk parameters
+   * @param walkParams the RandomWalkParams random walk parameters
    * @return a 2-tuple:
    *         1. List of (node's id, the number of visits made to the node) sorted in decreasing
    *            order of the number of visits, and
    *         2. A mapping, for a visited node with id V to the top paths leading to V
-   *            in the form of (P as a {@link DirectedPath}, frequency of walking P).
+   *            in the form of (P as a DirectedPath, frequency of walking P).
    */
   def calculatePersonalizedReputation(startNodeIds: Seq[Int], walkParams: RandomWalkParams):
       (Int2IntMap, Option[Int2ObjectMap[Object2IntMap[DirectedPath]]]) = {
@@ -155,8 +155,8 @@ class GraphUtils(val graph: Graph) {
    *   (=it's not a valid neighbor of the previous node or it's not a starting node)
    */
   def safeRandomWalk(dir: GraphDir, startNodeIds: Seq[Int], walkParams: RandomWalkParams,
-                       edgeMap:Map[Int,Array[_ <: Int]])():
-  (VisitsCounter, Option[PathsCounter]) = {
+                       edgeMap:Map[Int,Array[_ <: Int]], verbose: Boolean = false)():
+  (VisitsCounter, Option[PathsCounter], Traverser) = {
     val startNodesExist = (startNodeIds.length > 0) && startNodeIds.foldLeft(true) { (exists, elem) =>
       exists && graph.existsNodeId(elem)
     }
@@ -167,9 +167,15 @@ class GraphUtils(val graph: Graph) {
       case _ => None
     }
 
+    var traversedNodes: Traverser = null
     if (startNodesExist) {
-      val traversedNodes = new RandomBoundedTraverser(graph, dir, startNodeIds,
-        walkParams.numSteps, walkParams)
+      traversedNodes = if (verbose) {
+        new VerboseRandomBoundedTraverser(graph.asInstanceOf[CachedDirectedGraph], dir,
+          startNodeIds, walkParams.numSteps, walkParams)
+      }
+      else {
+        new RandomBoundedTraverser(graph, dir, startNodeIds, walkParams.numSteps, walkParams)
+      }
 
       Stats.time("safe_random_walk_traverse") {
         var previousId = startNodeIds(0)
@@ -187,27 +193,30 @@ class GraphUtils(val graph: Graph) {
         })
       }
     }
-    (visitsCounter, pathsCounterOption)
+    (visitsCounter, pathsCounterOption, traversedNodes)
   }
 
   /**
    * Debug version of calculatePersonalizedReputation
    */
-  def safeCalculatePersonalizedReputation(startNodeIds: Seq[Int], walkParams: RandomWalkParams, edgeMap: Map[Int,Array[_ <: Int]]):
-  (Int2IntMap, Option[Int2ObjectMap[Object2IntMap[DirectedPath]]]) = {
+  def safeCalculatePersonalizedReputation(startNodeIds: Seq[Int], walkParams: RandomWalkParams,
+                                          edgeMap: Map[Int,Array[_ <: Int]], verbose: Boolean):
+  (Int2IntMap, Option[Int2ObjectMap[Object2IntMap[DirectedPath]]], Traverser) = {
     Stats.time ("%s_total".format("PTC")) {
-      val (visitsCounter, pathsCounterOption) = safeRandomWalk(walkParams.dir, startNodeIds, walkParams, edgeMap)
+      val (visitsCounter, pathsCounterOption, traverser) = safeRandomWalk(walkParams.dir, startNodeIds, walkParams,
+        edgeMap, verbose)
       val topPathsOption = pathsCounterOption flatMap { counter => Some(counter.infoAllNodes) }
-      (visitsCounter.infoAllNodes, topPathsOption)
+      (visitsCounter.infoAllNodes, topPathsOption, traverser)
     }
   }
 
   /**
    * Debug version of calculatePersonalizedReputation
    */
-  def safeCalculatePersonalizedReputation(startNodeId: Int, walkParams: RandomWalkParams, edgeMap: Map[Int,Array[_ <: Int]]):
-  (Int2IntMap, Option[Int2ObjectMap[Object2IntMap[DirectedPath]]]) = {
-    safeCalculatePersonalizedReputation(Seq(startNodeId), walkParams, edgeMap)
+  def safeCalculatePersonalizedReputation(startNodeId: Int, walkParams: RandomWalkParams,
+                                          edgeMap: Map[Int,Array[_ <: Int]], verbose: Boolean = false):
+  (Int2IntMap, Option[Int2ObjectMap[Object2IntMap[DirectedPath]]], Traverser) = {
+    safeCalculatePersonalizedReputation(Seq(startNodeId), walkParams, edgeMap, verbose)
   }
 
   /**

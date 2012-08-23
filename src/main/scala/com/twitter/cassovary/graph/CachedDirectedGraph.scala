@@ -472,6 +472,8 @@ abstract class CachedDirectedGraph(maxId: Int, realMaxId: Int,
     case _ => throw new IllegalArgumentException("OnlyIn or OnlyOut accepted, but not both!")
   }
 
+  def getMisses: Long
+
   def statsString: String
 
   def writeStats(fileName: String) {
@@ -565,6 +567,8 @@ class FastCachedDirectedGraph (
     maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
     nodeCount, edgeCount, storedGraphDir, cache.getThreadSafeChild)
 
+  def getMisses = cache.getStats._1
+
   def statsString: String = {
     val (misses, hits, currentSize, currRealCapacity) = cache.getStats
     "%s\t%s\t%s\t%s\t%s".format(misses, hits + misses, misses.toDouble / (hits+misses), currentSize, currRealCapacity)
@@ -611,6 +615,8 @@ class NodeArrayFastCachedDirectedGraph (
     idToIntOffset, idToNumEdges,
     maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
     nodeCount, edgeCount, storedGraphDir, cache.getThreadSafeChild)
+
+  def getMisses = cache.getStats._1
 
   def statsString: String = {
     val (misses, hits, currentSize, currRealCapacity) = cache.getStats
@@ -708,6 +714,8 @@ class GuavaCachedDirectedGraph (
     def getStats = throw new IllegalArgumentException("Can't call getStats on this!")
     def getThreadSafeChild = this
   }
+
+  def getMisses = cacheG.stats().missCount()
 
   def statsString: String = {
     val stats = cacheG.stats()
@@ -812,6 +820,8 @@ class NodeArrayGuavaCachedDirectedGraph (
     def getStats = throw new IllegalArgumentException("Can't call getStats on this!")
     def getThreadSafeChild = this
   }
+
+  def getMisses = cacheG.stats().missCount()
 
   def statsString: String = {
     val stats = cacheG.stats()

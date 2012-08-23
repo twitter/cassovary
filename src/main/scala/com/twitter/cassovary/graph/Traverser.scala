@@ -21,6 +21,7 @@ import it.unimi.dsi.fastutil.ints.IntArrayList
 import it.unimi.dsi.fastutil.objects.ObjectArrayList
 import net.lag.logging.Logger
 import scala.util.Random
+import scala.collection.mutable
 
 /**
  * A Traverser traverses the graph in a certain order of nodes.
@@ -109,6 +110,81 @@ class RandomTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
     seenNodesTracker.recordInfo(nextNodeId, 0)
     pathLength += 1
 
+    currNode = getExistingNodeById(graph, nextNodeId)
+
+    currNode
+  }
+
+  def hasNext = true
+}
+
+class VerboseRandomTraverser(graph: CachedDirectedGraph, dir: GraphDir, homeNodeIds: Seq[Int],
+                      resetProbability: Double, maxNumEdgesThresh: Option[Int], onlyOnce: Boolean,
+                      randNumGen: Random, maxDepth: Option[Int], filterHomeNodeByNumEdges: Boolean)
+  extends Traverser {  self =>
+
+  private var currNode: Node = null
+  private val homeNodeIdSet = Set(homeNodeIds: _*)
+
+  private val seenNodesTracker = new IntInfoKeeper(self.onlyOnce)
+
+  protected def seenBefore(id: Int) = seenNodesTracker.infoOfNode(id).isDefined
+  private var pathLength = 0
+
+  var lastMissCount = 0L
+  val depthVisits = new mutable.HashMap[Int, Long]()
+  val depthMisses = new mutable.HashMap[Int, Long]()
+
+  private def goHome(): Int = {
+    pathLength = 0
+    NodeUtils.pickRandNodeId(homeNodeIds, randNumGen)
+  }
+
+  private def takeRandomStep(): Int = {
+    val nextRandom = randNumGen.nextDouble()
+    val needToFilterByNumEdges = (filterHomeNodeByNumEdges || !(homeNodeIdSet contains currNode.id))
+    if (nextRandom < resetProbability ||
+      (needToFilterByNumEdges && NodeUtils.hasTooManyEdges(dir, maxNumEdgesThresh)(currNode))) {
+      goHome()
+    } else {
+      currNode.randomNeighbor(dir, randNumGen).getOrElse(goHome())
+    }
+  }
+
+  def next = {
+    val nextNodeId = if (currNode == null ||
+      (maxDepth.isDefined && pathLength >= maxDepth.get)) {
+      goHome()
+    } else {
+      var randNextNodeId = takeRandomStep()
+      if (onlyOnce && seenBefore(randNextNodeId)) {
+        seenNodesTracker.clear()
+        goHome()
+      } else {
+        randNextNodeId
+      }
+    }
+
+    if (!depthVisits.contains(pathLength))
+      depthVisits(pathLength) = 1
+    else
+      depthVisits(pathLength) += 1
+    val newMisses = graph.getMisses - lastMissCount
+    lastMissCount += newMisses
+    if (newMisses > 0L) {
+      if (!depthMisses.contains(pathLength))
+        depthMisses(pathLength) = newMisses
+      else
+        depthMisses(pathLength) += newMisses
+      println("Miss (%s) on visiting %s".format(newMisses, nextNodeId))
+    }
+    else {
+      println("Hit on visiting %s".format(nextNodeId))
+    }
+
+    seenNodesTracker.recordInfo(nextNodeId, 0)
+    pathLength += 1
+
     try {
       currNode = getExistingNodeById(graph, nextNodeId)
     } catch {
@@ -120,6 +196,12 @@ class RandomTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
 
   def hasNext = true
 }
+
+class VerboseRandomBoundedTraverser(graph: CachedDirectedGraph, dir: GraphDir, homeNodeIds: Seq[Int], val maxSteps: Long,
+                             walkParams: RandomWalkParams) extends VerboseRandomTraverser(graph, dir, homeNodeIds,
+  walkParams.resetProbability, walkParams.maxNumEdgesThresh, walkParams.visitSameNodeOnce,
+  walkParams.randNumGen, walkParams.maxDepth,
+  walkParams.filterHomeNodeByNumEdges) with BoundedIterator[Node]
 
 /**
  * Same as RandomTraverser except that the number of steps taken is bounded by {@code maxSteps}

@@ -118,7 +118,7 @@ class CachedDirectedGraphSpec extends Specification {
       val graphUtils = new GraphUtils(graph.getThreadSafeChild)
 
       intList.map { i =>
-        val (a, b) = graphUtils.safeCalculatePersonalizedReputation(i, walkParams, edgeMap)
+        val (a, _, _) = graphUtils.safeCalculatePersonalizedReputation(i, walkParams, edgeMap)
         //println(i, a)
         a.size
       }
@@ -146,6 +146,20 @@ class CachedDirectedGraphSpec extends Specification {
       loadOnce
       loadOnce
     }
+
+    "do a verbose random walk" in {
+      val cdg = CachedDirectedGraph(Seq(iteratorFunc), MoreExecutors.sameThreadExecutor(),
+        StoredGraphDir.OnlyOut, "lru", 2, 4, Array("temp-shards/c"), 2, 2, true, "temp-cached/twoshards", false)
+      val gu = new GraphUtils(cdg)
+      val walkParams = RandomWalkParams(15000, 0.0, Some(1500), None, Some(3), false, GraphDir.OutDir, false, true)
+      val (_, _, traverser) = gu.safeCalculatePersonalizedReputation(1, walkParams, edgeMap, verbose = true)
+      val t = traverser.asInstanceOf[VerboseRandomBoundedTraverser]
+      println(t.depthMisses)
+      println(t.depthVisits)
+      t.depthMisses(2) must beGreaterThan(t.depthMisses(1))
+      t.depthVisits(0) must beGreaterThanOrEqualTo(t.depthVisits(1))
+    }
+
   }
 
   "Renumbered FastLRU-based graph containing only out edges" should {
