@@ -147,4 +147,31 @@ object DualCachedDirectedNode {
     }
   }
 
+  /**
+   * Unlike the other classes, decides what to return on-the-fly
+   * @param nodeId
+   * @param idToNumEdgesOut
+   * @param outCache
+   * @param idToNumEdgesIn
+   * @param inCache
+   * @return
+   */
+  def shapeShifter(nodeId: Int, idToNumEdgesOut: Array[Int], outCache: IntArrayCache,
+                   idToNumEdgesIn: Array[Int], inCache: IntArrayCache) = {
+    new DualCachedDirectedNode(nodeId, 0, 0) {
+      def inboundNodes = try {
+        if (idToNumEdgesIn(id) > 0) inCache.get(id) else empty
+      } catch {
+        case _ => empty
+      }
+      def outboundNodes = try {
+        if (idToNumEdgesOut(id) > 0) outCache.get(id) else empty
+      } catch {
+        case _ => empty
+      }
+      override def inboundCount = try { idToNumEdgesIn(id) } catch { case _ => 0 }
+      override def outboundCount = try { idToNumEdgesOut(id) } catch { case _ => 0 }
+    }
+  }
+
 }

@@ -13,10 +13,18 @@
  */
 package com.twitter.cassovary.graph
 
-import org.specs.Specification
 import com.google.common.util.concurrent.MoreExecutors
+import org.specs.Specification
 
 class DualCachedDirectedGraphSpec extends Specification {
+
+  val edgeMap = Map(1 -> Array(2,3,4), 2 -> Array(1), 3 -> Array(1),
+    4 -> Array.empty, 5 -> Array(2), 6 -> Array(1,2,3,4))
+  val reachability = List(0, 4, 4, 4, 1, 5, 5)
+  val inEdgeMap = Map(1 -> Array(2,3,6), 2 -> Array(1,5,6), 3  -> Array(1,6),
+    4 -> Array(1,6), 5 -> Array.empty, 6 -> Array.empty)
+  val inReachability = List(0, 5, 5, 5, 6, 1, 1)
+
   var graph: CachedDirectedGraph = _
 
   val iteratorFunc = () => Seq(NodeIdEdgesMaxId(1, Array(2,3,4)),
@@ -40,7 +48,7 @@ class DualCachedDirectedGraphSpec extends Specification {
     CachedDirectedGraph(Seq(iteratorFunc), Seq(inIteratorFunc), MoreExecutors.sameThreadExecutor(),
       StoredGraphDir.BothInOut, "lru", 2, 4, Array("temp-shards/d"), 2, 2, true, "temp-cached/dtwoshards", false)
 
-  "Regular FastLRU-based Dual Graph containing only out edges" should {
+  "Regular FastLRU-based Dual Graph containing out and in edges" should {
     doBefore {
       graph = makeDualGraph
     }
@@ -68,9 +76,14 @@ class DualCachedDirectedGraphSpec extends Specification {
       graph.edgeCount mustBe 10L
     }
 
+    "concurrent test works" in {
+      graph must RunConcurrently(GraphDir.OutDir, edgeMap, reachability, 5)
+      graph must RunConcurrently(GraphDir.InDir, inEdgeMap, inReachability, 5)
+    }
+
   }
 
-  "Renumbered FastLRU-based Dual Graph containing only out edges" should {
+  "Renumbered FastLRU-based Dual Graph containing out and in edges" should {
     doBefore {
       graph = makeRenumberedDualGraph
     }

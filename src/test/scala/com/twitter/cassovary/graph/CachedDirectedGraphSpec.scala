@@ -14,13 +14,60 @@
 package com.twitter.cassovary.graph
 
 import org.specs.Specification
-import com.twitter.cassovary.util.{FileUtils, ExecutorUtils}
+import com.twitter.cassovary.util.ExecutorUtils
 import java.util.concurrent._
 import scala.util.Random
 import com.twitter.cassovary.util.cache.{FastClockIntArrayCache, FastLRUIntArrayCache}
 import scala.Some
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.google.common.util.concurrent.MoreExecutors
+import org.specs.matcher.Matcher
+
+/**
+ * Matcher to test whether concurrent random walks mess anything up in a given graph
+ * See use in CachedDirectedGraphSpec for examples of parameters to pass in.
+ *
+ * @param graphDir Direction to do random walk in
+ * @param edgeMap A map from node id to an array of neighbor ids
+ * @param reachability An array with node id -> # of neighbors reachable from that node id
+ * @param numThreads Number of threads to use. Arbitrary default is 10.
+ */
+case class RunConcurrently(graphDir: GraphDir.GraphDir, edgeMap: Map[Int, Array[_<:Int]], reachability: List[Int],
+                           numThreads: Int = 10) extends Matcher[CachedDirectedGraph]() {
+  def apply(graph: => CachedDirectedGraph) = {
+
+    print("Concurrent test running on %s".format(graph.getClass.getName))
+    val startTime = System.nanoTime()
+    val walkParams = RandomWalkParams(10000, 0.2, Some(1500), None, None, false, graphDir, false, true)
+    // Generate a sequence of random sequences
+    val r = new Random
+    val x = (0 until numThreads).map { _ =>
+      r.shuffle(Stream.continually((1 to 6).toList).flatten.take(10).toList)
+    }.toSeq
+    // Launch many threads each doing personalized reputation
+    val futures = ExecutorUtils.parallelWork[List[Int], List[Int]](Executors.newFixedThreadPool(numThreads),
+    x,
+    { intList =>
+      val graphUtils = new GraphUtils(graph.getThreadSafeChild)
+
+      intList.map { i =>
+        val (a, _, _) = graphUtils.safeCalculatePersonalizedReputation(i, walkParams, edgeMap)
+        //println(i, a)
+        a.size
+      }
+    })
+    // Wait for all threads to complete
+    val intLists = futures.toArray.map { f => f.asInstanceOf[Future[List[Int]]].get }
+    // Test reachability for all of them
+    val reached = (0 until numThreads).foldLeft(true) { case (truth, i) =>
+      truth && (0 until 10).foldLeft(true) { case (truth, j) =>
+        truth && (intLists(i)(j) == reachability(x(i)(j)))
+      }
+    }
+    print("...done in %sms!\n".format((System.nanoTime() - startTime)/1000000))
+    (reached, "Concurrent test succeeded!", "Concurrent test failed on reachability!")
+  }
+}
 
 class CachedDirectedGraphSpec extends Specification {
   var graph: CachedDirectedGraph = _
@@ -103,38 +150,6 @@ class CachedDirectedGraphSpec extends Specification {
     graph = makeRenumberedGuavaGraph(StoredGraphDir.OnlyIn)
   }
 
-  def concurrentTest(graph: CachedDirectedGraph, edgeMap: Map[Int, Array[_<:Int]], reachability: List[Int]) = {
-    print("Concurrent test running...")
-    val startTime = System.nanoTime()
-    val walkParams = RandomWalkParams(15000, 0.2, Some(1500), None, None, false, GraphDir.OutDir, false, true)
-    // Generate a sequence of random sequences
-    val r = new Random
-    val x = (0 until 10).map { _ =>
-      r.shuffle(Stream.continually((1 to 6).toList).flatten.take(10).toList)
-    }.toSeq
-    // Launch many threads each doing personalized reputation
-    val futures = ExecutorUtils.parallelWork[List[Int], List[Int]](Executors.newFixedThreadPool(10),
-    x,
-    { intList =>
-      val graphUtils = new GraphUtils(graph.getThreadSafeChild)
-
-      intList.map { i =>
-        val (a, _, _) = graphUtils.safeCalculatePersonalizedReputation(i, walkParams, edgeMap)
-        //println(i, a)
-        a.size
-      }
-    })
-    // Wait for all threads to complete
-    val intLists = futures.toArray.map { f => f.asInstanceOf[Future[List[Int]]].get }
-    // Test reachability for all of them
-    (0 until 10).foreach { i =>
-      (0 until 10).foreach { j =>
-        intLists(i)(j) mustEqual reachability(x(i)(j))
-      }
-    }
-    print("done! (%s)\n".format((System.nanoTime() - startTime)/1000000))
-  }
-
   "CachedDirectedGraph" should {
     "be able to be saved and read back without errors" in {
       def loadOnce {
@@ -197,7 +212,7 @@ class CachedDirectedGraphSpec extends Specification {
      }
 
      "Do a concurrent random walk properly" in {
-       concurrentTest(graphL, renumberedEdgeMap, renumberedReachability)
+       graphL must RunConcurrently(GraphDir.OutDir, renumberedEdgeMap, renumberedReachability)
      }
   }
 
@@ -447,7 +462,7 @@ class CachedDirectedGraphSpec extends Specification {
      }
 
      "Do a concurrent random walk properly" in {
-       concurrentTest(graph, edgeMap, reachability)
+       graph must RunConcurrently(GraphDir.OutDir, edgeMap, reachability)
      }
   }
 
@@ -552,42 +567,42 @@ class CachedDirectedGraphSpec extends Specification {
      }
 
      "Do a concurrent random walk properly" in {
-       concurrentTest(graphL, edgeMap, reachability)
+       graphL must RunConcurrently(GraphDir.OutDir, edgeMap, reachability)
      }
   }
 
   "Node Array FastLRU-based graph containing only out edges" should {
      "Do a concurrent random walk properly" in {
        graph = makeFastLRUGraphWithNodeArray(StoredGraphDir.OnlyOut)
-       concurrentTest(graph, edgeMap, reachability)
+       graph must RunConcurrently(GraphDir.OutDir, edgeMap, reachability)
      }
   }
 
   "BufferedFastLRU-based graph containing only out edges" should {
      "Do a concurrent random walk properly" in {
        graph = makeRenumberedBufferedFastLRUGraph(StoredGraphDir.OnlyOut)
-       concurrentTest(graph, edgeMap, reachability)
+       graph must RunConcurrently(GraphDir.OutDir, edgeMap, reachability)
      }
   }
 
   "LocklessReadFastLRU-based graph containing only out edges" should {
      "Do a concurrent random walk properly" in {
        graph = makeLockfreeReadFastLRUGraph(StoredGraphDir.OnlyOut)
-       concurrentTest(graph, edgeMap, reachability)
+       graph must RunConcurrently(GraphDir.OutDir, edgeMap, reachability)
      }
   }
 
   "RandomizedFastLRU-based graph containing only out edges" should {
      "Do a concurrent random walk properly" in {
        graph = makeRandomizedFastLRUGraph(StoredGraphDir.OnlyOut)
-       concurrentTest(graph, edgeMap, reachability)
+       graph must RunConcurrently(GraphDir.OutDir, edgeMap, reachability)
      }
   }
 
   "LocklessRandomizedFastLRU-based graph containing only out edges" should {
     "Do a concurrent random walk properly" in {
       graph = makeLocklessRandomizedFastLRUGraph(StoredGraphDir.OnlyOut)
-      concurrentTest(graph, edgeMap, reachability)
+      graph must RunConcurrently(GraphDir.OutDir, edgeMap, reachability)
     }
   }
 
