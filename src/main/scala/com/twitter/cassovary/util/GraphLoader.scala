@@ -49,7 +49,8 @@ class GraphLoader {
                              shardDirectories: Array[String], numShards: Int, numRounds: Int,
                              useCachedValues: Boolean, cacheDirectory: String) = {
     // TODO Support OnlyIn as well
-    CachedDirectedGraph(new AdjacencyListGraphReader(directory, "part").iteratorSeq, Executors.newFixedThreadPool(8),
+    CachedDirectedGraph(new AdjacencyListGraphReader(directory, "part").iteratorSeq, null,
+      Executors.newFixedThreadPool(8),
       StoredGraphDir.OnlyOut, cacheType, cacheMaxNodes, cacheMaxEdges,
       shardDirectories, numShards, numRounds, useCachedValues, cacheDirectory, true)
   }

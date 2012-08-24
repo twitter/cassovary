@@ -105,6 +105,7 @@ class CachedDirectedGraphSpec extends Specification {
 
   def concurrentTest(graph: CachedDirectedGraph, edgeMap: Map[Int, Array[_<:Int]], reachability: List[Int]) = {
     print("Concurrent test running...")
+    val startTime = System.nanoTime()
     val walkParams = RandomWalkParams(15000, 0.2, Some(1500), None, None, false, GraphDir.OutDir, false, true)
     // Generate a sequence of random sequences
     val r = new Random
@@ -131,13 +132,13 @@ class CachedDirectedGraphSpec extends Specification {
         intLists(i)(j) mustEqual reachability(x(i)(j))
       }
     }
-    print("done!\n")
+    print("done! (%s)\n".format((System.nanoTime() - startTime)/1000000))
   }
 
   "CachedDirectedGraph" should {
     "be able to be saved and read back without errors" in {
       def loadOnce {
-        val cdg = CachedDirectedGraph(Seq(iteratorFunc), MoreExecutors.sameThreadExecutor(),
+        val cdg = CachedDirectedGraph(Seq(iteratorFunc), null, MoreExecutors.sameThreadExecutor(),
           StoredGraphDir.OnlyOut, "lru", 2, 4, Array("temp-shards/c"), 2, 2, true, "temp-cached/twoshards", false)
         iteratorFunc().foreach { case NodeIdEdgesMaxId(id, neighbors, _) =>
           cdg.getNodeById(id).get.outboundNodes().toSet mustEqual neighbors.toSet
@@ -148,7 +149,7 @@ class CachedDirectedGraphSpec extends Specification {
     }
 
     "do a verbose random walk" in {
-      val cdg = CachedDirectedGraph(Seq(iteratorFunc), MoreExecutors.sameThreadExecutor(),
+      val cdg = CachedDirectedGraph(Seq(iteratorFunc), null, MoreExecutors.sameThreadExecutor(),
         StoredGraphDir.OnlyOut, "lru", 2, 4, Array("temp-shards/c"), 2, 2, true, "temp-cached/twoshards", false)
       val gu = new GraphUtils(cdg)
       val walkParams = RandomWalkParams(15000, 0.0, Some(1500), None, Some(3), false, GraphDir.OutDir, false, true)

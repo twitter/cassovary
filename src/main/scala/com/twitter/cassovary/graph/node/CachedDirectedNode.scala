@@ -81,3 +81,70 @@ object EmptyDirectedNode {
     }
   }
 }
+
+abstract class DualCachedDirectedNode (id: Int, size: Int, var inSize: Int) extends CachedDirectedNode(id, size)
+
+object DualCachedDirectedNode {
+  val empty = Array.empty[Int]
+
+  /**
+   * Has both out and in edges
+   * @param nodeId
+   * @param outNeighborSize
+   * @param inNeighborSize
+   * @param outCache
+   * @param inCache
+   */
+  def apply(nodeId: Int, outNeighborSize: Int, inNeighborSize: Int, outCache: IntArrayCache, inCache: IntArrayCache) = {
+    new DualCachedDirectedNode(nodeId, outNeighborSize, inNeighborSize) {
+      def inboundNodes = inCache.get(id)
+      def outboundNodes = outCache.get(id)
+      override def inboundCount = inSize
+      override def outboundCount = size
+    }
+  }
+
+  /**
+   * Only has in edges
+   * @param nodeId
+   * @param inNeighborSize
+   * @param inCache
+   */
+  def inOnly(nodeId: Int, inNeighborSize: Int, inCache: IntArrayCache) = {
+    new DualCachedDirectedNode(nodeId, 0, inNeighborSize) {
+      def inboundNodes = inCache.get(id)
+      def outboundNodes = empty
+      override def inboundCount = inSize
+      override def outboundCount = size
+    }
+  }
+
+  /**
+   * Only has out edges
+   * @param nodeId
+   * @param outNeighborSize
+   * @param outCache
+   */
+  def outOnly(nodeId: Int, outNeighborSize: Int, outCache: IntArrayCache) = {
+    new DualCachedDirectedNode(nodeId, outNeighborSize, 0) {
+      def inboundNodes = empty
+      def outboundNodes = outCache.get(id)
+      override def inboundCount = inSize
+      override def outboundCount = size
+    }
+  }
+
+  /**
+   * Empty Node
+   * @param nodeId
+   */
+  def emptyNode(nodeId: Int) = {
+    new DualCachedDirectedNode(nodeId, 0, 0) {
+      def inboundNodes = empty
+      def outboundNodes = empty
+      override def inboundCount = inSize
+      override def outboundCount = size
+    }
+  }
+
+}
