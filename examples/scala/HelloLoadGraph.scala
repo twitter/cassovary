@@ -14,6 +14,11 @@
 
 /**
  * A very simple example that loads in a graph from a file and generates stats
+ *
+ * Specifically, it loads an ArrayBasedDirectedGraph in using AdjacencyListGraphReader,
+ * and configures the reader to use 2 threads to load the graph instead of just one.
+ * This example loads in both toy_6nodes_adj_1.txt and toy_6nodes_adj_2.txt from
+ * src/test/resources/graphs/
  */
 
 import com.twitter.cassovary.util.io.AdjacencyListGraphReader
@@ -21,17 +26,11 @@ import java.util.concurrent.Executors
 
 object HelloLoadGraph {
   def main(args: Array[String]) {
-    // Load an ArrayBasedDirectedGraph in using AdjacencyListGraphReader,
-    // and configure it to use 2 threads to load the graph instead of just one
-    // This example loads in both toy_6nodes_adj_1.txt and toy_6nodes_adj_2.txt from
-    // src/test/resources/graphs/
     val graph = new AdjacencyListGraphReader("../../src/test/resources/graphs/", "toy_6nodes_adj") {
       override val executorService = Executors.newFixedThreadPool(2)
     }.toArrayBasedDirectedGraph()
 
     printf("\nHello Graph!\n\tA graph loaded from two adjacency list files with %s nodes has %s directed edges.\n",
       graph.nodeCount, graph.edgeCount)
-
-    System.exit(0)
   }
 }
