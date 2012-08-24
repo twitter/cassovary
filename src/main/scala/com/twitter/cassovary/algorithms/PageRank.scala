@@ -13,8 +13,9 @@
  */
 package com.twitter.cassovary.algorithms
 
-import com.twitter.cassovary.graph.{GraphDir, DirectedGraph}
+import com.twitter.cassovary.graph.{DirectedGraph, GraphDir}
 import net.lag.logging.Logger
+import com.twitter.cassovary.util.Progress
 
 /**
  * Parameters for PageRank
@@ -27,6 +28,8 @@ case class PageRankParams(dampingFactor: Double = 0.85,
 /**
  * PageRank is a link analysis algorithm designed to measure the importance of nodes in a graph.
  * Popularized by Google.
+ *
+ * Unoptimized for now, and runs in a single thread.
  */
 object PageRank {
 
@@ -39,7 +42,7 @@ object PageRank {
    * @param params PageRankParams from above
    * @return An array of doubles, with indices corresponding to node ids
    */
-  def apply(graph:DirectedGraph, params:PageRankParams): Array[Double] = {
+  def apply(graph: DirectedGraph, params: PageRankParams): Array[Double] = {
     val pr = new PageRank(graph, params)
     pr.run
   }
@@ -51,13 +54,13 @@ object PageRank {
    * @param prArray An array of doubles, with indices corresponding to node ids
    * @return The updated array
    */
-  def iterate(graph:DirectedGraph, params:PageRankParams, prArray: Array[Double]) = {
+  def iterate(graph: DirectedGraph, params: PageRankParams, prArray: Array[Double]) = {
     val pr = new PageRank(graph, params)
     pr.iterate(prArray: Array[Double])
   }
 }
 
-private class PageRank(graph:DirectedGraph, params:PageRankParams) {
+private class PageRank(graph: DirectedGraph, params: PageRankParams) {
 
   private val log = Logger.get("PageRank")
 
@@ -76,14 +79,11 @@ private class PageRank(graph:DirectedGraph, params:PageRankParams) {
 
     var beforePR = new Array[Double](graph.maxNodeId + 1)
     log.info("Initializing starting PageRank...")
-    var count = 0
+    val progress = Progress("pagerank_init", 65536, Some(graph.nodeCount))
     val initialPageRankValue = 1.0D / graph.nodeCount
     graph.foreach { node =>
       beforePR(node.id) = initialPageRankValue
-      count += 1
-      if (count % 65536 == 0) {
-        log.info("Processed %s nodes...".format(count))
-      }
+      progress.inc
     }
 
     (0 until params.iterations.get).foreach { i =>
@@ -99,31 +99,25 @@ private class PageRank(graph:DirectedGraph, params:PageRankParams) {
    * @param beforePR PageRank values before the iteration
    * @return PageRank values after the iteration
    */
-  def iterate(beforePR: Array[Double]): Array[Double] = {
+  def iterate(beforePR: Array[Double]) = {
     val afterPR = new Array[Double](graph.maxNodeId + 1)
 
-    log.info("Calculating...")
-    var count = 0
+    log.info("Calculating new PageRank values based on previous iteration...")
+    val progress = Progress("pagerank_calc", 65536, Some(graph.nodeCount))
     graph.foreach { node =>
       val givenPageRank = beforePR(node.id) / node.neighborCount(GraphDir.OutDir)
       node.neighborIds(GraphDir.OutDir).foreach { neighborId =>
         afterPR(neighborId) += givenPageRank
       }
-      count += 1
-      if (count % 65536 == 0) {
-        log.info("Processed %s nodes...".format(count))
-      }
+      progress.inc
     }
 
     log.info("Damping...")
-    count = 0
+    val progress_damp = Progress("pagerank_damp", 65536, Some(graph.nodeCount))
     if (dampingAmount > 0) {
       graph.foreach { node =>
         afterPR(node.id) = dampingAmount + dampingFactor * afterPR(node.id)
-      }
-      count += 1
-      if (count % 65536 == 0) {
-        log.info("Processed %s nodes...".format(count))
+        progress_damp.inc
       }
     }
     afterPR
