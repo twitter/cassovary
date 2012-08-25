@@ -25,6 +25,7 @@ class CachedDirectedGraphServerConfig extends ServerConfig[CachedDirectedGraphSe
   var nodeList = "/path/to/nodelist"
   var verbose = false
   var graphDump = "/path/to/graphdump"
+  var inGraphDump = "/path/to/inedgegraphdump"
   var cacheType = "lru"
   var numNodes: Int = 10
   var numEdges: Long = 100L

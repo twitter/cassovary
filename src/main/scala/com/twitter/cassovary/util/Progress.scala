@@ -49,3 +49,4 @@ class Progress(val name: String, val interval: Int, val maxValue: Option[Int]) {
   }
 
 }
+

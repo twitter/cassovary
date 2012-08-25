@@ -33,10 +33,10 @@ import io.AdjacencyListGraphReader
  * In the above example, node 241 has 3 neighbors, namely 2, 4 and 1. Node 53 has 1 neighbor, 241.
  */
 object GraphLoader {
-  def apply(directory: String, cacheType: String, cacheMaxNodes:Int, cacheMaxEdges:Long,
+  def apply(directory: String, directoryIn: Option[String], cacheType: String, cacheMaxNodes:Int, cacheMaxEdges:Long,
             shardDirectories: Array[String], numShards: Int, numRounds: Int,
             useCachedValues: Boolean, cacheDirectory: String) = {
-    new GraphLoader().loadGraphFromDirectory(directory, cacheType, cacheMaxNodes, cacheMaxEdges,
+    new GraphLoader().loadGraphFromDirectory(directory, directoryIn, cacheType, cacheMaxNodes, cacheMaxEdges,
       shardDirectories, numShards, numRounds,
       useCachedValues, cacheDirectory)
   }
@@ -45,14 +45,19 @@ object GraphLoader {
 class GraphLoader {
 
   // Return a CachedDirectedGraph object
-  def loadGraphFromDirectory(directory: String, cacheType: String, cacheMaxNodes:Int, cacheMaxEdges:Long,
+  def loadGraphFromDirectory(directory: String, directoryIn: Option[String], cacheType: String, cacheMaxNodes:Int, cacheMaxEdges:Long,
                              shardDirectories: Array[String], numShards: Int, numRounds: Int,
                              useCachedValues: Boolean, cacheDirectory: String) = {
-    // TODO Support OnlyIn as well
-    CachedDirectedGraph(new AdjacencyListGraphReader(directory, "part").iteratorSeq, null,
-      Executors.newFixedThreadPool(8),
-      StoredGraphDir.OnlyOut, cacheType, cacheMaxNodes, cacheMaxEdges,
-      shardDirectories, numShards, numRounds, useCachedValues, cacheDirectory, true)
+    directoryIn match {
+      case Some(directory2) => CachedDirectedGraph(new AdjacencyListGraphReader(directory, "part").iteratorSeq,
+        new AdjacencyListGraphReader(directory2, "part").iteratorSeq,
+        Executors.newFixedThreadPool(8),
+        StoredGraphDir.OnlyOut, cacheType, cacheMaxNodes, cacheMaxEdges,
+        shardDirectories, numShards, numRounds, useCachedValues, cacheDirectory, true)
+      case None => CachedDirectedGraph(new AdjacencyListGraphReader(directory, "part").iteratorSeq, null,
+        Executors.newFixedThreadPool(8),
+        StoredGraphDir.OnlyOut, cacheType, cacheMaxNodes, cacheMaxEdges,
+        shardDirectories, numShards, numRounds, useCachedValues, cacheDirectory, true)
+    }
   }
-
 }
