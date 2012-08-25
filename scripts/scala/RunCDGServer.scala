@@ -48,6 +48,7 @@ object RunCDGServer {
         nodeList = (sData \ "nodelist").extract[String]
         verbose = (sData \ "verbose").extract[Boolean]
         graphDump = (sData \ "graph_dump").extract[String]
+        inGraphDump = (sData \ "in_graph_dump").extract[String]
         cacheType = (sData \ "cache_type").extract[String]
         numNodes = (sData \ "num_nodes").extract[Int]
         numEdges = (sData \ "num_edges").extract[Long]
