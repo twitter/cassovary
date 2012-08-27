@@ -93,6 +93,19 @@ class Renumberer(var maxId: Int) {
   }
 
   /**
+   * Resize this renumberer
+   * @param newMaxId New MaxId to resize to
+   */
+  def resize(newMaxId: Int) {
+    if (newMaxId <= idToIndex.size - 1) {
+      throw new IllegalArgumentException("NewMaxId %s <= Old MaxId %s".format(newMaxId, idToIndex.size - 1))
+    }
+    val newIdToIndex = new Array[Int](newMaxId+1)
+    Array.copy(idToIndex, 0, newIdToIndex, 0, idToIndex.size)
+    idToIndex = newIdToIndex
+  }
+
+  /**
    * Save this renumberer to a LoaderSerializerWriter
    * @param writer
    */

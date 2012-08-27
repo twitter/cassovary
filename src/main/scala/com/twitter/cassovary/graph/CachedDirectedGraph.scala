@@ -37,6 +37,47 @@ object CachedDirectedGraph {
 
   private lazy val log = Logger.get("CachedDirectedGraph")
 
+  def getMaxCounts(iteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxId] ],
+                   executorService: ExecutorService,
+                   serializer: LoaderSerializer, name: String) = {
+    var maxId, nodeWithXEdgesMaxId, nodeWithXEdgesCount = 0
+    var numEdges = 0L
+    serializer.writeOrRead(name, { writer =>
+      val futures = Stats.time("graph_load_reading_maxid_and_calculating_numedges") {
+        def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) = {
+          var localMaxId, localNodeWithOutEdgesMaxId, numEdges, nodeCount = 0
+          iteratorFunc().foreach { item =>
+          // Keep track of Max IDs
+            localMaxId = localMaxId max item.maxId
+            localNodeWithOutEdgesMaxId = localNodeWithOutEdgesMaxId max item.id
+            // Update nodeCount and total edges
+            numEdges += item.edges.length
+            nodeCount += 1
+          }
+          MaxIdsEdges(localMaxId, localNodeWithOutEdgesMaxId, numEdges, nodeCount)
+        }
+        ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxId], MaxIdsEdges](executorService,
+          iteratorSeq, readOutEdges)
+      }
+      futures.toArray map { future =>
+        val f = future.asInstanceOf[Future[MaxIdsEdges]]
+        val MaxIdsEdges(localMaxId, localNWOEMaxId, localNumEdges, localNodeCount) = f.get
+        maxId = maxId max localMaxId
+        nodeWithXEdgesMaxId = nodeWithXEdgesMaxId max localNWOEMaxId
+        numEdges += localNumEdges
+        nodeWithXEdgesCount += localNodeCount
+      }
+      writer.integers(Seq(maxId, nodeWithXEdgesMaxId, nodeWithXEdgesCount)).longs(Seq(numEdges)).close
+    }, { reader =>
+      maxId = reader.int
+      nodeWithXEdgesMaxId = reader.int
+      nodeWithXEdgesCount = reader.int
+      numEdges = reader.long
+      reader.close
+    })
+    (maxId, nodeWithXEdgesMaxId, nodeWithXEdgesCount, numEdges)
+  }
+
   def generateOffsetTablesForIn(iteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxId] ],
                                 executorService: ExecutorService,
                                 serializer: LoaderSerializer, name: String, numShards: Int,
@@ -175,6 +216,13 @@ object CachedDirectedGraph {
         msw.endRound
       }
       writer.integers(Seq(1)).close
+
+      log.info("Writing renumberer after writeShardsInRoundsRenumbered...")
+      serializer.writeOrRead(name + ".ren", { writer =>
+        ren.toWriter(writer)
+        writer.close
+      }, { reader => reader.close })
+
     }, { reader => reader.close })
   }
 
@@ -205,13 +253,9 @@ object CachedDirectedGraph {
             shardDirectoryPrefixes: Array[String], numShards: Int, numRounds: Int,
             useCachedValues: Boolean, cacheDirectory: String, renumber: Boolean):CachedDirectedGraph = {
 
-    var maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount = 0
-    var numEdges = 0L
-
     // Initialize shard directory names
-    val shardDirectories = shardDirectoryPrefixes.map { shardDirectoryPrefix =>
-      if (renumber) shardDirectoryPrefix + "_renumbered" else shardDirectoryPrefix + "_regular"
-    }
+    val shardDirectories = shardDirectoryPrefixes.map ( shardDirectoryPrefix =>
+      if (renumber) shardDirectoryPrefix + "_renumbered" else shardDirectoryPrefix + "_regular" )
     val shardDirectoriesIn = shardDirectories.map { shardDirectory => shardDirectory + "_in" }
 
     log.info("---Beginning Load---")
@@ -225,40 +269,18 @@ object CachedDirectedGraph {
     // Step 1
     // Find maxId, nodeWithOutEdgesMaxId, numInts
     // Needed so that we can initialize arrays with the appropriate sizes
+    var maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount = 0
+    var inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount = 0
+    var numEdges, inNumEdges = 0L
     log.info("Reading maxId and Calculating numInts...")
-    serializer.writeOrRead("step1.txt", { writer =>
-      val futures = Stats.time("graph_load_reading_maxid_and_calculating_numedges") {
-        def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) = {
-          var localMaxId, localNodeWithOutEdgesMaxId, numEdges, nodeCount = 0
-          iteratorFunc().foreach { item =>
-            // Keep track of Max IDs
-            localMaxId = localMaxId max item.maxId
-            localNodeWithOutEdgesMaxId = localNodeWithOutEdgesMaxId max item.id
-            // Update nodeCount and total edges
-            numEdges += item.edges.length
-            nodeCount += 1
-          }
-          MaxIdsEdges(localMaxId, localNodeWithOutEdgesMaxId, numEdges, nodeCount)
-        }
-        ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxId], MaxIdsEdges](executorService,
-          outIteratorSeq, readOutEdges)
-      }
-      futures.toArray map { future =>
-        val f = future.asInstanceOf[Future[MaxIdsEdges]]
-        val MaxIdsEdges(localMaxId, localNWOEMaxId, localNumEdges, localNodeCount) = f.get
-        maxId = maxId max localMaxId
-        nodeWithOutEdgesMaxId = nodeWithOutEdgesMaxId max localNWOEMaxId
-        numEdges += localNumEdges
-        nodeWithOutEdgesCount += localNodeCount
-      }
-      writer.integers(Seq(maxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount)).longs(Seq(numEdges)).close
-    }, { reader =>
-      maxId = reader.int
-      nodeWithOutEdgesMaxId = reader.int
-      nodeWithOutEdgesCount = reader.int
-      numEdges = reader.long
-      reader.close
-    })
+    val oc = getMaxCounts(outIteratorSeq, executorService, serializer, "step1.txt")
+    maxId = oc._1; nodeWithOutEdgesMaxId = oc._2; nodeWithOutEdgesCount = oc._3; numEdges = oc._4
+    // Also do this for inIteratorSeq if it exists
+    if (inIteratorSeq != null) {
+      log.info("Reading maxId and Calculating numInts for in-edges...")
+      val oc = getMaxCounts(outIteratorSeq, executorService, serializer, "step1in.txt")
+      inMaxId = oc._1; nodeWithInEdgesMaxId = oc._2; nodeWithInEdgesCount = oc._3; inNumEdges = oc._4
+    }
 
     var nodeIdSet: mutable.BitSet = null
     var idToIntOffset: Array[Long] = null
@@ -283,7 +305,7 @@ object CachedDirectedGraph {
       // Generate the lookup table for nodeIdSet
       // Generate and store shard offsets and # of edges for each node
       log.info("Renumbering nodes, generating offsets...")
-      var ren = new Renumberer(maxId)
+      var ren = new Renumberer(maxId max inMaxId) // Must be able to translate both in and out
       serializer.writeOrRead("step2xr.txt", { writer =>
 
         log.info("First renumbering only nodes with out-edges...")
@@ -357,8 +379,9 @@ object CachedDirectedGraph {
         log.info("Saving/loading renumberer...")
         serializer.writeOrRead("step2xr2.txt", { writer => throw new Exception("2.2 Writer Impossible!")
         }, { reader =>
-          // Don't load renumberer if we've already completed step 4
-          if (!serializer.exists("step4r.txt"))
+          // Don't load renumberer if we've already completed step 4 (and i3r maybe)
+          if (!serializer.exists("step4r.txt") ||
+            (inIteratorSeq != null && !serializer.exists("stepi3r.txt")))
             ren.fromReader(reader)
           else
             ren = null
@@ -383,7 +406,9 @@ object CachedDirectedGraph {
       if (inIteratorSeq != null) {
         // Step i1r Generate Offset Table Counts
         log.info("Generating offset tables for in-shards (renumbered)...")
-        val r = generateOffsetTablesForIn(inIteratorSeq, executorService, serializer, "stepi1r.txt", numShards, maxId, ren)
+        // TODO to avoid ArrayOutOfBounds inArraySize is the max possible id. However, this isn't memory-efficient.
+        // Should actually be the total number of unique nodes (in + out)
+        val r = generateOffsetTablesForIn(inIteratorSeq, executorService, serializer, "stepi1r.txt", numShards, maxId max inMaxId, ren)
         idToIntOffsetIn = r._1; idToNumEdgesIn = r._2; edgeOffsetsIn = r._3
 
         // Step i2r - Allocate Shards
@@ -466,7 +491,7 @@ object CachedDirectedGraph {
       if (inIteratorSeq != null) {
         // Step i1r - Generate Offset Table Counts
         log.info("Generating offset tables for in-shards...")
-        val r = generateOffsetTablesForIn(inIteratorSeq, executorService, serializer, "stepi1.txt", numShards, maxId)
+        val r = generateOffsetTablesForIn(inIteratorSeq, executorService, serializer, "stepi1.txt", numShards, inMaxId)
         idToIntOffsetIn = r._1; idToNumEdgesIn = r._2; edgeOffsetsIn = r._3
 
         // Step i2 - Allocate Shards
@@ -515,20 +540,24 @@ object CachedDirectedGraph {
         case "guava" => new GuavaCachedDirectedGraph(nodeIdSetFn, cacheMaxNodes+cacheMaxEdges,
           shardDirectories, numShards, idToIntOffset, idToNumEdges,
           maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+          inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount,
           numNodes, numEdges, storedGraphDir)
         case "guava_na" => new NodeArrayGuavaCachedDirectedGraph(nodeIdSetFn, cacheMaxNodes+cacheMaxEdges,
           shardDirectories, numShards, idToIntOffset, idToNumEdges,
           maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+          inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount,
           numNodes, numEdges, storedGraphDir)
         case _ => FastCachedDirectedGraph(nodeIdSetFn, cacheMaxNodes, cacheMaxEdges,
           shardDirectories, numShards, idToIntOffset, idToNumEdges,
           maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+          inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount,
           numNodes, numEdges, storedGraphDir, cType, nType)
       }
     } else { // Both types of edges
       FastDualCachedDirectedGraph(nodeIdSetFn, cacheMaxNodes, cacheMaxEdges,
         shardDirectories, shardDirectoriesIn, numShards, idToIntOffset, idToNumEdges, idToIntOffsetIn, idToNumEdgesIn,
         maxId, realMaxId, realMaxIdOutEdges, realMaxIdInEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+        inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount,
         numNodes, numEdges, storedGraphDir, cType, nType)
     }
   }
@@ -544,7 +573,8 @@ object CachedDirectedGraph {
 }
 
 abstract class CachedDirectedGraph(maxId: Int, realMaxId: Int,
-    val nodeWithOutEdgesMaxId:Int, val nodeWithOutEdgesCount:Int) extends DirectedGraph {
+    val nodeWithOutEdgesMaxId:Int, val nodeWithOutEdgesCount:Int, val inMaxId: Int,
+    val nodeWithInEdgesMaxId: Int, val nodeWithInEdgesCount: Int) extends DirectedGraph {
 
   override lazy val maxNodeId = maxId
 
@@ -598,6 +628,7 @@ object FastCachedDirectedGraph {
     shardDirectories:Array[String], numShards:Int,
     idToIntOffset:Array[Long], idToNumEdges:Array[Int],
     maxId: Int, realMaxId: Int, realMaxIdOutEdges: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
+    inMaxId: Int, nodeWithInEdgesMaxId: Int, nodeWithInEdgesCount: Int,
     nodeCount: Int, edgeCount: Long, storedGraphDir: StoredGraphDir,
     cacheType: String = "lru", nodeType: String = "node"): CachedDirectedGraph = {
 
@@ -623,12 +654,14 @@ object FastCachedDirectedGraph {
         shardDirectories, numShards,
         idToIntOffset, idToNumEdges,
         maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+        inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount,
         nodeCount, edgeCount, storedGraphDir, cache)
       case "array" => new NodeArrayFastCachedDirectedGraph (nodeIdSet,
         cacheMaxNodes, cacheMaxEdges,
         shardDirectories, numShards,
         idToIntOffset, idToNumEdges,
         maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+        inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount,
         nodeCount, edgeCount, storedGraphDir, cache)
       case _ => throw new IllegalArgumentException("Unknown nodeType %s".format(nodeType))
     }
@@ -641,14 +674,17 @@ class FastCachedDirectedGraph (
     val shardDirectories:Array[String], val numShards:Int,
     val idToIntOffset:Array[Long], val idToNumEdges:Array[Int],
     maxId: Int, realMaxId: Int, realMaxIdOutEdges: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
+    inMaxId: Int, nodeWithInEdgesMaxId: Int, nodeWithInEdgesCount: Int,
     val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir, val cache: IntArrayCache)
-    extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
+    extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+      inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount) {
 
   def getThreadSafeChild = new FastCachedDirectedGraph(nodeIdSet,
     cacheMaxNodes, cacheMaxEdges,
     shardDirectories, numShards,
     idToIntOffset, idToNumEdges,
     maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+    inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount,
     nodeCount, edgeCount, storedGraphDir, cache.getThreadSafeChild)
 
   def getMisses = cache.getStats._1
@@ -688,15 +724,18 @@ class NodeArrayFastCachedDirectedGraph (
     val shardDirectories:Array[String], val numShards:Int,
     val idToIntOffset:Array[Long], val idToNumEdges:Array[Int],
     maxId: Int, realMaxId: Int, realMaxIdOutEdges: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
+    inMaxId: Int, nodeWithInEdgesMaxId: Int, nodeWithInEdgesCount: Int,
     val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir,
     val cache: IntArrayCache)
-  extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
+  extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+    inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount) {
 
   def getThreadSafeChild = new NodeArrayFastCachedDirectedGraph(nodeIdSet,
     cacheMaxNodes, cacheMaxEdges,
     shardDirectories, numShards,
     idToIntOffset, idToNumEdges,
     maxId, realMaxId, realMaxIdOutEdges, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+    inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount,
     nodeCount, edgeCount, storedGraphDir, cache.getThreadSafeChild)
 
   def getMisses = cache.getStats._1
@@ -759,8 +798,10 @@ class GuavaCachedDirectedGraph (
     val shardDirectories:Array[String], val numShards:Int,
     val idToIntOffset:Array[Long], val idToNumEdges:Array[Int],
     maxId: Int, realMaxId: Int, realMaxIdOutEdges: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
+    inMaxId: Int, nodeWithInEdgesMaxId: Int, nodeWithInEdgesCount: Int,
     val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir)
-    extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
+    extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+      inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount) {
 
   val reader = new MultiDirIntShardsReader(shardDirectories, numShards)
 
@@ -865,8 +906,10 @@ class NodeArrayGuavaCachedDirectedGraph (
                                  val shardDirectories:Array[String], val numShards:Int,
                                  val idToIntOffset:Array[Long], val idToNumEdges:Array[Int],
                                  maxId: Int, realMaxId: Int, realMaxIdOutEdges: Int, nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
+                                 inMaxId: Int, nodeWithInEdgesMaxId: Int, nodeWithInEdgesCount: Int,
                                  val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir)
-  extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
+  extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+    inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount) {
 
   val reader = new MultiDirIntShardsReader(shardDirectories, numShards)
 

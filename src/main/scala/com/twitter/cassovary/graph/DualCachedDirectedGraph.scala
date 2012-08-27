@@ -27,6 +27,7 @@ object FastDualCachedDirectedGraph {
             idToIntOffsetIn:Array[Long], idToNumEdgesIn:Array[Int],
             maxId: Int, realMaxId: Int, realMaxIdOutEdges: Int, realMaxIdInEdges: Int,
             nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
+            inMaxId: Int, nodeWithInEdgesMaxId: Int, nodeWithInEdgesCount: Int,
             nodeCount: Int, edgeCount: Long, storedGraphDir: StoredGraphDir,
             cacheType: String = "lru", nodeType: String = "node"): CachedDirectedGraph = {
 
@@ -54,8 +55,8 @@ object FastDualCachedDirectedGraph {
     println(idToIntOffsetOut.deep.mkString(", "))
     println(idToNumEdgesIn.deep.mkString(", "))
     println(idToNumEdgesOut.deep.mkString(", "))
-    println(outCache.get(1).deep.mkString(", "))
-    println(inCache.get(1).deep.mkString(", "))
+//    println(outCache.get(1).deep.mkString(", "))
+//    println(inCache.get(1).deep.mkString(", "))
 
     nodeType match {
       case "node" => new FastDualCachedDirectedGraph(nodeIdSet,
@@ -65,6 +66,7 @@ object FastDualCachedDirectedGraph {
         idToIntOffsetIn, idToNumEdgesIn,
         maxId, realMaxId, realMaxIdOutEdges, realMaxIdInEdges,
         nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+        inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount,
         nodeCount, edgeCount, storedGraphDir, outCache, inCache)
       case _ => throw new IllegalArgumentException("Unknown nodeType %s asked of FastDualCachedDirectedGraph".format(nodeType))
     }
@@ -78,9 +80,11 @@ class FastDualCachedDirectedGraph (val nodeIdSet:(Int => Boolean),
                                    val idToIntOffsetIn:Array[Long], val idToNumEdgesIn:Array[Int],
                                    maxId: Int, realMaxId: Int, realMaxIdOutEdges: Int, realMaxIdInEdges: Int,
                                    nodeWithOutEdgesMaxId: Int, nodeWithOutEdgesCount: Int,
+                                   inMaxId: Int, nodeWithInEdgesMaxId: Int, nodeWithInEdgesCount: Int,
                                    val nodeCount: Int, val edgeCount: Long, val storedGraphDir: StoredGraphDir,
                                    val outCache: IntArrayCache, val inCache: IntArrayCache)
-  extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount) {
+  extends CachedDirectedGraph(maxId, realMaxId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+    inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount) {
 
   def getThreadSafeChild = new FastDualCachedDirectedGraph(nodeIdSet,
     cacheMaxNodes, cacheMaxEdges,
@@ -89,6 +93,7 @@ class FastDualCachedDirectedGraph (val nodeIdSet:(Int => Boolean),
     idToIntOffsetIn, idToNumEdgesIn,
     maxId, realMaxId, realMaxIdOutEdges, realMaxIdInEdges,
     nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
+    inMaxId, nodeWithInEdgesMaxId, nodeWithInEdgesCount,
     nodeCount, edgeCount, storedGraphDir,
     outCache.getThreadSafeChild, inCache.getThreadSafeChild)
 
