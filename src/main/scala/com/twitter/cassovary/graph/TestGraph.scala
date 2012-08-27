@@ -85,8 +85,15 @@ object TestGraphs {
     TestGraph(testNodes: _*)
   }
 
+  /**
+   * Generate an arbitrarily random graph
+   *
+   * @param numNodes number of nodes
+   * @param avgOutDegree average number of out-neighbors each node has
+   * @return an ArrayBasedDirectedGraph
+   */
   def generateRandomGraph(numNodes: Int, avgOutDegree: Int) = {
-    val nodes = new mutable.ArrayBuffer[NodeIdEdgesMaxId]
+    val nodes = new mutable.ArrayBuffer[NodeIdEdgesMaxId](numNodes)
     val rand = new Random
     (0 until numNodes) foreach { source =>
       val numOutNeighbors = rand.nextInt(2 * avgOutDegree + 1)
@@ -96,12 +103,23 @@ object TestGraphs {
     ArrayBasedDirectedGraph( () => nodes.iterator, StoredGraphDir.BothInOut)
   }
 
-  def generateRandomGraphWithSeed(numNodes: Int, avgOutDegree: Int, randomSeed: Long) = {
-    val nodes = new mutable.ArrayBuffer[NodeIdEdgesMaxId]
-    val rand = new Random(randomSeed)
+  /**
+   * Generates a random, directed graph based on the Erdos-Renyi G(n,p) model
+   *
+   * @param numNodes number of nodes to create
+   * @param edgeProbability probability of a directed edge
+   * @param rand optional random object to provide (if you wanted to seed the random generator)
+   * @return an ArrayBasedDirectedGraph
+   */
+  def generateRandomGraph(numNodes: Int, edgeProbability: Double, rand: Random = new Random) = {
+    val nodes = new mutable.ArrayBuffer[NodeIdEdgesMaxId](numNodes)
     (0 until numNodes) foreach { source =>
-      val numOutNeighbors = rand.nextInt(2 * avgOutDegree + 1)
-      val outNeighbors = (0 until numOutNeighbors).toArray.map { i: Int => rand.nextInt(numNodes) }
+      val outNeighbors = (0 until numNodes).toArray.flatMap { i =>
+        if (source != i && rand.nextDouble() < edgeProbability)
+          Some(i)
+        else
+          None
+      }
       nodes += NodeIdEdgesMaxId(source, outNeighbors)
     }
     ArrayBasedDirectedGraph( () => nodes.iterator, StoredGraphDir.BothInOut)

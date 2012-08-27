@@ -30,26 +30,23 @@ import com.google.common.annotations.VisibleForTesting
  * @param size the size of this map
  */
 class LinkedIntIntMap(maxId: Int, size: Int) {
-  protected val indexNext = new Array[Int](size + 1)
-  // cache next pointers
-  protected val indexPrev = new Array[Int](size + 1)
-  // cache prev pointers
-  protected var head, tail = 0
-  // pointers to the head and tail of the cache
-  protected var currentSize = 0
-  protected val indexToId = new Array[Int](size + 1)
-  // cache index -> id
-  protected val idToIndex = new Array[Int](maxId + 1) // id -> cache index
+  private val indexNext = new Array[Int](size + 1) // cache next pointers
+  private val indexPrev = new Array[Int](size + 1) // cache prev pointers
+  private var head, tail = 0 // pointers to the head and tail of the cache
+  private var currentSize = 0 // current size of the cache
+  private val indexToId = new Array[Int](size + 1) // cache index -> id
+  private val idToIndex = new Array[Int](maxId + 1) // id -> cache index
 
   // Initialize a linked list of free indices using the free slots of indexNext
   (1 until size).foreach {
     i => indexNext(i) = i + 1
   }
   indexNext(size) = 0
-  protected var freePoint = 1
+  private var freePoint = 1 // pointer to first free slot
 
   /**
    * Add a free slot to the cache
+   *
    * @param index index of free slot
    */
   private def addToFree(index: Int): Unit = {
@@ -60,6 +57,7 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
 
   /**
    * Get a free slot in the cache
+   *
    * @return index of free slot
    */
   private def popFromFree(): Int = {
@@ -71,6 +69,7 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
 
   /**
    * Remove the tail element of the list and return it
+   *
    * @return id of tail
    */
   def removeFromTail(): Int = {
@@ -90,6 +89,7 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
    * Move an element to the front of the linked list
    * Cases - moving an element in between the head and tail, only 1 element,
    * moving the tail itself, moving the head itself
+   *
    * @param id id of element to move
    */
   def moveToHead(id: Int) {
@@ -99,6 +99,7 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
 
   /**
    * Move an element at the given cache index to the front of the linked list
+   *
    * @param idx index of element to move
    */
   def moveIndexToHead(idx: Int) {
@@ -129,6 +130,7 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
    * Behavior is undefined if the same id is added several times to the head
    * Will throw an error if the cache is full
    * Cases - adding to 0 element, 1 element, >1 element list
+   *
    * @param id
    */
   def addToHead(id: Int) {
@@ -148,18 +150,21 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
 
   /**
    * Get cache index of element at the tail
+   *
    * @return index of tail element
    */
   def getTailIndex: Int = tail
 
   /**
    * Get cache index of element at the head
+   *
    * @return index of head element
    */
   def getHeadIndex: Int = head
 
   /**
    * Check if id exists in the map
+   *
    * @param id element to check
    * @return true if element exists in map
    */
@@ -167,6 +172,7 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
 
   /**
    * Get the array index of the given id, and id must exist
+   *
    * @param id desired element
    * @return index of desired element
    */
@@ -174,19 +180,16 @@ class LinkedIntIntMap(maxId: Int, size: Int) {
 
   /**
    * Get the id at the head (most recently accessed)
-   * @return
    */
   def getHeadId: Int = indexToId(head)
 
   /**
    * Get the id at the tail (next to be evicted)
-   * @return
    */
   def getTailId: Int = indexToId(tail)
 
   /**
    * Get the number of elements in the map
-   * @return number of elements in the map
    */
   def getCurrentSize: Int = currentSize
 
