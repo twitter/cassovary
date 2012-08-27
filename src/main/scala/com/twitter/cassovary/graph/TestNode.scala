@@ -14,3 +14,5 @@
 package com.twitter.cassovary.graph
 
 case class TestNode(id: Int, inboundNodes: List[Int], outboundNodes: List[Int]) extends Node
+
+case class TestMutableNode(var id: Int, inboundNodes: List[Int], outboundNodes: List[Int]) extends Node
