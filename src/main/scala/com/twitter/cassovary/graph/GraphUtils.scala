@@ -16,6 +16,7 @@ package com.twitter.cassovary.graph
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.tourist._
 import com.twitter.ostrich.stats.Stats
+
 import it.unimi.dsi.fastutil.ints.{Int2IntMap, Int2ObjectMap}
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 import net.lag.logging.Logger
@@ -144,74 +145,6 @@ class GraphUtils(val graph: Graph) {
   def calculatePersonalizedReputation(startNodeId: Int, walkParams: RandomWalkParams):
       (Int2IntMap, Option[Int2ObjectMap[Object2IntMap[DirectedPath]]]) = {
     calculatePersonalizedReputation(Seq(startNodeId), walkParams)
-  }
-
-  /**
-   * Same as RandomWalk, except that it ensures that the node chosen in a walk
-   * is valid given the edgeMap (id -> neighborIds)
-   * Use mainly for testing concurrency, as this slows down the random walk significantly
-   * Will immediately fail with an exception if the next node selected isn't valid
-   * (=it's not a valid neighbor of the previous node or it's not a starting node)
-   * @param dir
-   * @param startNodeIds
-   * @param walkParams
-   * @param edgeMap Map of node id to an array of neighbor ids
-   * @return
-   */
-  def debugRandomWalk(dir: GraphDir, startNodeIds: Seq[Int], walkParams: RandomWalkParams,
-                       edgeMap:Map[Int,Array[_ <: Int]])():
-  (VisitsCounter, Option[PathsCounter]) = {
-    val startNodesExist = (startNodeIds.length > 0) && startNodeIds.foldLeft(true) { (exists, elem) =>
-      exists && graph.existsNodeId(elem)
-    }
-
-    val visitsCounter = new VisitsCounter
-    val pathsCounterOption = walkParams.numTopPathsPerNode match {
-      case Some(k) if (k > 0) => Some(new PathsCounter(k, startNodeIds))
-      case _ => None
-    }
-
-    if (startNodesExist) {
-      val traversedNodes = new RandomBoundedTraverser(graph, dir, startNodeIds,
-        walkParams.numSteps, walkParams)
-
-      Stats.time("random_walk_traverse") {
-        var previousId = startNodeIds(0)
-        walk(traversedNodes, { node =>
-
-          val nodeId = node.id
-          if (!startNodeIds.contains(nodeId) && !edgeMap(previousId).contains(nodeId))
-            throw new Exception("previous was %s but current is %s".format(previousId, nodeId))
-          previousId = nodeId
-
-          visitsCounter.visit(node)
-          if (pathsCounterOption.isDefined) {
-            pathsCounterOption.get.visit(node)
-          }
-        })
-      }
-    }
-    (visitsCounter, pathsCounterOption)
-  }
-
-  /**
-   * Debug version of calculatePersonalizedReputation
-   */
-  def debugCalculatePersonalizedReputation(startNodeIds: Seq[Int], walkParams: RandomWalkParams, edgeMap: Map[Int,Array[_ <: Int]]):
-  (Int2IntMap, Option[Int2ObjectMap[Object2IntMap[DirectedPath]]]) = {
-    Stats.time ("%s_total".format("PTC")) {
-      val (visitsCounter, pathsCounterOption) = debugRandomWalk(walkParams.dir, startNodeIds, walkParams, edgeMap)
-      val topPathsOption = pathsCounterOption flatMap { counter => Some(counter.infoAllNodes) }
-      (visitsCounter.infoAllNodes, topPathsOption)
-    }
-  }
-
-  /**
-   * Debug version of calculatePersonalizedReputation
-   */
-  def debugCalculatePersonalizedReputation(startNodeId: Int, walkParams: RandomWalkParams, edgeMap: Map[Int,Array[_ <: Int]]):
-  (Int2IntMap, Option[Int2ObjectMap[Object2IntMap[DirectedPath]]]) = {
-    debugCalculatePersonalizedReputation(Seq(startNodeId), walkParams, edgeMap)
   }
 
   /**
