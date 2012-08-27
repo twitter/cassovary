@@ -16,6 +16,7 @@ package com.twitter.cassovary.graph
 import org.specs.Specification
 import io.Source
 import com.twitter.io.Files
+import com.twitter.cassovary.util.FileUtils
 
 class DirectedGraphSpec extends Specification {
   var graph: DirectedGraph = _
@@ -70,10 +71,10 @@ class DirectedGraphSpec extends Specification {
     }
 
     "output to directory should be correct" in {
-      graph.writeToDirectory("temp-6graph", numParts = 2)
-      Source.fromFile("temp-6graph/part-r-00000").mkString mustEqual
+      val tempDir = FileUtils.getTempDirectoryName
+      graph.writeToDirectory(tempDir, numParts = 2)
+      Source.fromFile(tempDir+"/part-r-00000").mkString mustEqual
         "10\t3\n11\n12\n13\n11\t2\n12\n14\n12\t1\n14\n"
-      Files.delete(new java.io.File("temp-6graph"))
     }
   }
 

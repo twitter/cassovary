@@ -97,7 +97,7 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
         currRealCapacity -= indexToSize(map.getTailIndex)
         map.removeFromTail()
       }
-      map.addToHead(id)
+      map.addToHeadAndNotExists(id)
       currRealCapacity += eltSize
       indexToSize(map.getHeadIndex) = eltSize
     }

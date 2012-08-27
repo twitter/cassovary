@@ -79,7 +79,6 @@ class FastLRUIntArrayCache private(shardDirectories: Array[String], numShards: I
         // Read in array
         val intArray = new Array[Int](numEdges)
 
-        // Each IntShardReader is synchronized (i.e. 1 reader per shard)
         reader.readIntegersFromOffsetIntoArray(id, idToIntOffset(id), numEdges, intArray, 0)
 
         lock.acquire
@@ -101,7 +100,7 @@ class FastLRUIntArrayCache private(shardDirectories: Array[String], numShards: I
             linkedMap.removeFromTail()
           }
 
-          linkedMap.addToHead(id)
+          linkedMap.addToHeadAndNotExists(id)
           indexToArray(linkedMap.getHeadIndex) = intArray
           lock.release
           intArray

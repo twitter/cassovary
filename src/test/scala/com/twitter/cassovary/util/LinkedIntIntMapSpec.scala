@@ -25,7 +25,7 @@ class LinkedIntIntMapSpec extends Specification {
     }
 
     "Moving the head when there is only 1 element" in {
-      l.addToHead(8)
+      l.addToHeadAndNotExists(8)
       l.moveToHead(8)
       l.contains(8) mustBe true
       l.moveToHead(8)
@@ -34,8 +34,8 @@ class LinkedIntIntMapSpec extends Specification {
     }
 
     "Reordering elements works" in {
-      l.addToHead(5)
-      l.addToHead(3)
+      l.addToHeadAndNotExists(5)
+      l.addToHeadAndNotExists(3)
       l.getHeadId mustEqual 3
       l.getTailId mustEqual 5
       l.moveToHead(5)
@@ -45,22 +45,22 @@ class LinkedIntIntMapSpec extends Specification {
     }
 
     "Remove everything and add something" in {
-      l.addToHead(10)
+      l.addToHeadAndNotExists(10)
       l.removeFromTail()
       l.removeFromTail() must throwAn[IllegalArgumentException] // Cannot remove more than we have
       l.getCurrentSize mustEqual 0
-      l.addToHead(9)
+      l.addToHeadAndNotExists(9)
       l.contains(9) mustBe true
       (1 to 10).filter(i => i != 9).foreach { i => l.contains(i) mustBe false }
     }
 
     "Evict correctly when full" in {
-      l.addToHead(5)
-      l.addToHead(8)
-      l.addToHead(1)
-      l.addToHead(2)
-      l.addToHead(10)
-      l.addToHead(9) must throwAn[IllegalArgumentException] // Cannot exceed size of cache
+      l.addToHeadAndNotExists(5)
+      l.addToHeadAndNotExists(8)
+      l.addToHeadAndNotExists(1)
+      l.addToHeadAndNotExists(2)
+      l.addToHeadAndNotExists(10)
+      l.addToHeadAndNotExists(9) must throwAn[IllegalArgumentException] // Cannot exceed size of cache
       List(1, 2, 5, 8, 10).foreach { i => l.contains(i) mustBe true }
       List(3, 4, 6, 7, 9).foreach { i => l.contains(i) mustBe false }
       l.removeFromTail() // Evicts 5
@@ -68,8 +68,8 @@ class LinkedIntIntMapSpec extends Specification {
       l.removeFromTail() // Evicts 8
       l.getTailId mustEqual 1
       l.getCurrentSize mustEqual 3
-      l.addToHead(9)
-      l.addToHead(7)
+      l.addToHeadAndNotExists(9)
+      l.addToHeadAndNotExists(7)
       l.getCurrentSize mustEqual 5
       List(1, 2, 7, 9, 10).foreach { i => l.contains(i) mustBe true }
       List(3, 4, 5, 6, 8).foreach { i => l.contains(i) mustBe false }

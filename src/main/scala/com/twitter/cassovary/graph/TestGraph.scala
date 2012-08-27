@@ -86,7 +86,7 @@ object TestGraphs {
   }
 
   /**
-   * Generate an arbitrarily random graph
+   * Generates an arbitrarily random graph
    *
    * @param numNodes number of nodes
    * @param avgOutDegree average number of out-neighbors each node has
@@ -114,12 +114,8 @@ object TestGraphs {
   def generateRandomGraph(numNodes: Int, edgeProbability: Double, rand: Random = new Random) = {
     val nodes = new mutable.ArrayBuffer[NodeIdEdgesMaxId](numNodes)
     (0 until numNodes) foreach { source =>
-      val outNeighbors = (0 until numNodes).toArray.flatMap { i =>
-        if (source != i && rand.nextDouble() < edgeProbability)
-          Some(i)
-        else
-          None
-      }
+      val outNeighbors = (0 until numNodes).filter(i => i != source).toArray.flatMap( i =>
+        if (rand.nextDouble() < edgeProbability) Some(i) else None )
       nodes += NodeIdEdgesMaxId(source, outNeighbors)
     }
     ArrayBasedDirectedGraph( () => nodes.iterator, StoredGraphDir.BothInOut)
