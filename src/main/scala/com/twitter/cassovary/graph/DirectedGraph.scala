@@ -72,7 +72,7 @@ trait DirectedGraph extends Graph with Iterable[Node] {
   /**
    * Get a random node that exists in the graph by uniformly sampling from 0 to maxNodeId
    */
-  def randomNode:Int = {
+  def randomNode: Int = {
     val rand = new Random()
     def getValidNode(nodeId:Int):Int = getNodeById(nodeId) match {
       case Some(n) => nodeId
@@ -83,11 +83,12 @@ trait DirectedGraph extends Graph with Iterable[Node] {
 
   /**
    * Get some random nodes in the graph. Node ids may repeat.
+   *
    * @param number the number of random nodes to get
    * @return a list of node ids
    */
-  def randomNodes(number:Int):List[Int] = {
-    (1 to number).foldLeft(List[Int]()) { (l, _) => randomNode :: l}
+  def randomNodes(number: Int): List[Int] = {
+    (1 to number).foldLeft(List[Int]()) { (l, _) => randomNode :: l }
   }
 
   /**
@@ -105,15 +106,16 @@ trait DirectedGraph extends Graph with Iterable[Node] {
   }
 
   /**
-   * Write this directed graph to a directory, splitting into parts
+   * Write this directed graph to a directory, splitting into numParts
    * Each part is named part-r-XXXXX, and the format is
    * node_id \t num_neighbors on one line,
    * followed by num_neighbors subsequent lines, each with a single id
+   *
    * @param directory Directory to write graph to
-   * @param parts Number of files to split graph into
+   * @param numParts Number of files to split graph into
    */
-  def writeToDirectory(directory: String, parts: Int) = {
-    new File(directory).mkdirs()
+  def writeToDirectory(directory: String, numParts: Int) = {
+    FileUtils.makeDirs(directory)
 
     val dir = storedGraphDir match {
       case StoredGraphDir.OnlyIn => GraphDir.InDir
@@ -123,14 +125,14 @@ trait DirectedGraph extends Graph with Iterable[Node] {
 
     // Write nodes to part files
     val it = this.iterator
-    val nodesPerPart = (this.nodeCount.toDouble / parts).ceil.toInt
+    val nodesPerPart = (this.nodeCount.toDouble / numParts).ceil.toInt
     var nodeCountCheck = 0
     var j = 0
-    (0 until parts).foreach { i =>
+    (0 until numParts).foreach { i =>
       j = 0
       FileUtils.printToFile(new File(directory+"/part-r-%05d".format(i))) { p =>
         while (it.hasNext && j < nodesPerPart ) {
-          val node: Node = it.next
+          val node = it.next
           p.println(node.id + "\t" + node.neighborCount(dir))
           node.neighborIds(dir).foreach { id =>
             p.println(id)

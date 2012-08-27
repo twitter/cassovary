@@ -19,55 +19,59 @@ import java.nio.ByteBuffer
 /**
  * Write integers in binary to a single shard.
  * This class shouldn't normally be used directly, instead use
- * EdgeShardsWriter
+ * IntShardsWriter
  * @param filename
  */
-class EdgeShardWriter(val filename:String) {
+class IntShardWriter(val filename:String) {
   private val fos = new RandomAccessFile(filename, "rw")
-  private var offset = 0
-
-  def intToByteArray(value:Int) = {
-    Array[Byte](
-      (value >>> 24).toByte,
-      (value >>> 16).toByte,
-      (value >>> 8).toByte,
-      value.toByte)
-  }
-  def byteArrayToInt(b:Array[Byte]) = {
-    (b(0) << 24) | (b(1) << 16) | (b(2) << 8) | b(3)
-  }
+  private var offset = 0L // Where the write position is right now
 
   /**
    * Read a list of integers to this particular shard and return
-   * a byte offset into this particular file for use by EdgeShardReader
+   * an int offset into this particular file indicating where the intList was written
    * Will write from wherever the write position is at
+   *
    * @param intList the list of integers to write to this shard
    */
-  def writeIntegersSequentially(intList:Iterable[Int]):Long = {
-    val returnOffset = offset // can use fc.position() but you must call dos.flush() first
+  def writeIntegersSequentially(intList: Iterable[Int]) = {
+    val returnOffset = offset // can use fos.position() but you must call dos.flush() first
     intList.foreach(fos.writeInt(_))
-    offset += intList.size * 4
+    offset += intList.size
     returnOffset
   }
 
   /**
-   * Write a list of integers at the given byte offset
-   * @param writeOffset Byte offset to start writing at
+   * Write a list of integers from an iterable at the given byte offset
+   *
+   * @param intOffset Int offset to start writing at
    * @param intList a list of integers
    */
-  def writeIntegersAtOffset(writeOffset:Long, intList:Iterable[Int]) = {
-    fos.seek(writeOffset)
+  def writeIntegersAtOffset(intOffset: Long, intList: Iterable[Int]) = {
+    fos.seek(intOffset * 4)
     intList.foreach(fos.writeInt(_))
+    offset = intOffset + intList.size
   }
 
-  def allocate(fileSize:Long) = {
-    if (fileSize > 0) {
-      fos.seek(fileSize-1)
+  /**
+   * Allocate disk space for this many integers
+   * @param intFileSize Number of integers to reserve space for
+   */
+  def allocate(intFileSize: Long) = {
+    if (intFileSize > 0) {
+      fos.seek(intFileSize * 4 - 1)
       fos.writeByte(1)
     }
   }
 
-  def length = fos.length
+  /**
+   * Get length of this file in bytes
+   */
+  def rawLength = fos.length
+
+  /**
+   * Get integer length of this file
+   */
+  def length = fos.length / 4
 
   def close = fos.close()
 }
@@ -75,24 +79,24 @@ class EdgeShardWriter(val filename:String) {
 /**
  * Class to write nodes to disk, sharding them according to their id
  * A node with the id N is written to shard (N mod numShards).txt
+ *
  * @param shardDirectory Directory to write shards to
  * @param numShards Number of shards to generate
  */
-class EdgeShardsWriter(val shardDirectory:String, val numShards:Int) {
-  new File(shardDirectory).mkdirs()
-//  { val dir = new File(shardDirectory)
-//    if (!dir.exists && !dir.mkdirs) throw new IOException("Unable to create EdgeShards directory %s".format(shardDirectory)) }
+class IntShardsWriter(val shardDirectory: String, val numShards: Int) {
+
+  FileUtils.makeDirs(shardDirectory)
 
   val shardWriters = (0 until numShards).map { i =>
-    new EdgeShardWriter("%s/%s.txt".format(shardDirectory, i))
+    new IntShardWriter("%s/%s.txt".format(shardDirectory, i))
   }
 
-  def writeIntegersSequentially(nodeId:Int, intList:Iterable[Int]):Long = {
+  def writeIntegersSequentially(nodeId: Int, intList: Iterable[Int]):Long = {
     shardWriters(nodeId % numShards).writeIntegersSequentially(intList)
   }
 
-  def writeIntegersAtOffset(nodeId:Int, writeOffset:Long, intList:Iterable[Int]) = {
-    shardWriters(nodeId % numShards).writeIntegersAtOffset(writeOffset, intList)
+  def writeIntegersAtOffset(nodeId: Int, intOffset: Long, intList: Iterable[Int]) = {
+    shardWriters(nodeId % numShards).writeIntegersAtOffset(intOffset, intList)
   }
 
   def close = (0 until numShards).foreach { i => shardWriters(i).close }
@@ -101,32 +105,35 @@ class EdgeShardsWriter(val shardDirectory:String, val numShards:Int) {
 /**
  * Write out shards to different directories
  * Shard N is written to the directory at index (N mod NUMBER_OF_DIRECTORIES)
+ *
  * @param shardDirectories Array of directory strings
  * @param numShards Number of shards to generate
  */
-class MultiDirEdgeShardsWriter(val shardDirectories:Array[String], numShards:Int)
-  extends EdgeShardsWriter(shardDirectories(0), numShards) {
+class MultiDirIntShardsWriter(val shardDirectories: Array[String], numShards: Int)
+  extends IntShardsWriter(shardDirectories(0), numShards) {
 
   shardDirectories.foreach { shardDirectory => new File(shardDirectory).mkdirs() }
 
   override val shardWriters = (0 until numShards).map { i =>
-    new EdgeShardWriter("%s/%s.txt".format(shardDirectories(i % shardDirectories.length), i))
+    new IntShardWriter("%s/%s.txt".format(shardDirectories(i % shardDirectories.length), i))
   }
 }
 
 /**
- * Used by MemEdgeShardsWriter
+ * Used by MemIntShardsWriter
  * This is an in-memory shard, which can be written to disk if so desired.
+ *
  * @param shardSize
  */
-class MemEdgeShardWriter(val shardSize:Int) {
+class MemIntShardWriter(val shardSize:Int) {
   val shard = new Array[Int](shardSize)
 
-  def writeIntegersAtOffsetFromOffset(writeIntOffset:Int, sourceArray:Array[Int], sourceIntOffset:Int, sourceLength:Int) = {
-    Array.copy(sourceArray, sourceIntOffset, shard, writeIntOffset, sourceLength)
+  def writeIntegersAtOffsetFromOffset(intOffset: Int, sourceArray: Array[Int],
+                                      sourceIntOffset: Int, sourceLength: Int) = {
+    Array.copy(sourceArray, sourceIntOffset, shard, intOffset, sourceLength)
   }
 
-  def writeToShard(filename:String) {
+  def writeToShard(filename: String) {
     // Should be faster than DataOutputStream
     val bb = ByteBuffer.allocateDirect(4 * shard.size)
     shard.foreach(bb.putInt(_))
@@ -146,18 +153,19 @@ class MemEdgeShardWriter(val shardSize:Int) {
  *    - Ex. if the current roundRange is [0, 2) and numShards is 6, ids 1 & 6 are written but id 3 is ignored.
  * 3) Call endRound to write the shards to disk
  * Do not create multiple copies of this class that write to the same directory - behavior is undefined.
+ *
  * @param shardDirectory shard directory
  * @param numShards the number of shards
  * @param shardSizes the size of each shard
  * @param rounds number of write rounds
  */
-class MemEdgeShardsWriter(val shardDirectory:String, val numShards:Int, val shardSizes:Array[Int], val rounds:Int=1) {
-  new File(shardDirectory).mkdirs()
-//  { val dir = new File(shardDirectory)
-//    if (!dir.exists && !dir.mkdirs) throw new IOException("Unable to create EdgeShards directory %s".format(shardDirectory)) }
+class MemIntShardsWriter(val shardDirectory: String, val numShards: Int,
+                         val shardSizes: Array[Int], val rounds: Int = 1) {
+
+  FileUtils.makeDirs(shardDirectory)
 
   var roundNo = 0
-  val writers = new Array[MemEdgeShardWriter](numShards)
+  val writers = new Array[MemIntShardWriter](numShards)
   var modStart = 0
   var modEnd = 0
 
@@ -167,11 +175,11 @@ class MemEdgeShardsWriter(val shardDirectory:String, val numShards:Int, val shar
    * Initialize shards in this round and initialize in-memory shards
    * @param roundNo the round number
    */
-  def startRound(roundNo:Int) = {
+  def startRound(roundNo: Int) = {
     modStart = (roundNo.toDouble / rounds * numShards).toInt
     modEnd = ((roundNo+1).toDouble / rounds * numShards).toInt
     (modStart until modEnd).foreach { i =>
-      writers(i) = new MemEdgeShardWriter(shardSizes(i))
+      writers(i) = new MemIntShardWriter(shardSizes(i))
     }
   }
 
@@ -190,18 +198,20 @@ class MemEdgeShardsWriter(val shardDirectory:String, val numShards:Int, val shar
 
   /**
    * Write integers into an array in memory.
-   * Note that unlike EdgeShardsWriter, the write offset is also an int offset, since we
+   * Note that unlike IntShardsWriter, the write offset is also an int offset, since we
    * write into an int array
+   *
    * @param nodeId Id of edges to write
-   * @param writeIntOffset Integer offset to write to
+   * @param intOffset Integer offset to write to
    * @param sourceArray Source array to read from
    * @param sourceIntOffset Offset in source array to read from
    * @param sourceLength Number of integers to read from the source array
    */
-  def writeIntegersAtOffsetFromOffset(nodeId:Int, writeIntOffset:Int, sourceArray:Array[Int], sourceIntOffset:Int, sourceLength:Int) = {
+  def writeIntegersAtOffsetFromOffset(nodeId: Int, intOffset: Int, sourceArray: Array[Int],
+                                      sourceIntOffset: Int, sourceLength: Int) = {
     val shardNum = nodeId % numShards
     if (modStart <= shardNum && shardNum < modEnd) {
-      writers(shardNum).writeIntegersAtOffsetFromOffset(writeIntOffset, sourceArray, sourceIntOffset, sourceLength)
+      writers(shardNum).writeIntegersAtOffsetFromOffset(intOffset, sourceArray, sourceIntOffset, sourceLength)
     }
     else {
       throw new IllegalArgumentException("Invalid nodeId attempted to be written")
@@ -211,16 +221,18 @@ class MemEdgeShardsWriter(val shardDirectory:String, val numShards:Int, val shar
 }
 
 /**
- * Version of MemEdgeShardsWriter that writes to multiple directories
+ * Version of MemIntShardsWriter that writes to multiple directories
+ *
  * @param shardDirectories an array of directory strings
  * @param numShards the number of shards
  * @param shardSizes the size of each shard
  * @param rounds number of write rounds
  */
-class MultiDirMemEdgeShardsWriter(val shardDirectories:Array[String], numShards:Int, shardSizes:Array[Int], rounds:Int=1)
-  extends MemEdgeShardsWriter(shardDirectories(0), numShards, shardSizes, rounds) {
+class MultiDirMemIntShardsWriter(val shardDirectories: Array[String], numShards: Int,
+                                 shardSizes: Array[Int], rounds: Int = 1)
+  extends MemIntShardsWriter(shardDirectories(0), numShards, shardSizes, rounds) {
 
-  shardDirectories.foreach { shardDirectory => new File(shardDirectory).mkdirs() }
+  shardDirectories.foreach { shardDirectory => FileUtils.makeDirs(shardDirectory) }
 
   override def endRound = {
     (modStart until modEnd).foreach { i =>
