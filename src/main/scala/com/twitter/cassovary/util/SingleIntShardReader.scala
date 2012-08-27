@@ -18,10 +18,10 @@ import java.nio.ByteBuffer
 import com.twitter.ostrich.stats.Stats
 
 /**
- * Read binary integers from a file
+ * Read consecutively written binary integers from a file
  * @param filename
  */
-class IntShardReader(val filename:String) {
+class SingleIntShardReader(val filename:String) {
   private val rf = new RandomAccessFile(filename, "r") // Alternative - FileOutputStream and DataOutputStream
 
   /**
@@ -58,7 +58,7 @@ class IntShardReader(val filename:String) {
  */
 class IntShardsReader(val shardDirectory: String, val numShards: Int) {
   val shardReaders = (0 until numShards).map { i =>
-    new IntShardReader("%s/%s.txt".format(shardDirectory, i))
+    new SingleIntShardReader("%s/%s.txt".format(shardDirectory, i))
   }
 
   /**
@@ -93,7 +93,7 @@ class IntShardsReader(val shardDirectory: String, val numShards: Int) {
  */
 class MultiDirIntShardsReader(val shardDirectories: Array[String], val numShards: Int) {
   val shardReaders = (0 until numShards).map { i =>
-    new IntShardReader("%s/%s.txt".format(shardDirectories(i % shardDirectories.length), i))
+    new SingleIntShardReader("%s/%s.txt".format(shardDirectories(i % shardDirectories.length), i))
   }
 
   def readIntegersFromOffsetIntoArray(nodeId:Int, intOffset:Long, numInts:Int, intArray:Array[Int], intArrayOffset:Int):Unit = {

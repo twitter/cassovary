@@ -19,7 +19,7 @@ package com.twitter.cassovary.util
  */
 class MultiThreadAccess {
 
-  var testId = 0L
+  @volatile var testId = 0L
 
   /**
    * The test will fail if multiple threads call this function on a MultiThreadAccess object

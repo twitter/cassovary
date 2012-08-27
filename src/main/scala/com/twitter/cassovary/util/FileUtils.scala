@@ -109,4 +109,27 @@ object FileUtils {
       }
     }
   }
+
+  /**
+   * Get a temporary filename to use. Deleted on JVM exit.
+   * @return string
+   */
+  def getTempFilename = {
+    val f = File.createTempFile("casso", "vary")
+    f.deleteOnExit()
+    f.getAbsolutePath
+  }
+
+  /**
+   * Get the filename of a temporary directory to use. Deleted on JVM exit.
+   * @return
+   */
+  def getTempDirectoryName = {
+    val f = com.google.common.io.Files.createTempDir()
+    Runtime.getRuntime.addShutdownHook(new Thread {
+      override def run { Files.delete(f) }
+    })
+    f.getAbsolutePath
+  }
+
 }
