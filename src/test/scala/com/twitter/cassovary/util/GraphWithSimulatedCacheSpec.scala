@@ -14,14 +14,14 @@
 
 package com.twitter.cassovary.util
 
-import org.specs.Specification
 import com.twitter.cassovary.graph.TestGraphs
 import com.twitter.cassovary.graph.GraphDir
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.twitter.cassovary.graph.GraphUtils
-import io.Source
-import java.io.File
 import com.twitter.io.Files
+import java.io.File
+import scala.io.Source
+import org.specs.Specification
 
 class GraphWithSimulatedCacheSpec extends Specification {
   val innerGraph = TestGraphs.g6
