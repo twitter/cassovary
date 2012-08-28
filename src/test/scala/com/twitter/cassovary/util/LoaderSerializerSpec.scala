@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 class LoaderSerializerSpec extends Specification  {
   "LoaderSerializer" should {
-    val serializer = new LoaderSerializer("temp-cached/spectest", true)
+    val serializer = new LoaderSerializer(FileUtils.getTempDirectoryName, true)
 
     "Read and write a BitSet properly" in {
       val bs = new mutable.BitSet(999)

@@ -20,4 +20,3 @@ scripts/scala/jars
 scripts/scala/test_*
 temp-*
 test-*
-test.txt

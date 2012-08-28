@@ -23,20 +23,19 @@ import com.google.common.cache._
  */
 abstract class SimulatedCache(size: Int = 10) {
   var misses, accesses, prevMisses, prevAccesses, fullAccesses: Long = 0
-  val one:Short = 1
 
   /**
    * "Retrieve" an element of a given size
    * @param id
    * @param eltSize
    */
-  def getAndUpdate(id: Int, eltSize: Int):Unit
+  def getAndUpdate(id: Int, eltSize: Int)
 
   /**
    * "Retrieve" an element of size 1
    * @param id
    */
-  def getAndUpdate(id: Int):Unit = getAndUpdate(id, one)
+  def getAndUpdate(id: Int) { getAndUpdate(id, 1) }
   
   // Get cumulative statistics
   def getStats = {
@@ -87,7 +86,7 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
    * @param id the id of the element desired
    * @param eltSize the size of this element
    */
-  def getAndUpdate(id: Int, eltSize:Int) = {
+  def getAndUpdate(id: Int, eltSize: Int) = {
     accesses += 1
     if (!map.contains(id)) {
       misses += 1
@@ -108,7 +107,7 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
 
 }
 
-class GuavaSimulatedCache(size: Int, loader:(Int => Int)) extends SimulatedCache {
+class GuavaSimulatedCache(size: Int, loader: (Int => Int)) extends SimulatedCache {
 
   val removalListener = new RemovalListener[Int,Int] {
     def onRemoval(p1: RemovalNotification[Int, Int]) {

@@ -14,7 +14,7 @@
 package com.twitter.cassovary.util.cache
 
 import org.specs.Specification
-import com.twitter.cassovary.util.IntShardsWriter
+import com.twitter.cassovary.util.{FileUtils, IntShardsWriter}
 
 class FastLRUIntArrayCacheSpec extends Specification {
 
@@ -23,7 +23,8 @@ class FastLRUIntArrayCacheSpec extends Specification {
   val offset = Array[Long](0L, 0L, 0L, 0L, 0L)
   val edges = Array[Int](0, 2, 2, 0, 1)
 
-  val writer = new IntShardsWriter("test-shards", 10)
+  val tempDir = FileUtils.getTempDirectoryName
+  val writer = new IntShardsWriter(tempDir, 10)
   writer.writeIntegersAtOffset(1, 0, List(2, 3))
   writer.writeIntegersAtOffset(2, 0, List(3, 4))
   writer.writeIntegersAtOffset(4, 0, List(1))
@@ -52,18 +53,18 @@ class FastLRUIntArrayCacheSpec extends Specification {
   }
 
   val fastLRU = beforeContext {
-    l = FastLRUIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
-    l2 = FastLRUIntArrayCache(Array("test-shards"), 10, 4, 2, 4, offset, edges)
+    l = FastLRUIntArrayCache(Array(tempDir), 10, 4, 2, 3, offset, edges)
+    l2 = FastLRUIntArrayCache(Array(tempDir), 10, 4, 2, 4, offset, edges)
   }
 
   val buffFastLRU = beforeContext {
-    l = BufferedFastLRUIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
-    l2 = BufferedFastLRUIntArrayCache(Array("test-shards"), 10, 4, 2, 4, offset, edges)
+    l = BufferedFastLRUIntArrayCache(Array(tempDir), 10, 4, 2, 3, offset, edges)
+    l2 = BufferedFastLRUIntArrayCache(Array(tempDir), 10, 4, 2, 4, offset, edges)
   }
 
   val locklessFastLRU = beforeContext {
-    l = LocklessReadFastLRUIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
-    l2 = LocklessReadFastLRUIntArrayCache(Array("test-shards"), 10, 4, 2, 4, offset, edges)
+    l = LocklessReadFastLRUIntArrayCache(Array(tempDir), 10, 4, 2, 3, offset, edges)
+    l2 = LocklessReadFastLRUIntArrayCache(Array(tempDir), 10, 4, 2, 4, offset, edges)
   }
 
   "FastLRUIntArrayCache" definedAs fastLRU should {

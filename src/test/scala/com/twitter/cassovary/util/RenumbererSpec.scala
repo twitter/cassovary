@@ -47,21 +47,21 @@ class RenumbererSpec extends Specification  {
     }
 
     "Successfully load from disk" in {
+      val tmpFile = FileUtils.getTempFilename
       r.translate(99)
       r.translate(100)
       r.translate(1)
-      val lsw = new LoaderSerializerWriter("renumbertest.txt")
+      val lsw = new LoaderSerializerWriter(tmpFile)
       r.toWriter(lsw)
       lsw.close
       val s = new Renumberer(0)
-      val lsr = new LoaderSerializerReader("renumbertest.txt")
+      val lsr = new LoaderSerializerReader(tmpFile)
       s.fromReader(lsr)
       lsr.close
       s.translate(1) mustEqual 3
       s.translate(99) mustEqual 1
       s.translate(100) mustEqual 2
       s.reverseTranslate(3) mustEqual 1
-      new File("renumbertest.txt").delete()
     }
 
   }

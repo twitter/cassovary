@@ -14,7 +14,7 @@
 package com.twitter.cassovary.util.cache
 
 import org.specs.Specification
-import com.twitter.cassovary.util.IntShardsWriter
+import com.twitter.cassovary.util.{FileUtils, IntShardsWriter}
 
 class RandomizedIntArrayCacheSpec extends Specification {
 
@@ -23,7 +23,8 @@ class RandomizedIntArrayCacheSpec extends Specification {
   val offset = Array[Long](0L, 0L, 0L, 0L, 0L)
   val edges = Array[Int](0, 2, 2, 0, 1)
 
-  val writer = new IntShardsWriter("test-shards", 10)
+  val tempDir = FileUtils.getTempDirectoryName
+  val writer = new IntShardsWriter(tempDir, 10)
   writer.writeIntegersAtOffset(1, 0, List(2, 3))
   writer.writeIntegersAtOffset(2, 0, List(3, 4))
   writer.writeIntegersAtOffset(4, 0, List(1))
@@ -50,13 +51,13 @@ class RandomizedIntArrayCacheSpec extends Specification {
   }
 
   def randomizedCache = beforeContext {
-    ri = RandomizedIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
-    ri2 = RandomizedIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
+    ri = RandomizedIntArrayCache(Array(tempDir), 10, 4, 2, 3, offset, edges)
+    ri2 = RandomizedIntArrayCache(Array(tempDir), 10, 4, 2, 3, offset, edges)
   }
 
   def locklessRandomizedCache = beforeContext {
-    ri = LocklessRandomizedIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
-    ri2 = LocklessRandomizedIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
+    ri = LocklessRandomizedIntArrayCache(Array(tempDir), 10, 4, 2, 3, offset, edges)
+    ri2 = LocklessRandomizedIntArrayCache(Array(tempDir), 10, 4, 2, 3, offset, edges)
   }
 
   "RandomizedIntArrayCache" definedAs randomizedCache should {

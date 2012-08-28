@@ -14,23 +14,22 @@
 package com.twitter.cassovary.util.cache
 
 import org.specs.Specification
-import com.twitter.cassovary.util.IntShardsWriter
+import com.twitter.cassovary.util.{IntShardsReader, FileUtils, IntShardsWriter}
+import java.io.File
 
 class FastClockIntArrayCacheSpec extends Specification {
   "FastClockIntArrayCache" should {
     val offset = Array[Long](0L, 0L, 0L, 0L, 0L)
     val edges = Array[Int](0, 2, 2, 0, 1)
-
-    doFirst {
-      val writer = new IntShardsWriter("test-shards", 10)
-      writer.writeIntegersAtOffset(1, 0, List(2, 3))
-      writer.writeIntegersAtOffset(2, 0, List(3, 4))
-      writer.writeIntegersAtOffset(4, 0, List(1))
-      writer.close
-    }
+    val tempDir = FileUtils.getTempDirectoryName
+    val writer = new IntShardsWriter(tempDir, 10)
+    writer.writeIntegersAtOffset(1, 0, List(2, 3))
+    writer.writeIntegersAtOffset(2, 0, List(3, 4))
+    writer.writeIntegersAtOffset(4, 0, List(1))
+    writer.close
 
     "Work" in {
-      val fc = FastClockIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
+      val fc = FastClockIntArrayCache(Array(tempDir), 10, 4, 2, 3, offset, edges)
       fc.get(1)(0) mustEqual 2
       fc.get(1)(1) mustEqual 3
       fc.numbers.misses mustEqual 1
@@ -38,7 +37,7 @@ class FastClockIntArrayCacheSpec extends Specification {
     }
 
     "Evict Properly" in {
-      val fc = FastClockIntArrayCache(Array("test-shards"), 10, 4, 2, 3, offset, edges)
+      val fc = FastClockIntArrayCache(Array(tempDir), 10, 4, 2, 3, offset, edges)
       fc.get(1)
       fc.get(2)
       fc.get(1)
@@ -58,7 +57,7 @@ class FastClockIntArrayCacheSpec extends Specification {
     }
 
     "Is clock and not LRU" in {
-      val fc = FastClockIntArrayCache(Array("test-shards"), 10, 4, 2, 4, offset, edges)
+      val fc = FastClockIntArrayCache(Array(tempDir), 10, 4, 2, 4, offset, edges)
       fc.get(1)
       fc.get(2)
       fc.get(1)

@@ -278,8 +278,8 @@ object CachedDirectedGraph {
     // Also do this for inIteratorSeq if it exists
     if (inIteratorSeq != null) {
       log.info("Reading maxId and Calculating numInts for in-edges...")
-      val oc = getMaxCounts(outIteratorSeq, executorService, serializer, "step1in.txt")
-      inMaxId = oc._1; nodeWithInEdgesMaxId = oc._2; nodeWithInEdgesCount = oc._3; inNumEdges = oc._4
+      val ic = getMaxCounts(inIteratorSeq, executorService, serializer, "step1in.txt")
+      inMaxId = ic._1; nodeWithInEdgesMaxId = ic._2; nodeWithInEdgesCount = ic._3; inNumEdges = ic._4
     }
 
     var nodeIdSet: mutable.BitSet = null
