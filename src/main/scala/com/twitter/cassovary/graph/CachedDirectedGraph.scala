@@ -250,13 +250,18 @@ object CachedDirectedGraph {
             inIteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxId] ],
             executorService: ExecutorService,
             storedGraphDir: StoredGraphDir, cacheType: String, cacheMaxNodes:Int, cacheMaxEdges:Long,
-            shardDirectoryPrefixes: Array[String], numShards: Int, numRounds: Int,
+            shardDirectoryPrefixes: Array[String], inShardDirectoryPrefixes: Array[String], numShards: Int, numRounds: Int,
             useCachedValues: Boolean, cacheDirectory: String, renumber: Boolean):CachedDirectedGraph = {
 
     // Initialize shard directory names
     val shardDirectories = shardDirectoryPrefixes.map ( shardDirectoryPrefix =>
       if (renumber) shardDirectoryPrefix + "_renumbered" else shardDirectoryPrefix + "_regular" )
-    val shardDirectoriesIn = shardDirectories.map { shardDirectory => shardDirectory + "_in" }
+    val shardDirectoriesIn = if (inShardDirectoryPrefixes != null && inShardDirectoryPrefixes(0).length > 0) {
+      inShardDirectoryPrefixes.map ( shardDirectoryPrefix =>
+        if (renumber) shardDirectoryPrefix + "_renumbered" else shardDirectoryPrefix + "_regular" )
+    } else {
+      shardDirectories.map { shardDirectory => shardDirectory + "_in" }
+    }
 
     log.info("---Beginning Load---")
     log.info("Cache Info: cacheMaxNodes is %s, cacheMaxEdges is %s, cacheType is %s".format(cacheMaxNodes, cacheMaxEdges, cacheType))
@@ -568,7 +573,7 @@ object CachedDirectedGraph {
       cacheType:String, cacheDirectory:String = null,
       renumber: Boolean):CachedDirectedGraph =
     apply(Seq(iteratorFunc), null, MoreExecutors.sameThreadExecutor(),
-      storedGraphDir, cacheType, 2, 4, Array(shardDirectory), 8, 2,
+      storedGraphDir, cacheType, 2, 4, Array(shardDirectory), null, 8, 2,
       useCachedValues = true, cacheDirectory = cacheDirectory, renumber = renumber)
 }
 

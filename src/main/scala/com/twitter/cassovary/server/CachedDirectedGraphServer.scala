@@ -44,7 +44,7 @@ class CachedDirectedGraphServer(config: CachedDirectedGraphServerConfig) extends
     // Load the desired graph
     val graph = GraphLoader(config.graphDump,
       if (config.inGraphDump.length > 0) Some(config.inGraphDump) else None,
-      config.cacheType, config.numNodes, config.numEdges, config.shardDirectories,
+      config.cacheType, config.numNodes, config.numEdges, config.shardDirectories, config.inShardDirectories,
       config.numShards, config.numRounds, true, config.cacheDirectory)
 
 //    val graph = GraphLoader("/Volumes/Macintosh HD 2/graph_dump_random",

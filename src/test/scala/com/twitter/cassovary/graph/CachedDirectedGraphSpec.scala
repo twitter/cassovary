@@ -154,7 +154,7 @@ class CachedDirectedGraphSpec extends Specification {
     "be able to be saved and read back without errors" in {
       def loadOnce {
         val cdg = CachedDirectedGraph(Seq(iteratorFunc), null, MoreExecutors.sameThreadExecutor(),
-          StoredGraphDir.OnlyOut, "lru", 2, 4, Array("temp-shards/c"), 2, 2, true, "temp-cached/twoshards", false)
+          StoredGraphDir.OnlyOut, "lru", 2, 4, Array("temp-shards/c"), null, 2, 2, true, "temp-cached/twoshards", false)
         iteratorFunc().foreach { case NodeIdEdgesMaxId(id, neighbors, _) =>
           cdg.getNodeById(id).get.outboundNodes().toSet mustEqual neighbors.toSet
         }
@@ -165,7 +165,7 @@ class CachedDirectedGraphSpec extends Specification {
 
     "do a verbose random walk" in {
       val cdg = CachedDirectedGraph(Seq(iteratorFunc), null, MoreExecutors.sameThreadExecutor(),
-        StoredGraphDir.OnlyOut, "lru", 2, 4, Array("temp-shards/c"), 2, 2, true, "temp-cached/twoshards", false)
+        StoredGraphDir.OnlyOut, "lru", 2, 4, Array("temp-shards/c"), null, 2, 2, true, "temp-cached/twoshards", false)
       val gu = new GraphUtils(cdg)
       val walkParams = RandomWalkParams(15000, 0.0, Some(1500), None, Some(3), false, GraphDir.OutDir, false, true)
       val (_, _, traverser) = gu.safeCalculatePersonalizedReputation(1, walkParams, edgeMap, verbose = true)

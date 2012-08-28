@@ -53,6 +53,7 @@ object RunCDGServer {
         numNodes = (sData \ "num_nodes").extract[Int]
         numEdges = (sData \ "num_edges").extract[Long]
         shardDirectories = (sData \ "shard_directories").extract[String].split(":")
+        inShardDirectories = (sData \ "in_shard_directories").extract[String].split(":")
         numShards = (sData \ "num_shards").extract[Int]
         numRounds = (sData \ "num_rounds").extract[Int]
         cacheDirectory = (sData \ "cache_directory").extract[String]

@@ -30,6 +30,7 @@ class CachedDirectedGraphServerConfig extends ServerConfig[CachedDirectedGraphSe
   var numNodes: Int = 10
   var numEdges: Long = 100L
   var shardDirectories: Array[String] = Array("path/to/sharddirs")
+  var inShardDirectories: Array[String] = Array("path/to/insharddirs")
   var numShards = 256
   var numRounds = 16
   var cacheDirectory = "/path/to/cachedir"

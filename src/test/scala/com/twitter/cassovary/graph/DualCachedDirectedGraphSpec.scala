@@ -42,11 +42,11 @@ class DualCachedDirectedGraphSpec extends Specification {
 
   def makeRenumberedDualGraph =
     CachedDirectedGraph(Seq(iteratorFunc), Seq(inIteratorFunc), MoreExecutors.sameThreadExecutor(),
-      StoredGraphDir.BothInOut, "lru", 2, 4, Array("temp-shards/d"), 2, 2, true, "temp-cached/dtwoshards", true)
+      StoredGraphDir.BothInOut, "lru", 2, 4, Array("temp-shards/d"), null, 2, 2, true, "temp-cached/dtwoshards", true)
 
   def makeDualGraph =
     CachedDirectedGraph(Seq(iteratorFunc), Seq(inIteratorFunc), MoreExecutors.sameThreadExecutor(),
-      StoredGraphDir.BothInOut, "lru", 2, 4, Array("temp-shards/d"), 2, 2, true, "temp-cached/dtwoshards", false)
+      StoredGraphDir.BothInOut, "lru", 2, 4, Array("temp-shards/d"), null, 2, 2, true, "temp-cached/dtwoshards", false)
 
   "Regular FastLRU-based Dual Graph containing out and in edges" should {
     doBefore {
