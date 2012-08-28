@@ -14,6 +14,9 @@
 package com.twitter.cassovary.graph
 
 import org.specs.Specification
+import io.Source
+import com.twitter.io.Files
+import com.twitter.cassovary.util.FileUtils
 
 class DirectedGraphSpec extends Specification {
   var graph: DirectedGraph = _
@@ -65,6 +68,13 @@ class DirectedGraphSpec extends Specification {
       graph.existsNodeId(10) mustEqual true
       graph.existsNodeId(11) mustEqual true
       graph.existsNodeId(122) mustEqual false
+    }
+
+    "output to directory should be correct" in {
+      val tempDir = FileUtils.getTempDirectoryName
+      graph.writeToDirectory(tempDir, numParts = 2)
+      Source.fromFile(tempDir+"/part-r-00000").mkString mustEqual
+        "10\t3\n11\n12\n13\n11\t2\n12\n14\n12\t1\n14\n"
     }
   }
 

@@ -14,7 +14,6 @@
 package com.twitter.cassovary.graph.tourist
 
 import com.twitter.cassovary.graph.Node
-import it.unimi.dsi.fastutil.ints.{Int2IntMap, Int2ObjectOpenHashMap}
 
 /**
  * Info keeper records info per node and returns output per node or for all nodes

@@ -23,6 +23,7 @@ class NodeSpec extends Specification {
   val onlyInboundEdges = beforeContext(node = TestNode(1, List(2), Nil))
   val onlyOutboundEdges = beforeContext(node = TestNode(1, Nil, List(2)))
   val inboundAndOutboundEdges = beforeContext(node = TestNode(1, List(2), List(3)))
+  val noInboundOrOutboundEdgesMutable = beforeContext(node = TestMutableNode(1, Nil, Nil))
 
   def noInboundEdges = {
     "have no inbound edges" in {
@@ -121,4 +122,13 @@ class NodeSpec extends Specification {
       node.randomNeighborSet(4, GraphDir.OutDir)(0) mustBe 3
     }
   }
+
+  "A node with a mutable id" definedAs noInboundOrOutboundEdgesMutable should {
+    "be able to modify its id" in {
+      node.id mustEqual 1
+      node.asInstanceOf[TestMutableNode].id = 2
+      node.id mustEqual 2
+    }
+  }
+
 }
