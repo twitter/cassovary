@@ -262,7 +262,7 @@ class SharedArrayBasedDirectedGraph private (nodeIdSet: Array[Byte], offsetTable
 
   override lazy val maxNodeId = maxId
 
-  def iterator = (0 to maxId).flatMap(getNodeById(_)).iterator
+  def iterator = (0 to maxId).view.flatMap(getNodeById(_)).iterator
 
   def getNodeById(id: Int) = {
     if ((id >= nodeIdSet.size) || (nodeIdSet(id) == 0)) {

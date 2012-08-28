@@ -14,8 +14,6 @@
 package com.twitter.cassovary.graph.tourist
 
 import com.twitter.cassovary.graph.Node
-import scala.collection.mutable
-import it.unimi.dsi.fastutil.ints.{Int2IntOpenHashMap, Int2ObjectOpenHashMap}
 
 /**
  * Represents the processing done when visiting a node.
