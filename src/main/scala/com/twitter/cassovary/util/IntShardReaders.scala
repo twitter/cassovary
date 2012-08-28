@@ -13,9 +13,9 @@
  */
 package com.twitter.cassovary.util
 
+import com.twitter.ostrich.stats.Stats
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
-import com.twitter.ostrich.stats.Stats
 
 /**
  * Read consecutively written binary integers from a file
