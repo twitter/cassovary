@@ -14,11 +14,9 @@
 
 package com.twitter.cassovary.util
 
-import org.specs.Specification
 import com.twitter.cassovary.graph.TestGraphs
+import org.specs.Specification
 import scala.io.Source
-import java.io.File
-import com.twitter.io.Files
 
 class GraphWithAccessCounterSpec extends Specification {
   "GraphWithAccessCounter" should {
@@ -27,15 +25,8 @@ class GraphWithAccessCounterSpec extends Specification {
     var m:Int = 0
     val innerGraph = TestGraphs.g6
 
-    doFirst {
-      new File("temp-cache3/").mkdirs()
-    }
-    doLast {
-      Files.delete(new File("temp-cache3/"))
-    }
-
     doBefore {
-      g = new GraphWithAccessCounter(innerGraph, 5, "temp-cache3")
+      g = new GraphWithAccessCounter(innerGraph, 5, FileUtils.getTempDirectoryName)
       n = innerGraph.randomNode
       m = innerGraph.randomNode
       while (n == m) n = innerGraph.randomNode
