@@ -31,16 +31,16 @@ class GraphWithAccessCounter(val g: DirectedGraph, val statsInterval: Long,
   var accesses: Long = 0
   var writes = 0
 
-  protected val log = Logger.get
+  protected val log = Logger.get("GraphWithAccessCounter")
 
   override def getNodeById(id: Int) = {
     counter(id) += 1
     accesses += 1
     if (accesses % statsInterval == 0) {
-      log.info("simcache now writing access stats")
+      log.info("Now writing access stats")
       writeStats("%s/%s.txt".format(outputDirectory, writes))
       writes += 1
-      log.info("simcache done writing access stats %s".format(writes))
+      log.info("Done writing access stats %s".format(writes))
       resetStats
     }
 
@@ -53,14 +53,15 @@ class GraphWithAccessCounter(val g: DirectedGraph, val statsInterval: Long,
   def edgeCount = g.edgeCount
   def iterator = g.iterator
 
-  def writeStats(fileName: String) = {
+  def writeStats(fileName: String) {
     FileUtils.printToFile(new File(fileName))(p => {
       counter.foreach({ i => p.println(i) })
     })
   }
 
-  def getStats = { counter }
+  def getStats = counter
 
+  // Zeroes the counter
   private def resetStats = { counter = new Array[Int](g.maxNodeId+1) }
 
   def graph = g

@@ -33,10 +33,10 @@ class GraphWithSimulatedCache(val g: DirectedGraph, val cacheSize: Int,
                               val cacheMechanism: String, val statsInterval: Long,
                               val outputDirectory: String) extends DirectedGraph {
   
-  protected val log = Logger.get
+  protected val log = Logger.get("GraphWithSimulatedCache")
   var writes = 0
 
-  val cache:SimulatedCache = cacheMechanism match {
+  val cache: SimulatedCache = cacheMechanism match {
     case "clock" => {
       val dg = g.asInstanceOf[DirectedGraph]
       new ClockSimulatedCache(dg.maxNodeId, cacheSize)
@@ -58,12 +58,12 @@ class GraphWithSimulatedCache(val g: DirectedGraph, val cacheSize: Int,
           val (m, a, r) = cache.getStats
           Stats.addMetric("cache_misses", m.toInt)
           Stats.addMetric("cache_accesses", a.toInt)
-          log.info("simcache interval %s %s %s".format(m, a, r))
+          log.info("Misses/Access/Miss Ratio %s %s %s".format(m, a, r))
           writeStats("%s/%s.txt".format(outputDirectory, writes))
           writes += 1
         }
       }
-      case _ => ()
+      case _ => None
     }
     node
   }
@@ -126,7 +126,7 @@ class GraphWithSimulatedVarCache(g: DirectedGraph, cacheSize: Int,
           writes += 1
         }
       }
-      case _ => ()
+      case _ => None
     }
     node
   }
