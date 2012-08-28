@@ -72,7 +72,7 @@ trait DirectedGraph extends Graph with Iterable[Node] {
   /**
    * Get a random node that exists in the graph by uniformly sampling from 0 to maxNodeId
    */
-  def randomNode: Int = {
+  def randomNode = {
     val rand = new Random()
     def getValidNode(nodeId:Int):Int = getNodeById(nodeId) match {
       case Some(n) => nodeId
@@ -87,7 +87,7 @@ trait DirectedGraph extends Graph with Iterable[Node] {
    * @param number the number of random nodes to get
    * @return a list of node ids
    */
-  def randomNodes(number: Int): List[Int] = {
+  def randomNodes(number: Int) = {
     (1 to number).foldLeft(List[Int]()) { (l, _) => randomNode :: l }
   }
 
