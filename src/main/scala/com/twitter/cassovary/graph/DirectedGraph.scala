@@ -14,6 +14,9 @@
 package com.twitter.cassovary.graph
 
 import GraphDir._
+import scala.util.Random
+import java.io.File
+import com.twitter.cassovary.util.FileUtils
 
 object StoredGraphDir extends Enumeration {
   type StoredGraphDir = Value
@@ -67,6 +70,28 @@ trait DirectedGraph extends Graph with Iterable[Node] {
   }
 
   /**
+   * Get a random node that exists in the graph by uniformly sampling from 0 to maxNodeId
+   */
+  def randomNode = {
+    val rand = new Random()
+    def getValidNode(nodeId:Int):Int = getNodeById(nodeId) match {
+      case Some(n) => nodeId
+      case None => getValidNode(rand.nextInt(maxNodeId))
+    }
+    getValidNode(rand.nextInt(maxNodeId))
+  }
+
+  /**
+   * Get some random nodes in the graph. Node ids may repeat.
+   *
+   * @param number the number of random nodes to get
+   * @return a list of node ids
+   */
+  def randomNodes(number: Int) = {
+    (1 to number).foldLeft(List[Int]()) { (l, _) => randomNode :: l }
+  }
+
+  /**
    * Added default toString for debugging (prints max of 10 nodes)
    */
   override def toString = toString(10)
@@ -79,4 +104,52 @@ trait DirectedGraph extends Graph with Iterable[Node] {
       accum + ( if (node != null) { "\n" + node } else "")
     }
   }
+
+  /**
+   * Write this directed graph to a directory, splitting into numParts
+   * Each part is named part-r-XXXXX, and the format is
+   * node_id \t num_neighbors on one line,
+   * followed by num_neighbors subsequent lines, each with a single id
+   *
+   * @param directory Directory to write graph to
+   * @param numParts Number of files to split graph into
+   */
+  def writeToDirectory(directory: String, numParts: Int) = {
+    FileUtils.makeDirs(directory)
+
+    val dir = storedGraphDir match {
+      case StoredGraphDir.OnlyIn => GraphDir.InDir
+      case StoredGraphDir.OnlyOut => GraphDir.OutDir
+      case _ => GraphDir.OutDir
+    }
+
+    // Write nodes to part files
+    val it = this.iterator
+    val nodesPerPart = (this.nodeCount.toDouble / numParts).ceil.toInt
+    var nodeCountCheck = 0
+    var j = 0
+    (0 until numParts).foreach { i =>
+      j = 0
+      FileUtils.printToFile(new File(directory+"/part-r-%05d".format(i))) { p =>
+        while (it.hasNext && j < nodesPerPart ) {
+          val node = it.next
+          p.println(node.id + "\t" + node.neighborCount(dir))
+          node.neighborIds(dir).foreach { id =>
+            p.println(id)
+          }
+          j += 1
+        }
+      }
+      nodeCountCheck += j
+    }
+
+    assert(nodeCountCheck == this.nodeCount) // Tiny sanity check
+
+    // Print done marker summary
+    FileUtils.printToFile(new File(directory+"/done_marker.summ")) { p =>
+      p.println(this.maxNodeId + "\t" + this.nodeCount + "\t" + this.edgeCount)
+    }
+
+  }
+
 }

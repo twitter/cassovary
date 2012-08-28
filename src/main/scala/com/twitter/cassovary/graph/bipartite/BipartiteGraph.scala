@@ -15,7 +15,6 @@ package com.twitter.cassovary.graph.bipartite
 
 import com.twitter.cassovary.graph.{Graph, GraphDir, StoredGraphDir, Node}
 import com.twitter.cassovary.graph.GraphDir._
-import com.twitter.cassovary.graph.StoredGraphDir._
 import net.lag.logging.Logger
 
 case class BipartiteGraphException(e: String) extends Exception(e)
