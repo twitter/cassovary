@@ -20,14 +20,14 @@ import java.io._
 
 /**
  * Graph which keeps an access counter of how many times a given node is accessed.
- * @param g Input graph
- * @param statsInterval How often to write stats to disk
- * @param outputDirectory Directory to write stats to
+ * @param graph Input graph
+ * @param statsDumpInterval How often to write stats to disk
+ * @param statsOutputDirectory Directory to write stats to
  */
-class GraphWithAccessCounter(val g: DirectedGraph, val statsInterval: Long,
-                             val outputDirectory: String) extends DirectedGraph {
+class GraphWithAccessCounter(val graph: DirectedGraph, val statsDumpInterval: Long,
+                             val statsOutputDirectory: String) extends DirectedGraph {
 
-  var counter = new Array[Int](g.maxNodeId+1)
+  var counter = new Array[Int](graph.maxNodeId+1)
   var accesses: Long = 0
   var writes = 0
 
@@ -36,22 +36,22 @@ class GraphWithAccessCounter(val g: DirectedGraph, val statsInterval: Long,
   override def getNodeById(id: Int) = {
     counter(id) += 1
     accesses += 1
-    if (accesses % statsInterval == 0) {
-      log.info("Now writing access stats")
-      writeStats("%s/%s.txt".format(outputDirectory, writes))
+    // TODO can make this concurrent
+    if (accesses % statsDumpInterval == 0) {
+      log.info("Writing access stats...")
+      writeStats("%s/%s.txt".format(statsOutputDirectory, writes))
       writes += 1
-      log.info("Done writing access stats %s".format(writes))
       resetStats
     }
 
-    g.getNodeById(id)
+    graph.getNodeById(id)
   }
 
-  override def existsNodeId(id: Int) = g.existsNodeId(id)
-  def nodeCount = g.nodeCount
-  val storedGraphDir = g.storedGraphDir
-  def edgeCount = g.edgeCount
-  def iterator = g.iterator
+  override def existsNodeId(id: Int) = graph.existsNodeId(id)
+  def nodeCount = graph.nodeCount
+  val storedGraphDir = graph.storedGraphDir
+  def edgeCount = graph.edgeCount
+  def iterator = graph.iterator
 
   def writeStats(fileName: String) {
     FileUtils.printToFile(new File(fileName))(p => {
@@ -62,7 +62,5 @@ class GraphWithAccessCounter(val g: DirectedGraph, val statsInterval: Long,
   def getStats = counter
 
   // Zeroes the counter
-  private def resetStats = { counter = new Array[Int](g.maxNodeId+1) }
-
-  def graph = g
+  private def resetStats = { counter = new Array[Int](graph.maxNodeId+1) }
 }

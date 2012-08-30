@@ -51,7 +51,7 @@ class GraphWithAccessCounterSpec extends Specification {
       g.getNodeById(n)
       g.getNodeById(n)
       g.getNodeById(m) // resets after this line
-      val lines = Source.fromFile(g.outputDirectory+"/0.txt").getLines()
+      val lines = Source.fromFile(g.statsOutputDirectory+"/0.txt").getLines()
       lines.size mustEqual (innerGraph.maxNodeId+1)
     }
   }

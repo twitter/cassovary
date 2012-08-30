@@ -27,7 +27,7 @@ class GraphWithSimulatedCacheSpec extends Specification {
   "GraphWithSimulatedCache" in {
     var g:GraphWithSimulatedCache = null
     doBefore {
-      g = new GraphWithSimulatedCache(innerGraph, 5, "lru", 5, FileUtils.getTempDirectoryName)
+      g = new GraphWithSimulatedCache(innerGraph, new FastLRUSimulatedCache(innerGraph.maxNodeId, 5, 5, FileUtils.getTempDirectoryName))
     }
 
     "echo the correct stats" in {
@@ -59,7 +59,9 @@ class GraphWithSimulatedCacheSpec extends Specification {
   "GraphWithSimulatedVarCacheGuava" in {
     var g:GraphWithSimulatedVarCache = null
     doBefore {
-      g = new GraphWithSimulatedVarCache(innerGraph, 5, "guava", 5, FileUtils.getTempDirectoryName)
+      g = new GraphWithSimulatedVarCache(innerGraph,
+        new GuavaSimulatedCache(innerGraph.maxNodeId, { i => innerGraph.getNodeById(i).get.neighborCount(GraphDir.OutDir) },
+        5, FileUtils.getTempDirectoryName))
     }
 
     "do something" in {
@@ -73,7 +75,7 @@ class GraphWithSimulatedCacheSpec extends Specification {
   "GraphWithSimulatedVarCache" in {
     var g:GraphWithSimulatedVarCache = null
     doBefore {
-      g = new GraphWithSimulatedVarCache(innerGraph, 5, "lru", 5, FileUtils.getTempDirectoryName)
+      g = new GraphWithSimulatedVarCache(innerGraph, new FastLRUSimulatedCache(innerGraph.maxNodeId, 5, 5, FileUtils.getTempDirectoryName))
     }
 
     "echo the correct stats" in {
@@ -89,7 +91,7 @@ class GraphWithSimulatedCacheSpec extends Specification {
       graphUtils.calculatePersonalizedReputation(10, walkParams)
       val (m, a, r) = g.getStats
       a mustEqual 100
-      Source.fromFile(g.outputDirectory+"/19.txt").mkString mustEqual "%s\t%s\t%s\t%s\n".format(m, a, r, g.getCacheFullPoint)
+      Source.fromFile(g.outputDirectory+"/19.txt").mkString mustEqual "%s\t%s\t%s\t%s\n".format(m, a, r, g.numAccessesAtFirstMiss)
     }
   }
 

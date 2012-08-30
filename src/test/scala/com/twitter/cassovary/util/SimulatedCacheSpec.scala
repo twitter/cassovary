@@ -129,20 +129,20 @@ class SimulatedCacheSpec extends Specification {
     "Guava: replace the last recently seen node" in {
       var cache:GuavaSimulatedCache = null
       doBefore {
-        cache = new GuavaSimulatedCache(20, { i => i })
+        cache = new GuavaSimulatedCache(20, { i => i }, 1000, "")
       }
 
       "set cacheFullPoint properly 1" in {
         cache.getAndUpdate(1)
         cache.getAndUpdate(20)
-        cache.getCacheFullPoint mustEqual 2
+        cache.numAccessesAtFirstMiss mustEqual 2
       }
 
       "set cacheFullPoint properly 2" in {
         cache.getAndUpdate(1)
         cache.getAndUpdate(2)
         cache.getAndUpdate(30)
-        cache.getCacheFullPoint mustEqual 3
+        cache.numAccessesAtFirstMiss mustEqual 3
       }
 
     }
@@ -150,7 +150,7 @@ class SimulatedCacheSpec extends Specification {
     "Fast LRU: replace the last recently seen node" in {
       var cache:FastLRUSimulatedCache = null
       doBefore {
-        cache = new FastLRUSimulatedCache(10, 5)
+        cache = new FastLRUSimulatedCache(10, 5, 1000, "")
       }
       "work" in {
         cache.getAndUpdate(5)
@@ -172,7 +172,7 @@ class SimulatedCacheSpec extends Specification {
       }
       "do badly in lru worst case" in {
         lruWorstCase(cache) mustEqual (11, 11, 1.0)
-        cache.getCacheFullPoint mustEqual 6
+        cache.numAccessesAtFirstMiss mustEqual 6
       }
       "do well in mru worst case" in {
         mruWorstCase(cache) mustEqual (6, 10, 0.6)
@@ -185,7 +185,7 @@ class SimulatedCacheSpec extends Specification {
       }
       "do okay in sizable case" in {
         sizableCase(cache) mustEqual (5, 7, 5.0/7)
-        cache.getCacheFullPoint mustEqual 5
+        cache.numAccessesAtFirstMiss mustEqual 5
       }
       "do badly in sizable case 2" in {
         sizableCase2(cache) mustEqual (6, 9, 6.0/9)
@@ -213,7 +213,7 @@ class SimulatedCacheSpec extends Specification {
     "MRU: replace the most recently seen node" in {
       var cache:SimulatedCache = null
       doBefore {
-        cache = new MRUSimulatedCache(5)
+        cache = new MRUSimulatedCache(5, 1000, "")
       }
       "do badly in mru worst case" in {
         mruWorstCase(cache) mustEqual (10, 10, 1.0)
@@ -226,7 +226,7 @@ class SimulatedCacheSpec extends Specification {
     "Clock: replace nodes in a clock-like fashion" in {
       var cache:SimulatedCache = null
       doBefore {
-        cache = new ClockSimulatedCache(10, 5)
+        cache = new ClockSimulatedCache(10, 5, 1000, "")
       }
       "do okay in clock case" in {
         clockCase(cache) mustEqual (8, 10, 0.8)
@@ -243,7 +243,7 @@ class SimulatedCacheSpec extends Specification {
     }
     
     "diffstat should work" in {
-      var cache:SimulatedCache = new FastLRUSimulatedCache(10, 5)
+      var cache:SimulatedCache = new FastLRUSimulatedCache(10, 5, 1000, "")
       val (m, a, r) = cache.diffStat
       (m, a) mustEqual (0, 0)
       mruWorstCase(cache)

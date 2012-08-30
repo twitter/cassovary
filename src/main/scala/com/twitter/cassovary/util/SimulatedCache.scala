@@ -14,26 +14,46 @@
 package com.twitter.cassovary.util
 import scala.collection.mutable
 import com.google.common.cache._
+import java.io.File
+import com.twitter.ostrich.stats.Stats
+import net.lag.logging.Logger
 
 /**
  * A Simulated Cache, as the name implies, simulates a caching mechanism, and stores statistics
  * which can be later queried
  * Basic methods for any simulated cache
- * @param size
+ * @param maxSize Maximum size of the cache (elements may have size >= 1)
+ * @param statsInterval How often to write stats to disk (in intervals of # of accesses)
+ * @param outputDirectory The directory to write stats to
  */
-abstract class SimulatedCache(size: Int = 10) {
+abstract class SimulatedCache(val maxSize: Int = 10, val statsInterval: Long, val outputDirectory: String) {
   var misses, accesses, prevMisses, prevAccesses, fullAccesses: Long = 0
+  var writes = 0
+  protected val log = Logger.get("SimulatedCache")
 
   /**
    * "Retrieve" an element of a given size
-   * @param id
-   * @param eltSize
+   * @param id Integer identifier of an element
+   * @param eltSize Size of the element
+   */
+  def get(id: Int, eltSize: Int) {
+    getAndUpdate(id, eltSize)
+    checkAndWriteStats()
+  }
+
+  /**
+   * "Retrieve" an element of size 1
+   * @param id Integer identifier of an element
+   */
+  def get(id: Int) { get(id, 1) }
+
+  /**
+   * Sub-classes should override this
    */
   def getAndUpdate(id: Int, eltSize: Int)
 
   /**
-   * "Retrieve" an element of size 1
-   * @param id
+   * Sub-classes should override this too if they do not support variable element size
    */
   def getAndUpdate(id: Int) { getAndUpdate(id, 1) }
   
@@ -42,7 +62,7 @@ abstract class SimulatedCache(size: Int = 10) {
     (misses, accesses, misses.toDouble/accesses)
   }
 
-  def setCacheFullPointOnce = {
+  def setNumAccessesAtFirstMissOnce() {
     if (fullAccesses == 0)
       fullAccesses = accesses
   }
@@ -51,8 +71,19 @@ abstract class SimulatedCache(size: Int = 10) {
    * When did the cache become full?
    * @return # of accesses when the cache became full
    */
-  def getCacheFullPoint = {
+  def numAccessesAtFirstMiss = {
     fullAccesses
+  }
+
+  def checkAndWriteStats() {
+    if (accesses % statsInterval == 0) {
+      val (m, a, r) = getStats
+      Stats.addMetric("cache_misses", m.toInt)
+      Stats.addMetric("cache_accesses", a.toInt)
+      log.info("Misses/Access/Miss Ratio %s %s %s".format(m, a, r))
+      writeStats("%s/%s.txt".format(outputDirectory, writes))
+      writes += 1
+    }
   }
 
   /**
@@ -64,35 +95,50 @@ abstract class SimulatedCache(size: Int = 10) {
     prevAccesses = accesses
     (m, a, m.toDouble/a)
   }
+
+  /**
+   * Write out statistics to a file in the format
+   * misses \t accesses \t missRatio \t cacheFullPoint
+   * Note that cacheFullPoint is 0 if the cache isn't full yet
+   * @param fileName Filename to write stats to
+   */
+  def writeStats(fileName: String) {
+    val (misses, accesses, missRatio) = getStats
+    FileUtils.printToFile(new File(fileName))(p => {
+      p.println("%s\t%s\t%s\t%s".format(misses, accesses, missRatio, numAccessesAtFirstMiss))
+    })
+  }
 }
 
 /**
  * Cache implemented with essentially a linked hash map, itself implemented as
- * several int arrays. Cache evicts the least recently accessed id if the size of the
- * cache is reached. An optional size can be specified when adding to the cache,
+ * several int arrays. Cache evicts the least recently accessed id if the maxSize of the
+ * cache is reached. An optional maxSize can be specified when adding to the cache,
  * so that it takes up more space
 
  * @param maxId The largest id that will be added to the cache
- * @param size Units of space available in the cache
+ * @param maxSize Units of space available in the cache
  */
-class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
+class FastLRUSimulatedCache(maxId: Int, maxSize: Int = 10, statsInterval: Long, outputDirectory: String)
+  extends SimulatedCache(maxSize, statsInterval, outputDirectory) {
+
   var currRealCapacity = 0 // sum of sizes of elements in the cache
-  val indexToSize = new Array[Int](size+1) // cache index -> element size
-  val map = new LinkedIntIntMap(maxId, size)
+  val indexToSize = new Array[Int](maxSize+1) // cache index -> element maxSize
+  val map = new LinkedIntIntMap(maxId, maxSize)
 
   /**
    * The getAndUpdate function that you need that handles whether an id needs to be
    * added or simply can be retrieved from the cache
    * @param id the id of the element desired
-   * @param eltSize the size of this element
+   * @param eltSize the maxSize of this element
    */
-  def getAndUpdate(id: Int, eltSize: Int) = {
+  def getAndUpdate(id: Int, eltSize: Int) {
     accesses += 1
     if (!map.contains(id)) {
       misses += 1
-      // Keep cache size down
-      while(map.getCurrentSize == size || currRealCapacity + eltSize > size) {
-        setCacheFullPointOnce
+      // Keep cache maxSize down
+      while(map.getCurrentSize == maxSize || currRealCapacity + eltSize > maxSize) {
+        setNumAccessesAtFirstMissOnce()
         currRealCapacity -= indexToSize(map.getTailIndex)
         map.removeFromTail()
       }
@@ -107,17 +153,24 @@ class FastLRUSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
 
 }
 
-class GuavaSimulatedCache(size: Int, loader: (Int => Int)) extends SimulatedCache {
+/**
+ * Cache implemented using Google Guava's cache implementation
+ *
+ * @param maxSize Maximum size of the cache (elements may have size >= 1)
+ * @param loader A (Int => Int) function that determines the size of an element.
+ * @param statsInterval How often to write stats to disk (in intervals of # of accesses)
+ * @param outputDirectory The directory to write stats to
+ */
+class GuavaSimulatedCache(maxSize: Int, loader: (Int => Int), statsInterval: Long, outputDirectory: String)
+  extends SimulatedCache(maxSize, statsInterval, outputDirectory) {
 
   val removalListener = new RemovalListener[Int,Int] {
     def onRemoval(p1: RemovalNotification[Int, Int]) {
-      println("Evicting", p1.getKey())
-      if (fullAccesses == 0)
-        fullAccesses = cache.stats().requestCount() + 1
+      setNumAccessesAtFirstMissOnce()
     }
   }
 
-  val cache:LoadingCache[Int,Int] = CacheBuilder.newBuilder().maximumWeight(size)
+  val cache:LoadingCache[Int,Int] = CacheBuilder.newBuilder().maximumWeight(maxSize)
     .weigher(new Weigher[Int,Int] {
       def weigh(k:Int, v:Int):Int = v
     })
@@ -134,7 +187,8 @@ class GuavaSimulatedCache(size: Int, loader: (Int => Int)) extends SimulatedCach
     (stats.missCount(), stats.requestCount(), stats.missRate())
   }
 
-  def getAndUpdate(id: Int, eltSize: Int) = {
+  def getAndUpdate(id: Int, eltSize: Int) {
+    accesses += 1
     cache.get(id)
   }
 }
@@ -142,24 +196,26 @@ class GuavaSimulatedCache(size: Int, loader: (Int => Int)) extends SimulatedCach
 /**
  * Most recently used cache implementation
  * Significantly slower than FastLRU
- * @param size
+ * @param maxSize Maximum size of the cache
  */
-class MRUSimulatedCache(size: Int = 10) extends SimulatedCache {
+class MRUSimulatedCache(maxSize: Int = 10, statsInterval: Long, outputDirectory: String)
+  extends SimulatedCache(maxSize, statsInterval, outputDirectory) {
+
   val cache = new mutable.HashMap[Int, Long]()
   
-  def getAndUpdate(id: Int, eltSize:Int) = {
+  def getAndUpdate(id: Int, eltSize:Int) {
     throw new IllegalArgumentException("MRU doesn't work with variable element sizes")
   }
 
-  override def getCacheFullPoint = {
-    throw new IllegalArgumentException("Clock doesn't work with getCacheFullPoint")
+  override def numAccessesAtFirstMiss = {
+    throw new IllegalArgumentException("Clock doesn't work with numAccessesAtFirstMiss")
   }
   
-  override def getAndUpdate(id: Int) = {
+  override def getAndUpdate(id: Int) {
     if (!cache.contains(id)) {
       misses += 1
-      if (cache.size == size) {
-        val (minKey, minValue) = cache.max(Ordering[Long].on[(_, Long)](_._2))
+      if (cache.size == maxSize) {
+        val (minKey, _) = cache.max(Ordering[Long].on[(_, Long)](_._2))
         cache.remove(minKey)
       }
     }
@@ -169,27 +225,30 @@ class MRUSimulatedCache(size: Int = 10) extends SimulatedCache {
 }
 
 /**
- * Simulated cache using a Clock algorithm
- * @param maxId
- * @param size
+ * Simulated cache using a Clock algorithm.
+ * Whenever a cache hit occurs, set the cacheBit corresponding
+ * to that element. Evict in a round-robin fashion - when cacheBit is set, clear the cacheBit; if the cacheBit
+ * is not set, evict that element. In other words, cache elements have "two chances" before they are evicted.
  */
-class ClockSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
+class ClockSimulatedCache(maxId: Int, maxSize: Int = 10, statsInterval: Long, outputDirectory: String)
+  extends SimulatedCache(maxSize, statsInterval, outputDirectory) {
+
   // Note that idToCache uses 0 as a null marker, so that 1 must be subtracted from all values
   val idToCache = new Array[Int](maxId+1) // id -> (cache index + 1)
-  val cacheToId = new Array[Int](size) // cache index -> id
-  val cacheBit = new Array[Boolean](size) // cache index -> recently used bit
+  val cacheToId = new Array[Int](maxSize) // cache index -> id
+  val cacheBit = new Array[Boolean](maxSize) // cache index -> recently used bit
   var clockPointer = 0 // Clock hand
   var cacheSize = 0
   
-  def getAndUpdate(id: Int, eltSize:Int) = {
+  def getAndUpdate(id: Int, eltSize:Int) {
     throw new IllegalArgumentException("Clock doesn't work with variable element sizes")
   }
 
-  override def getCacheFullPoint = {
-    throw new IllegalArgumentException("Clock doesn't work with getCacheFullPoint")
+  override def numAccessesAtFirstMiss = {
+    throw new IllegalArgumentException("Clock doesn't work with numAccessesAtFirstMiss")
   }
 
-  override def getAndUpdate(id: Int) = {
+  override def getAndUpdate(id: Int) {
     accesses += 1
 
     // Examine recently used bit and set to false if true and advance
@@ -197,10 +256,10 @@ class ClockSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
     def findFreeSlot = {
       while (cacheBit(clockPointer)) {
         cacheBit(clockPointer) = false
-        clockPointer = (clockPointer + 1) % size
+        clockPointer = (clockPointer + 1) % maxSize
       }
       val returnVal = clockPointer
-      clockPointer = (clockPointer + 1) % size
+      clockPointer = (clockPointer + 1) % maxSize
       returnVal
     }
 
@@ -208,7 +267,7 @@ class ClockSimulatedCache(maxId: Int, size: Int = 10) extends SimulatedCache {
     if (idToCache(id) == 0) {
       misses += 1
       val freeSlot = findFreeSlot
-      if (cacheSize == size) idToCache(cacheToId(freeSlot)) = 0
+      if (cacheSize == maxSize) idToCache(cacheToId(freeSlot)) = 0
       else cacheSize += 1
       idToCache(id) = freeSlot + 1
       cacheToId.update(freeSlot, id)
