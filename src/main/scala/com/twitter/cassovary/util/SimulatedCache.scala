@@ -27,8 +27,8 @@ import net.lag.logging.Logger
  * @param outputDirectory The directory to write stats to
  */
 abstract class SimulatedCache(val maxSize: Int = 10, val statsInterval: Long, val outputDirectory: String) {
-  var misses, accesses, prevMisses, prevAccesses, fullAccesses: Long = 0
-  var writes = 0
+  protected var misses, accesses, prevMisses, prevAccesses, fullAccesses: Long = 0
+  protected var writes = 0
   protected val log = Logger.get("SimulatedCache")
 
   /**
@@ -122,9 +122,9 @@ abstract class SimulatedCache(val maxSize: Int = 10, val statsInterval: Long, va
 class FastLRUSimulatedCache(maxId: Int, maxSize: Int = 10, statsInterval: Long, outputDirectory: String)
   extends SimulatedCache(maxSize, statsInterval, outputDirectory) {
 
-  var currRealCapacity = 0 // sum of sizes of elements in the cache
-  val indexToSize = new Array[Int](maxSize+1) // cache index -> element maxSize
-  val map = new LinkedIntIntMap(maxId, maxSize)
+  private var currRealCapacity = 0 // sum of sizes of elements in the cache
+  private val indexToSize = new Array[Int](maxSize+1) // cache index -> element maxSize
+  private val map = new LinkedIntIntMap(maxId, maxSize)
 
   /**
    * The getAndUpdate function that you need that handles whether an id needs to be
@@ -150,6 +150,8 @@ class FastLRUSimulatedCache(maxId: Int, maxSize: Int = 10, statsInterval: Long, 
       map.moveToHead(id)
     }
   }
+
+  def getCurrCapacity = currRealCapacity
 
 }
 
@@ -201,7 +203,7 @@ class GuavaSimulatedCache(maxSize: Int, loader: (Int => Int), statsInterval: Lon
 class MRUSimulatedCache(maxSize: Int = 10, statsInterval: Long, outputDirectory: String)
   extends SimulatedCache(maxSize, statsInterval, outputDirectory) {
 
-  val cache = new mutable.HashMap[Int, Long]()
+  private val cache = new mutable.HashMap[Int, Long]()
   
   def getAndUpdate(id: Int, eltSize:Int) {
     throw new IllegalArgumentException("MRU doesn't work with variable element sizes")
@@ -226,19 +228,20 @@ class MRUSimulatedCache(maxSize: Int = 10, statsInterval: Long, outputDirectory:
 
 /**
  * Simulated cache using a Clock algorithm.
- * Whenever a cache hit occurs, set the cacheBit corresponding
- * to that element. Evict in a round-robin fashion - when cacheBit is set, clear the cacheBit; if the cacheBit
- * is not set, evict that element. In other words, cache elements have "two chances" before they are evicted.
+ * Whenever a cache hit occurs, set the cacheBit corresponding to that element.
+ * Evict starting from where the clock hand is. When cacheBit is set, clear the cacheBit and proceed to the next element
+ * If the cacheBit is not set, evict that element, and continue to the next element if we need more space.
+ * In other words, cache elements have "two chances" before they are evicted.
  */
 class ClockSimulatedCache(maxId: Int, maxSize: Int = 10, statsInterval: Long, outputDirectory: String)
   extends SimulatedCache(maxSize, statsInterval, outputDirectory) {
 
   // Note that idToCache uses 0 as a null marker, so that 1 must be subtracted from all values
-  val idToCache = new Array[Int](maxId+1) // id -> (cache index + 1)
-  val cacheToId = new Array[Int](maxSize) // cache index -> id
-  val cacheBit = new Array[Boolean](maxSize) // cache index -> recently used bit
-  var clockPointer = 0 // Clock hand
-  var cacheSize = 0
+  private val idToCache = new Array[Int](maxId+1) // id -> (cache index + 1)
+  private val cacheToId = new Array[Int](maxSize) // cache index -> id
+  private val cacheBit = new Array[Boolean](maxSize) // cache index -> recently used bit
+  private var clockPointer = 0 // Clock hand
+  private var cacheSize = 0
   
   def getAndUpdate(id: Int, eltSize:Int) {
     throw new IllegalArgumentException("Clock doesn't work with variable element sizes")

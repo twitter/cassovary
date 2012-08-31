@@ -20,6 +20,8 @@ import java.io._
 
 /**
  * Graph which keeps an access counter of how many times a given node is accessed.
+ * Access count correctness is only ensured if run in a single thread.
+ *
  * @param graph Input graph
  * @param statsDumpInterval How often to write stats to disk
  * @param statsOutputDirectory Directory to write stats to
@@ -61,6 +63,5 @@ class GraphWithAccessCounter(val graph: DirectedGraph, val statsDumpInterval: Lo
 
   def getStats = counter
 
-  // Zeroes the counter
   private def resetStats = { counter = new Array[Int](graph.maxNodeId+1) }
 }

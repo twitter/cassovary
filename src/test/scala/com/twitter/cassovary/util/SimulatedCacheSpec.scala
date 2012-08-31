@@ -154,11 +154,11 @@ class SimulatedCacheSpec extends Specification {
       }
       "work" in {
         cache.getAndUpdate(5)
-        cache.currRealCapacity mustEqual 1
+        cache.getCurrCapacity mustEqual 1
         cache.getAndUpdate(6)
-        cache.currRealCapacity mustEqual 2
+        cache.getCurrCapacity mustEqual 2
         cache.getAndUpdate(5)
-        cache.currRealCapacity mustEqual 2
+        cache.getCurrCapacity mustEqual 2
       }
       "replace 1 properly" in {
         cache.getAndUpdate(1)
@@ -168,7 +168,7 @@ class SimulatedCacheSpec extends Specification {
         cache.getAndUpdate(5)
         cache.getAndUpdate(6)
         cache.getAndUpdate(5)
-        cache.currRealCapacity mustEqual 5
+        cache.getCurrCapacity mustEqual 5
       }
       "do badly in lru worst case" in {
         lruWorstCase(cache) mustEqual (11, 11, 1.0)
