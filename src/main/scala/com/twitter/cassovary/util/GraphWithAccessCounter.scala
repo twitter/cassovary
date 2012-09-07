@@ -15,8 +15,8 @@
 package com.twitter.cassovary.util
 
 import com.twitter.cassovary.graph.DirectedGraph
-import net.lag.logging.Logger
 import java.io._
+import net.lag.logging.Logger
 
 /**
  * Graph which keeps an access counter of how many times a given node is accessed.
@@ -50,9 +50,13 @@ class GraphWithAccessCounter(val graph: DirectedGraph, val statsDumpInterval: Lo
   }
 
   override def existsNodeId(id: Int) = graph.existsNodeId(id)
+
   def nodeCount = graph.nodeCount
+
   val storedGraphDir = graph.storedGraphDir
+
   def edgeCount = graph.edgeCount
+
   def iterator = graph.iterator
 
   def writeStats(fileName: String) {
