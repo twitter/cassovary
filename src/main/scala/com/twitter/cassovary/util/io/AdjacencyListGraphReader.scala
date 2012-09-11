@@ -48,7 +48,7 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "")
   class OneShardReader(filename: String) extends Iterator[NodeIdEdgesMaxId] {
 
     private val outEdgePattern = """^(\d+)\s+(\d+)""".r
-    private val lines = Source.fromFile(filename).getLines()
+    private val lines = Source.fromFile(filename).getLines().filterNot(p => p.startsWith("#"))
     private val holder = NodeIdEdgesMaxId(-1, null, -1)
 
     override def hasNext: Boolean = lines.hasNext

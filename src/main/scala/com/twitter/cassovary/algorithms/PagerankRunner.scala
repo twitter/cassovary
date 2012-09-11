@@ -17,16 +17,21 @@ object PagerankRunner {
       if (cur.value == that.value) cur.id compareTo that.id else that.value compareTo cur.value } }
 
   def main(args: Array[String]) {
+    printf("Reading graph...\n")
     val graph = new AdjacencyListGraphReader("/Users/akyrola/graphs/",
-      "toy_6nodes_adj")  {
+      "soc-LiveJournal1.txt.adj")  {
       override val executorService = Executors.newFixedThreadPool(2)
     }.toArrayBasedDirectedGraph()
 
     printf("Graph has %s nodes, %s directed edges.\n",
       graph.nodeCount, graph.edgeCount)
 
-    val params = PageRankParams(0.1, Some(5))
+    val startTime = System.currentTimeMillis()
+
+    val params = PageRankParams(0.85, Some(5))
     val ranks = PageRank(graph, params)
+
+    val runtime = System.currentTimeMillis() - startTime
 
     // Very ugly
     val topN = if (5 > graph.nodeCount) graph.nodeCount else 5
@@ -38,12 +43,14 @@ object PagerankRunner {
     ranks.foreach(rv => {
        if (topList.size < topN) topList = topList.insert(RankValue(rv, i), i)
        else {
-          if (topList.lastKey.value < rv)  topList = topList.insert(RankValue(rv, i), i)
+          if (topList.lastKey.value < rv)  topList = topList.dropRight(1).insert(RankValue(rv, i), i)
        }
       i += 1
     })
 
     topList.keys.foreach( rv => printf("%d = %f\n", rv.id, rv.value))
+
+    printf("Pagerank finished %d iterations in %f secs", params.iterations.get, runtime * 0.001)
   }
 
 }
