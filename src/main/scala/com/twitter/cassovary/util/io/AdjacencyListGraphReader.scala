@@ -93,6 +93,7 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "")
           None
         }
       })
+      if (validFiles.length == 0) throw new RuntimeException("Did not find any files with prefix: " + prefixFileNames)
       validFiles.map({ filename =>
       {() => new OneShardReader(directory + "/" + filename)}
       }).toSeq
