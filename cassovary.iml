@@ -5,6 +5,8 @@
       <configuration>
         <option name="compilerLibraryLevel" value="Project" />
         <option name="compilerLibraryName" value="buildScala" />
+        <option name="maximumHeapSize" value="4096" />
+        <option name="vmOptions" value="-Xss256m -server" />
       </configuration>
     </facet>
   </component>

@@ -24,6 +24,8 @@ libraryDependencies += "org.mockito" % "mockito-all" % "1.8.5" % "test" withSour
 
 libraryDependencies += "org.scala-tools.testing" % "specs_2.8.1" % "1.6.6" % "test" withSources()
 
+libraryDependencies += "org.apache.hadoop" % "hadoop-core" % "0.20.2"
+
 publishMavenStyle := true
 
 publishTo <<= version { (v: String) =>

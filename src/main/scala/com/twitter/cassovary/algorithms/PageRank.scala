@@ -80,16 +80,21 @@ private class PageRank(graph: DirectedGraph, params: PageRankParams) {
     var beforePR = new Array[Double](graph.maxNodeId + 1)
     log.info("Initializing starting PageRank...")
     val progress = Progress("pagerank_init", 65536, Some(graph.nodeCount))
+    log.info("Starting to run")
     val initialPageRankValue = 1.0D / graph.nodeCount
     graph.foreach { node =>
       beforePR(node.id) = initialPageRankValue
       progress.inc
     }
 
+    log.info("Starting iterations %d".format(params.iterations.get))
+
     (0 until params.iterations.get).foreach { i =>
       log.info("Beginning %sth iteration".format(i))
       beforePR = iterate(beforePR)
     }
+
+    log.info("Finished")
 
     beforePR
   }
