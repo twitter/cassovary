@@ -14,6 +14,12 @@
       <root url="jar://$PROJECT_DIR$/lib_managed/jars/com.twitter/util-core/util-core-4.0.3.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib_managed/jars/com.twitter/util-eval/util-eval-1.10.2.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib_managed/jars/com.twitter/util-logging/util-logging-1.10.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib_managed/jars/org.apache.hadoop/hadoop-core/hadoop-core-0.20.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib_managed/jars/commons-cli/commons-cli/commons-cli-1.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib_managed/jars/commons-codec/commons-codec/commons-codec-1.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib_managed/jars/commons-el/commons-el/commons-el-1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib_managed/jars/commons-httpclient/commons-httpclient/commons-httpclient-3.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib_managed/jars/commons-logging/commons-logging/commons-logging-1.1.1.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
