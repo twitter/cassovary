@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 /**
+ * Efficient parallel output of edges into a binary edge list format.
  * @author Aapo Kyrola, akyrola@cs.cmu.edu, akyrola@twitter.com
  */
 public class EdgeListOutput implements GraphOutput {
