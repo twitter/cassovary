@@ -22,14 +22,14 @@ libraryDependencies += "net.lag" % "configgy" % "2.0.2"
 
 libraryDependencies += "org.mockito" % "mockito-all" % "1.8.5" % "test" withSources()
 
-libraryDependencies += "org.scala-tools.testing" %% "specs" % "1.6.9" % "test" withSources()
+libraryDependencies += "org.scala-tools.testing" % "specs_2.9.1" % "1.6.9" % "test" withSources()
 
 publishMavenStyle := true
 
 publishTo <<= version { (v: String) =>
   val nexus = "https://oss.sonatype.org/"
-  if (v.trim.endsWith("SNAPSHOT")) 
-    Some("snapshots" at nexus + "content/repositories/snapshots") 
+  if (v.trim.endsWith("SNAPSHOT"))
+    Some("snapshots" at nexus + "content/repositories/snapshots")
   else
     Some("releases"  at nexus + "service/local/staging/deploy/maven2")
 }
