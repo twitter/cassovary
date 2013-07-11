@@ -1,10 +1,10 @@
 name := "cassovary"
 
-version := "2.0.5"
+version := "3.0.0"
 
 organization := "com.twitter"
 
-scalaVersion := "2.8.1"
+scalaVersion := "2.9.1"
 
 retrieveManaged := true
 
@@ -22,7 +22,7 @@ libraryDependencies += "net.lag" % "configgy" % "2.0.2"
 
 libraryDependencies += "org.mockito" % "mockito-all" % "1.8.5" % "test" withSources()
 
-libraryDependencies += "org.scala-tools.testing" % "specs_2.8.1" % "1.6.6" % "test" withSources()
+libraryDependencies += "org.scala-tools.testing" %% "specs" % "1.6.9" % "test" withSources()
 
 publishMavenStyle := true
 
