@@ -1,10 +1,10 @@
 name := "cassovary"
 
-version := "3.0.0"
+version := "3.0.1"
 
 organization := "com.twitter"
 
-scalaVersion := "2.9.2"
+scalaVersion := "2.9.3"
 
 retrieveManaged := true
 
