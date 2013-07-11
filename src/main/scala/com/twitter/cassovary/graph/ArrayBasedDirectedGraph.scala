@@ -77,22 +77,13 @@ object ArrayBasedDirectedGraph {
           Stats.time("graph_load_read_out_edge_from_dump_files") {
         val nodes = new mutable.ArrayBuffer[Node]
         var newMaxId = 0
-        var varNodeWithOutEdgesMaxId = 0
-        var id = 0
-        var edgesLength = 0
-        var edges: Array[Int] = Array.empty[Int]
 
         val iterator = iteratorFunc()
         iterator foreach { item =>
-          id = item.id
           newMaxId = newMaxId max item.maxId
-          varNodeWithOutEdgesMaxId = varNodeWithOutEdgesMaxId max item.id
-          val edges = item.edges
-          edgesLength = edges.length
-          val newNode = ArrayBasedDirectedNode(id, edges, storedGraphDir)
-          nodes += newNode
+          nodes += ArrayBasedDirectedNode(item.id, item.edges, storedGraphDir)
         }
-        NodesMaxIds(nodes, newMaxId, varNodeWithOutEdgesMaxId)
+        NodesMaxIds(nodes, newMaxId, newMaxId)
       }
 
       ExecutorUtils.parallelWork[ () => Iterator[NodeIdEdgesMaxId], NodesMaxIds](executorService,
