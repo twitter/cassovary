@@ -14,21 +14,19 @@ for updates.
 ## Quick Start and Examples
 See examples/ for some simple examples of using the library. Both Scala and Java examples are included.
 
-## Installing SBT
-Platform specific instructions for installing ```sbt``` are available at https://github.com/harrah/xsbt/wiki/Getting-Started-Setup
-
-Cassovary has been tested with ```sbt``` version 0.11.3-2
 
 ## Building
 
-1. ```sbt update``` (might take a couple of minutes)
-2. ```sbt test```
-3. ```sbt package```
+Cassovary has been tested with ```sbt``` version 0.12.1
+
+1. ```./sbt update``` (might take a couple of minutes)
+2. ```./sbt test```
+3. ```./sbt package```
 
 ## Alternative for using for local projects
-1. ```sbt publish-local```
+1. ```./sbt publish-local```
 2. ```cd ../<dependant project>```
-3. ```sbt update```
+3. ```./sbt update```
 
 ## Comparison to Other Graph Libraries
 There are many excellent graph mining libraries already in existence. Most of
