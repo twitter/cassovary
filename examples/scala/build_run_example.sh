@@ -26,14 +26,14 @@ cd $root
 
 if [ $BUILD_PACKAGE = build ]; then
   echo Downloading dependent jars...
-  sbt update
+  $root/sbt update
   echo Building Cassovary jar...
-  sbt package
+  $root/sbt package
 fi
 
 JAVA_CP=(
   $(find $root/target -name 'cassovary*.jar') \
-  $HOME/.sbt/boot/scala-2.8.1/lib/scala-library.jar \
+  $(ls -t -1 $HOME/.sbt/boot/scala-*/lib/scala-library.jar | head -1) \
   $(find $root/lib_managed/jars/ -name '*.jar')
 )
 JAVA_CP=$(echo ${JAVA_CP[@]} | tr ' ' ':')
