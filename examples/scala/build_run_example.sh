@@ -33,7 +33,7 @@ fi
 
 JAVA_CP=(
   $(find $root/target -name 'cassovary*.jar') \
-  $(ls -t $HOME/.sbt/boot/scala-*/lib/scala-library.jar | head -1) \
+  $(ls -t -1 $HOME/.sbt/boot/scala-*/lib/scala-library.jar | head -1) \
   $(find $root/lib_managed/jars/ -name '*.jar')
 )
 JAVA_CP=$(echo ${JAVA_CP[@]} | tr ' ' ':')
