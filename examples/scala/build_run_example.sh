@@ -26,9 +26,9 @@ cd $root
 
 if [ $BUILD_PACKAGE = build ]; then
   echo Downloading dependent jars...
-  ./sbt update
+  $root/sbt update
   echo Building Cassovary jar...
-  ./sbt package
+  $root/sbt package
 fi
 
 JAVA_CP=(
