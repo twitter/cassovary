@@ -45,5 +45,5 @@ echo Compiling $EXAMPLE ...
 scalac -cp $JAVA_CP -d classes $EXAMPLE.scala
 
 echo Running $EXAMPLE...
-JAVA_OPTS="-server -Xmx1g -Xms1g"
+JAVA_OPTS="-server -Xmx6g -Xms1g"
 java ${JAVA_OPTS} -cp $JAVA_CP:classes $EXAMPLE $NUM_NODES
