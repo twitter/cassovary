@@ -10,6 +10,8 @@ retrieveManaged := true
 
 resolvers += "Twitter Maven Repo" at "http://maven.twttr.com"
 
+libraryDependencies += "com.typesafe.akka" % "akka-actor_2.10" % "2.2.0-RC2"
+
 libraryDependencies += "com.twitter" % "ostrich" % "4.8.0"
 
 libraryDependencies += "com.twitter" % "util-core" % "4.0.3"

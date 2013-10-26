@@ -78,8 +78,8 @@ class SynchronizedDynamicGraphSpec extends Specification {
   }
 
   "multipe threads add nodes/edge simultaneously" in {
-    import scala.actors.Actor
-    import scala.actors.Actor._
+    import akka.actor.Actor
+    import akka.actor.Actor._
 
     val graph = new SynchronizedDynamicGraph()
 
@@ -119,8 +119,8 @@ class SynchronizedDynamicGraphSpec extends Specification {
   }
 
   "multipe threads add/remove edge simultaneously" in {
-    import scala.actors.Actor
-    import scala.actors.Actor._
+    import akka.actor.Actor
+    import akka.actor.Actor._
 
     val graph = new SynchronizedDynamicGraph()
 
