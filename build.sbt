@@ -12,6 +12,10 @@ resolvers += "Twitter Maven Repo" at "http://maven.twttr.com"
 
 libraryDependencies += "com.typesafe.akka" % "akka-actor_2.10" % "2.2.0-RC2"
 
+libraryDependencies += "org.scala-lang" % "scala-actors-migration" % "2.10.0-M4"
+
+libraryDependencies += "org.scala-lang" % "scala-actors" % "2.10.0-M4"
+
 libraryDependencies += "com.twitter" % "ostrich" % "4.8.0"
 
 libraryDependencies += "com.twitter" % "util-core" % "4.0.3"
