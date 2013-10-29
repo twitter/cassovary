@@ -4,7 +4,7 @@ version := "3.0.0"
 
 organization := "com.twitter"
 
-scalaVersion := "2.10.0"
+scalaVersion := "2.9.2"
 
 retrieveManaged := true
 
@@ -14,27 +14,18 @@ libraryDependencies += "com.twitter" % "ostrich_2.10" % "9.1.0"
 
 libraryDependencies += "com.twitter" % "util-core_2.10" % "6.6.0"
 
-libraryDependencies += "com.twitter" % "util-collection" % "6.3.6"
-
-libraryDependencies += "com.twitter" % "util-logging_2.10" % "6.6.0"
-
-libraryDependencies += "com.typesafe.akka" % "akka-actor_2.10" % "2.1.0"
-
-libraryDependencies += "com.typesafe.akka" % "akka-testkit_2.10" % "2.1.0"
-
-libraryDependencies += "com.typesafe.akka" % "akka-actor-tests_2.10" % "2.1.0"
-
 libraryDependencies += "com.google.guava" % "guava" % "14.0.1" withSources()
-
-libraryDependencies += "com.google.code.findbugs" % "jsr305" % "1.3.9"
 
 libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.5.2" % "provided"
 
-libraryDependencies += "com.twitter" %% "util-collection" % "6.3.6"
-
 libraryDependencies += "org.mockito" % "mockito-all" % "1.8.5" % "test" withSources()
 
+libraryDependencies += "com.twitter" % "util-logging_2.10" % "6.6.0"
+
+libraryDependencies += "com.typesafe.akka" % "akka-actor-tests_2.10" % "2.1.0"
+
 libraryDependencies += "org.scala-tools.testing" % "specs_2.10" % "1.6.9" % "test" withSources()
+
 
 publishMavenStyle := true
 
