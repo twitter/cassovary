@@ -95,6 +95,7 @@ class SynchronizedDynamicGraphSpec extends Specification {
           case _: String => reply
         }}
       }
+    }
     val writers = (0 until numActors) map { n  =>
       ActorDSL.actor(system)(new Actor {
         def receive = {

@@ -24,7 +24,7 @@ libraryDependencies += "com.google.guava" % "guava" % "11.0.2" withSources()
 
 libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided"
 
-libraryDependencies += "net.lag" % "configgy" % "2.0.2"
+libraryDependencies += "com.twitter" %% "util-collection" % "6.3.6"
 
 libraryDependencies += "org.mockito" % "mockito-all" % "1.8.5" % "test" withSources()
 

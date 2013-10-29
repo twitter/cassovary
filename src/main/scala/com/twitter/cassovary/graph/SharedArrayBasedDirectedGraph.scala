@@ -21,13 +21,13 @@ import com.twitter.cassovary.util.ExecutorUtils
 import com.twitter.ostrich.stats.Stats
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import java.util.concurrent.{ExecutorService, Future}
-import net.lag.logging.Logger
+import com.twitter.logging.Logger
 
 /**
  * provides methods for constructing a shared array based graph
  */
 object SharedArrayBasedDirectedGraph {
-  private lazy val log = Logger.get
+  private lazy val log = Logger.get(getClass)
   val emptyArray = Array.empty[Int]
 
   /**
