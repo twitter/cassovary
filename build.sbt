@@ -10,25 +10,31 @@ retrieveManaged := true
 
 resolvers += "Twitter Maven Repo" at "http://maven.twttr.com"
 
-libraryDependencies += "com.typesafe.akka" % "akka-actor_2.10" % "2.2.0-RC2"
+libraryDependencies += "com.twitter" % "ostrich_2.10" % "9.1.0"
 
-libraryDependencies += "org.scala-lang" % "scala-actors-migration" % "2.10.0-M4"
+libraryDependencies += "com.twitter" % "util-core_2.10" % "6.6.0"
 
-libraryDependencies += "org.scala-lang" % "scala-actors" % "2.10.0-M4"
+libraryDependencies += "com.twitter" % "util-collection" % "6.3.6"
 
-libraryDependencies += "com.twitter" % "ostrich" % "4.8.0"
+libraryDependencies += "com.twitter" % "util-logging_2.10" % "6.6.0"
 
-libraryDependencies += "com.twitter" % "util-core" % "4.0.3"
+libraryDependencies += "com.typesafe.akka" % "akka-actor_2.10" % "2.1.0"
 
-libraryDependencies += "com.google.guava" % "guava" % "11.0.2" withSources()
+libraryDependencies += "com.typesafe.akka" % "akka-testkit_2.10" % "2.1.0"
 
-libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided"
+libraryDependencies += "com.typesafe.akka" % "akka-actor-tests_2.10" % "2.1.0"
+
+libraryDependencies += "com.google.guava" % "guava" % "14.0.1" withSources()
+
+libraryDependencies += "com.google.code.findbugs" % "jsr305" % "1.3.9"
+
+libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.5.2" % "provided"
 
 libraryDependencies += "net.lag" % "configgy" % "2.0.2"
 
 libraryDependencies += "org.mockito" % "mockito-all" % "1.8.5" % "test" withSources()
 
-libraryDependencies += "org.scala-tools.testing" % "specs_2.9.1" % "1.6.9" % "test" withSources()
+libraryDependencies += "org.scala-tools.testing" % "specs_2.10" % "1.6.9" % "test" withSources()
 
 publishMavenStyle := true
 
@@ -37,7 +43,7 @@ publishTo <<= version { (v: String) =>
   if (v.trim.endsWith("SNAPSHOT"))
     Some("snapshots" at nexus + "content/repositories/snapshots")
   else
-    Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+    Some("releases" at nexus + "service/local/staging/deploy/maven2")
 }
 
 publishArtifact in Test := false
