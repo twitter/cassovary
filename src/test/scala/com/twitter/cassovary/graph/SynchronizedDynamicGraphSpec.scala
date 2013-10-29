@@ -88,14 +88,7 @@ class SynchronizedDynamicGraphSpec extends Specification {
     val system = ActorSystem("migration-system")
     val graph = new SynchronizedDynamicGraph()
     val numActors = 5
-    val writers = (0 until numActors) map { n =>
-      actor {
-        loop { receive {
-          case (i: Int, j: Int) => graph.addEdge(i, j)
-          case _: String => reply
-        }}
-      }
-    }
+
     val writers = (0 until numActors) map { n  =>
       ActorDSL.actor(system)(new Actor {
         def receive = {
