@@ -45,7 +45,7 @@ object SharedArrayBasedDirectedGraph {
    * @param storedGraphDir the direction of the graph to be built
    * @param numOfShards specifies the number of shards to use in creating shared array
    */
-  def apply(iteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxId] ], executorService: ExecutorService,
+  def apply(iteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxIdTrait] ], executorService: ExecutorService,
       storedGraphDir: StoredGraphDir, numOfShards: Int) = {
 
     assert(numOfShards > 0)
@@ -66,7 +66,7 @@ object SharedArrayBasedDirectedGraph {
      */
     log.info("read out num of edges and max id from files in parallel")
     val futures = Stats.time("graph_dump_read_out_num_of_edge_and_max_id_parallel") {
-      def readNumOfEdgesAndMaxId(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) =
+      def readNumOfEdgesAndMaxId(iteratorFunc: () => Iterator[NodeIdEdgesMaxIdTrait]) =
           Stats.time("graph_load_read_out_edge_sizes_dump_files") {
         var id, newMaxId, varNodeWithOutEdgesMaxId, numOfEdges, edgesLength, nodeCount = 0
         val iteratorForEdgeSizes = iteratorFunc()
@@ -82,7 +82,7 @@ object SharedArrayBasedDirectedGraph {
         (newMaxId, varNodeWithOutEdgesMaxId, numOfEdges, nodeCount)
       }
 
-      ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxId], (Int, Int, Int, Int)](
+      ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxIdTrait], (Int, Int, Int, Int)](
           executorService, iteratorSeq, readNumOfEdgesAndMaxId)
     }
     futures.toArray map { future =>
@@ -112,7 +112,7 @@ object SharedArrayBasedDirectedGraph {
     Stats.time("graph_dump_load_partial_nodes_and_out_edges_parallel") {
       var loadingCounter = new AtomicLong()
       val outputMode = 10000
-      def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) =
+      def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxIdTrait]) =
           Stats.time("graph_load_read_out_edge_from_dump_files") {
         var id, edgesLength, shardIdx, offset = 0
 
@@ -135,7 +135,7 @@ object SharedArrayBasedDirectedGraph {
         }
       }
 
-      ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxId], Unit](
+      ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxIdTrait], Unit](
           executorService, iteratorSeq, readOutEdges)
     }
 

@@ -37,7 +37,7 @@ trait GraphReader {
   /**
    * Should return a sequence of iterators over NodeIdEdgesMaxId objects
    */
-  def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]]
+  def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxIdTrait]]
 
   /**
    * Override to modify the graph's stored direction
