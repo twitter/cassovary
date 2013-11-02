@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.graph.node
 
-import com.twitter.cassovary.graph.{DeepEqualsNode, Node, StoredGraphDir}
+import com.twitter.cassovary.graph.{DeepEqualsNode, Node, NodeIdEdgesMaxId, StoredGraphDir}
 import com.twitter.cassovary.graph.StoredGraphDir._
 import org.specs.Specification
 
@@ -53,16 +53,18 @@ class ArrayBasedDirectedNodeSpec extends Specification {
   "array based directed node" definedAs small should {
 
     "constructs uni-directional nodes correctly" in {
-      ArrayBasedDirectedNode(nodeId, neighbors, StoredGraphDir.OnlyIn) must
+      val nodeAndEdges = NodeIdEdgesMaxId(nodeId, neighbors)
+      ArrayBasedDirectedNode(nodeAndEdges, StoredGraphDir.OnlyIn) must
           DeepEqualsNode(onlyInNode)
-      ArrayBasedDirectedNode(nodeId, neighbors, StoredGraphDir.OnlyOut) must
+      ArrayBasedDirectedNode(nodeAndEdges, StoredGraphDir.OnlyOut) must
           DeepEqualsNode(onlyOutNode)
-      ArrayBasedDirectedNode(nodeId, neighbors, StoredGraphDir.Mutual) must
+      ArrayBasedDirectedNode(nodeAndEdges, StoredGraphDir.Mutual) must
          DeepEqualsNode(mutualNode)
     }
 
     "constructs bi-directional nodes correctly" in {
-      val node = ArrayBasedDirectedNode(nodeId, neighbors, StoredGraphDir.BothInOut)
+      val nodeAndEdges = NodeIdEdgesMaxId(nodeId, neighbors)
+      val node = ArrayBasedDirectedNode(nodeAndEdges, StoredGraphDir.BothInOut)
       node.asInstanceOf[BiDirectionalNode].inEdges = inEdges
       node must DeepEqualsNode(bothNode)
     }

@@ -29,11 +29,16 @@ import scala.collection.mutable
  * id of itself and ids of nodes in its out edges
  */
 trait NodeIdEdgesMaxIdTrait {
-  def id: Int
-  def edges: Array[Int]
-  def maxId: Int
+  var id: Int
+  var edges: Array[Int]
+  var maxId: Int
+  def isLabeled: Boolean
 }
-case class NodeIdEdgesMaxId(var id: Int, var edges: Array[Int], var maxId: Int) extends NodeIdEdgesMaxIdTrait
+case class NodeIdEdgesMaxId(var id: Int, var edges: Array[Int], var maxId: Int) extends NodeIdEdgesMaxIdTrait {
+  def isLabeled = {
+    false
+  }
+}
 object NodeIdEdgesMaxId {
   def apply(id: Int, edges: Array[Int]) =
       new NodeIdEdgesMaxId(id, edges, edges.foldLeft[Int](id)((x, y) => x max y))
@@ -43,7 +48,11 @@ object NodeIdEdgesMaxId {
  * This case class holds a node's id, its out edges, max and its out edges,
  * and an integer value specifying a label.
  */
-case class LabeledNodeIdEdgesMaxId(var id: Int, var edges: Array[Int], var maxId: Int, var label: Int) extends NodeIdEdgesMaxIdTrait
+case class LabeledNodeIdEdgesMaxId(var id: Int, var edges: Array[Int], var maxId: Int, var label: Int) extends NodeIdEdgesMaxIdTrait {
+  def isLabeled = {
+    true
+  }
+}
 object LabeledNodeIdEdgesMaxId {
   def apply(id: Int, edges: Array[Int], label: Int) =
       new LabeledNodeIdEdgesMaxId(id, edges, edges.foldLeft[Int](id)((x, y) => x max y), label)
@@ -94,7 +103,6 @@ object ArrayBasedDirectedGraph {
         var newMaxId = 0
         var varNodeWithOutEdgesMaxId = 0
         var id = 0
-        var edgesLength = 0
         var edges: Array[Int] = Array.empty[Int]
 
         val iterator = iteratorFunc()
@@ -103,8 +111,7 @@ object ArrayBasedDirectedGraph {
           newMaxId = newMaxId max item.maxId
           varNodeWithOutEdgesMaxId = varNodeWithOutEdgesMaxId max item.id
           val edges = item.edges
-          edgesLength = edges.length
-          val newNode = ArrayBasedDirectedNode(id, edges, storedGraphDir)
+          val newNode = ArrayBasedDirectedNode(item, storedGraphDir)
           nodes += newNode
         }
         NodesMaxIds(nodes, newMaxId, varNodeWithOutEdgesMaxId)
@@ -151,11 +158,13 @@ object ArrayBasedDirectedGraph {
     var nodeWithOutEdgesCount = 0
     log.debug("creating nodes that have only in-coming edges")
     Stats.time("graph_load_creating_nodes_without_out_edges") {
+      val nodeAndEdges = NodeIdEdgesMaxId(-1, ArrayBasedDirectedNode.noNodes)
       for ( id <- 0 to maxNodeId ) {
         if (nodeIdSet(id) == 1) {
           numNodes += 1
           if (table(id) == null) {
-            val node = ArrayBasedDirectedNode(id, ArrayBasedDirectedNode.noNodes, storedGraphDir)
+	    nodeAndEdges.id = id
+            val node = ArrayBasedDirectedNode(nodeAndEdges, storedGraphDir)
             table(id) = node
             if (storedGraphDir == StoredGraphDir.BothInOut)
               nodesWithNoOutEdges += node
