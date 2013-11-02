@@ -28,10 +28,34 @@ import scala.collection.mutable
  * This case class holds a node's id, all its out edges, and the max
  * id of itself and ids of nodes in its out edges
  */
-case class NodeIdEdgesMaxId(var id: Int, var edges: Array[Int], var maxId: Int)
+trait NodeIdEdgesMaxIdTrait {
+  var id: Int
+  var edges: Array[Int]
+  var maxId: Int
+  def isLabeled: Boolean
+}
+case class NodeIdEdgesMaxId(var id: Int, var edges: Array[Int], var maxId: Int) extends NodeIdEdgesMaxIdTrait {
+  def isLabeled = {
+    false
+  }
+}
 object NodeIdEdgesMaxId {
   def apply(id: Int, edges: Array[Int]) =
       new NodeIdEdgesMaxId(id, edges, edges.foldLeft[Int](id)((x, y) => x max y))
+}
+
+/**
+ * This case class holds a node's id, its out edges, max and its out edges,
+ * and an integer value specifying a label.
+ */
+case class LabeledNodeIdEdgesMaxId(var id: Int, var edges: Array[Int], var maxId: Int, var label: Int) extends NodeIdEdgesMaxIdTrait {
+  def isLabeled = {
+    true
+  }
+}
+object LabeledNodeIdEdgesMaxId {
+  def apply(id: Int, edges: Array[Int], label: Int) =
+      new LabeledNodeIdEdgesMaxId(id, edges, edges.foldLeft[Int](id)((x, y) => x max y), label)
 }
 
 /**
@@ -62,7 +86,7 @@ object ArrayBasedDirectedGraph {
    * 6. instantiate in-edge arrays
    * 7. iterate over the sequence of nodes again, instantiate in-edges
    */
-  def apply(iteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxId] ], executorService: ExecutorService,
+  def apply(iteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxIdTrait] ], executorService: ExecutorService,
       storedGraphDir: StoredGraphDir) = {
 
     val nodesOutEdges = new mutable.ArrayBuffer[Seq[Node]]
@@ -73,13 +97,12 @@ object ArrayBasedDirectedGraph {
 
     log.debug("loading nodes and out edges from file in parallel")
     val futures = Stats.time("graph_dump_load_partial_nodes_and_out_edges_parallel") {
-      def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) =
+      def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxIdTrait]) =
           Stats.time("graph_load_read_out_edge_from_dump_files") {
         val nodes = new mutable.ArrayBuffer[Node]
         var newMaxId = 0
         var varNodeWithOutEdgesMaxId = 0
         var id = 0
-        var edgesLength = 0
         var edges: Array[Int] = Array.empty[Int]
 
         val iterator = iteratorFunc()
@@ -88,14 +111,13 @@ object ArrayBasedDirectedGraph {
           newMaxId = newMaxId max item.maxId
           varNodeWithOutEdgesMaxId = varNodeWithOutEdgesMaxId max item.id
           val edges = item.edges
-          edgesLength = edges.length
-          val newNode = ArrayBasedDirectedNode(id, edges, storedGraphDir)
+          val newNode = ArrayBasedDirectedNode(item, storedGraphDir)
           nodes += newNode
         }
         NodesMaxIds(nodes, newMaxId, varNodeWithOutEdgesMaxId)
       }
 
-      ExecutorUtils.parallelWork[ () => Iterator[NodeIdEdgesMaxId], NodesMaxIds](executorService,
+      ExecutorUtils.parallelWork[ () => Iterator[NodeIdEdgesMaxIdTrait], NodesMaxIds](executorService,
           iteratorSeq, readOutEdges)
     }
 
@@ -136,11 +158,13 @@ object ArrayBasedDirectedGraph {
     var nodeWithOutEdgesCount = 0
     log.debug("creating nodes that have only in-coming edges")
     Stats.time("graph_load_creating_nodes_without_out_edges") {
+      val nodeAndEdges = NodeIdEdgesMaxId(-1, ArrayBasedDirectedNode.noNodes)
       for ( id <- 0 to maxNodeId ) {
         if (nodeIdSet(id) == 1) {
           numNodes += 1
           if (table(id) == null) {
-            val node = ArrayBasedDirectedNode(id, ArrayBasedDirectedNode.noNodes, storedGraphDir)
+	    nodeAndEdges.id = id
+            val node = ArrayBasedDirectedNode(nodeAndEdges, storedGraphDir)
             table(id) = node
             if (storedGraphDir == StoredGraphDir.BothInOut)
               nodesWithNoOutEdges += node

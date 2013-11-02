@@ -37,3 +37,26 @@ object SharedArrayBasedDirectedNode {
     }
   }
 }
+
+object SharedArrayBasedDirectedLabeledNode {
+  /**
+   * creates an array based directed labeled node (uni-directional or bi-directional)
+   * @param nodeId an id of the node
+   * @param label label of the node
+   * @param neighbors a seq of ids of the neighbors read from file
+   * @param sharedArray a two-dimensional array that stores the shared edges of all nodes
+   * @param dir the stored graph direction (OnlyIn, OnlyOut, BothInOut or Mutual)
+   *
+   * @return a node
+   */
+  def apply(nodeId: Int, label: Int, edgeArrOffset: Int, edgeArrLen: Int, sharedEdgeArray: Array[Array[Int]],
+      dir: StoredGraphDir, reverseDirEdges: Option[Array[Int]] = None) = {
+    dir match {
+      case StoredGraphDir.OnlyIn | StoredGraphDir.OnlyOut | StoredGraphDir.Mutual =>
+        SharedArrayBasedUniDirectionalLabeledNode(nodeId, label, edgeArrOffset, edgeArrLen, sharedEdgeArray, dir)
+      case StoredGraphDir.BothInOut =>
+        SharedArrayBasedBiDirectionalLabeledNode(nodeId, label, edgeArrOffset, edgeArrLen,
+            sharedEdgeArray, reverseDirEdges.get)
+    }
+  }
+}

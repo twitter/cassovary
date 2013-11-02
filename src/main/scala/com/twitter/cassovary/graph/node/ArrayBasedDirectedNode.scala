@@ -15,6 +15,7 @@ package com.twitter.cassovary.graph.node
 
 import com.twitter.cassovary.graph.StoredGraphDir
 import com.twitter.cassovary.graph.StoredGraphDir._
+import com.twitter.cassovary.graph.{NodeIdEdgesMaxIdTrait,LabeledNodeIdEdgesMaxId}
 
 object ArrayBasedDirectedNode {
   val noNodes = Array.empty[Int]
@@ -26,12 +27,20 @@ object ArrayBasedDirectedNode {
    *
    * @return a node
    */
-  def apply(nodeId: Int, neighbors: Array[Int], dir: StoredGraphDir) = {
+  def apply(nodeAndEdges: NodeIdEdgesMaxIdTrait, dir: StoredGraphDir) = {
     dir match {
       case StoredGraphDir.OnlyIn | StoredGraphDir.OnlyOut | StoredGraphDir.Mutual =>
-        UniDirectionalNode(nodeId, neighbors, dir)
+        if (nodeAndEdges.isLabeled) {
+          UniDirectionalLabeledNode(nodeAndEdges.id, nodeAndEdges.asInstanceOf[LabeledNodeIdEdgesMaxId].label, nodeAndEdges.edges, dir)
+        } else {
+          UniDirectionalNode(nodeAndEdges.id, nodeAndEdges.edges, dir)
+        }
       case StoredGraphDir.BothInOut =>
-        BiDirectionalNode(nodeId, neighbors)
+        if (nodeAndEdges.isLabeled) {
+          BiDirectionalLabeledNode(nodeAndEdges.id, nodeAndEdges.asInstanceOf[LabeledNodeIdEdgesMaxId].label, nodeAndEdges.edges)
+        } else {
+          BiDirectionalNode(nodeAndEdges.id, nodeAndEdges.edges)
+        }
     }
   }
 }

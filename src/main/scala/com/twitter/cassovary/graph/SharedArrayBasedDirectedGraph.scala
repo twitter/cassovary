@@ -45,7 +45,7 @@ object SharedArrayBasedDirectedGraph {
    * @param storedGraphDir the direction of the graph to be built
    * @param numOfShards specifies the number of shards to use in creating shared array
    */
-  def apply(iteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxId] ], executorService: ExecutorService,
+  def apply(iteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxIdTrait] ], executorService: ExecutorService,
       storedGraphDir: StoredGraphDir, numOfShards: Int) = {
 
     assert(numOfShards > 0)
@@ -55,6 +55,7 @@ object SharedArrayBasedDirectedGraph {
     var nodeWithOutEdgesCount = 0
     var numEdges = 0L
     var numNodes = 0
+    var labeled = false
 
     // initialize size counters for each shard in shared array
     val sharedEdgeArraySizeCount = new Array[AtomicInteger](numOfShards)
@@ -66,7 +67,7 @@ object SharedArrayBasedDirectedGraph {
      */
     log.info("read out num of edges and max id from files in parallel")
     val futures = Stats.time("graph_dump_read_out_num_of_edge_and_max_id_parallel") {
-      def readNumOfEdgesAndMaxId(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) =
+      def readNumOfEdgesAndMaxId(iteratorFunc: () => Iterator[NodeIdEdgesMaxIdTrait]) =
           Stats.time("graph_load_read_out_edge_sizes_dump_files") {
         var id, newMaxId, varNodeWithOutEdgesMaxId, numOfEdges, edgesLength, nodeCount = 0
         val iteratorForEdgeSizes = iteratorFunc()
@@ -78,11 +79,12 @@ object SharedArrayBasedDirectedGraph {
           sharedEdgeArraySizeCount(id % numOfShards).addAndGet(edgesLength)
           numOfEdges += edgesLength
           nodeCount += 1
+	  labeled = item.isLabeled
         }
         (newMaxId, varNodeWithOutEdgesMaxId, numOfEdges, nodeCount)
       }
 
-      ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxId], (Int, Int, Int, Int)](
+      ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxIdTrait], (Int, Int, Int, Int)](
           executorService, iteratorSeq, readNumOfEdgesAndMaxId)
     }
     futures.toArray map { future =>
@@ -105,6 +107,13 @@ object SharedArrayBasedDirectedGraph {
     val nodeIdSet = new Array[Byte](maxNodeId + 1)
     val offsetTable = new Array[Int](maxNodeId + 1)
     val lengthTable = new Array[Int](maxNodeId + 1)
+    val labelTable = { 
+      if (labeled) {
+        new Array[Int](maxNodeId + 1)
+      } else {
+        Array.empty[Int]
+      }
+    }
 
     // read everything second time
     log.info("loading nodes and out edges from file in parallel " +
@@ -112,7 +121,7 @@ object SharedArrayBasedDirectedGraph {
     Stats.time("graph_dump_load_partial_nodes_and_out_edges_parallel") {
       var loadingCounter = new AtomicLong()
       val outputMode = 10000
-      def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) =
+      def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxIdTrait]) =
           Stats.time("graph_load_read_out_edge_from_dump_files") {
         var id, edgesLength, shardIdx, offset = 0
 
@@ -127,6 +136,11 @@ object SharedArrayBasedDirectedGraph {
           Array.copy(item.edges, 0, sharedEdgeArray(shardIdx), offset, edgesLength)
           offsetTable(id) = offset
           lengthTable(id) = edgesLength
+
+          if (item.isLabeled) {
+            labelTable(id) = item.asInstanceOf[LabeledNodeIdEdgesMaxId].label
+          }
+
           item.edges foreach { edge => nodeIdSet(edge) = 1 }
           val c = loadingCounter.addAndGet(1)
           if (c % outputMode == 0) {
@@ -135,7 +149,7 @@ object SharedArrayBasedDirectedGraph {
         }
       }
 
-      ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxId], Unit](
+      ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxIdTrait], Unit](
           executorService, iteratorSeq, readOutEdges)
     }
 
@@ -224,7 +238,7 @@ object SharedArrayBasedDirectedGraph {
       Some(reverseEdges)
     } else None
 
-    new SharedArrayBasedDirectedGraph(nodeIdSet, offsetTable, lengthTable, sharedEdgeArray,
+    new SharedArrayBasedDirectedGraph(nodeIdSet, labelTable, offsetTable, lengthTable, sharedEdgeArray,
       reverseDirEdgeArray, maxNodeId, nodeWithOutEdgesMaxId, nodeWithOutEdgesCount,
       numNodes, numEdges, storedGraphDir)
   }
@@ -243,6 +257,7 @@ object SharedArrayBasedDirectedGraph {
  * smaller than number of nodes.
  *
  * @param nodeIdSet the nodes with either outgoing or incoming edges
+ * @param labelTable the label id of nodes
  * @param offsetTable the offset into shared edge array for outgoing edges
  * @param lengthTable the number of outgoing edges for each node
  * @param sharedEdgeArray the 2-dimensional sharded edge array
@@ -254,8 +269,8 @@ object SharedArrayBasedDirectedGraph {
  * @param edgeCount the number of edges in the graph
  * @param storedGraphDir the graph direction(s) stored
  */
-class SharedArrayBasedDirectedGraph private (nodeIdSet: Array[Byte], offsetTable: Array[Int],
-    lengthTable: Array[Int], sharedEdgeArray: Array[Array[Int]],
+class SharedArrayBasedDirectedGraph private (nodeIdSet: Array[Byte], labelTable: Array[Int],
+    offsetTable: Array[Int], lengthTable: Array[Int], sharedEdgeArray: Array[Array[Int]],
     reverseDirEdgeArray: Option[Array[Array[Int]]], maxId: Int, val nodeWithOutEdgesMaxId: Int,
     val nodeWithOutEdgesCount: Int, val nodeCount: Int, val edgeCount: Long,
     val storedGraphDir: StoredGraphDir) extends DirectedGraph {
@@ -274,8 +289,13 @@ class SharedArrayBasedDirectedGraph private (nodeIdSet: Array[Byte], offsetTable
           if (reverse(id) != null) reverse(id)
           else SharedArrayBasedDirectedGraph.emptyArray
       }
-      Some(SharedArrayBasedDirectedNode(id, offsetTable(id), lengthTable(id),
-        sharedEdgeArray, storedGraphDir, Some(reverseEdges)))
+      if (labelTable.size == 0) {
+        Some(SharedArrayBasedDirectedNode(id, offsetTable(id),
+          lengthTable(id), sharedEdgeArray, storedGraphDir, Some(reverseEdges)))
+      } else {
+        Some(SharedArrayBasedDirectedLabeledNode(id, labelTable(id), offsetTable(id),
+          lengthTable(id), sharedEdgeArray, storedGraphDir, Some(reverseEdges)))
+      }
     }
   }
 }

@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.NodeIdEdgesMaxId
+import com.twitter.cassovary.graph.{NodeIdEdgesMaxIdTrait,NodeRenumberer,IdentityNodeRenumberer}
 import java.io.File
 import scala.io.Source
 
@@ -39,37 +39,36 @@ import scala.io.Source
  * @param directory the directory to read from
  * @param prefixFileNames the string that each part file starts with
  */
-class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "") extends GraphReader {
+class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
+                                vertexReaderFactory: VertexReaderFactory = new SimpleVertexReaderFactory(),
+                                nodeRenumberer: NodeRenumberer = new IdentityNodeRenumberer()
+				) extends GraphReader {
 
   /**
    * Read in nodes and edges from a single file
    * @param filename Name of file to read from
    */
-  class OneShardReader(filename: String) extends Iterator[NodeIdEdgesMaxId] {
+  class OneShardReader(filename: String, vertexReaderFactory: VertexReaderFactory, nodeRenumberer: NodeRenumberer) 
+                       extends Iterator[NodeIdEdgesMaxIdTrait] {
 
-    private val outEdgePattern = """^(\d+)\s+(\d+)""".r
     private val lines = Source.fromFile(filename).getLines()
-    private val holder = NodeIdEdgesMaxId(-1, null, -1)
+    private val vertexReader: VertexReader = vertexReaderFactory.newInstance(nodeRenumberer)
 
     override def hasNext: Boolean = lines.hasNext
 
-    override def next(): NodeIdEdgesMaxId = {
-      val outEdgePattern(id, outEdgeCount) = lines.next.trim
-      var i = 0
-      val outEdgeCountInt = outEdgeCount.toInt
-      val idInt = id.toInt
+    override def next(): NodeIdEdgesMaxIdTrait = {
+      val holder = vertexReader.vertexLineToHolder(lines.next.trim)
 
-      var newMaxId = idInt
-      val outEdgesArr = new Array[Int](outEdgeCountInt)
-      while (i < outEdgeCountInt) {
-        val edgeId = lines.next.trim.toInt
+      var i = 0
+
+      var newMaxId = holder.id
+      while (i < holder.edges.size) {
+        val edgeId = vertexReader.nodeRenumberer.nodeIdToNodeIdx(lines.next.trim.toInt)
         newMaxId = newMaxId max edgeId
-        outEdgesArr(i) = edgeId
+        holder.edges(i) = edgeId
         i += 1
       }
 
-      holder.id = idInt
-      holder.edges = outEdgesArr
       holder.maxId = newMaxId
       holder
     }
@@ -84,7 +83,7 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "")
   class ShardsReader(directory: String, prefixFileNames: String = "") {
     val dir = new File(directory)
 
-    def readers: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
+    def readers: Seq[() => Iterator[NodeIdEdgesMaxIdTrait]] = {
       val validFiles = dir.list().flatMap({ filename =>
         if (filename.startsWith(prefixFileNames)) {
           Some(filename)
@@ -94,7 +93,7 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "")
         }
       })
       validFiles.map({ filename =>
-      {() => new OneShardReader(directory + "/" + filename)}
+      {() => new OneShardReader(directory + "/" + filename, vertexReaderFactory, nodeRenumberer)}
       }).toSeq
     }
   }
