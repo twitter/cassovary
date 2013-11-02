@@ -31,16 +31,16 @@ object ArrayBasedDirectedNode {
     dir match {
       case StoredGraphDir.OnlyIn | StoredGraphDir.OnlyOut | StoredGraphDir.Mutual =>
         if (nodeAndEdges.isLabeled) {
-	  UniDirectionalLabeledNode(nodeAndEdges.id, nodeAndEdges.asInstanceOf[LabeledNodeIdEdgesMaxId].label, nodeAndEdges.edges, dir)
-	} else {
+          UniDirectionalLabeledNode(nodeAndEdges.id, nodeAndEdges.asInstanceOf[LabeledNodeIdEdgesMaxId].label, nodeAndEdges.edges, dir)
+        } else {
           UniDirectionalNode(nodeAndEdges.id, nodeAndEdges.edges, dir)
-	}
+        }
       case StoredGraphDir.BothInOut =>
-	if (nodeAndEdges.isLabeled) {
-	  BiDirectionalLabeledNode(nodeAndEdges.id, nodeAndEdges.asInstanceOf[LabeledNodeIdEdgesMaxId].label, nodeAndEdges.edges)
-	} else {
+        if (nodeAndEdges.isLabeled) {
+          BiDirectionalLabeledNode(nodeAndEdges.id, nodeAndEdges.asInstanceOf[LabeledNodeIdEdgesMaxId].label, nodeAndEdges.edges)
+        } else {
           BiDirectionalNode(nodeAndEdges.id, nodeAndEdges.edges)
-	}
+        }
     }
   }
 }
