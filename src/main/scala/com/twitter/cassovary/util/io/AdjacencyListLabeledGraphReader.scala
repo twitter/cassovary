@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Twitter, Inc.
+ * Copyright 2013 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at
@@ -75,7 +75,7 @@ class AdjacencyListLabeledGraphReader (directory: String, prefixFileNames: Strin
       val outEdgesArr = new Array[Int](outEdgeCountInt)
       while (i < outEdgeCountInt) {
         val edgeId = lines.next.trim.toInt
-	val edgeIdx = nodeRenumberer.nodeIdToNodeIdx(edgeId)
+        val edgeIdx = nodeRenumberer.nodeIdToNodeIdx(edgeId)
         newMaxId = newMaxId max edgeIdx
         outEdgesArr(i) = edgeIdx
         i += 1
