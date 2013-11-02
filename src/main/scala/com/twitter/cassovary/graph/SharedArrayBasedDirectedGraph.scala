@@ -137,9 +137,9 @@ object SharedArrayBasedDirectedGraph {
           offsetTable(id) = offset
           lengthTable(id) = edgesLength
 
-	  if (item.isLabeled) {
-	    labelTable(id) = item.asInstanceOf[LabeledNodeIdEdgesMaxId].label
-	  }
+          if (item.isLabeled) {
+            labelTable(id) = item.asInstanceOf[LabeledNodeIdEdgesMaxId].label
+          }
 
           item.edges foreach { edge => nodeIdSet(edge) = 1 }
           val c = loadingCounter.addAndGet(1)

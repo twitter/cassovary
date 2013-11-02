@@ -41,7 +41,7 @@ import scala.io.Source
  */
 class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
                                 vertexReaderFactory: VertexReaderFactory = new SimpleVertexReaderFactory(),
-				nodeRenumberer: NodeRenumberer = new IdentityNodeRenumberer()
+                                nodeRenumberer: NodeRenumberer = new IdentityNodeRenumberer()
 				) extends GraphReader {
 
   /**
