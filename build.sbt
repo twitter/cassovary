@@ -4,11 +4,13 @@ version := "3.0.0"
 
 organization := "com.twitter"
 
-scalaVersion := "2.9.2"
+scalaVersion := "2.10.0"
 
 retrieveManaged := true
 
 resolvers += "Twitter Maven Repo" at "http://maven.twttr.com"
+
+resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 libraryDependencies += "com.twitter" % "ostrich_2.10" % "9.1.0"
 
