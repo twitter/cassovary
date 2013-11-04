@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.util
 
-import net.lag.logging.Logger
+import com.twitter.logging.Logger
 
 object Progress {
   /**
@@ -31,7 +31,8 @@ object Progress {
 
 class Progress(val name: String, val interval: Int, val maxValue: Option[Int]) {
 
-  private val log = Logger.get("Progress of: " + name)
+  private val log = Logger.get(getClass)
+  log.info("Progress of: " + name)
 
   var count = 0
 

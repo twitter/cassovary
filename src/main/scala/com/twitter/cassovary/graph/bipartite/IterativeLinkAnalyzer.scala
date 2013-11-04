@@ -16,7 +16,7 @@ package com.twitter.cassovary.graph.bipartite
 import com.twitter.cassovary.graph.util.SmallBoundedPriorityQueue
 import com.twitter.cassovary.graph.{GraphUtils, Node}
 import com.twitter.ostrich.stats.Stats
-import net.lag.logging.Logger
+import com.twitter.logging.Logger
 import scala.collection.mutable
 
 /**
@@ -37,7 +37,7 @@ class IterativeLinkAnalyzer(graphUtils: GraphUtils, resetProbOnLeft: Double,
     resetProbOnRight: Double, numTopContributors: Int) {
 
   private val graph = graphUtils.graph
-  private val log = Logger.get
+  private val log = Logger.get(getClass)
 
   // keep track of associated info for every node while doing iterations
   case class NodeInfo(val node: Node, val initialIterationWeight: Double, var weight: Double,

@@ -19,7 +19,7 @@ import com.twitter.ostrich.stats.Stats
 
 import it.unimi.dsi.fastutil.ints.{Int2IntMap, Int2ObjectMap}
 import it.unimi.dsi.fastutil.objects.Object2IntMap
-import net.lag.logging.Logger
+import com.twitter.logging.Logger
 import scala.util.Random
 
 /**
@@ -29,7 +29,7 @@ import scala.util.Random
 class GraphUtils(val graph: Graph) {
   import GraphUtils._
 
-  private val log = Logger.get
+  private val log = Logger.get(getClass)
 
   /**
    * Do a walk on the {@code nodes} in a graph.

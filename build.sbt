@@ -4,25 +4,30 @@ version := "3.0.0"
 
 organization := "com.twitter"
 
-scalaVersion := "2.9.2"
+scalaVersion := "2.10.0"
 
 retrieveManaged := true
 
 resolvers += "Twitter Maven Repo" at "http://maven.twttr.com"
 
-libraryDependencies += "com.twitter" % "ostrich" % "4.8.0"
+resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-libraryDependencies += "com.twitter" % "util-core" % "4.0.3"
+libraryDependencies += "com.twitter" % "ostrich_2.10" % "9.1.0"
 
-libraryDependencies += "com.google.guava" % "guava" % "11.0.2" withSources()
+libraryDependencies += "com.twitter" % "util-core_2.10" % "6.6.0"
 
-libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided"
+libraryDependencies += "com.google.guava" % "guava" % "14.0.1" withSources()
 
-libraryDependencies += "net.lag" % "configgy" % "2.0.2"
+libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.5.2" % "provided"
 
 libraryDependencies += "org.mockito" % "mockito-all" % "1.8.5" % "test" withSources()
 
-libraryDependencies += "org.scala-tools.testing" % "specs_2.9.1" % "1.6.9" % "test" withSources()
+libraryDependencies += "com.twitter" % "util-logging_2.10" % "6.6.0"
+
+libraryDependencies += "com.typesafe.akka" % "akka-actor-tests_2.10" % "2.1.0"
+
+libraryDependencies += "org.scala-tools.testing" % "specs_2.10" % "1.6.9" % "test" withSources()
+
 
 publishMavenStyle := true
 
@@ -31,7 +36,7 @@ publishTo <<= version { (v: String) =>
   if (v.trim.endsWith("SNAPSHOT"))
     Some("snapshots" at nexus + "content/repositories/snapshots")
   else
-    Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+    Some("releases" at nexus + "service/local/staging/deploy/maven2")
 }
 
 publishArtifact in Test := false
