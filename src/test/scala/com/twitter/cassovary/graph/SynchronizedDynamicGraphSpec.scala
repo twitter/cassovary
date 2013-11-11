@@ -77,7 +77,9 @@ class SynchronizedDynamicGraphSpec extends Specification {
     graph.getNodeById(3).isDefined mustEqual false
   }
 
-  "multipe threads add nodes/edge simultaneously" in {
+  "multipe threads add nodes/edge simultaneously" in { 
+    val versionNumber = scala.util.Properties.versionString.split(' ').toList(1).toString.split('.').toList(1)
+
     import akka.actor._
     import akka.actor.ActorDSL._
     import akka.pattern.ask    
@@ -128,6 +130,8 @@ class SynchronizedDynamicGraphSpec extends Specification {
   }
 
   "multipe threads add/remove edge simultaneously" in {
+    val versionNumber = scala.util.Properties.versionString.split(' ').toList(1).toString.split('.').toList(1)
+
     import akka.actor._
     import akka.actor.ActorDSL._
     import akka.pattern.ask    

@@ -4,7 +4,7 @@ version := "3.0.0"
 
 organization := "com.twitter"
 
-scalaVersion := "2.9.3"
+scalaVersion := "2.9.2"
 
 retrieveManaged := true
 
@@ -26,7 +26,7 @@ libraryDependencies <+= scalaVersion { sv =>
   sv match {
     case scalaVersionRegex(major, minor) if major.toInt > 2 || (major == "2" && minor.toInt >= 10) =>
         "com.twitter" % "util-core_2.10" % "6.6.0"
-    case _ => "com.twitter" % "util-core" % "4.0.3"
+    case _ => "com.twitter" % "util-core_2.9.2" % "6.6.0"
   }
 }
  
@@ -53,7 +53,7 @@ libraryDependencies <+= scalaVersion { sv =>
   sv match {
     case scalaVersionRegex(major, minor) if major.toInt > 2 || (major == "2" && minor.toInt >= 10) => 
         "com.twitter" % "util-logging_2.10" % "6.6.0"
-    case _ => "net.lag" % "configgy" % "2.0.2"
+    case _ => "com.twitter" % "util-logging_2.9.2" % "6.6.0"
   }
 }
  
@@ -64,12 +64,18 @@ libraryDependencies <+= scalaVersion { sv =>
   sv match {
     case scalaVersionRegex(major, minor) if major.toInt > 2 || (major == "2" && minor.toInt >= 10) => 
         "org.scala-tools.testing" % "specs_2.10" % "1.6.9" % "test" withSources()
-    case _ => "org.scala-tools.testing" %% "specs" % "1.6.9" % "test" withSources()
+    case _ => "org.scala-tools.testing" % "specs_2.9.1" % "1.6.9" % "test" withSources()
   }
 }
 
-libraryDependencies += "com.typesafe.akka" % "akka-actor-tests_2.10" % "2.1.0"
-
+libraryDependencies <+= scalaVersion { sv =>
+  val scalaVersionRegex = "(\\d+)\\.(\\d+).*".r
+  sv match {
+    case scalaVersionRegex(major, minor) if major.toInt > 2 || (major == "2" && minor.toInt >= 10) => 
+        "com.typesafe.akka" % "akka-actor-tests_2.10" % "2.1.0"
+    case _ => "com.typesafe.akka" % "akka-actor-tests" % "2.0.5"
+  }
+}
 
 publishMavenStyle := true
 
