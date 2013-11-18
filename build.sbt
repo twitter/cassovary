@@ -4,7 +4,7 @@ version := "3.0.0"
 
 organization := "com.twitter"
 
-scalaVersion := "2.9.2"
+scalaVersion := "2.10.0"
 
 retrieveManaged := true
 
