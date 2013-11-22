@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.NodeIdEdgesMaxId
+import com.twitter.cassovary.graph.{NodeIdEdgesMaxId,NodeRenumberer,IdentityNodeRenumberer,SequentialNodeRenumberer}
 import java.io.File
 import scala.io.Source
 
@@ -39,13 +39,16 @@ import scala.io.Source
  * @param directory the directory to read from
  * @param prefixFileNames the string that each part file starts with
  */
-class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "") extends GraphReader {
+class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
+                                nodeRenumberer: NodeRenumberer = new IdentityNodeRenumberer()
+                               ) extends GraphReader {
 
   /**
    * Read in nodes and edges from a single file
    * @param filename Name of file to read from
    */
-  class OneShardReader(filename: String) extends Iterator[NodeIdEdgesMaxId] {
+  class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer) 
+                      extends Iterator[NodeIdEdgesMaxId] {
 
     private val outEdgePattern = """^(\d+)\s+(\d+)""".r
     private val lines = Source.fromFile(filename).getLines()
@@ -58,17 +61,19 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "")
       var i = 0
       val outEdgeCountInt = outEdgeCount.toInt
       val idInt = id.toInt
+      val idIdx = nodeRenumberer.nodeIdToNodeIdx(idInt)
 
-      var newMaxId = idInt
+      var newMaxId = idIdx
       val outEdgesArr = new Array[Int](outEdgeCountInt)
       while (i < outEdgeCountInt) {
         val edgeId = lines.next.trim.toInt
-        newMaxId = newMaxId max edgeId
-        outEdgesArr(i) = edgeId
+        val edgeIdx = nodeRenumberer.nodeIdToNodeIdx(edgeId)
+        newMaxId = newMaxId max edgeIdx
+        outEdgesArr(i) = edgeIdx
         i += 1
       }
 
-      holder.id = idInt
+      holder.id = idIdx
       holder.edges = outEdgesArr
       holder.maxId = newMaxId
       holder
@@ -94,7 +99,7 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "")
         }
       })
       validFiles.map({ filename =>
-      {() => new OneShardReader(directory + "/" + filename)}
+      {() => new OneShardReader(directory + "/" + filename, nodeRenumberer)}
       }).toSeq
     }
   }

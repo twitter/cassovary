@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.DirectedGraph
+import com.twitter.cassovary.graph.{DirectedGraph,NodeRenumberer,SequentialNodeRenumberer}
 import java.util.concurrent.Executors
 import org.specs.Specification
 
@@ -39,6 +39,24 @@ class AdjacencyListGraphReaderSpec extends Specification  {
     nodeMap.keys.foreach { id => g.existsNodeId(id) mustBe true }
   }
 
+  /**
+   * Compares the nodes in a graph and those defined by the nodeMap (id -> ids of neighbors),
+   * remapping node ids thru nodeRenumberer, and ensures that these are equivalent
+   * @param g DirectedGraph
+   * @param nodeMap Map of node ids to ids of its neighbors
+   * @param nodeRenumberer a node renumberer
+   */
+  def nodeMapEqualsRenumbered(g:DirectedGraph, nodeMap: Map[Int, List[Int]], nodeRenumberer: NodeRenumberer) = {
+    g.foreach { node =>
+      nodeMap.contains(nodeRenumberer.nodeIdxToNodeId(node.id)) mustBe true
+      val neighbors = node.outboundNodes()
+      val nodesInMap = nodeMap(nodeRenumberer.nodeIdxToNodeId(node.id))
+      nodesInMap.foreach { i => neighbors.contains(nodeRenumberer.nodeIdToNodeIdx(i)) mustBe true }
+      neighbors.foreach { i => nodesInMap.contains(nodeRenumberer.nodeIdxToNodeId(i)) mustBe true }
+    }
+    nodeMap.keys.foreach { id => g.existsNodeId(nodeRenumberer.nodeIdToNodeIdx(id)) mustBe true }
+  }
+
   var graph: DirectedGraph = _
 
   "AdjacencyListReader" should {
@@ -60,6 +78,26 @@ class AdjacencyListGraphReaderSpec extends Specification  {
       nodeMapEquals(graph, nodeMap)
     }
 
+  }
+
+  "AdjacencyListReader renumbered" should {
+    var seqRenumberer = new SequentialNodeRenumberer()
+
+    doBefore{
+      graph = new AdjacencyListGraphReader("src/test/resources/graphs/", "toy_6nodes_adj", seqRenumberer) {
+          override val executorService = Executors.newFixedThreadPool(2)
+        }.toSharedArrayBasedDirectedGraph()
+    }
+
+    "provide the correct graph properties" in {
+      graph.nodeCount mustBe 6
+      graph.edgeCount mustBe 11L
+      graph.maxNodeId mustBe 5  // Zero-based; node ids are 0 thru 5.
+    }
+
+    "contain the right renumbered nodes and edges" in {
+      nodeMapEqualsRenumbered(graph, nodeMap, seqRenumberer)
+    }
   }
 
 }
