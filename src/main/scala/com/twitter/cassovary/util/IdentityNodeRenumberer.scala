@@ -11,16 +11,16 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.graph
+package com.twitter.cassovary.util
 
 /*
  * Performs no node renumbering: simply echoes the passed node id or idx to the caller.
  */
 class IdentityNodeRenumberer extends NodeRenumberer {
   
-  def nodeIdToNodeIdx(nodeId: Int): Int = nodeId
+  def externalToInternal(externalNodeId: Int): Int = externalNodeId
 
-  def nodeIdxToNodeId(nodeIdx: Int): Int = nodeIdx
+  def internalToExternal(internalNodeId: Int): Int = internalNodeId
 
 }
 

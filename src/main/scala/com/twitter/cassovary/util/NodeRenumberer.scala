@@ -11,7 +11,7 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.graph
+package com.twitter.cassovary.util
 
 /*
  * Maintains a map from "node id" values read from source graph file, to some internal id value.
@@ -23,9 +23,9 @@ package com.twitter.cassovary.graph
  */
 trait NodeRenumberer {
 
-  def nodeIdToNodeIdx(nodeId: Int): Int
+  def externalToInternal(externalNodeId: Int): Int
 
-  def nodeIdxToNodeId(nodeIdx: Int): Int
+  def internalToExternal(internalNodeId: Int): Int
 
 }
 

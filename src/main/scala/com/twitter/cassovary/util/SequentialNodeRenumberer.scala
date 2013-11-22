@@ -11,9 +11,9 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.graph
+package com.twitter.cassovary.util
 
-import scala.collection.mutable.{SynchronizedMap,HashMap}
+import scala.collection.mutable.HashMap
 
 /*
  * Renumbers node id values read from source file to internal sequentially increasing id value.
@@ -21,18 +21,20 @@ import scala.collection.mutable.{SynchronizedMap,HashMap}
  */
 class SequentialNodeRenumberer extends NodeRenumberer {
 
-  val nodeIdToNodeIdxMap = new HashMap[Int,Int] with SynchronizedMap[Int,Int]
-  var lazyNodeIdxToNodeIdMap: Array[Int] = Array[Int]()
+  val nodeIdToNodeIdxMap = HashMap[Int,Int]()
+  var lazyNodeIdxToNodeIdMap = Array[Int]()
 
-  def nodeIdToNodeIdx(nodeId: Int): Int = 
-    nodeIdToNodeIdxMap.getOrElseUpdate(nodeId, nodeIdToNodeIdxMap.size)
+  def externalToInternal(externalNodeId: Int): Int =
+    this.synchronized {
+      nodeIdToNodeIdxMap.getOrElseUpdate(externalNodeId, nodeIdToNodeIdxMap.size)
+    }
 
-  def nodeIdxToNodeId(nodeIdx: Int): Int = {
+  def internalToExternal(internalNodeId: Int): Int = {
     if (lazyNodeIdxToNodeIdMap.isEmpty) {
       lazyNodeIdxToNodeIdMap = new Array[Int](nodeIdToNodeIdxMap.size)
-      nodeIdToNodeIdxMap.foreach { case (nodeId, nodeIdx) => lazyNodeIdxToNodeIdMap(nodeIdx) = nodeId }
+      nodeIdToNodeIdxMap.foreach { case (externalNodeId, internalNodeId) => lazyNodeIdxToNodeIdMap(internalNodeId) = externalNodeId }
     }
-    lazyNodeIdxToNodeIdMap(nodeIdx)
+    lazyNodeIdxToNodeIdMap(internalNodeId)
   }
 
 }

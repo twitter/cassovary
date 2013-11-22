@@ -13,7 +13,8 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.{DirectedGraph,NodeRenumberer,SequentialNodeRenumberer}
+import com.twitter.cassovary.graph.DirectedGraph
+import com.twitter.cassovary.util.{NodeRenumberer,SequentialNodeRenumberer}
 import java.util.concurrent.Executors
 import org.specs.Specification
 
@@ -48,13 +49,13 @@ class AdjacencyListGraphReaderSpec extends Specification  {
    */
   def nodeMapEqualsRenumbered(g:DirectedGraph, nodeMap: Map[Int, List[Int]], nodeRenumberer: NodeRenumberer) = {
     g.foreach { node =>
-      nodeMap.contains(nodeRenumberer.nodeIdxToNodeId(node.id)) mustBe true
+      nodeMap.contains(nodeRenumberer.internalToExternal(node.id)) mustBe true
       val neighbors = node.outboundNodes()
-      val nodesInMap = nodeMap(nodeRenumberer.nodeIdxToNodeId(node.id))
-      nodesInMap.foreach { i => neighbors.contains(nodeRenumberer.nodeIdToNodeIdx(i)) mustBe true }
-      neighbors.foreach { i => nodesInMap.contains(nodeRenumberer.nodeIdxToNodeId(i)) mustBe true }
+      val nodesInMap = nodeMap(nodeRenumberer.internalToExternal(node.id))
+      nodesInMap.foreach { i => neighbors.contains(nodeRenumberer.externalToInternal(i)) mustBe true }
+      neighbors.foreach { i => nodesInMap.contains(nodeRenumberer.internalToExternal(i)) mustBe true }
     }
-    nodeMap.keys.foreach { id => g.existsNodeId(nodeRenumberer.nodeIdToNodeIdx(id)) mustBe true }
+    nodeMap.keys.foreach { id => g.existsNodeId(nodeRenumberer.externalToInternal(id)) mustBe true }
   }
 
   var graph: DirectedGraph = _

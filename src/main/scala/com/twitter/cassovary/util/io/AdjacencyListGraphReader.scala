@@ -13,7 +13,8 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.{NodeIdEdgesMaxId,NodeRenumberer,IdentityNodeRenumberer,SequentialNodeRenumberer}
+import com.twitter.cassovary.graph.NodeIdEdgesMaxId
+import com.twitter.cassovary.util.{NodeRenumberer,IdentityNodeRenumberer,SequentialNodeRenumberer}
 import java.io.File
 import scala.io.Source
 
@@ -60,20 +61,20 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
       val outEdgePattern(id, outEdgeCount) = lines.next.trim
       var i = 0
       val outEdgeCountInt = outEdgeCount.toInt
-      val idInt = id.toInt
-      val idIdx = nodeRenumberer.nodeIdToNodeIdx(idInt)
+      val externalNodeId = id.toInt
+      val internalNodeId = nodeRenumberer.externalToInternal(externalNodeId)
 
-      var newMaxId = idIdx
+      var newMaxId = internalNodeId
       val outEdgesArr = new Array[Int](outEdgeCountInt)
       while (i < outEdgeCountInt) {
-        val edgeId = lines.next.trim.toInt
-        val edgeIdx = nodeRenumberer.nodeIdToNodeIdx(edgeId)
-        newMaxId = newMaxId max edgeIdx
-        outEdgesArr(i) = edgeIdx
+        val externalNghId = lines.next.trim.toInt
+        val internalNghId = nodeRenumberer.externalToInternal(externalNghId)
+        newMaxId = newMaxId max internalNghId
+        outEdgesArr(i) = internalNghId
         i += 1
       }
 
-      holder.id = idIdx
+      holder.id = internalNodeId
       holder.edges = outEdgesArr
       holder.maxId = newMaxId
       holder
