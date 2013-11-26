@@ -32,10 +32,11 @@ object RenumberedGraph {
   def erdosRenyiGraph(numNodes: Int, numEdges: Int) : Array[Set[Int]] = {
     // Generate pairs of edges and build list of sets graph structure.
     // More memory-efficient construction methods exist but this is fine for small graphs.
+    var rng = new Random()
     val edges = Set[(Int,Int)]()
     while (edges.size < numEdges) {
-      val i = math.abs(Random.nextInt(numNodes))
-      var j = math.abs(Random.nextInt(numNodes))
+      val i = math.abs(rng.nextInt(numNodes))
+      var j = math.abs(rng.nextInt(numNodes))
       while (i == j) {
         j = math.abs(Random.nextInt(numNodes))
       }
@@ -57,7 +58,8 @@ object RenumberedGraph {
     val g = erdosRenyiGraph(numNodes, numEdges)
 
     // Generate mapping of each node id to a random integer in the space 0..2^31.
-    val nodeIds = Array.fill(numNodes) { math.abs(Random.nextInt()) }
+    var rng = new Random()
+    val nodeIds = Array.fill(numNodes) { math.abs(rng.nextInt()) }
 
     // Write graph to temporary file.
     val renumGraphDirName = System.getProperty("java.io.tmpdir")
@@ -79,9 +81,9 @@ object RenumberedGraph {
       override val executorService = MoreExecutors.sameThreadExecutor()
     }.toArrayBasedDirectedGraph()
 
-    val graphBytes = graph.toString(graph.nodeCount).size
-    printf("A renumbered graph with %d nodes and %d directed edges string representation takes up %d bytes.\n",
-      graph.nodeCount, graph.edgeCount, graphBytes)
+    printf("A renumbered graph with %d nodes and %d directed edges takes up approximately %d bytes.\n",
+      graph.nodeCount, graph.edgeCount, graph.approxSizeBytes)
+    printf("First 3 nodes of renumbered graph: %s\n", graph.toString(3))
 
     // Attempt to read graph file into memory with renumbering; expect to fail.
     try {
