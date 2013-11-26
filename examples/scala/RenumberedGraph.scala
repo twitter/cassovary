@@ -35,7 +35,7 @@ object RenumberedGraph {
     val numNodes = if (args.length > 0) args(0).toInt else 50
     //val numEdges = math.ceil(numNodes * math.log(numNodes)).toInt
     val avgOutDegree = math.ceil(math.log(numNodes)).toInt
-    val MaxNodeId = 1 << 30
+    val MaxNodeId = 1 << 20
 
     printf("Generating Erdos-Renyi random graph with n=%d nodes and log(n)=%d avg outdegree...\n", numNodes, avgOutDegree)
     // Generate mapping of each node id to a random integer in the space 0..MaxNodeId.
@@ -48,7 +48,7 @@ object RenumberedGraph {
     val renumGraphDirName = System.getProperty("java.io.tmpdir")
     val renumGraphFileName = "erdos_renyi_" + numNodes + ".txt"
     val renumGraphFile = new File(renumGraphDirName, renumGraphFileName)
-    printf("Writing graph to temporary file %s\n", renumGraphFile)
+    printf("Writing graph to temporary file %s with node ids distributed across 0..%d\n", renumGraphFile, MaxNodeId)
     val gWriter = new PrintWriter(renumGraphFile)
     genGraph.foreach{ v => {
         gWriter.println(nodeIds(v.id) + " " + v.outboundCount)
@@ -64,22 +64,23 @@ object RenumberedGraph {
       override val executorService = MoreExecutors.sameThreadExecutor()
     }.toArrayBasedDirectedGraph()
 
+    val rgComplexity = readGraph.approxStorageComplexity
     printf("A renumbered graph with %d nodes and %d directed edges has an approx. storage complexity of %d bytes.\n",
-      readGraph.nodeCount, readGraph.edgeCount, readGraph.approxStorageComplexity)
+      readGraph.nodeCount, readGraph.edgeCount, rgComplexity)
     printf("First 3 nodes of renumbered graph: %s\n", readGraph.toString(3))
 
-    // Attempt to read graph file into memory without renumbering; expect to fail.
-    try {
-      val readGraph2 = new AdjacencyListGraphReader(renumGraphDirName, renumGraphFileName) {
-        override val executorService = MoreExecutors.sameThreadExecutor()
-      }.toArrayBasedDirectedGraph()
-      printf("An unrenumbered graph with %d nodes and %d directed edges has unexpectedly been created.\n",
-        readGraph2.nodeCount, readGraph2.edgeCount)
-    } catch {
-      case e: OutOfMemoryError => printf("Could not read unrenumbered graph into memory due to expected OutOfMemoryError: " + e + "\n")
-    }
+    // Read graph file into memory without renumbering.
+    val readGraph2 = new AdjacencyListGraphReader(renumGraphDirName, renumGraphFileName) {
+      override val executorService = MoreExecutors.sameThreadExecutor()
+    }.toArrayBasedDirectedGraph()
+    val rg2Complexity = readGraph2.approxStorageComplexity
+    printf("An unrenumbered graph with %d nodes and %d directed edges has an approx. storage complexity of %d bytes.\n",
+      readGraph2.nodeCount, readGraph2.edgeCount, rg2Complexity)
 
     renumGraphFile.delete()
+
+    val complexityDiff = rg2Complexity - rgComplexity
+    printf("Savings for %d node graph with MaxNodeId %d: %d bytes (%.2f%%)\n", numNodes, MaxNodeId, complexityDiff, 100.0 * complexityDiff.toFloat / rgComplexity)
 
     printf("Finished running RenumberedGraph example.\n")
 
