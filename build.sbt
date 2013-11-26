@@ -4,7 +4,7 @@ version := "3.0.0"
 
 organization := "com.twitter"
 
-scalaVersion := "2.10.0"
+scalaVersion := "2.9.3"
 
 retrieveManaged := true
 
@@ -29,6 +29,7 @@ libraryDependencies <+= scalaVersion { sv =>
     case _ => "com.twitter" % "util-core_2.9.2" % "6.6.0"
   }
 }
+
  
 libraryDependencies <+= scalaVersion { sv =>
   val scalaVersionRegex = "(\\d+)\\.(\\d+).*".r
