@@ -21,20 +21,20 @@ import scala.collection.mutable.HashMap
  */
 class SequentialNodeRenumberer extends NodeRenumberer {
 
-  val nodeIdToNodeIdxMap = HashMap[Int,Int]()
-  var lazyNodeIdxToNodeIdMap = Array[Int]()
+  val externalToInternalMap = HashMap[Int,Int]()
+  var lazyInternalToExternalMap = Array[Int]()
 
   def externalToInternal(externalNodeId: Int): Int =
     this.synchronized {
-      nodeIdToNodeIdxMap.getOrElseUpdate(externalNodeId, nodeIdToNodeIdxMap.size)
+      externalToInternalMap.getOrElseUpdate(externalNodeId, externalToInternalMap.size)
     }
 
   def internalToExternal(internalNodeId: Int): Int = {
-    if (lazyNodeIdxToNodeIdMap.isEmpty) {
-      lazyNodeIdxToNodeIdMap = new Array[Int](nodeIdToNodeIdxMap.size)
-      nodeIdToNodeIdxMap.foreach { case (externalNodeId, internalNodeId) => lazyNodeIdxToNodeIdMap(internalNodeId) = externalNodeId }
+    if (lazyInternalToExternalMap.isEmpty) {
+      lazyInternalToExternalMap = new Array[Int](externalToInternalMap.size)
+      externalToInternalMap.foreach { case (externalNodeId, internalNodeId) => lazyInternalToExternalMap(internalNodeId) = externalNodeId }
     }
-    lazyNodeIdxToNodeIdMap(internalNodeId)
+    lazyInternalToExternalMap(internalNodeId)
   }
 
 }
