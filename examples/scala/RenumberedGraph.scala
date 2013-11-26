@@ -85,7 +85,7 @@ object RenumberedGraph {
       graph.nodeCount, graph.edgeCount, graph.approxSizeBytes)
     printf("First 3 nodes of renumbered graph: %s\n", graph.toString(3))
 
-    // Attempt to read graph file into memory with renumbering; expect to fail.
+    // Attempt to read graph file into memory without renumbering; expect to fail.
     try {
       val graph2 = new AdjacencyListGraphReader(renumGraphDirName, renumGraphFileName) {
         override val executorService = MoreExecutors.sameThreadExecutor()
