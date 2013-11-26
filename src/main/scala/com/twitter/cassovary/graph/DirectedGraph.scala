@@ -80,7 +80,7 @@ trait DirectedGraph extends Graph with Iterable[Node] {
     }
   }
 
-  def approxSizeBytes() = {
+  def approxStorageComplexity() = {
     val sizeBytes = 4 + nodeCount  // sizeof(nodeCount) + O(n)
     iterator.foldLeft(sizeBytes) { (bytesSum, node) =>
       bytesSum + (if (node != null) { 4 + node.inboundCount + 4 + node.outboundCount } else 0)
