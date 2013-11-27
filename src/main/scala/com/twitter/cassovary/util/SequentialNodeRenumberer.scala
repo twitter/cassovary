@@ -21,25 +21,42 @@ import scala.collection.mutable.{ArrayBuffer,HashMap}
  */
 class SequentialNodeRenumberer extends NodeRenumberer {
 
+  // See comments in externalToInternal for why HashMap is not Concurrent or Synchronized.
   val externalToInternalMap = HashMap[Int,Int]()
   var internalToExternalMap = ArrayBuffer[Int]()
 
+  /**
+   * Map external node id to internal node id, where internal nodes sequentially increase
+   * from 0 for each newly seen external node id. Thread-safe; see body comments for details.
+   */
   def externalToInternal(externalNodeId: Int): Int =
+    /** 
+     * We don't use Concurrent or Synchronized HashMap alone because of potential race:
+     *  Thread1                        | Thread2
+     * --------------------------------+------------------------
+     *  externalToInternalMap.size     |
+     *                                 |  externalToInternalMap.size
+     *  externalToInternalMap.getOr... |
+     *                                 |  externalToInternalMap.getOr...
+     * 
+     * To guard against this we use a synchronized block to make a thread's calls 
+     * to both .size and subsequently .getOrElseUpdate atomic.
+     */
     this.synchronized {
       val internalNodeId = externalToInternalMap.getOrElseUpdate(externalNodeId, externalToInternalMap.size)
 
-      // Note: Assertions are O(1) consistency checks which can be commented out for performance.
+      // Note: Assertions are consistency checks which can be uncommented for testing.
       // When loaded correctly we should not be seeing internal ids beyond length of externalToInternalMap.
-      assert(externalToInternalMap.size > internalNodeId)
+      //assert(externalToInternalMap.size > internalNodeId)
       // InternalNodeId should be no larger than internalToExternalMap.
-      assert(internalToExternalMap.size >= internalNodeId)
+      //assert(internalToExternalMap.size >= internalNodeId)
 
       if (internalToExternalMap.size == internalNodeId) {
         internalToExternalMap += externalNodeId
       }
 
       // The internal id should be assigned to the correct external id.
-      assert(internalToExternalMap(internalNodeId) == externalNodeId)
+      //assert(internalToExternalMap(internalNodeId) == externalNodeId)
 
       internalNodeId
     }

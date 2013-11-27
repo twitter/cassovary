@@ -32,8 +32,6 @@ object NodeRenumberer {
     def externalToInternal(externalNodeId: Int): Int = externalNodeId
     def internalToExternal(internalNodeId: Int): Int = internalNodeId
   }
-
-  implicit def identity = new Identity
 }
 
 

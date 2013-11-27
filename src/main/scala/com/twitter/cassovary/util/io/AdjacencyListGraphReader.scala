@@ -41,7 +41,7 @@ import scala.io.Source
  * @param prefixFileNames the string that each part file starts with
  */
 class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
-                                nodeRenumberer: NodeRenumberer = NodeRenumberer.identity
+                                nodeRenumberer: NodeRenumberer = new NodeRenumberer.Identity()
                                ) extends GraphReader {
 
   /**
