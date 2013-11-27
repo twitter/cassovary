@@ -21,12 +21,19 @@ package com.twitter.cassovary.util
  * Usage: Graph reader calls nodeIdToNodeIdx(nodeId) on each read node.
  * On output, nodeIdxToNodeId(nodeIdx) called on each node index value to be output.
  */
+
 trait NodeRenumberer {
-
   def externalToInternal(externalNodeId: Int): Int
-
   def internalToExternal(internalNodeId: Int): Int
+}
 
+object NodeRenumberer {
+  final class Identity extends NodeRenumberer {
+    def externalToInternal(externalNodeId: Int): Int = externalNodeId
+    def internalToExternal(internalNodeId: Int): Int = internalNodeId
+  }
+
+  implicit def identity = new Identity
 }
 
 

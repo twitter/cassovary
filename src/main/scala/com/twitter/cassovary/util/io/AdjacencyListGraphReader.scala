@@ -14,7 +14,7 @@
 package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
-import com.twitter.cassovary.util.{NodeRenumberer,IdentityNodeRenumberer,SequentialNodeRenumberer}
+import com.twitter.cassovary.util.{NodeRenumberer,SequentialNodeRenumberer}
 import java.io.File
 import scala.io.Source
 
@@ -41,7 +41,7 @@ import scala.io.Source
  * @param prefixFileNames the string that each part file starts with
  */
 class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
-                                nodeRenumberer: NodeRenumberer = new IdentityNodeRenumberer()
+                                nodeRenumberer: NodeRenumberer = NodeRenumberer.identity
                                ) extends GraphReader {
 
   /**
