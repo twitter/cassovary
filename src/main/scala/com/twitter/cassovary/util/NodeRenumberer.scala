@@ -17,7 +17,7 @@ package com.twitter.cassovary.util
  * Maintains a map from "node id" values read from source graph file, to some internal id value.
  * Implementer SequentialNodeRenumberer uses this to map each input id to a sequentially increasing
  * value, effectively densifying the node id space and avoiding wasteful holes.
- * Implementer IdentityNodeRenumberer does nothing to preserve existing behavior.
+ * Implementer Identity does nothing to preserve existing behavior.
  * Usage: Graph reader calls nodeIdToNodeIdx(nodeId) on each read node.
  * On output, nodeIdxToNodeId(nodeIdx) called on each node index value to be output.
  */
