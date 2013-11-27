@@ -23,11 +23,9 @@ import com.twitter.cassovary.util.io.AdjacencyListGraphReader
 import com.twitter.cassovary.util.SequentialNodeRenumberer
 import com.twitter.cassovary.graph.TestGraphs
 import scala.util.Random
-import scala.collection.mutable.Set
 import scala.math
 import java.io.{File,PrintWriter}
 import com.google.common.util.concurrent.MoreExecutors
-import java.lang.instrument.Instrumentation
 
 object RenumberedGraph {
 
