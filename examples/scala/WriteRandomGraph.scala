@@ -17,10 +17,10 @@
  * and writes it to a file.
  */
 
-import com.twitter.cassovary.util.io.GraphWriter
 import com.twitter.cassovary.graph.TestGraphs
-import scala.math
+import com.twitter.cassovary.util.io.GraphWriter
 import java.io.{File,FileWriter}
+import scala.math
 
 object WriteRandomGraph {
 
