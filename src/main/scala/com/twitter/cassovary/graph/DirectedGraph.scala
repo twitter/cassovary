@@ -79,4 +79,12 @@ trait DirectedGraph extends Graph with Iterable[Node] {
       accum + ( if (node != null) { "\n" + node } else "")
     }
   }
+
+  def approxStorageComplexity() = {
+    // sizeof(maxNodeId) + (sizeof(inboundCount) + sizeof(outboundCount) + sizeof(nodeId)) * maxNodeId
+    val nodeSizeBytes = 4 + 12 * maxNodeId
+    // sizeof(edgeId) * edgeCount
+    val edgeSizeBytes = 4 * edgeCount
+    nodeSizeBytes + edgeSizeBytes
+  }
 }

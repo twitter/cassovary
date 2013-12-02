@@ -14,6 +14,7 @@
 package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
+import com.twitter.cassovary.util.{NodeRenumberer,SequentialNodeRenumberer}
 import java.io.File
 import scala.io.Source
 
@@ -39,13 +40,16 @@ import scala.io.Source
  * @param directory the directory to read from
  * @param prefixFileNames the string that each part file starts with
  */
-class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "") extends GraphReader {
+class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
+                                nodeRenumberer: NodeRenumberer = new NodeRenumberer.Identity()
+                               ) extends GraphReader {
 
   /**
    * Read in nodes and edges from a single file
    * @param filename Name of file to read from
    */
-  class OneShardReader(filename: String) extends Iterator[NodeIdEdgesMaxId] {
+  class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer) 
+                      extends Iterator[NodeIdEdgesMaxId] {
 
     private val outEdgePattern = """^(\d+)\s+(\d+)""".r
     private val lines = Source.fromFile(filename).getLines()
@@ -57,18 +61,20 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "")
       val outEdgePattern(id, outEdgeCount) = lines.next.trim
       var i = 0
       val outEdgeCountInt = outEdgeCount.toInt
-      val idInt = id.toInt
+      val externalNodeId = id.toInt
+      val internalNodeId = nodeRenumberer.externalToInternal(externalNodeId)
 
-      var newMaxId = idInt
+      var newMaxId = internalNodeId
       val outEdgesArr = new Array[Int](outEdgeCountInt)
       while (i < outEdgeCountInt) {
-        val edgeId = lines.next.trim.toInt
-        newMaxId = newMaxId max edgeId
-        outEdgesArr(i) = edgeId
+        val externalNghId = lines.next.trim.toInt
+        val internalNghId = nodeRenumberer.externalToInternal(externalNghId)
+        newMaxId = newMaxId max internalNghId
+        outEdgesArr(i) = internalNghId
         i += 1
       }
 
-      holder.id = idInt
+      holder.id = internalNodeId
       holder.edges = outEdgesArr
       holder.maxId = newMaxId
       holder
@@ -94,7 +100,7 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "")
         }
       })
       validFiles.map({ filename =>
-      {() => new OneShardReader(directory + "/" + filename)}
+      {() => new OneShardReader(directory + "/" + filename, nodeRenumberer)}
       }).toSeq
     }
   }
