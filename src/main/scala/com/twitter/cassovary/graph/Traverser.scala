@@ -17,7 +17,7 @@ import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.twitter.cassovary.graph.tourist.{IntInfoKeeper, PrevNbrCounter}
 import com.twitter.ostrich.stats.Stats
-import it.unimi.dsi.fastutil.ints.IntArrayList
+import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue
 import it.unimi.dsi.fastutil.objects.ObjectArrayList
 import net.lag.logging.Logger
 import scala.collection.mutable
@@ -178,7 +178,7 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
   // the number of items can be enqueued is bounded by maxSteps
   // because we never need to enqueue more than maxSteps items
   private var numEnqueuedEver = 0L
-  private val qu = new IntArrayList
+  private val qu = new IntArrayFIFOQueue
 
   private val depthTracker = new IntInfoKeeper(true)
 
@@ -189,7 +189,7 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
 
   private def visitPotentialNode(id: Int, depth: Int) {
     if (!(onlyOnce && seen(id))) {
-      qu.add(id)
+      qu.enqueue(id)
       numEnqueuedEver += 1
     }
     depthTracker.recordInfo(id, depth)
@@ -215,7 +215,7 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
   private def seen(id: Int) = depth(id).isDefined
 
   def next = {
-    val curr = qu.removeInt(0)
+    val curr = qu.dequeueInt()
     val currDepth = depth(curr).get
     val nd = getExistingNodeById(graph, curr)
     log.ifTrace { "visiting %d, nbrCount=%d, maxNumEdges=%d, depth=%d".format(curr,
@@ -225,11 +225,11 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
     nd
   }
 
-  def hasNext = if (qu.isEmpty) {
+  def hasNext = if (qu.size == 0) {
     Stats.incr("bfs_walk_request_exhausted_2nd_degree", 1)
     false
   } else {
-    maxDepth.isEmpty || depth(qu.getInt(0)).get <= maxDepth.get
+    maxDepth.isEmpty || depth(qu.firstInt()).get <= maxDepth.get
   }
 }
 
