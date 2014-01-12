@@ -120,4 +120,19 @@ object ExecutorUtils {
 
     executorService.invokeAll(workTasks)
   }
+
+  /**
+   * Farm out separate threads using an ExecutorService to perform
+   * work on inputs. Unlike [[ExecutorUtils.parallelWork]], no values
+   * are returned. If an exception occurs in a worker thread, it is
+   * rethrown on the calling thread.
+   *  @param executorService the ExecutorService to use for parallelization
+   *  @param inputs a sequence of inputs to work on
+   *  @param work the work to apply to the inputs
+   */
+  def parallelForEach[T, A](executorService: ExecutorService, inputs: Seq[T],
+      work: T => A): Unit = {
+    import scala.collection.JavaConversions._
+    parallelWork(executorService, inputs, work) foreach { _.get }
+  }
 }
