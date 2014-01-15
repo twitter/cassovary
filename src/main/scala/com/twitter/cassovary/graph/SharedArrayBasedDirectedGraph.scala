@@ -135,7 +135,7 @@ object SharedArrayBasedDirectedGraph {
         }
       }
 
-      ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxId], Unit](
+      ExecutorUtils.parallelForEach[() => Iterator[NodeIdEdgesMaxId], Unit](
           executorService, iteratorSeq, readOutEdges)
     }
 
@@ -171,7 +171,7 @@ object SharedArrayBasedDirectedGraph {
             }
           }
         }
-        ExecutorUtils.parallelWork[Int, Unit](
+        ExecutorUtils.parallelForEach[Int, Unit](
             executorService, (0 until numOfShards), findInEdgeSizesTask)
         atomicIntArray
       }
@@ -196,7 +196,7 @@ object SharedArrayBasedDirectedGraph {
           }
         }
 
-        ExecutorUtils.parallelWork[Int, Unit](
+        ExecutorUtils.parallelForEach[Int, Unit](
             executorService, (0 until numOfShards), instantiateInEdgesTask)
       }
 
@@ -219,7 +219,7 @@ object SharedArrayBasedDirectedGraph {
             }
           }
         }
-        ExecutorUtils.parallelWork[Int, Unit](executorService, (0 until numOfShards), readInEdges)
+        ExecutorUtils.parallelForEach[Int, Unit](executorService, (0 until numOfShards), readInEdges)
       }
       Some(reverseEdges)
     } else None

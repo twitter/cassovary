@@ -116,6 +116,7 @@ object ArrayBasedDirectedGraph {
         (nodes: Seq[Node]) => {
           nodes foreach { node =>
             val nodeId = node.id
+            assert(table(nodeId) == null, "Duplicate node detected. (" + nodeId + ")")
             table(nodeId) = node
             nodeIdSet(nodeId) = 1
             storedGraphDir match {
@@ -127,7 +128,7 @@ object ArrayBasedDirectedGraph {
           }
         }
       }
-      ExecutorUtils.parallelWork[Seq[Node], Unit](executorService, nodesOutEdges, markAllNodes)
+      ExecutorUtils.parallelForEach[Seq[Node], Unit](executorService, nodesOutEdges, markAllNodes)
     }
 
     // creating nodes that have only in edges but no out edges
@@ -177,7 +178,7 @@ object ArrayBasedDirectedGraph {
             }
           }
         }
-        ExecutorUtils.parallelWork[Seq[Node], Unit](executorService, nodesOutEdges, readInEdges)
+        ExecutorUtils.parallelForEach[Seq[Node], Unit](executorService, nodesOutEdges, readInEdges)
       }
 
       def instantiateInEdges() {
@@ -197,7 +198,7 @@ object ArrayBasedDirectedGraph {
             }
           }
 
-          ExecutorUtils.parallelWork[Seq[Node], Unit](executorService, allNodes,
+          ExecutorUtils.parallelForEach[Seq[Node], Unit](executorService, allNodes,
               instantiateInEdgesTask)
         }
       }
@@ -225,7 +226,7 @@ object ArrayBasedDirectedGraph {
           }
         }
       }
-      ExecutorUtils.parallelWork[Seq[Node], Unit](executorService,
+      ExecutorUtils.parallelForEach[Seq[Node], Unit](executorService,
           nodesOutEdges, findInEdgeSizesTask)
       atomicIntArray
     }
