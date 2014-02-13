@@ -49,8 +49,8 @@ public class RandomWalk {
 
     // Generate walk parameters
     long numSteps = 1000 * 1000;
-    final scala.Option<Integer> wpNone = scala.Option.apply(null);
-    final scala.Option<Integer> wpTwo = scala.Option.apply(2);
+    final scala.Option<Object> wpNone = scala.Option.apply(null);
+    final scala.Option<Object> wpTwo = scala.Option.apply((Object)2);
     RandomWalkParams walkParams = new RandomWalkParams(numSteps, 0.1, wpNone, wpTwo, wpNone, false, GraphDir.OutDir(),
             false, false);
     GraphUtils graphUtils = new GraphUtils(graph);
