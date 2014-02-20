@@ -14,10 +14,9 @@ for updates.
 ## Quick Start and Examples
 See examples/ for some simple examples of using the library. Both Scala and Java examples are included.
 
-
 ## Building
 
-Cassovary has been tested with ```sbt``` version 0.12.1
+Cassovary is built using [sbt](https://github.com/sbt/sbt) and was tested last using sbt version 0.13.
 
 1. ```./sbt update``` (might take a couple of minutes)
 2. ```./sbt test```
@@ -76,7 +75,9 @@ Please report any bugs to: <https://github.com/twitter/cassovary/issues>
 * [Ning Liang](https://twitter.com/ningliang)
 * [Ajeet Grewal](https://twitter.com/ajeet)
 
+There are [many external contributors](https://github.com/twitter/cassovary/graphs/contributors) as well.
+
 ## License
-Copyright 2012 Twitter, Inc.
+Copyright 2014 Twitter, Inc.
 
 Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
