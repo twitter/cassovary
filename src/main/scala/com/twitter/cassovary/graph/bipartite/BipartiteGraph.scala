@@ -16,7 +16,7 @@ package com.twitter.cassovary.graph.bipartite
 import com.twitter.cassovary.graph.{Graph, GraphDir, StoredGraphDir, Node}
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.StoredGraphDir._
-import net.lag.logging.Logger
+import com.twitter.logging.Logger
 
 case class BipartiteGraphException(e: String) extends Exception(e)
 
@@ -124,7 +124,7 @@ class BipartiteGraph(val leftNodes: Array[BipartiteNode], val leftNodeCount: Int
          rightSide.nodes, rightSide.numOfNodes, rightSide.numOfOutEdges,
          bipartiteGraphDir)
 
-  private val log = Logger.get
+  private val log = Logger.get(getClass)
   val storedGraphDir =  StoredGraphDir.Bipartite
 
   /**

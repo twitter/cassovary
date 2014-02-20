@@ -19,7 +19,7 @@ import com.twitter.cassovary.graph.tourist.{IntInfoKeeper, PrevNbrCounter}
 import com.twitter.ostrich.stats.Stats
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue
 import it.unimi.dsi.fastutil.objects.ObjectArrayList
-import net.lag.logging.Logger
+import com.twitter.logging.Logger
 import scala.collection.mutable
 import scala.util.Random
 
@@ -174,7 +174,7 @@ class BreadthFirstTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
                             onlyOnce: Boolean, prevNbrCounter: Option[PrevNbrCounter])
     extends Traverser { self =>
 
-  private val log = Logger.get
+  private val log = Logger.get(getClass)
   // the number of items can be enqueued is bounded by maxSteps
   // because we never need to enqueue more than maxSteps items
   private var numEnqueuedEver = 0L

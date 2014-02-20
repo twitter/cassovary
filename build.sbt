@@ -4,25 +4,79 @@ version := "3.1.0"
 
 organization := "com.twitter"
 
-scalaVersion := "2.9.2"
+scalaVersion := "2.10.0"
 
 retrieveManaged := true
 
 resolvers += "Twitter Maven Repo" at "http://maven.twttr.com"
 
-libraryDependencies += "com.twitter" % "ostrich" % "4.8.0"
+resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-libraryDependencies += "com.twitter" % "util-core" % "4.0.3"
+libraryDependencies <+= scalaVersion { sv =>
+  val scalaVersionRegex = "(\\d+)\\.(\\d+).*".r
+  sv match {
+    case scalaVersionRegex(major, minor) if major.toInt > 2 || (major == "2" && minor.toInt >= 10) =>
+        "com.twitter" % "ostrich_2.10" % "9.1.0"
+    case _ => "com.twitter" % "ostrich" % "4.8.0"
+  }
+}
+ 
+libraryDependencies <+= scalaVersion { sv =>
+  val scalaVersionRegex = "(\\d+)\\.(\\d+).*".r
+  sv match {
+    case scalaVersionRegex(major, minor) if major.toInt > 2 || (major == "2" && minor.toInt >= 10) =>
+        "com.twitter" % "util-core_2.10" % "6.6.0"
+    case _ => "com.twitter" % "util-core_2.9.2" % "6.6.0"
+  }
+}
 
-libraryDependencies += "com.google.guava" % "guava" % "11.0.2" withSources()
+ 
+libraryDependencies <+= scalaVersion { sv =>
+  val scalaVersionRegex = "(\\d+)\\.(\\d+).*".r
+  sv match {
+    case scalaVersionRegex(major, minor) if major.toInt > 2 || (major == "2" && minor.toInt >= 10) =>
+        "com.google.guava" % "guava" % "14.0.1" withSources()
+    case _ => "com.google.guava" % "guava" % "11.0.2" withSources()
+  }
+}
+ 
+libraryDependencies <+= scalaVersion { sv =>
+  val scalaVersionRegex = "(\\d+)\\.(\\d+).*".r
+  sv match {
+    case scalaVersionRegex(major, minor) if major.toInt > 2 || (major == "2" && minor.toInt >= 10) =>
+        "it.unimi.dsi" % "fastutil" % "6.5.2" % "provided"
+    case _ => "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided"
+  }
+}
 
-libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided"
-
-libraryDependencies += "net.lag" % "configgy" % "2.0.2"
-
+libraryDependencies <+= scalaVersion { sv =>
+  val scalaVersionRegex = "(\\d+)\\.(\\d+).*".r
+  sv match {
+    case scalaVersionRegex(major, minor) if major.toInt > 2 || (major == "2" && minor.toInt >= 10) => 
+        "com.twitter" % "util-logging_2.10" % "6.6.0"
+    case _ => "com.twitter" % "util-logging_2.9.2" % "6.6.0"
+  }
+}
+ 
 libraryDependencies += "org.mockito" % "mockito-all" % "1.8.5" % "test" withSources()
 
-libraryDependencies += "org.scala-tools.testing" % "specs_2.9.1" % "1.6.9" % "test" withSources()
+libraryDependencies <+= scalaVersion { sv =>
+  val scalaVersionRegex = "(\\d+)\\.(\\d+).*".r
+  sv match {
+    case scalaVersionRegex(major, minor) if major.toInt > 2 || (major == "2" && minor.toInt >= 10) => 
+        "org.scala-tools.testing" % "specs_2.10" % "1.6.9" % "test" withSources()
+    case _ => "org.scala-tools.testing" % "specs_2.9.1" % "1.6.9" % "test" withSources()
+  }
+}
+
+libraryDependencies <+= scalaVersion { sv =>
+  val scalaVersionRegex = "(\\d+)\\.(\\d+).*".r
+  sv match {
+    case scalaVersionRegex(major, minor) if major.toInt > 2 || (major == "2" && minor.toInt >= 10) => 
+        "com.typesafe.akka" % "akka-actor-tests_2.10" % "2.1.0"
+    case _ => "com.typesafe.akka" % "akka-actor-tests" % "2.0.5"
+  }
+}
 
 publishMavenStyle := true
 
@@ -31,7 +85,7 @@ publishTo <<= version { (v: String) =>
   if (v.trim.endsWith("SNAPSHOT"))
     Some("snapshots" at nexus + "content/repositories/snapshots")
   else
-    Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+    Some("releases" at nexus + "service/local/staging/deploy/maven2")
 }
 
 publishArtifact in Test := false

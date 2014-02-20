@@ -14,7 +14,7 @@
 package com.twitter.cassovary.algorithms
 
 import com.twitter.cassovary.graph.{DirectedGraph, GraphDir}
-import net.lag.logging.Logger
+import com.twitter.logging.Logger
 import com.twitter.cassovary.util.Progress
 
 /**
@@ -62,7 +62,7 @@ object PageRank {
 
 private class PageRank(graph: DirectedGraph, params: PageRankParams) {
 
-  private val log = Logger.get("PageRank")
+  private val log = Logger.get(getClass)
 
   val dampingFactor = params.dampingFactor
   val dampingAmount = (1.0D - dampingFactor) / graph.nodeCount

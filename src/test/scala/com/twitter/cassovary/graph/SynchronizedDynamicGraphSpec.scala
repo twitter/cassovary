@@ -10,7 +10,7 @@
  * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
- */
+*/
 package com.twitter.cassovary.graph
 
 import org.specs.Specification
@@ -77,21 +77,30 @@ class SynchronizedDynamicGraphSpec extends Specification {
     graph.getNodeById(3).isDefined mustEqual false
   }
 
-  "multipe threads add nodes/edge simultaneously" in {
-    import scala.actors.Actor
-    import scala.actors.Actor._
+  "multipe threads add nodes/edge simultaneously" in { 
+    val versionNumber = scala.util.Properties.versionString.split(' ').toList(1).toString.split('.').toList(1)
 
+    import akka.actor._
+    import akka.actor.ActorDSL._
+    import akka.pattern.ask    
+    import akka.util.Timeout
+    import scala.concurrent._
+    import scala.concurrent.duration._
+
+    val system = ActorSystem("migration-system")
     val graph = new SynchronizedDynamicGraph()
-
     val numActors = 5
+
     val writers = (0 until numActors) map { n  =>
-      actor {
-        loop { receive {
-          case (i: Int, j: Int) => graph.addEdge(i, j)
-          case _: String => reply
-        }}
-      }
+      ActorDSL.actor(system)(new Actor {
+        def receive = {
+              case (i: Int, j: Int) => graph.addEdge(i, j)
+              case _: String => sender ! "default"
+        }
+      })
     }
+
+    implicit val timeout = Timeout(36500 days)
 
     val numLoop = 15
     (1 to numLoop) foreach { i =>
@@ -102,7 +111,9 @@ class SynchronizedDynamicGraphSpec extends Specification {
       writers(n) ! pair
     }
 
-    (0 until numActors) foreach { writers(_) !? "stop" }
+    (0 until numActors) foreach { j =>
+      Await.result((writers(j)?"stop"), Duration.Inf)
+    }
 
     graph.nodeCount mustEqual (numLoop + 1)
     (2 to numLoop) foreach { i =>
@@ -119,27 +130,36 @@ class SynchronizedDynamicGraphSpec extends Specification {
   }
 
   "multipe threads add/remove edge simultaneously" in {
-    import scala.actors.Actor
-    import scala.actors.Actor._
+    val versionNumber = scala.util.Properties.versionString.split(' ').toList(1).toString.split('.').toList(1)
 
+    import akka.actor._
+    import akka.actor.ActorDSL._
+    import akka.pattern.ask    
+    import akka.util.Timeout
+    import scala.concurrent._
+    import scala.concurrent.duration._
+
+    val system = ActorSystem("migration-system")
     val graph = new SynchronizedDynamicGraph()
+    val writer = ActorDSL.actor(system)(new Actor {
+      def receive = {
+            case (i: Int, j: Int) => {
+              graph.addEdge(i, j)
+            }
+            case _: String => sender ! "default"
+      }
+    })
 
-    val writer = actor {
-      loop { receive {
-        case (i: Int, j: Int) => {
-          graph.addEdge(i, j)
-        }
-        case _: String => reply
-      }}
-    }
-    val remover = actor {
-      loop { receive {
-        case (i: Int, j: Int) => {
-          graph.removeEdge(i, j)
-        }
-        case _: String => reply
-      }}
-    }
+    val remover = ActorDSL.actor(system)(new Actor {
+      def receive = {
+            case (i: Int, j: Int) => {
+              graph.removeEdge(i, j)
+            }
+            case _: String => sender ! "default"
+      }
+    })
+
+    implicit val timeout = Timeout(36500 days)
 
     val numLoop = 10
     (1 to numLoop) foreach { i =>
@@ -148,7 +168,7 @@ class SynchronizedDynamicGraphSpec extends Specification {
       val pair = (src, dest)
       writer ! pair
     }
-    writer !? "stop"
+    Await.result(writer ? "stop", Duration.Inf)
 
     (1 to numLoop) foreach { i =>
       val src = i
@@ -156,8 +176,8 @@ class SynchronizedDynamicGraphSpec extends Specification {
       val pair = (src, dest)
       remover ! pair
     }
-    remover !? "stop"
-
+    Await.result(remover ? "stop", Duration.Inf)
+    
     graph.nodeCount mustEqual 11
     (1 to numLoop + 1) foreach { i =>
       val node = graph.getNodeById(i).get
