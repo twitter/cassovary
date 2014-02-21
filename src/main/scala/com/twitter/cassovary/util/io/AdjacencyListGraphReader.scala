@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Twitter, Inc.
+ * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at
@@ -48,7 +48,7 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
    * Read in nodes and edges from a single file
    * @param filename Name of file to read from
    */
-  class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer) 
+  class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer)
                       extends Iterator[NodeIdEdgesMaxId] {
 
     private val outEdgePattern = """^(\d+)\s+(\d+)""".r

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Twitter, Inc.
+ * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at
@@ -18,10 +18,10 @@ import com.google.common.util.concurrent.MoreExecutors
 import com.twitter.cassovary.graph.node._
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.ExecutorUtils
+import com.twitter.logging.Logger
 import com.twitter.ostrich.stats.Stats
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import java.util.concurrent.{ExecutorService, Future}
-import net.lag.logging.Logger
 
 /**
  * provides methods for constructing a shared array based graph
@@ -139,7 +139,6 @@ object SharedArrayBasedDirectedGraph {
           executorService, iteratorSeq, readOutEdges)
     }
 
-    // count total number of nodes
     log.info("Count total number of nodes")
     Stats.time("graph_load_count_total_num_of_nodes") {
       for ( id <- 0 to maxNodeId )

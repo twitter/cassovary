@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Twitter, Inc.
+ * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at
@@ -15,8 +15,8 @@ package com.twitter.cassovary.graph.bipartite
 
 import com.twitter.cassovary.graph.util.SmallBoundedPriorityQueue
 import com.twitter.cassovary.graph.{GraphUtils, Node}
+import com.twitter.logging.Logger
 import com.twitter.ostrich.stats.Stats
-import net.lag.logging.Logger
 import scala.collection.mutable
 
 /**

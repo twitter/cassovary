@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Twitter, Inc.
+ * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at
@@ -16,7 +16,7 @@ package com.twitter.cassovary.graph.bipartite
 import com.twitter.cassovary.graph.{Graph, GraphDir, StoredGraphDir, Node}
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.StoredGraphDir._
-import net.lag.logging.Logger
+import com.twitter.logging.Logger
 
 case class BipartiteGraphException(e: String) extends Exception(e)
 

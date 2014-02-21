@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Twitter, Inc.
+ * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at
@@ -14,8 +14,8 @@
 package com.twitter.cassovary.algorithms
 
 import com.twitter.cassovary.graph.{DirectedGraph, GraphDir}
-import net.lag.logging.Logger
 import com.twitter.cassovary.util.Progress
+import com.twitter.logging.Logger
 
 /**
  * Parameters for PageRank
@@ -112,7 +112,7 @@ private class PageRank(graph: DirectedGraph, params: PageRankParams) {
       progress.inc
     }
 
-    log.info("Damping...")
+    log.debug("Damping...")
     val progress_damp = Progress("pagerank_damp", 65536, Some(graph.nodeCount))
     if (dampingAmount > 0) {
       graph.foreach { node =>

@@ -12,13 +12,11 @@ resolvers += "Twitter Maven Repo" at "http://maven.twttr.com"
 
 libraryDependencies += "com.twitter" % "ostrich" % "4.8.0"
 
-libraryDependencies += "com.twitter" % "util-core" % "4.0.3"
+libraryDependencies += "com.twitter" % "util-logging" % "6.8.1"
 
 libraryDependencies += "com.google.guava" % "guava" % "11.0.2" withSources()
 
 libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided"
-
-libraryDependencies += "net.lag" % "configgy" % "2.0.2"
 
 libraryDependencies += "org.mockito" % "mockito-all" % "1.8.5" % "test" withSources()
 

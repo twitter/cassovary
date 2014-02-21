@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Twitter, Inc.
+ * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at
@@ -18,10 +18,10 @@ import com.google.common.util.concurrent.MoreExecutors
 import com.twitter.cassovary.graph.node._
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.ExecutorUtils
+import com.twitter.logging.Logger
 import com.twitter.ostrich.stats.Stats
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ExecutorService, Future}
-import net.lag.logging.Logger
 import scala.collection.mutable
 
 /**

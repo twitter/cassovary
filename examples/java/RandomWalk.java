@@ -1,5 +1,5 @@
 /*
-* Copyright 2012 Twitter, Inc.
+* Copyright 2014 Twitter, Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 * file except in compliance with the License. You may obtain a copy of the License at
@@ -67,7 +67,7 @@ public class RandomWalk {
     // Sort neighbors (or nodes) in descending number of visits and take the top 10 neighbors
     List<Integer> topNeighbors = Ordering.natural().onResultOf(Functions.forMap(neighbors)).reverse()
             .immutableSortedCopy(neighbors.keySet());
-    
+
     if (topNeighbors.size() > 10) topNeighbors = topNeighbors.subList(0, 10);
 
     // Print the top 10 neighbors (and paths)
