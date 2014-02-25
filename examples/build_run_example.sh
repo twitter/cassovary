@@ -1,8 +1,6 @@
 #!/bin/bash
 
 BUILD_PACKAGE="build"
-SCALA_LIB_JAR="$HOME/.sbt/boot/scala-2.9.2/lib/scala-library.jar"
-echo "Using scala library $SCALA_LIB_JAR"
 
 COMPILER="$1"
 SUBDIR="$2"
@@ -33,6 +31,9 @@ if [ $BUILD_PACKAGE = build ]; then
     exit $SBT_PACKAGE_RET
   fi
 fi
+
+SCALA_LIB_JAR=$(find $root/lib_managed -name 'scala-library*.jar')
+echo "Using scala library $SCALA_LIB_JAR"
 
 JAVA_CP=(
   $(find $root/target -name 'cassovary*.jar') \
