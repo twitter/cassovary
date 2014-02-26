@@ -1,3 +1,7 @@
+import SonatypeKeys._
+
+sonatypeSettings
+
 name := "cassovary"
 
 version := "3.1.0"
