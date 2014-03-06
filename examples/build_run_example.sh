@@ -32,7 +32,7 @@ if [ $BUILD_PACKAGE = build ]; then
   fi
 fi
 
-SCALA_LIB_JAR=$(find $root/lib_managed -name 'scala-library*.jar')
+SCALA_LIB_JAR=$(find $root/lib_managed -name 'scala-library*.jar' | head -1)
 echo "Using scala library $SCALA_LIB_JAR"
 
 JAVA_CP=(

@@ -9,7 +9,7 @@ object Cassovary extends Build {
   val sharedSettings = Seq(
     version := "3.1.1",
     organization := "com.twitter",
-    scalaVersion := "2.9.2",
+    scalaVersion := "2.9.3",
     retrieveManaged := true,
 //    crossScalaVersions := Seq("2.9.2", "2.10.3"),
     // Workaround for a scaladoc bug which causes it to choke on
