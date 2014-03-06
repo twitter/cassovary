@@ -13,10 +13,15 @@
  */
 package com.twitter.cassovary.graph
 
+import java.util.concurrent.Executors
 import org.specs.Specification
 import StoredGraphDir._
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration.Duration
 
 class SynchronizedDynamicGraphSpec extends Specification {
+  implicit val ecctxt = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(4))
+
   "Add new nodes" in {
     val graph = new SynchronizedDynamicGraph()
     graph.nodeCount mustEqual 0
@@ -77,38 +82,29 @@ class SynchronizedDynamicGraphSpec extends Specification {
     graph.getNodeById(3).isDefined mustEqual false
   }
 
-  "multipe threads add nodes/edge simultaneously" in {
-    import scala.actors.Actor
-    import scala.actors.Actor._
-
-    val graph = new SynchronizedDynamicGraph()
-
-    val numActors = 5
-    val writers = (0 until numActors) map { n  =>
-      actor {
-        loop { receive {
-          case (i: Int, j: Int) => graph.addEdge(i, j)
-          case _: String => reply
-        }}
-      }
+  class asyncGraph extends SynchronizedDynamicGraph() {
+    def addEdgeAsync(i: Int, j: Int) = Future {
+      addEdge(i, j)
     }
 
-    val numLoop = 15
-    (1 to numLoop) foreach { i =>
-      val src = i
-      val dest = i + 1
-      val pair = (src, dest)
-      val n = i % numActors
-      writers(n) ! pair
+    def removeEdgeAsync(i: Int, j: Int) = Future {
+      removeEdge(i, j)
     }
+  }
 
-    (0 until numActors) foreach { writers(_) !? "stop" }
-
+  "multiple threads add nodes/edges simultaneously" in {
+    val numLoop = 20
+    val graph = new asyncGraph
+    val fs = (1 to numLoop) map {
+      i => graph.addEdgeAsync(i, i + 1)
+    }
+    Await.ready(Future.sequence(fs), Duration.Inf)
     graph.nodeCount mustEqual (numLoop + 1)
-    (2 to numLoop) foreach { i =>
-      val node = graph.getNodeById(i).get
-      node.inboundNodes.toList mustEqual List(i - 1)
-      node.outboundNodes.toList mustEqual List(i + 1)
+    (2 to numLoop) foreach {
+      i =>
+        val node = graph.getNodeById(i).get
+        node.inboundNodes.toList mustEqual List(i - 1)
+        node.outboundNodes.toList mustEqual List(i + 1)
     }
     val node1 = graph.getNodeById(1).get
     node1.inboundNodes.toList mustEqual List()
@@ -118,51 +114,23 @@ class SynchronizedDynamicGraphSpec extends Specification {
     nodeLast.outboundNodes.toList mustEqual List()
   }
 
-  "multipe threads add/remove edge simultaneously" in {
-    import scala.actors.Actor
-    import scala.actors.Actor._
-
-    val graph = new SynchronizedDynamicGraph()
-
-    val writer = actor {
-      loop { receive {
-        case (i: Int, j: Int) => {
-          graph.addEdge(i, j)
+  "multiple threads add and remove nodes/edges simultaneously" in {
+    val numLoop = 20
+    val graph = new asyncGraph
+    val fs = (1 to numLoop) map {
+      i =>
+        graph.addEdgeAsync(i, i + 1) flatMap {
+          case _ => graph.removeEdgeAsync(i, i + 1)
         }
-        case _: String => reply
-      }}
     }
-    val remover = actor {
-      loop { receive {
-        case (i: Int, j: Int) => {
-          graph.removeEdge(i, j)
-        }
-        case _: String => reply
-      }}
-    }
+    Await.ready(Future.sequence(fs), Duration.Inf)
 
-    val numLoop = 10
-    (1 to numLoop) foreach { i =>
-      val src = i
-      val dest = i + 1
-      val pair = (src, dest)
-      writer ! pair
-    }
-    writer !? "stop"
-
-    (1 to numLoop) foreach { i =>
-      val src = i
-      val dest = i + 1
-      val pair = (src, dest)
-      remover ! pair
-    }
-    remover !? "stop"
-
-    graph.nodeCount mustEqual 11
-    (1 to numLoop + 1) foreach { i =>
-      val node = graph.getNodeById(i).get
-      node.inboundNodes.toList mustEqual List()
-      node.outboundNodes.toList mustEqual List()
+    graph.nodeCount mustEqual (numLoop + 1)
+    (1 to numLoop + 1) foreach {
+      i =>
+        val node = graph.getNodeById(i).get
+        node.inboundNodes.toList mustEqual List()
+        node.outboundNodes.toList mustEqual List()
     }
   }
 }

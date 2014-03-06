@@ -11,7 +11,7 @@ object Cassovary extends Build {
     organization := "com.twitter",
     scalaVersion := "2.9.3",
     retrieveManaged := true,
-//    crossScalaVersions := Seq("2.9.2", "2.10.3"),
+//    crossScalaVersions := Seq("2.9.3", "2.10.3"),
     // Workaround for a scaladoc bug which causes it to choke on
     // empty classpaths.
     //unmanagedClasspath in Compile += Attributed.blank(new java.io.File("doesnotexist")),
