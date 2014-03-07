@@ -9,19 +9,31 @@ object Cassovary extends Build {
   val sharedSettings = Seq(
     version := "3.1.1",
     organization := "com.twitter",
-    scalaVersion := "2.9.3",
+    scalaVersion := "2.10.3",
     retrieveManaged := true,
-//    crossScalaVersions := Seq("2.9.3", "2.10.3"),
+    crossScalaVersions := Seq("2.9.3","2.10.3"),
     // Workaround for a scaladoc bug which causes it to choke on
     // empty classpaths.
     //unmanagedClasspath in Compile += Attributed.blank(new java.io.File("doesnotexist")),
     libraryDependencies ++= Seq(
-      "com.twitter" % "ostrich" % "4.8.0",
-      "com.twitter" % "util-logging" % "6.8.1",
       "com.google.guava" % "guava" % "11.0.2",
       "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided",
       "org.mockito" % "mockito-all" % "1.8.5" % "test",
-      "org.scala-tools.testing" % "specs_2.9.1" % "1.6.9" % "test"
+      "com.twitter" %% "ostrich" % "9.1.0" cross CrossVersion.binaryMapped {
+        case "2.9.3" => "2.9.2"
+        case x if x startsWith "2.10" => "2.10"
+        case x => x
+      },
+      "com.twitter" %% "util-logging" % "6.12.1" cross CrossVersion.binaryMapped {
+        case "2.9.3" => "2.9.2"
+        case x if x startsWith "2.10" => "2.10"
+        case x => x
+      },
+      "org.scala-tools.testing" %% "specs" % "1.6.9" % "test" cross CrossVersion.binaryMapped {
+        case "2.9.3" => "2.9.1"
+        case x if x startsWith "2.10" => "2.10"
+        case x => x
+      }
     ),
     resolvers += "twitter repo" at "http://maven.twttr.com",
 
