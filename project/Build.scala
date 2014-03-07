@@ -20,18 +20,18 @@ object Cassovary extends Build {
       "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided",
       "org.mockito" % "mockito-all" % "1.8.5" % "test",
       "com.twitter" %% "ostrich" % "9.1.0" cross CrossVersion.binaryMapped {
-        case "2.9.1" => "2.9.2"
         case "2.9.3" => "2.9.2"
+        case x if x startsWith "2.10" => "2.10"
         case x => x
       },
-      "com.twitter" %% "util-logging" % "6.6.0" cross CrossVersion.binaryMapped {
-        case "2.9.1" => "2.9.2"
+      "com.twitter" %% "util-logging" % "6.12.1" cross CrossVersion.binaryMapped {
         case "2.9.3" => "2.9.2"
+        case x if x startsWith "2.10" => "2.10"
         case x => x
       },
       "org.scala-tools.testing" %% "specs" % "1.6.9" % "test" cross CrossVersion.binaryMapped {
-        case "2.9.2" => "2.9.1"
         case "2.9.3" => "2.9.1"
+        case x if x startsWith "2.10" => "2.10"
         case x => x
       }
     ),
