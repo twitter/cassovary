@@ -7,9 +7,9 @@ import SonatypeKeys._
 object Cassovary extends Build {
 
   val sharedSettings = Seq(
-    version := "3.1.1",
+    version := "3.2.0",
     organization := "com.twitter",
-    scalaVersion := "2.10.3",
+    scalaVersion := "2.9.3",
     retrieveManaged := true,
     crossScalaVersions := Seq("2.9.3","2.10.3"),
     // Workaround for a scaladoc bug which causes it to choke on

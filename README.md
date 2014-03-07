@@ -27,6 +27,12 @@ Cassovary is built using [sbt](https://github.com/sbt/sbt) and was tested last u
 2. ```cd ../<dependant project>```
 3. ```./sbt update```
 
+## Using maven published version of library
+
+Cassovary is published to maven central with crosspath scala versions 2.9.3 and 2.10.x. To use with sbt, use:
+
+```libraryDependencies += "com.twitter" %% "cassovary" % "3.2.0"```
+
 ## Comparison to Other Graph Libraries
 There are many excellent graph mining libraries already in existence. Most of
 them have one or more of the following characteristics:

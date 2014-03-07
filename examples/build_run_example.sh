@@ -3,9 +3,10 @@
 BUILD_PACKAGE="build"
 
 COMPILER="$1"
-SUBDIR="$2"
-EXAMPLE="$3"
-NUM_NODES=$4
+SCALA_VERSION="$2"
+SUBDIR="$3"
+EXAMPLE="$4"
+NUM_NODES=$5
 
 
 root=$(
@@ -17,14 +18,15 @@ cd $root
 
 if [ $BUILD_PACKAGE = build ]; then
   echo Downloading dependent jars...
-  $root/sbt update
+  $root/sbt clean
+  $root/sbt ++$SCALA_VERSION update
   SBT_UPDATE_RET=$?
   if [ $SBT_UPDATE_RET -ne 0 ]; then
      echo "Error: Downloading dependent jars failed with exit code $SBT_UPDATE_RET"
      exit $SBT_UPDATE_RET
   fi
-  echo Building Cassovary jar...
-  $root/sbt package
+  echo Building Cassovary jar for scala version $SCALA_VERSION...
+  $root/sbt ++$SCALA_VERSION package
   SBT_PACKAGE_RET=$?
   if [ $SBT_PACKAGE_RET -ne 0 ]; then
     echo "Error: Building Cassovary jar failed with exit code $SBT_PACKAGE_RET"
@@ -32,7 +34,7 @@ if [ $BUILD_PACKAGE = build ]; then
   fi
 fi
 
-SCALA_LIB_JAR=$(find $root/lib_managed -name 'scala-library*.jar' | head -1)
+SCALA_LIB_JAR=$(find $root/lib_managed -name "scala-library-$SCALA_VERSION.jar" | head -1)
 echo "Using scala library $SCALA_LIB_JAR"
 
 JAVA_CP=(

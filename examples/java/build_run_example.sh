@@ -17,4 +17,4 @@ else
   shift
 fi
 
-$(dirname $0)/../build_run_example.sh $COMPILER $SUBDIR $EXAMPLE $NUM_NODES
+$(dirname $0)/../build_run_example.sh $COMPILER "2.9.3" $SUBDIR $EXAMPLE $NUM_NODES
