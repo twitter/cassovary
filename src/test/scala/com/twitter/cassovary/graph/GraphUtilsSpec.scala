@@ -16,6 +16,7 @@ package com.twitter.cassovary.graph
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.util.FastUtilConversion
 import com.twitter.util.Duration
+import com.twitter.util.Stopwatch
 import it.unimi.dsi.fastutil.ints.Int2IntMap
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 import org.specs.Specification
@@ -194,10 +195,9 @@ class GraphUtilsSpec extends Specification {
       val walkParams = GraphUtils.RandomWalkParams(numWalkSteps, resetProb, None,
         Some(numWalkSteps.toInt), None, false, GraphDir.OutDir, false)
       (1 to (numTimes + ignoreFirstNum)) foreach { times =>
-        val (walk, duration) = Duration.inMilliseconds {
-          graphUtils.randomWalk(OutDir, Seq(startNodeId), walkParams)
-        }
-
+        val elapsed: () => Duration = Stopwatch.start()
+        val walk = graphUtils.randomWalk(OutDir, Seq(startNodeId), walkParams)
+        val duration: Duration = elapsed()
         val (visitsCounter, pathsCounterOption) = walk
         visitsCounter.infoAllNodes.size must be_> (graph.getNodeById(startNodeId).get.outboundCount)
         if (times > ignoreFirstNum) {

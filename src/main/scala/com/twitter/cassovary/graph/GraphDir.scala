@@ -16,7 +16,7 @@ package com.twitter.cassovary.graph
 /**
  * A representation of the two directions edges point in a directed graph.
  */
-object GraphDir extends Enumeration(0, "OutDir", "InDir") {
+object GraphDir extends Enumeration {
   type GraphDir = Value
 
   /**

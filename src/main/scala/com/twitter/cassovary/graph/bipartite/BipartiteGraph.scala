@@ -128,7 +128,7 @@ class BipartiteGraph(val leftNodes: Array[BipartiteNode], val leftNodeCount: Int
   val storedGraphDir =  StoredGraphDir.Bipartite
 
   /**
-   * Checks for a given ndoe, is a graph direction is stored.
+   * Checks for a given node, is a graph direction is stored.
    * e.g., if the node being queries is a left node, and the asked for direction is OutDir,
    * then if the graph's stored direction is LeftToRight or Both, then this function returns true,
    * false otherwise.
@@ -141,6 +141,7 @@ class BipartiteGraph(val leftNodes: Array[BipartiteNode], val leftNodeCount: Int
         case (true, GraphDir.OutDir) => bipartiteGraphDir == BipartiteGraphDir.LeftToRight
         case (false, GraphDir.InDir) => bipartiteGraphDir == BipartiteGraphDir.LeftToRight
         case (false, GraphDir.OutDir) => bipartiteGraphDir == BipartiteGraphDir.RightToLeft
+        case (_, _) => false
       }
     }
   }
