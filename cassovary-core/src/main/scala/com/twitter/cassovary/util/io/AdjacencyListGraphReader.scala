@@ -49,7 +49,7 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
    * @param filename Name of file to read from
    */
   class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer)
-                      extends Iterator[NodeIdEdgesMaxId] {
+                      extends ShardReader {
 
     private val outEdgePattern = """^(\d+)\s+(\d+)""".r
     private val lines = Source.fromFile(filename).getLines()
@@ -79,34 +79,17 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
       holder.maxId = newMaxId
       holder
     }
-
   }
 
-  /**
-   * Read in nodes and edges from multiple files
-   * @param directory Directory to read from
-   * @param prefixFileNames the string that each part file starts with
-   */
-  class ShardsReader(directory: String, prefixFileNames: String = "") {
-    val dir = new File(directory)
-
-    def readers: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
-      val validFiles = dir.list().flatMap({ filename =>
-        if (filename.startsWith(prefixFileNames)) {
-          Some(filename)
-        }
-        else {
-          None
-        }
-      })
-      validFiles.map({ filename =>
-      {() => new OneShardReader(directory + "/" + filename, nodeRenumberer)}
-      }).toSeq
-    }
+  object OneShardReader extends ShardReaderCompanion {
+    def apply(filename : String, nodeRenumberer : NodeRenumberer) =
+      new OneShardReader(filename, nodeRenumberer)
   }
+
+  override val shardReaderCompanion = OneShardReader
 
   def iteratorSeq = {
-    new ShardsReader(directory, prefixFileNames).readers
+    new ShardsReader(directory, prefixFileNames, nodeRenumberer).readers
   }
 
 }

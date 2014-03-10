@@ -18,27 +18,10 @@ import com.twitter.cassovary.util.{NodeRenumberer,SequentialNodeRenumberer}
 import java.util.concurrent.Executors
 import org.specs.Specification
 
-class AdjacencyListGraphReaderSpec extends Specification  {
+class AdjacencyListGraphReaderSpec extends Specification with GraphMapEquality {
 
   val nodeMap = Map( 10 -> List(11, 12, 13), 11 -> List(12, 14), 12 -> List(14),
     13 -> List(12, 14), 14 -> List(15), 15 -> List(10, 11))
-
-  /**
-   * Compares the nodes in a graph and those defined by the nodeMap (id -> ids of neighbors),
-   * and ensures that these are equivalent
-   * @param g DirectedGraph
-   * @param nodeMap Map of node ids to ids of its neighbors
-   */
-  def nodeMapEquals(g:DirectedGraph, nodeMap: Map[Int, List[Int]]) = {
-    g.foreach { node =>
-      nodeMap.contains(node.id) mustBe true
-      val neighbors = node.outboundNodes()
-      val nodesInMap = nodeMap(node.id)
-      nodesInMap.foreach { i => neighbors.contains(i) mustBe true }
-      neighbors.foreach { i => nodesInMap.contains(i) mustBe true }
-    }
-    nodeMap.keys.foreach { id => g.existsNodeId(id) mustBe true }
-  }
 
   /**
    * Compares the nodes in a graph and those defined by the nodeMap (id -> ids of neighbors),
