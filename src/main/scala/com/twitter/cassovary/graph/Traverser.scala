@@ -37,8 +37,9 @@ trait Traverser extends Iterator[Node] { self =>
 /**
  * Bounds an iterator to go no more than a specified maximum number of steps
  */
-trait BoundedIterator[T] extends {  private var numStepsTaken = 0L } with Iterator[T] {
+trait BoundedIterator[T] extends Iterator[T] {
   val maxSteps: Long
+  private var numStepsTaken = 0L
 
   abstract override def next = {
     numStepsTaken += 1
