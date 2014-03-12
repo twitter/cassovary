@@ -103,6 +103,7 @@ object Cassovary extends Build {
     settings = Project.defaultSettings ++ sharedSettings ++ sonatypeSettings
   ).settings(
     name := "cassovary-examples",
+    publish := {},
     libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.4.4"
   ).dependsOn(cassovaryCore)
 }
