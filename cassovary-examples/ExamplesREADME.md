@@ -3,7 +3,7 @@
 In the `src/main/java` and `src/main/scala` sub-directories here, we've included a few examples to help you get started.
 
 ## Building using SBT
-In the main project folder type `sbt` to enter sbt interactive mode. Move to examples using
+In the main project folder type `./sbt` to enter sbt interactive mode. Move to examples using
 `project cassovary-examples`. Now by typing `run` you can see and choose an example you would like to run.
 You can also use `run ExampleClassName parameters` to run particular example.
 
