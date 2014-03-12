@@ -24,7 +24,7 @@ Cassovary is built using [sbt](https://github.com/sbt/sbt) and was tested last u
 
 ## Alternative for using for local projects
 1. ```./sbt publish-local```
-2. ```cd ../<dependant project>```
+2. ```cd ../<dependent project>```
 3. ```./sbt update```
 
 ## Using maven published version of library
@@ -32,6 +32,11 @@ Cassovary is built using [sbt](https://github.com/sbt/sbt) and was tested last u
 Cassovary is published to maven central with crosspath scala versions 2.9.3 and 2.10.x. To use with sbt, use:
 
 ```libraryDependencies += "com.twitter" %% "cassovary" % "3.2.0"```
+
+The only dependency that Cassovary uses which is not bundled with it because of its size is ```it.unimi.dsi.fastutil```.
+You can add that dependency in your sbt project as follows:
+
+```libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.4.4"```
 
 ## Comparison to Other Graph Libraries
 There are many excellent graph mining libraries already in existence. Most of
