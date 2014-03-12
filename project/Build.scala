@@ -81,7 +81,29 @@ object Cassovary extends Build {
     }
   )
 
-  lazy val root = Project(id = "cassovary",
-                          base = file("."),
-                          settings = Project.defaultSettings ++ sharedSettings ++ sonatypeSettings)
+  lazy val root = Project(
+    id = "cassovary",
+    base = file("."),
+    settings = Project.defaultSettings ++ sharedSettings ++ sonatypeSettings
+  ).aggregate(
+      cassovaryCore, cassovaryExamples
+    )
+
+  lazy val cassovaryCore = Project(
+    id = "cassovary-core",
+    base = file("cassovary-core"),
+    settings = Project.defaultSettings ++ sharedSettings ++ sonatypeSettings
+  ).settings(
+    name := "cassovary-core"
+  )
+
+  lazy val cassovaryExamples = Project(
+    id = "cassovary-examples",
+    base = file("cassovary-examples"),
+    settings = Project.defaultSettings ++ sharedSettings ++ sonatypeSettings
+  ).settings(
+    name := "cassovary-examples",
+    publish := {},
+    libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.4.4"
+  ).dependsOn(cassovaryCore)
 }

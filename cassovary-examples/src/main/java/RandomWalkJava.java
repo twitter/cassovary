@@ -37,7 +37,7 @@ import java.util.TreeMap;
 import scala.Option;
 import scala.Tuple2;
 
-public class RandomWalk {
+public class RandomWalkJava {
 
   public static void main(String[] args) {
     int numNodes = 3;

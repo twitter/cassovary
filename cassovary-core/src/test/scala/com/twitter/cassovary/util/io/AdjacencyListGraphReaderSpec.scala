@@ -64,7 +64,7 @@ class AdjacencyListGraphReaderSpec extends Specification  {
 
     doBefore{
       // Example using 2 threads to read in the graph
-      graph = new AdjacencyListGraphReader("src/test/resources/graphs/", "toy_6nodes_adj") {
+      graph = new AdjacencyListGraphReader("cassovary-core/src/test/resources/graphs/", "toy_6nodes_adj") {
           override val executorService = Executors.newFixedThreadPool(2)
         }.toSharedArrayBasedDirectedGraph()
     }
@@ -85,7 +85,8 @@ class AdjacencyListGraphReaderSpec extends Specification  {
     var seqRenumberer = new SequentialNodeRenumberer()
 
     doBefore{
-      graph = new AdjacencyListGraphReader("src/test/resources/graphs/", "toy_6nodes_adj", seqRenumberer) {
+      graph = new AdjacencyListGraphReader("cassovary-core/src/test/resources/graphs/", "toy_6nodes_adj",
+        seqRenumberer) {
           override val executorService = Executors.newFixedThreadPool(2)
         }.toSharedArrayBasedDirectedGraph()
     }
