@@ -23,7 +23,7 @@ import com.twitter.cassovary.graph.TestGraphs;
 
 import java.lang.System;
 
-public class HelloGraph {
+public class HelloGraphJava {
 	public static void main(String[] args){
 		int numNodes = 3;
 		if (args.length > 0) numNodes = Integer.parseInt(args[0]);

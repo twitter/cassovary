@@ -26,7 +26,7 @@ import java.util.concurrent.Executors
 
 object HelloLoadGraph {
   def main(args: Array[String]) {
-    val graph = new AdjacencyListGraphReader("../../src/test/resources/graphs/", "toy_6nodes_adj") {
+    val graph = new AdjacencyListGraphReader("cassovary-core/src/test/resources/graphs/", "toy_6nodes_adj") {
       override val executorService = Executors.newFixedThreadPool(2)
     }.toArrayBasedDirectedGraph()
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 COMPILER="javac"
-SUBDIR="examples/java"
+SUBDIR="cassovary-examples/src/main/java"
 
 if [ -z "$1" ]; then
   EXAMPLE=HelloGraph.java
@@ -17,4 +17,4 @@ else
   shift
 fi
 
-$(dirname $0)/../build_run_example.sh $COMPILER "2.9.3" $SUBDIR $EXAMPLE $NUM_NODES
+$(dirname $0)/../../../build_run_example.sh $COMPILER "2.9.3" $SUBDIR $EXAMPLE $NUM_NODES
