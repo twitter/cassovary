@@ -15,7 +15,6 @@ package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
 import com.twitter.cassovary.util.{NodeRenumberer,SequentialNodeRenumberer}
-import java.io.File
 import scala.io.Source
 
 /**
@@ -49,7 +48,7 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
    * @param filename Name of file to read from
    */
   class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer)
-                      extends ShardReader {
+                      extends Iterator[NodeIdEdgesMaxId] {
 
     private val outEdgePattern = """^(\d+)\s+(\d+)""".r
     private val lines = Source.fromFile(filename).getLines()
@@ -81,14 +80,14 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
     }
   }
 
-  object OneShardReader extends ShardReaderCompanion {
-    def apply(filename : String, nodeRenumberer : NodeRenumberer) =
-      new OneShardReader(filename, nodeRenumberer)
+  override def oneShardReader(filename : String, nodeRenumberer : NodeRenumberer) : Iterator[NodeIdEdgesMaxId] = {
+    new OneShardReader(filename, nodeRenumberer)
   }
 
-  override val shardReaderCompanion = OneShardReader
-
-  def iteratorSeq = {
+  /**
+   * Should return a sequence of iterators over NodeIdEdgesMaxId objects
+   */
+  override def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
     new ShardsReader(directory, prefixFileNames, nodeRenumberer).readers
   }
 

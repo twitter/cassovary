@@ -15,9 +15,9 @@ package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.util.NodeRenumberer
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
+import it.unimi.dsi.fastutil.ints.{Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
 import scala.io.Source
 import scala.collection.mutable.ListBuffer
-import it.unimi.dsi.fastutil.ints.{Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
 
 /**
  * Reads in a multi-line list of edges from multiple files in a directory.
@@ -36,17 +36,17 @@ import it.unimi.dsi.fastutil.ints.{Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
  * In this file, node 1 has two outgoing edges (to 3 and 5), node 2 has an outgoing edge
  * to node 4 and node 4 has an outgoing edge to node 3.
  *
- * Note that, it is recommended to use AdjacencyListGraphReader, because of .
+ * Note that, it is recommended to use AdjacencyListGraphReader, because of its efficiency.
  *
  * @param directory the directory to read from
  * @param prefixFileNames the string that each part file starts with
  */
 class ListOfEdgesGraphReader(directory: String, prefixFileNames: String,
-                             nodeRenumberer: NodeRenumberer = new NodeRenumberer.Identity()
-                              ) extends GraphReader {
+                             nodeRenumberer: NodeRenumberer = new NodeRenumberer.Identity())
+    extends GraphReader {
 
   class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer)
-    extends ShardReader {
+    extends Iterator[NodeIdEdgesMaxId] {
 
     private val holder = NodeIdEdgesMaxId(-1, null, -1)
 
@@ -86,16 +86,14 @@ class ListOfEdgesGraphReader(directory: String, prefixFileNames: String,
     }
   }
 
-  object OneShardReader extends ShardReaderCompanion {
-    def apply(filename: String, nodeRenumberer: NodeRenumberer) = {
-      new OneShardReader(filename, nodeRenumberer)
-    }
+  override def oneShardReader(filename : String, nodeRenumberer : NodeRenumberer) : Iterator[NodeIdEdgesMaxId] = {
+    new OneShardReader(filename, nodeRenumberer)
   }
 
-  override val shardReaderCompanion = OneShardReader
-
+  /**
+   * Should return a sequence of iterators over NodeIdEdgesMaxId objects
+   */
   override def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
     new ShardsReader(directory, prefixFileNames, nodeRenumberer).readers
   }
-
 }

@@ -13,13 +13,13 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph._
 import com.google.common.util.concurrent.MoreExecutors
+import com.twitter.cassovary.graph._
 import com.twitter.cassovary.graph.StoredGraphDir
 import com.twitter.cassovary.graph.StoredGraphDir.StoredGraphDir
-import java.util.concurrent.ExecutorService
-import java.io.File
 import com.twitter.cassovary.util.NodeRenumberer
+import java.io.File
+import java.util.concurrent.ExecutorService
 
 /**
  * Trait that classes should implement to read in graphs.
@@ -35,6 +35,12 @@ import com.twitter.cassovary.util.NodeRenumberer
  * One useful reference implementation is AdjacencyListGraphReader.
  */
 trait GraphReader {
+
+  /**
+   * Returns a reader for a given file (shard).
+   */
+  def oneShardReader(filename : String, nodeRenumberr : NodeRenumberer)
+    : Iterator[NodeIdEdgesMaxId]
 
   /**
    * Should return a sequence of iterators over NodeIdEdgesMaxId objects
@@ -67,13 +73,6 @@ trait GraphReader {
     SharedArrayBasedDirectedGraph(iteratorSeq, executorService, storedGraphDir, numShards)
   }
 
-  trait ShardReader extends Iterator[NodeIdEdgesMaxId]
-
-  trait ShardReaderCompanion {
-    def apply(filename : String, nodeRenumberer : NodeRenumberer) : ShardReader
-  }
-
-  val shardReaderCompanion : ShardReaderCompanion
 
   /**
    * Read in nodes and edges from multiple files. Use shardReaderCompanion
@@ -95,7 +94,7 @@ trait GraphReader {
         }
       })
       validFiles.map({ filename =>
-      {() => shardReaderCompanion(directory + "/" + filename, nodeRenumberer)}
+      {() => oneShardReader(directory + "/" + filename, nodeRenumberer)}
       }).toSeq
     }
   }
