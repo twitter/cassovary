@@ -19,7 +19,7 @@
 
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.twitter.cassovary.graph.{DirectedPath, GraphUtils, TestGraphs}
-import com.twitter.util.Duration
+import com.twitter.util.{Duration, Stopwatch}
 import scala.collection.JavaConversions._
 
 object RandomWalk {
@@ -34,12 +34,12 @@ object RandomWalk {
     val walkParams = RandomWalkParams(numSteps, 0.1, None, Some(2))
     val graphUtils = new GraphUtils(graph)
     printf("Now doing a random walk of %s steps from Node 0...\n", numSteps)
-    val ((topNeighbors, paths), duration) = Duration.inMilliseconds {
-      graphUtils.calculatePersonalizedReputation(0, walkParams)
-    }
+    val elapsed = Stopwatch.start()
+    val (topNeighbors, paths) = graphUtils.calculatePersonalizedReputation(0, walkParams)
+    val duration = elapsed()
     printf("Random walk visited %s nodes in %s ms:\n", topNeighbors.size, duration.inMillis.toInt)
     printf("%8s%10s\t%s\n", "NodeId", "#Visits", "Top 2 Paths with counts")
-    topNeighbors.toList.sort((x1, x2) => x2._2.intValue < x1._2.intValue).take(10).foreach { case (id, numVisits) =>
+    topNeighbors.toList.sortWith((x1, x2) => x2._2.intValue < x1._2.intValue).take(10).foreach { case (id, numVisits) =>
       if (paths.isDefined) {
         val topPaths = paths.get.get(id).map { case (DirectedPath(nodes), count) =>
           nodes.mkString("->") + " (%s)".format(count)

@@ -7,14 +7,11 @@ import SonatypeKeys._
 object Cassovary extends Build {
 
   val sharedSettings = Seq(
-    version := "3.2.0",
+    version := "3.3.0",
     organization := "com.twitter",
     scalaVersion := "2.9.3",
     retrieveManaged := true,
     crossScalaVersions := Seq("2.9.3","2.10.3"),
-    // Workaround for a scaladoc bug which causes it to choke on
-    // empty classpaths.
-    //unmanagedClasspath in Compile += Attributed.blank(new java.io.File("doesnotexist")),
     libraryDependencies ++= Seq(
       "com.google.guava" % "guava" % "11.0.2",
       "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided",
@@ -100,10 +97,9 @@ object Cassovary extends Build {
   lazy val cassovaryExamples = Project(
     id = "cassovary-examples",
     base = file("cassovary-examples"),
-    settings = Project.defaultSettings ++ sharedSettings ++ sonatypeSettings
+    settings = Project.defaultSettings ++ sharedSettings
   ).settings(
     name := "cassovary-examples",
-    publish := {},
-    libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.4.4"
+    libraryDependencies ++= Seq("it.unimi.dsi" % "fastutil" % "6.4.4")
   ).dependsOn(cassovaryCore)
 }

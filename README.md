@@ -12,7 +12,10 @@ Please follow the cassovary project on twitter at [@cassovary](https://twitter.c
 for updates.
 
 ## Quick Start and Examples
-See examples/ for some simple examples of using the library. Both Scala and Java examples are included.
+There is a subproject included here called cassovary-examples containing simple java and scala
+examples of using the library. See
+[this README](https://github.com/twitter/cassovary/blob/master/cassovary-examples/ExamplesREADME.md)
+to get started with the examples.
 
 ## Building
 
