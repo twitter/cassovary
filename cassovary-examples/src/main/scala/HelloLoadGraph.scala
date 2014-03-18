@@ -26,11 +26,13 @@ import java.util.concurrent.Executors
 
 object HelloLoadGraph {
   def main(args: Array[String]) {
+    val threadPool = Executors.newFixedThreadPool(2)
     val graph = new AdjacencyListGraphReader("cassovary-core/src/test/resources/graphs/", "toy_6nodes_adj") {
-      override val executorService = Executors.newFixedThreadPool(2)
+      override val executorService = threadPool
     }.toArrayBasedDirectedGraph()
 
     printf("\nHello Graph!\n\tA graph loaded from two adjacency list files with %s nodes has %s directed edges.\n",
       graph.nodeCount, graph.edgeCount)
+    threadPool.shutdown()
   }
 }
