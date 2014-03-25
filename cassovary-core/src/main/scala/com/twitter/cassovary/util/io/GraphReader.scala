@@ -35,17 +35,15 @@ import java.util.concurrent.ExecutorService
  * One useful reference implementation is AdjacencyListGraphReader.
  */
 trait GraphReader {
-
-  /**
-   * Returns a reader for a given file (shard).
-   */
-  def oneShardReader(filename : String, nodeRenumberr : NodeRenumberer)
-    : Iterator[NodeIdEdgesMaxId]
-
   /**
    * Should return a sequence of iterators over NodeIdEdgesMaxId objects
    */
   def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]]
+
+  /**
+   * Override to define node renumberer
+   */
+  def nodeRenumberer : NodeRenumberer
 
   /**
    * Override to modify the graph's stored direction
@@ -73,29 +71,4 @@ trait GraphReader {
     SharedArrayBasedDirectedGraph(iteratorSeq, executorService, storedGraphDir, numShards)
   }
 
-
-  /**
-   * Read in nodes and edges from multiple files. Use shardReaderCompanion
-   * for reading a single file.
-   * @param directory Directory to read from
-   * @param prefixFileNames the string that each part file starts with
-   */
-  class ShardsReader(directory: String, prefixFileNames: String = "",
-                     nodeRenumberer : NodeRenumberer) {
-    val dir = new File(directory)
-
-    def readers: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
-      val validFiles = dir.list().flatMap({ filename =>
-        if (filename.startsWith(prefixFileNames)) {
-          Some(filename)
-        }
-        else {
-          None
-        }
-      })
-      validFiles.map({ filename =>
-      {() => oneShardReader(directory + "/" + filename, nodeRenumberer)}
-      }).toSeq
-    }
-  }
 }

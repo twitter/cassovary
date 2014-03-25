@@ -41,9 +41,9 @@ import scala.collection.mutable.ListBuffer
  * @param directory the directory to read from
  * @param prefixFileNames the string that each part file starts with
  */
-class ListOfEdgesGraphReader(directory: String, prefixFileNames: String,
-                             nodeRenumberer: NodeRenumberer = new NodeRenumberer.Identity())
-    extends GraphReader {
+class ListOfEdgesGraphReader(val directory: String, val prefixFileNames: String,
+                             val nodeRenumberer: NodeRenumberer = new NodeRenumberer.Identity())
+    extends GraphReaderFromDirectory {
 
   class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer)
     extends Iterator[NodeIdEdgesMaxId] {
@@ -86,7 +86,7 @@ class ListOfEdgesGraphReader(directory: String, prefixFileNames: String,
     }
   }
 
-  override def oneShardReader(filename : String, nodeRenumberer : NodeRenumberer) : Iterator[NodeIdEdgesMaxId] = {
+  override def oneShardReader(filename : String) : Iterator[NodeIdEdgesMaxId] = {
     new OneShardReader(filename, nodeRenumberer)
   }
 

@@ -39,9 +39,9 @@ import scala.io.Source
  * @param directory the directory to read from
  * @param prefixFileNames the string that each part file starts with
  */
-class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
-                                nodeRenumberer: NodeRenumberer = new NodeRenumberer.Identity()
-                               ) extends GraphReader {
+class AdjacencyListGraphReader (val directory: String, val prefixFileNames: String = "",
+                                val nodeRenumberer: NodeRenumberer = new NodeRenumberer.Identity()
+                               ) extends GraphReaderFromDirectory {
 
   /**
    * Read in nodes and edges from a single file
@@ -80,15 +80,7 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
     }
   }
 
-  override def oneShardReader(filename : String, nodeRenumberer : NodeRenumberer) : Iterator[NodeIdEdgesMaxId] = {
+  override def oneShardReader(filename : String) : Iterator[NodeIdEdgesMaxId] = {
     new OneShardReader(filename, nodeRenumberer)
   }
-
-  /**
-   * Should return a sequence of iterators over NodeIdEdgesMaxId objects
-   */
-  override def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
-    new ShardsReader(directory, prefixFileNames, nodeRenumberer).readers
-  }
-
 }
