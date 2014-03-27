@@ -14,7 +14,7 @@
 package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
-import com.twitter.cassovary.util.{NodeRenumberer,SequentialNodeRenumberer}
+import com.twitter.cassovary.util.NodeRenumberer
 import scala.io.Source
 
 /**

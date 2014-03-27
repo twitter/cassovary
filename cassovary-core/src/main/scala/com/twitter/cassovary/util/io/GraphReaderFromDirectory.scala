@@ -13,7 +13,6 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.util.NodeRenumberer
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
 import java.io.File
 
@@ -39,12 +38,9 @@ trait GraphReaderFromDirectory extends GraphReader {
   def oneShardReader(filename : String) : Iterator[NodeIdEdgesMaxId]
 
   /**
-   * Read all files within a {@code directory} starting with a {@code prefixFileName} and
-   * returns a sequence of iterators over NodeIdEdgesMaxId.
-   *
-   * Uses {@code oneShardReader} and {@code nodeRenumberer} internally.
+   * Should return a sequence of iterators over NodeIdEdgesMaxId objects
    */
-  def readers() : Seq[() => Iterator[NodeIdEdgesMaxId]] = {
+  def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
     val dir = new File(directory)
     val validFiles = dir.list().flatMap({ filename =>
       if (filename.startsWith(prefixFileNames)) {
@@ -57,12 +53,5 @@ trait GraphReaderFromDirectory extends GraphReader {
     validFiles.map({ filename =>
     {() => oneShardReader(directory + "/" + filename)}
     }).toSeq
-  }
-
-  /**
-   * Should return a sequence of iterators over NodeIdEdgesMaxId objects
-   */
-  def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
-    readers()
   }
 }
