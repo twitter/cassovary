@@ -31,17 +31,12 @@ package object io {
       g.foreach {
         node =>
           nodeMap.contains(node.id) mustBe true
-          val neighbors = node.outboundNodes()
-          val nodesInMap = nodeMap(node.id)
-          nodesInMap.foreach {
-            i => neighbors.contains(i) mustBe true
+          val neighbors = node.outboundNodes().toArray.sorted
+          val nodesInMap = nodeMap(node.id).toArray.sorted
+          neighbors.length mustBe nodesInMap.length
+          neighbors.iterator.zip(nodesInMap.iterator).foreach{
+            case (a, b) => a mustBe b
           }
-          neighbors.foreach {
-            i => nodesInMap.contains(i) mustBe true
-          }
-      }
-      nodeMap.keys.foreach {
-        id => g.existsNodeId(id) mustBe true
       }
     }
   }

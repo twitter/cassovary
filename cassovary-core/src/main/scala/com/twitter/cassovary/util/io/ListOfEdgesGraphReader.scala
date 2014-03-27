@@ -15,9 +15,9 @@ package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.util.NodeRenumberer
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
-import it.unimi.dsi.fastutil.ints.{Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
+import it.unimi.dsi.fastutil.ints.{Int2IntArrayMap, Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
 import scala.io.Source
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Reads in a multi-line list of edges from multiple files in a directory.
@@ -41,21 +41,30 @@ import scala.collection.mutable.ListBuffer
  * @param directory the directory to read from
  * @param prefixFileNames the string that each part file starts with
  */
-class ListOfEdgesGraphReader(val directory: String, val prefixFileNames: String,
+class ListOfEdgesGraphReader(val directory: String, override val prefixFileNames: String,
                              val nodeRenumberer: NodeRenumberer = new NodeRenumberer.Identity())
     extends GraphReaderFromDirectory {
 
-  class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer)
+  private class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer)
     extends Iterator[NodeIdEdgesMaxId] {
 
     private val holder = NodeIdEdgesMaxId(-1, null, -1)
 
-    def readEdgesBySource(): Int2ObjectMap[ListBuffer[Int]] = {
+    def readEdgesBySource(): (Int2ObjectMap[ArrayBuffer[Int]], Int2IntArrayMap) = {
       val directedEdgePattern = """^(\d+)\s+(\d+)""".r
       val commentPattern = """(^#.*)""".r
       val lines = Source.fromFile(filename).getLines()
 
-      val edgesBySource = new Int2ObjectLinkedOpenHashMap[ListBuffer[Int]]()
+      val edgesBySource = new Int2ObjectLinkedOpenHashMap[ArrayBuffer[Int]]()
+      val nodeMaxOutEdgeId = new Int2IntArrayMap()
+
+      def updateNodeMaxOutEdgeId(node : Int, out : Int) {
+        if (nodeMaxOutEdgeId.containsKey(node)) {
+          nodeMaxOutEdgeId.put(node, nodeMaxOutEdgeId.get(node) max out)
+        } else {
+          nodeMaxOutEdgeId.put(node, node max out)
+        }
+      }
 
       lines.foreach {
         line =>
@@ -63,17 +72,21 @@ class ListOfEdgesGraphReader(val directory: String, val prefixFileNames: String,
             case commentPattern(s) => ()
             case directedEdgePattern(from, to) =>
               val internalFromId = nodeRenumberer.externalToInternal(from.toInt)
+              val internalToId = nodeRenumberer.externalToInternal(to.toInt)
               if (edgesBySource.containsKey(internalFromId)) {
-                edgesBySource.get(internalFromId) += nodeRenumberer.externalToInternal(to.toInt)
+                edgesBySource.get(internalFromId) += internalToId
               } else {
-                edgesBySource.put(internalFromId, ListBuffer(nodeRenumberer.externalToInternal(to.toInt)))
+                edgesBySource.put(internalFromId, ArrayBuffer(internalToId))
               }
+              updateNodeMaxOutEdgeId(internalFromId, internalToId)
           }
       }
-      edgesBySource
+      (edgesBySource, nodeMaxOutEdgeId)
     }
 
-    lazy val edgesIterator = readEdgesBySource().entrySet().iterator()
+    val (edgesBySource, nodeMaxOutEdgeId) = readEdgesBySource()
+
+    lazy val edgesIterator = edgesBySource.entrySet().iterator()
 
     override def hasNext: Boolean = edgesIterator.hasNext
 
@@ -81,19 +94,12 @@ class ListOfEdgesGraphReader(val directory: String, val prefixFileNames: String,
       val elem = edgesIterator.next()
       holder.id = elem.getKey
       holder.edges = elem.getValue.toArray
-      holder.maxId = holder.id max holder.edges.max
+      holder.maxId = nodeMaxOutEdgeId.get(elem.getKey)
       holder
     }
   }
 
-  override def oneShardReader(filename : String) : Iterator[NodeIdEdgesMaxId] = {
+  def oneShardReader(filename : String) : Iterator[NodeIdEdgesMaxId] = {
     new OneShardReader(filename, nodeRenumberer)
-  }
-
-  /**
-   * Should return a sequence of iterators over NodeIdEdgesMaxId objects
-   */
-  override def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
-    new ShardsReader(directory, prefixFileNames, nodeRenumberer).readers
   }
 }

@@ -24,9 +24,11 @@ import java.util.concurrent.ExecutorService
 /**
  * Trait that classes should implement to read in graphs.
  *
- * The reader class is only required to implement iteratorSeq, a method
+ * The reader class is required to implement iteratorSeq, a method
  * which returns a sequence of functions that themselves return an Iterator
  * over NodeIdEdgesMaxId (see its type signature below as well).
+ *
+ * It is also required to provide a nodeRenumberer.
  *
  * NodeIdEdgesMaxId is a case class defined in ArrayBasedDirectedGraph
  * that stores 1) the id of a node, 2) the ids of its neighbors,
@@ -41,7 +43,7 @@ trait GraphReader {
   def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]]
 
   /**
-   * Override to define node renumberer
+   * Define node renumberer
    */
   def nodeRenumberer : NodeRenumberer
 

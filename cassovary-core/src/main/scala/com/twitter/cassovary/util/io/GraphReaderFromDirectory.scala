@@ -31,7 +31,7 @@ trait GraphReaderFromDirectory extends GraphReader {
   /**
    * Filenames prefix
    */
-  def prefixFileNames : String
+  def prefixFileNames : String = ""
 
   /**
    * Returns a reader for a given file (shard).
@@ -39,34 +39,30 @@ trait GraphReaderFromDirectory extends GraphReader {
   def oneShardReader(filename : String) : Iterator[NodeIdEdgesMaxId]
 
   /**
-   * Read in nodes and edges from multiple files. Use shardReaderCompanion
-   * for reading a single file.
-   * @param directory Directory to read from
-   * @param prefixFileNames the string that each part file starts with
+   * Read all files within a {@code directory} starting with a {@code prefixFileName} and
+   * returns a sequence of iterators over NodeIdEdgesMaxId.
+   *
+   * Uses {@code oneShardReader} and {@code nodeRenumberer} internally.
    */
-  class ShardsReader(directory: String, prefixFileNames: String = "",
-                     nodeRenumberer : NodeRenumberer) {
+  def readers() : Seq[() => Iterator[NodeIdEdgesMaxId]] = {
     val dir = new File(directory)
-
-    def readers: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
-      val validFiles = dir.list().flatMap({ filename =>
-        if (filename.startsWith(prefixFileNames)) {
-          Some(filename)
-        }
-        else {
-          None
-        }
-      })
-      validFiles.map({ filename =>
-      {() => oneShardReader(directory + "/" + filename)}
-      }).toSeq
-    }
+    val validFiles = dir.list().flatMap({ filename =>
+      if (filename.startsWith(prefixFileNames)) {
+        Some(filename)
+      }
+      else {
+        None
+      }
+    })
+    validFiles.map({ filename =>
+    {() => oneShardReader(directory + "/" + filename)}
+    }).toSeq
   }
 
   /**
    * Should return a sequence of iterators over NodeIdEdgesMaxId objects
    */
-  override def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
-    new ShardsReader(directory, prefixFileNames, nodeRenumberer).readers
+  def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
+    readers()
   }
 }

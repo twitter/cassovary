@@ -39,7 +39,7 @@ import scala.io.Source
  * @param directory the directory to read from
  * @param prefixFileNames the string that each part file starts with
  */
-class AdjacencyListGraphReader (val directory: String, val prefixFileNames: String = "",
+class AdjacencyListGraphReader (val directory: String, override val prefixFileNames: String = "",
                                 val nodeRenumberer: NodeRenumberer = new NodeRenumberer.Identity()
                                ) extends GraphReaderFromDirectory {
 
@@ -47,7 +47,7 @@ class AdjacencyListGraphReader (val directory: String, val prefixFileNames: Stri
    * Read in nodes and edges from a single file
    * @param filename Name of file to read from
    */
-  class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer)
+  private class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer)
                       extends Iterator[NodeIdEdgesMaxId] {
 
     private val outEdgePattern = """^(\d+)\s+(\d+)""".r
@@ -80,7 +80,7 @@ class AdjacencyListGraphReader (val directory: String, val prefixFileNames: Stri
     }
   }
 
-  override def oneShardReader(filename : String) : Iterator[NodeIdEdgesMaxId] = {
+  def oneShardReader(filename : String) : Iterator[NodeIdEdgesMaxId] = {
     new OneShardReader(filename, nodeRenumberer)
   }
 }
