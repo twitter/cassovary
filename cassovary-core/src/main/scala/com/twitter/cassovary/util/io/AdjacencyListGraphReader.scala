@@ -14,8 +14,7 @@
 package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
-import com.twitter.cassovary.util.{NodeRenumberer,SequentialNodeRenumberer}
-import java.io.File
+import com.twitter.cassovary.util.NodeRenumberer
 import scala.io.Source
 
 /**
@@ -40,15 +39,15 @@ import scala.io.Source
  * @param directory the directory to read from
  * @param prefixFileNames the string that each part file starts with
  */
-class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
-                                nodeRenumberer: NodeRenumberer = new NodeRenumberer.Identity()
-                               ) extends GraphReader {
+class AdjacencyListGraphReader (val directory: String, override val prefixFileNames: String = "",
+                                val nodeRenumberer: NodeRenumberer = new NodeRenumberer.Identity()
+                               ) extends GraphReaderFromDirectory {
 
   /**
    * Read in nodes and edges from a single file
    * @param filename Name of file to read from
    */
-  class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer)
+  private class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer)
                       extends Iterator[NodeIdEdgesMaxId] {
 
     private val outEdgePattern = """^(\d+)\s+(\d+)""".r
@@ -79,34 +78,9 @@ class AdjacencyListGraphReader (directory: String, prefixFileNames: String = "",
       holder.maxId = newMaxId
       holder
     }
-
   }
 
-  /**
-   * Read in nodes and edges from multiple files
-   * @param directory Directory to read from
-   * @param prefixFileNames the string that each part file starts with
-   */
-  class ShardsReader(directory: String, prefixFileNames: String = "") {
-    val dir = new File(directory)
-
-    def readers: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
-      val validFiles = dir.list().flatMap({ filename =>
-        if (filename.startsWith(prefixFileNames)) {
-          Some(filename)
-        }
-        else {
-          None
-        }
-      })
-      validFiles.map({ filename =>
-      {() => new OneShardReader(directory + "/" + filename, nodeRenumberer)}
-      }).toSeq
-    }
+  def oneShardReader(filename : String) : Iterator[NodeIdEdgesMaxId] = {
+    new OneShardReader(filename, nodeRenumberer)
   }
-
-  def iteratorSeq = {
-    new ShardsReader(directory, prefixFileNames).readers
-  }
-
 }

@@ -13,18 +13,22 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph._
 import com.google.common.util.concurrent.MoreExecutors
+import com.twitter.cassovary.graph._
 import com.twitter.cassovary.graph.StoredGraphDir
 import com.twitter.cassovary.graph.StoredGraphDir.StoredGraphDir
+import com.twitter.cassovary.util.NodeRenumberer
+import java.io.File
 import java.util.concurrent.ExecutorService
 
 /**
  * Trait that classes should implement to read in graphs.
  *
- * The reader class is only required to implement iteratorSeq, a method
+ * The reader class is required to implement iteratorSeq, a method
  * which returns a sequence of functions that themselves return an Iterator
  * over NodeIdEdgesMaxId (see its type signature below as well).
+ *
+ * It is also required to provide a nodeRenumberer.
  *
  * NodeIdEdgesMaxId is a case class defined in ArrayBasedDirectedGraph
  * that stores 1) the id of a node, 2) the ids of its neighbors,
@@ -33,11 +37,15 @@ import java.util.concurrent.ExecutorService
  * One useful reference implementation is AdjacencyListGraphReader.
  */
 trait GraphReader {
-
   /**
    * Should return a sequence of iterators over NodeIdEdgesMaxId objects
    */
   def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]]
+
+  /**
+   * Define node renumberer
+   */
+  def nodeRenumberer : NodeRenumberer
 
   /**
    * Override to modify the graph's stored direction
