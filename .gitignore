@@ -16,12 +16,6 @@ project/build/target
 project/idea.properties
 project/plugins/project/
 project/plugins/src_managed/
-cassovary-examples/scala/classes
-cassovary-examples/java/classes
-cassovary-examples/classes
 sbt-launch.jar
 
 cassovary-benchmarks/cache
-cassovary-benchmarks/target
-cassovary-benchmarks/project/build/target
-cassovary-benchmarks/project/boot

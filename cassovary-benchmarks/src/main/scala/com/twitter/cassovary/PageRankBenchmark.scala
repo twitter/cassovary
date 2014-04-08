@@ -13,22 +13,15 @@
  */
 package com.twitter.cassovary
 
+import com.twitter.cassovary.algorithms.{PageRank, PageRankParams}
 import com.twitter.cassovary.graph.DirectedGraph
-import com.twitter.util.Duration
-import com.twitter.util.Stopwatch
 
-trait GraphOperationBenchmark {
-  def graph : DirectedGraph
-  def operation() : ()
 
-  def name : String = this.getClass.getName
+class PageRankBenchmark(val graph: DirectedGraph,
+                        pageRankParams : PageRankParams = PageRankParams())
+  extends GraphOperationBenchmark {
 
-  def run(repetitions : Int = 1) : Duration = {
-    (1 to repetitions).map {
-      _ =>
-        val watch = Stopwatch.start()
-        operation()
-        watch()
-    }.reduce(_ + _) / repetitions
+  def operation() {
+    PageRank(graph, pageRankParams)
   }
 }

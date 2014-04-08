@@ -20,7 +20,7 @@ import java.util.zip.GZIPInputStream
 import scala.sys.process._
 
 /**
- * Downloads and upacks Gzip file specified by an URL.
+ * Downloads and unpacks Gzip file specified by an URL.
  */
 trait GzipGraphDownloader {
 
