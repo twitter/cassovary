@@ -17,7 +17,7 @@ import com.twitter.util.Duration
 import com.twitter.util.Stopwatch
 
 trait OperationBenchmark {
-  def operation() : ()
+  def operation() : Unit
 
   def name : String = this.getClass.getName
 
