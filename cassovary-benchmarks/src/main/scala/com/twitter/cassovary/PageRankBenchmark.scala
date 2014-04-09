@@ -17,9 +17,9 @@ import com.twitter.cassovary.algorithms.{PageRank, PageRankParams}
 import com.twitter.cassovary.graph.DirectedGraph
 
 
-class PageRankBenchmark(val graph: DirectedGraph,
+class PageRankBenchmark(graph: DirectedGraph,
                         pageRankParams : PageRankParams = PageRankParams())
-  extends GraphOperationBenchmark {
+  extends OperationBenchmark {
 
   def operation() {
     PageRank(graph, pageRankParams)

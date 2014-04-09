@@ -15,11 +15,10 @@ package com.twitter.cassovary
 
 import com.twitter.cassovary.graph.{GraphUtils, DirectedGraph}
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
-import scala.util.Random
 
-class PersonalizedPageRankBenchmark(val graph : DirectedGraph,
+class PersonalizedPageRankBenchmark(graph : DirectedGraph,
                                     randomWalkParams : RandomWalkParams = RandomWalkParams(20, 0.3))
-  extends GraphOperationBenchmark {
+  extends OperationBenchmark {
 
   val graphUtils = new GraphUtils(graph)
 

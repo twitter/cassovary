@@ -85,7 +85,7 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   /**
    * Builders of algorithms to be benchmarked.
    */
-  val benchmarks = ListBuffer[(DirectedGraph => GraphOperationBenchmark)]()
+  val benchmarks = ListBuffer[(DirectedGraph => OperationBenchmark)]()
 
   /**
    * Thread pool used for reading graphs.

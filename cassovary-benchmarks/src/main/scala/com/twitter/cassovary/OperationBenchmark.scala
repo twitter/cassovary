@@ -13,12 +13,10 @@
  */
 package com.twitter.cassovary
 
-import com.twitter.cassovary.graph.DirectedGraph
 import com.twitter.util.Duration
 import com.twitter.util.Stopwatch
 
-trait GraphOperationBenchmark {
-  def graph : DirectedGraph
+trait OperationBenchmark {
   def operation() : ()
 
   def name : String = this.getClass.getName
