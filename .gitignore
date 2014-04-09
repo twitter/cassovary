@@ -16,7 +16,6 @@ project/build/target
 project/idea.properties
 project/plugins/project/
 project/plugins/src_managed/
-examples/scala/classes
-examples/java/classes
-examples/classes
 sbt-launch.jar
+
+cassovary-benchmarks/cache

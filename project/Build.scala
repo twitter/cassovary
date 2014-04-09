@@ -102,4 +102,13 @@ object Cassovary extends Build {
     name := "cassovary-examples",
     libraryDependencies ++= Seq("it.unimi.dsi" % "fastutil" % "6.4.4")
   ).dependsOn(cassovaryCore)
+
+  lazy val cassovaryBenchmarks = Project(
+    id = "cassovary-benchmarks",
+    base = file("cassovary-benchmarks"),
+    settings = Project.defaultSettings ++ sharedSettings
+  ).settings(
+      name := "cassovary-benchmarks",
+      libraryDependencies ++= Seq("it.unimi.dsi" % "fastutil" % "6.4.4")
+  ).dependsOn(cassovaryCore)
 }
