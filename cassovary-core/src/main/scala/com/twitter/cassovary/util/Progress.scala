@@ -42,8 +42,8 @@ class Progress(val name: String, val interval: Int, val maxValue: Option[Int]) {
     count += 1
     if (count % interval == 0) {
       maxValue match {
-        case Some(max) => log.info("%s (%.2f%%)".format(count, count.toDouble / max * 100))
-        case None => log.info(count.toString)
+        case Some(max) => log.debug("%s (%.2f%%)".format(count, count.toDouble / max * 100))
+        case None => log.debug(count.toString)
       }
     }
   }

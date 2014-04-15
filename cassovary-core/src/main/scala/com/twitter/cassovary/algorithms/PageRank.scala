@@ -78,7 +78,7 @@ private class PageRank(graph: DirectedGraph, params: PageRankParams) {
       log.info("Warning - you may be able to reduce the memory usage of PageRank by renumbering this graph!")
 
     var beforePR = new Array[Double](graph.maxNodeId + 1)
-    log.info("Initializing starting PageRank...")
+    log.debug("Initializing starting PageRank...")
     val progress = Progress("pagerank_init", 65536, Some(graph.nodeCount))
     val initialPageRankValue = 1.0D / graph.nodeCount
     graph.foreach { node =>
@@ -87,7 +87,7 @@ private class PageRank(graph: DirectedGraph, params: PageRankParams) {
     }
 
     (0 until params.iterations.get).foreach { i =>
-      log.info("Beginning %sth iteration".format(i))
+      log.debug("Beginning %sth iteration".format(i))
       beforePR = iterate(beforePR)
     }
 
@@ -102,7 +102,7 @@ private class PageRank(graph: DirectedGraph, params: PageRankParams) {
   def iterate(beforePR: Array[Double]) = {
     val afterPR = new Array[Double](graph.maxNodeId + 1)
 
-    log.info("Calculating new PageRank values based on previous iteration...")
+    log.debug("Calculating new PageRank values based on previous iteration...")
     val progress = Progress("pagerank_calc", 65536, Some(graph.nodeCount))
     graph.foreach { node =>
       val givenPageRank = beforePR(node.id) / node.neighborCount(GraphDir.OutDir)
