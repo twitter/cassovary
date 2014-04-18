@@ -172,6 +172,25 @@ class GraphUtils(val graph: Graph) {
   def neighborCount(id: Int, dir: GraphDir) = funcById(id, dir,
     (nd: Node, dir: GraphDir) => nd.neighborCount(dir), 0)
 
+
+  /**
+   * Assuming that the node stores both directions of edges, calculate the number of mutual edges
+   * incident on this node
+   * @return number of neighbors of node that have an edge to and from this node
+   */
+  def getNumMutualEdgesBothDirs(node: Node): Long = {
+    val (dirSmall, dirLarge) = if (node.outboundCount < node.inboundCount)
+      (node.outboundNodes, node.inboundNodes)
+    else
+      (node.inboundNodes, node.outboundNodes)
+    val setSmall = dirSmall.toSet
+    val numEdges = dirLarge.foldLeft(0L) { (num, curr) =>
+      if (setSmall contains curr) num+1
+      else num
+    }
+    numEdges
+  }
+
   // helper to be used in functions that take nodeId and need to log warnings
   // in the case that the id is not found
   private def onNodeIdNotFound(desc: String, id: Int) {
@@ -190,7 +209,6 @@ class GraphUtils(val graph: Graph) {
   private def funcById[T](id: Int, dir: GraphDir, f: (Node, GraphDir) => T, defaultVal: T): T = {
     funcById(id, dir, f).getOrElse(defaultVal)
   }
-
 }
 
 object GraphUtils {
