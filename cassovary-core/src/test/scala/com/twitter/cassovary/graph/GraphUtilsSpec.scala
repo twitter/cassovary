@@ -25,23 +25,17 @@ import org.specs.Specification
 class GraphUtilsSpec extends Specification {
 
   def utils(graph: DirectedGraph) = {
-    (graph,
-      new GraphUtils(graph),
-      new DirectedGraphUtils(graph))
+    (graph, new GraphUtils(graph))
   }
 
   "two node graph with each following the other" should {
-    val (graph, graphUtils, directedGraphUtils) = utils(TestGraphs.g2_mutual)
+    val (graph, graphUtils) = utils(TestGraphs.g2_mutual)
     "neighborCount should always be 1" in {
       graph.iterator foreach { node =>
         GraphDir.values foreach { dir =>
           graphUtils.neighborCount(node.id, dir) mustEqual 1
         }
       }
-    }
-
-    "mutualedges should be 1" in {
-      directedGraphUtils.getNumMutualEdges mustEqual 1L
     }
 
     "random walk of one step with resetProb of 0" in {
@@ -90,53 +84,24 @@ class GraphUtilsSpec extends Specification {
     }
   }
 
-  "mutual edges on six node graph with only one dir stored" should {
-    "with only out dir" in {
-      val directedGraphUtils = new DirectedGraphUtils(TestGraphs.g6_onlyout)
-      directedGraphUtils.getNumMutualEdges mustEqual 0L
-    }
-
-    "with only in dir" in {
-      val directedGraphUtils = new DirectedGraphUtils(TestGraphs.g6_onlyin)
-      directedGraphUtils.getNumMutualEdges mustEqual 0L
-    }
-  }
-
-  "mutual edges on seven node graph with only one dir stored" should {
-    "with only out dir" in {
-      val directedGraphUtils = new DirectedGraphUtils(TestGraphs.g7_onlyout)
-      directedGraphUtils.getNumMutualEdges mustEqual 4L
-    }
-
-    "with only in dir" in {
-      val directedGraphUtils = new DirectedGraphUtils(TestGraphs.g7_onlyin)
-      directedGraphUtils.getNumMutualEdges mustEqual 4L
-    }
-  }
-
   "three node graph" should {
-    val (graph, graphUtils, directedGraphUtils) = utils(TestGraphs.g3)
+    val (graph, graphUtils) = utils(TestGraphs.g3)
     "bfs" in {
       val walkParams = GraphUtils.RandomWalkParams(
           5L, 0.0, None, Some(2), Some(5), false, GraphDir.OutDir, false)
       val visitsPerNode = graphUtils.calculateBFS(10, walkParams)._1
       visitMapToSeq(visitsPerNode) mustEqual Array((11, 3), (12, 2)).toSeq
     }
-
-    "mutualedges should be 1" in {
-      directedGraphUtils.getNumMutualEdges mustEqual 1L
-    }
   }
 
   "six node graph" should {
-    val (graph, graphUtils, directedGraphUtils) = utils(TestGraphs.g6)
+    val (graph, graphUtils) = utils(TestGraphs.g6)
 
     "basic graph checks" in {
       graph.nodeCount mustEqual 6
       graph.edgeCount mustEqual 11
       graphUtils.neighborCount(10, GraphDir.OutDir) mustEqual 3
       graphUtils.neighborCount(11, GraphDir.InDir) mustEqual 2
-      directedGraphUtils.getNumMutualEdges mustEqual 0L
     }
 
     "random walk of 1000 steps" in {
@@ -227,19 +192,10 @@ class GraphUtilsSpec extends Specification {
           sumDuration += duration.inMilliseconds
         }
       }
-      println("Avg duration over %d random walks: %s ms".format(numTimes, sumDuration/numTimes))
+      //println("Avg duration over %d random walks: %s ms".format(numTimes, sumDuration/numTimes))
       true
     }
   }
-
-  "checks on complete graph" should {
-    val graph = TestGraphs.generateCompleteGraph(10)
-    val directedGraphUtils = new DirectedGraphUtils(graph)
-    "basic checks" in {
-      directedGraphUtils.getNumMutualEdges mustEqual graph.edgeCount/2
-    }
-  }
-
 
   def pathMapToSeq(map: Object2IntMap[DirectedPath]) = {
     FastUtilConversion.object2IntMapToArray(map).toSeq
