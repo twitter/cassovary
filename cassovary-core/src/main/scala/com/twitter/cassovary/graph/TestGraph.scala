@@ -13,6 +13,8 @@
  */
 package com.twitter.cassovary.graph
 
+import com.twitter.cassovary.graph.StoredGraphDir._
+import it.unimi.dsi.fastutil.ints.IntArrayList
 import scala.collection.mutable
 import scala.util.Random
 
@@ -101,14 +103,51 @@ object TestGraphs {
     TestGraph(testNodes: _*)
   }
 
-  def generateRandomGraph(numNodes: Int, avgOutDegree: Int) = {
-    val nodes = new mutable.ArrayBuffer[NodeIdEdgesMaxId]
+  /**
+   * @param numNodes number of nodes in the undirected graph
+   * @param probEdge probability of existence of an edge, constant for each of (numNodes choose 2) edges
+   * @param graphDir store both directions or only one direction
+   * @return a random Erdos-Renyi Directed graph
+   */
+  def generateRandomGraph(numNodes: Int, avgOutDegree: Int, graphDir: StoredGraphDir = StoredGraphDir.BothInOut) = {
+    val nodes = new Array[NodeIdEdgesMaxId](numNodes)
+    val rand = new Random
+    val probEdge = avgOutDegree.toDouble / (numNodes - 1)
+    (0 until numNodes) foreach { source =>
+      val outNeighbors = for {
+        i <- 0 to numNodes-1
+        if i != source
+        if rand.nextDouble() < probEdge
+      } yield i
+      nodes(source) = NodeIdEdgesMaxId(source, outNeighbors.toArray)
+    }
+    ArrayBasedDirectedGraph( () => nodes.iterator, graphDir)
+  }
+
+  /**
+   * @param numNodes number of nodes in the undirected graph
+   * @param probEdge probability of existence of an edge, constant for each of (numNodes choose 2) edges
+   * @param graphDir store both directions or only one direction
+   * @return a random Erdos-Renyi undirected graph (a graph which only has mutual edges)
+   */
+  def generateRandomUndirectedGraph(numNodes: Int, probEdge: Double,
+                                    graphDir: StoredGraphDir = StoredGraphDir.BothInOut) = {
+    val nodes = new Array[IntArrayList](numNodes) map { _ => new IntArrayList() }
     val rand = new Random
     (0 until numNodes) foreach { source =>
-      val numOutNeighbors = rand.nextInt(2 * avgOutDegree + 1)
-      val outNeighbors = (0 until numOutNeighbors).toArray.map { i: Int => rand.nextInt(numNodes) }
-      nodes += NodeIdEdgesMaxId(source, outNeighbors)
+        (source+1 until numNodes).foreach {
+          neighbor: Int =>
+            if (rand.nextDouble() < probEdge) {
+              nodes(source).add(neighbor)
+              nodes(neighbor).add(source)
+            }
+        }
     }
-    ArrayBasedDirectedGraph( () => nodes.iterator, StoredGraphDir.BothInOut)
+    val nodesEdges = nodes.indices map { i =>
+      val arr = new Array[Int](nodes(i).size)
+      NodeIdEdgesMaxId(i, nodes(i).toIntArray(arr) )
+    }
+    ArrayBasedDirectedGraph( () => nodesEdges.iterator, graphDir)
   }
+
 }

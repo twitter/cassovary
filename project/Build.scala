@@ -30,7 +30,9 @@ object Cassovary extends Build {
         case "2.9.3" => "2.9.1"
         case x if x startsWith "2.10" => "2.10"
         case x => x
-      }
+      },
+      "org.scalatest" %% "scalatest" % "1.9.2" % "test",
+      "junit" % "junit" % "4.10" % "test"
     ),
     resolvers += "twitter repo" at "http://maven.twttr.com",
 
