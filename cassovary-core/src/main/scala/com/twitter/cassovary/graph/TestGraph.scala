@@ -104,8 +104,8 @@ object TestGraphs {
   }
 
   /**
-   * @param numNodes number of nodes in the undirected graph
-   * @param probEdge probability of existence of an edge, constant for each of (numNodes choose 2) edges
+   * @param numNodes number of nodes in the graph
+   * @param avgOutDegree average number of neighbors of each node
    * @param graphDir store both directions or only one direction
    * @return a random Erdos-Renyi Directed graph
    */
