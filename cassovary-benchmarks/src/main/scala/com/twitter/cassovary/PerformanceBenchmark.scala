@@ -16,6 +16,7 @@ package com.twitter.cassovary
 import com.twitter.cassovary.graph._
 import com.twitter.cassovary.util.io.ListOfEdgesGraphReader
 import com.twitter.cassovary.util.SequentialNodeRenumberer
+import com.twitter.app.Flags
 import com.twitter.util.Stopwatch
 import java.util.concurrent.Executors
 import java.io.File
@@ -36,10 +37,10 @@ import scala.collection.mutable.ListBuffer
  *    -s  : Benchmarks small graphs stored under src/resources:
  *         * ego-facebook (friends)
  *         * wiki-vote (who-voted-on-whom network)
- *    url : Downloads gziped graph in list of edges format and
+ *    url : Downloads gzipped graph in list of edges format and
  *          performs benchmarks on it.
  *
- *          url points to a gziped graph in a list of edges format.
+ *          url points to a gzipped graph in a list of edges format.
  *
  * If neither -s nor urls are provided, performs benchmark on
  * small graphs.
@@ -60,10 +61,11 @@ import scala.collection.mutable.ListBuffer
  *    Performs benchmark on cit-HepTh, p2p-Gnutella08, amazon0302, soc-Epinoins1 graphs
  *    for both PageRank and Personalized Page Rank.
  *
- * By default runs every test 3 times.
+ * By default runs every test 3 times and reports average time taken.
  *
  * See: {@link http://snap.stanford.edu/data/}
  */
+
 object PerformanceBenchmark extends App with GzipGraphDownloader {
   /**
    * Directory to store cached graphs downloaded from the web.
@@ -88,50 +90,67 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   val benchmarks = ListBuffer[(DirectedGraph => OperationBenchmark)]()
 
   /**
-   * Thread pool used for reading graphs.
+   * Thread pool used for reading graphs. Only useful if multiple files with the same prefix name are present.
    */
-  val threadPool = Executors.newFixedThreadPool(2)
+  val graphReadingThreadPool = Executors.newFixedThreadPool(4)
 
   /**
    * Number of repeats of every benchmark.
    */
-  val REPEATS = 3
+  val DEFAULT_REPS = 10
+  val defaultLocalGraphFile = "facebook"
 
-  args.foreach{
-    case arg if arg.equals("-s") => files ++= smallFiles
-    case arg if arg.equals("-g") => benchmarks += (g => new PageRankBenchmark(g))
-    case arg if arg.equals("-p") => benchmarks += (g => new PersonalizedPageRankBenchmark(g))
-    case arg => files += cacheRemoteFile(arg)
+  val flags = new Flags("Performance benchmark")
+  val localFileFlag = flags("local", defaultLocalGraphFile,
+    "Specify common prefix of local files in " + SMALL_FILES_DIRECTORY)
+  val remoteFileFlag = flags("url",
+    "http://snap.stanford.edu/data/cit-HepTh.txt.gz",
+    "Specify a URL to download a graph file from")
+  val helpFlag = flags("h", false, "Print usage")
+  val globalPRFlag = flags("globalpr", false, "run global pagerank benchmark")
+  val pprFlag = flags("ppr", false, "run personalized pagerank benchmark")
+  val reps = flags("reps", DEFAULT_REPS, "number of times to run benchmark")
+  flags.parse(args)
+  if (localFileFlag.isDefined) files += ((SMALL_FILES_DIRECTORY, localFileFlag()))
+  if (remoteFileFlag.isDefined) files += cacheRemoteFile(remoteFileFlag())
+  if (files.isEmpty) {
+    println("No files specified on command line. Taking default graph files facebook and wiki-Vote.")
+    files ++= smallFiles
   }
-  if (files.isEmpty) files ++= smallFiles
-  if (benchmarks.isEmpty) benchmarks += (g => new PageRankBenchmark(g),
-                                         g => new PersonalizedPageRankBenchmark(g))
+  if (globalPRFlag()) { benchmarks += (g => new PageRankBenchmark(g)) }
+  if (pprFlag()) { benchmarks += (g => new PersonalizedPageRankBenchmark(g)) }
+  if (helpFlag()) { println(flags.usage)}
 
-  files.foreach{
+  if (benchmarks.isEmpty) {
+    println("No benchmarks specified on command line. Will only read the graph files.")
+  }
+
+  files.foreach {
     case (path, filename) =>
       printf("Reading %s graph.\n", filename)
       val readingTime = Stopwatch.start()
       val graph = readGraph(path, filename)
       printf("\tGraph %s loaded from list of edges with %s nodes and %s edges.\n" +
-             "\tTime: %s\n", filename, graph.nodeCount, graph.edgeCount, readingTime())
-
+             "\tLoading Time: %s\n", filename, graph.nodeCount, graph.edgeCount, readingTime())
       for (b <- benchmarks) {
         val benchmark = b(graph)
-        printf("\t%s (%s) avg time: %s.\n", benchmark.name, filename, benchmark.run(REPEATS))
+        printf("Running benchmark %s on graph %s...\n", benchmark.name, filename)
+        val duration = benchmark.run(reps())
+        printf("\tAvg time over %d repetitions: %s.\n", reps(), duration)
       }
   }
 
-  threadPool.shutdown()
+  graphReadingThreadPool.shutdown()
 
   def readGraph(path : String, filename : String) : DirectedGraph = {
     new ListOfEdgesGraphReader(path, filename,
       new SequentialNodeRenumberer()) {
-      override val executorService = threadPool
+      override val executorService = graphReadingThreadPool
     }.toArrayBasedDirectedGraph()
   }
 
   def cacheRemoteFile(url : String) : (String, String) = {
-    printf("Downloading file %s", url)
+    printf("Downloading remote file from %s\n", url)
     new File(CACHE_DIRECTORY).mkdirs()
     val name = url.split("/").last.split("\\.")(0) + ".txt"
     val target =  CACHE_DIRECTORY + name

@@ -22,11 +22,10 @@ trait OperationBenchmark {
   def name : String = this.getClass.getName
 
   def run(repetitions : Int = 1) : Duration = {
-    (1 to repetitions).map {
-      _ =>
-        val watch = Stopwatch.start()
-        operation()
-        watch()
-    }.reduce(_ + _) / repetitions
+    val watch = Stopwatch.start()
+    (1 to repetitions) foreach { i =>
+      operation()
+    }
+    watch() / repetitions
   }
 }

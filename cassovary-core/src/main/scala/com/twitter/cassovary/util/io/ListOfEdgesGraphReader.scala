@@ -15,6 +15,7 @@ package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.util.NodeRenumberer
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
+import com.twitter.logging.Logger
 import it.unimi.dsi.fastutil.ints.{Int2IntArrayMap, Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
 import scala.io.Source
 import scala.collection.mutable.ArrayBuffer
@@ -45,12 +46,15 @@ class ListOfEdgesGraphReader(val directory: String, override val prefixFileNames
                              val nodeRenumberer: NodeRenumberer = new NodeRenumberer.Identity())
     extends GraphReaderFromDirectory {
 
+  private lazy val log = Logger.get
+
   private class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer)
     extends Iterator[NodeIdEdgesMaxId] {
 
     private val holder = NodeIdEdgesMaxId(-1, null, -1)
 
     def readEdgesBySource(): (Int2ObjectMap[ArrayBuffer[Int]], Int2IntArrayMap) = {
+      log.info("Starting reading from file %s...\n", filename)
       val directedEdgePattern = """^(\d+)\s+(\d+)""".r
       val commentPattern = """(^#.*)""".r
       val lines = Source.fromFile(filename).getLines()
@@ -81,6 +85,7 @@ class ListOfEdgesGraphReader(val directory: String, override val prefixFileNames
               updateNodeMaxOutEdgeId(internalFromId, internalToId)
           }
       }
+      log.info("Finished reading from file %s...\n", filename)
       (edgesBySource, nodeMaxOutEdgeId)
     }
 

@@ -17,12 +17,14 @@ import com.twitter.cassovary.graph.{GraphUtils, DirectedGraph}
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 
 class PersonalizedPageRankBenchmark(graph : DirectedGraph,
-                                    randomWalkParams : RandomWalkParams = RandomWalkParams(20, 0.3))
+                                    randomWalkParams : RandomWalkParams =
+                                    RandomWalkParams(numSteps = 10000, resetProbability = 0.3,
+                                      maxDepth = Some(4)))
   extends OperationBenchmark {
 
   val graphUtils = new GraphUtils(graph)
 
-  override def name = "Personalized PageRank"
+  override def name = "Personalized PageRank with " + randomWalkParams
 
   var nodesIterator = graph.iterator
 

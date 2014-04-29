@@ -111,6 +111,13 @@ object Cassovary extends Build {
     settings = Project.defaultSettings ++ sharedSettings
   ).settings(
       name := "cassovary-benchmarks",
-      libraryDependencies ++= Seq("it.unimi.dsi" % "fastutil" % "6.4.4")
+      libraryDependencies ++= Seq(
+        "it.unimi.dsi" % "fastutil" % "6.4.4",
+        "com.twitter" %% "util-app" % "6.12.1" cross CrossVersion.binaryMapped {
+          case "2.9.3" => "2.9.2"
+          case x if x startsWith "2.10" => "2.10"
+          case x => x
+        }
+      )
   ).dependsOn(cassovaryCore)
 }
