@@ -14,8 +14,10 @@
 package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.StoredGraphDir._
-import it.unimi.dsi.fastutil.ints.IntArrayList
-import scala.collection.mutable
+import com.twitter.cassovary.util.BinomialDistribution
+import it.unimi.dsi.fastutil.ints.{IntOpenHashSet, IntArrayList}
+import scala.collection._
+import scala.collection.JavaConversions._
 import scala.util.Random
 
 /**
@@ -104,8 +106,30 @@ object TestGraphs {
   }
 
   /**
-   * @param numNodes number of nodes in the graph
-   * @param avgOutDegree average number of neighbors of each node
+   * Expected linear time algorithm for random subset of a given range.
+   */
+  private def randomSubset(elements: Int, range: Range, rng : Random): Array[Int] = {
+    if (elements > range.size / 2) {
+      val complement = new IntOpenHashSet(randomSubset(range.size - elements, range, rng).toIterator)
+      range.filterNot(complement.contains).toArray
+    } else {
+      val result = new IntOpenHashSet()
+      while (result.size < elements) {
+        val randomElement = range(rng.nextInt(range.size))
+        if (!result.contains(randomElement)) {
+          result.add(randomElement)
+        }
+      }
+      result.toIntArray
+    }
+  }
+
+  private def changeIf(predicate : Int => Boolean, changeTo: Int)(original: Int) =
+    if (predicate(original)) changeTo else original
+
+  /**
+   * @param numNodes number of nodes in the undirected graph
+   * @param avgOutDegree average out degree of each node
    * @param graphDir store both directions or only one direction
    * @return a random Erdos-Renyi Directed graph
    */
@@ -113,12 +137,10 @@ object TestGraphs {
     val nodes = new Array[NodeIdEdgesMaxId](numNodes)
     val rand = new Random
     val probEdge = avgOutDegree.toDouble / (numNodes - 1)
+    val nodesOutDegrees = new BinomialDistribution(numNodes - 1, probEdge).sample(numNodes, rand)
     (0 until numNodes) foreach { source =>
-      val outNeighbors = for {
-        i <- 0 to numNodes-1
-        if i != source
-        if rand.nextDouble() < probEdge
-      } yield i
+      val outNeighbors = randomSubset(nodesOutDegrees(source), Range(0, numNodes - 1), rand)
+        .map(changeIf(_ == source, numNodes - 1))
       nodes(source) = NodeIdEdgesMaxId(source, outNeighbors.toArray)
     }
     ArrayBasedDirectedGraph( () => nodes.iterator, graphDir)
@@ -134,13 +156,13 @@ object TestGraphs {
                                     graphDir: StoredGraphDir = StoredGraphDir.BothInOut) = {
     val nodes = new Array[IntArrayList](numNodes) map { _ => new IntArrayList() }
     val rand = new Random
-    (0 until numNodes) foreach { source =>
-        (source+1 until numNodes).foreach {
-          neighbor: Int =>
-            if (rand.nextDouble() < probEdge) {
-              nodes(source).add(neighbor)
-              nodes(neighbor).add(source)
-            }
+    (0 until numNodes - 1) foreach { source =>
+        val degreeToHigherIdNodes = new BinomialDistribution(numNodes - source - 1, probEdge).sample(rand)
+        val neighbors = randomSubset(degreeToHigherIdNodes, Range(source + 1, numNodes - 1), rand)
+          .map(changeIf(_ == source, numNodes -1))
+        neighbors.foreach{n =>
+          nodes(source).add(n)
+          nodes(n).add(source)
         }
     }
     val nodesEdges = nodes.indices map { i =>
