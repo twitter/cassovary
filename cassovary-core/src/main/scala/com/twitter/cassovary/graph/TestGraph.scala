@@ -156,11 +156,11 @@ object TestGraphs {
                                     graphDir: StoredGraphDir = StoredGraphDir.BothInOut) = {
     val nodes = new Array[IntArrayList](numNodes) map { _ => new IntArrayList() }
     val rand = new Random
+    val nodesOutDegrees = new BinomialDistribution(numNodes - 1, probEdge).sample(numNodes, rand)
     (0 until numNodes - 1) foreach { source =>
-        val degreeToHigherIdNodes = new BinomialDistribution(numNodes - source - 1, probEdge).sample(rand)
-        val neighbors = randomSubset(degreeToHigherIdNodes, Range(source + 1, numNodes - 1), rand)
-          .map(changeIf(_ == source, numNodes -1))
-        neighbors.foreach{n =>
+        val newNeighbors = randomSubset(nodesOutDegrees(source) - nodes(source).length,
+          Range(source + 1, numNodes - 1), rand)
+        newNeighbors.foreach{n =>
           nodes(source).add(n)
           nodes(n).add(source)
         }
