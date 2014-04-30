@@ -15,23 +15,26 @@ package com.twitter.cassovary.util
 
 import scala.util.Random
 
-class BinomialDistribution(n: Int, p: Double) {
-  private lazy val pdf: Array[Double] = calculatePdf()
-  private lazy val cdf: Array[Double] = pdf.scanLeft(0.0)(_ + _) drop 1
-
-  private def calculatePdf() = {
-    val pdf = Array.fill(n + 1)(0.0)
-    pdf(0) = math.pow(1 - p, n)
-    for (i <- 1 to n) {
-      pdf(i) = p * (n - i + 1) / (i * (1 - p)) * pdf(i - 1)
+object Sampling {
+  /**
+   * O(size) time algorithm for random subset of a given range known as
+   * Fischer-Yates shuffle.
+   *
+   * If size > from.size returns all elements.
+   */
+  def randomSubset[@specialized(Int) A: Manifest](size: Int, from: Array[A], rng: Random): Array[A] = {
+    if (size > from.size) {
+      from
+    } else {
+      (0 until size).foreach {
+        i =>
+          val swapIndex = rng.nextInt(from.size - i) + i
+          val temp = from(i)
+          from(i) = from(swapIndex)
+          from(swapIndex) = temp
+      }
+      from.slice(0, size).toArray
     }
-    pdf
   }
-
-  private def sampleSingle(rng: Random): Int = {
-    val unifDouble = rng.nextDouble()
-    math.abs(java.util.Arrays.binarySearch(cdf, unifDouble))
-  }
-
-  def sample(rng: Random): Stream[Int] = sampleSingle(rng) #:: sample(rng)
 }
+
