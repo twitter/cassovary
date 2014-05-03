@@ -13,6 +13,7 @@
  */
 package com.twitter.cassovary.util
 
+import java.util.Arrays
 import scala.util.Random
 
 class BinomialDistribution(n: Int, p: Double) {
@@ -28,10 +29,10 @@ class BinomialDistribution(n: Int, p: Double) {
     pdf
   }
 
-  private def sampleSingle(rng: Random): Int = {
+  def sample(rng: Random): Int = {
     val unifDouble = rng.nextDouble()
-    math.abs(java.util.Arrays.binarySearch(cdf, unifDouble))
+    math.abs(Arrays.binarySearch(cdf, unifDouble))
   }
 
-  def sample(rng: Random): Stream[Int] = sampleSingle(rng) #:: sample(rng)
+  def samplesStream(rng: Random): Stream[Int] = sample(rng) #:: samplesStream(rng)
 }

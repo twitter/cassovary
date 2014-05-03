@@ -27,8 +27,16 @@ class SamplingSpec extends WordSpec with ShouldMatchers {
 
   "Sampling" should {
     "sample random subset" which {
-      "have correct number of elements" in {
-        Sampling.randomSubset(5, array, rng).length shouldEqual 5
+      "have correct number of elements" when {
+        "sampling subset of size lower than size of the set" in {
+          Sampling.randomSubset(5, array, rng).length shouldEqual 5
+        }
+        "sampling subset of size equal to the size of the set" in {
+          Sampling.randomSubset(100, array, rng).length shouldEqual 100
+        }
+        "sampling subset of size hihger than the size of the set" in {
+          Sampling.randomSubset(104, array, rng).size shouldEqual 100
+        }
       }
       "does not have duplicates" in {
         Sampling.randomSubset(100, array, rng).toSet.size shouldEqual 100
@@ -38,9 +46,6 @@ class SamplingSpec extends WordSpec with ShouldMatchers {
           .groupBy(identity)
           .map{ case (k, v) => v.length}
           .foreach(repeats => repeats should be < 15)
-      }
-      "is the whole set when subset size is greater than set" in {
-        Sampling.randomSubset(104, array, rng).size shouldEqual 100
       }
     }
   }

@@ -21,8 +21,10 @@ object Sampling {
    * Fischer-Yates shuffle.
    *
    * If size > from.size returns all elements.
+   *
+   * Be aware, that this method changes the {@code from} Array.
    */
-  def randomSubset[@specialized(Int) A: Manifest](size: Int, from: Array[A], rng: Random): Array[A] = {
+  def randomSubset[@specialized(Int) A](size: Int, from: Array[A], rng: Random): Array[A] = {
     if (size > from.size) {
       from
     } else {
@@ -33,7 +35,7 @@ object Sampling {
           from(i) = from(swapIndex)
           from(swapIndex) = temp
       }
-      from.slice(0, size).toArray
+      from.slice(0, size)
     }
   }
 }

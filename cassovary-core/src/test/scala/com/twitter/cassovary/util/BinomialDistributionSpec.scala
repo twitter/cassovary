@@ -73,7 +73,7 @@ class BinomialDistributionSpec extends WordSpec with ShouldMatchers with Private
     "give samples that follow pdf in terms of mse" in {
       val sampleSize = 10000
       val rng = new Random
-      val histogram = distribution10.sample(rng).take(sampleSize)
+      val histogram = distribution10.samplesStream(rng).take(sampleSize)
         .groupBy(identity)
         .map{ case (x, y) => (x, y.length.toDouble / sampleSize)}
       var mse = 0.0

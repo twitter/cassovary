@@ -15,9 +15,8 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.{Sampling, BinomialDistribution}
-import it.unimi.dsi.fastutil.ints.{IntOpenHashSet, IntArrayList}
-import scala.collection._
-import scala.collection.JavaConversions._
+import it.unimi.dsi.fastutil.ints.IntArrayList
+import scala.collection.mutable
 import scala.util.Random
 
 /**
@@ -105,10 +104,17 @@ object TestGraphs {
     TestGraph(testNodes: _*)
   }
 
-
+  /**
+   * Computes random subsets of `array` such that number of elements
+   * taken is sampled from `sizeDistribution`. Works in `O(p * n)` time.
+   */
+  private def randomSubset(sizeDistribution: BinomialDistribution, array: Array[Int], rand: Random) : Array[Int] = {
+    val positiveBitsNumber = sizeDistribution.sample(rand)
+    Sampling.randomSubset(positiveBitsNumber, array, rand)
+  }
 
   /**
-   * @param numNodes number of nodes in the undirected graph
+   * @param numNodes number of nodes in the graph
    * @param avgOutDegree average out degree of each node
    * @param graphDir store both directions or only one direction
    * @return a random Erdos-Renyi Directed graph
@@ -117,12 +123,11 @@ object TestGraphs {
     val nodes = new Array[NodeIdEdgesMaxId](numNodes)
     val rand = new Random
     val probEdge = avgOutDegree.toDouble / (numNodes - 1)
-    val nodesOutDegrees = new BinomialDistribution(numNodes - 1, probEdge).sample(rand).iterator
-    (0 until numNodes) foreach { source =>
-      val outDegree = nodesOutDegrees.next()
-      val outNeighbors = Sampling.randomSubset(outDegree, ((0 until source) ++ (source + 1 to numNodes - 1)).toArray,
+    val binomialDistribution = new BinomialDistribution(numNodes - 1, probEdge)
+    (0 until numNodes).par foreach { source =>
+      val edgesFrom = randomSubset(binomialDistribution, ((0 until source) ++ (source + 1 until numNodes)).toArray,
         rand)
-      nodes(source) = NodeIdEdgesMaxId(source, outNeighbors.toArray)
+      nodes(source) = NodeIdEdgesMaxId(source, edgesFrom)
     }
     ArrayBasedDirectedGraph( () => nodes.iterator, graphDir)
   }
@@ -136,20 +141,17 @@ object TestGraphs {
   def generateRandomUndirectedGraph(numNodes: Int, probEdge: Double,
                                     graphDir: StoredGraphDir = StoredGraphDir.BothInOut) = {
     val nodes = new Array[IntArrayList](numNodes) map { _ => new IntArrayList() }
+    def addMutualEdge(i: Int)(j: Int) {nodes(i).add(j); nodes(j).add(i)}
     val rand = new Random
-    val nodesOutDegrees = new BinomialDistribution(numNodes - 1, probEdge).sample(rand).iterator
-    (0 until numNodes - 1) foreach {
-      source =>
-        val newNeighborsNumber = nodesOutDegrees.next() - nodes(source).length
-        if (newNeighborsNumber > 0) {
-          val newNeighbors = Sampling.randomSubset(newNeighborsNumber,
-            (source + 1 to numNodes - 1).toArray, rand)
-          newNeighbors.foreach {
-            n =>
-              nodes(source).add(n)
-              nodes(n).add(source)
-          }
-        }
+    val binomialDistribution = new BinomialDistribution(numNodes - 2, probEdge)
+    (0 until (numNodes - 1) / 2).par foreach {
+      lowerNode =>
+        val higherNode = numNodes - 1 - lowerNode
+        val (higherNodeNeighbors, lowerNodeNeighbors) = randomSubset(binomialDistribution,
+          (0 until numNodes - 1).toArray, rand) partition (_ < lowerNode)
+        lowerNodeNeighbors.map(_ + 1) foreach addMutualEdge(lowerNode)
+        if (lowerNode != higherNode)
+          higherNodeNeighbors map (higherNode + _ + 1) foreach addMutualEdge(higherNode)
     }
     val nodesEdges = nodes.indices map { i =>
       val arr = new Array[Int](nodes(i).size)
@@ -157,5 +159,4 @@ object TestGraphs {
     }
     ArrayBasedDirectedGraph( () => nodesEdges.iterator, graphDir)
   }
-
 }
