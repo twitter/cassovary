@@ -12,23 +12,34 @@ Please follow the cassovary project on twitter at [@cassovary](https://twitter.c
 for updates.
 
 ## Quick Start and Examples
-See examples/ for some simple examples of using the library. Both Scala and Java examples are included.
-
-## Installing SBT
-Platform specific instructions for installing ```sbt``` are available at https://github.com/harrah/xsbt/wiki/Getting-Started-Setup
-
-Cassovary has been tested with ```sbt``` version 0.11.3-2
+There is a subproject included here called cassovary-examples containing simple java and scala
+examples of using the library. See
+[this README](https://github.com/twitter/cassovary/blob/master/cassovary-examples/ExamplesREADME.md)
+to get started with the examples.
 
 ## Building
 
-1. ```sbt update``` (might take a couple of minutes)
-2. ```sbt test```
-3. ```sbt package```
+Cassovary is built using [sbt](https://github.com/sbt/sbt) and was tested last using sbt version 0.13.
+
+1. ```./sbt update``` (might take a couple of minutes)
+2. ```./sbt test```
+3. ```./sbt package```
 
 ## Alternative for using for local projects
-1. ```sbt publish-local```
-2. ```cd ../<dependant project>```
-3. ```sbt update```
+1. ```./sbt publish-local```
+2. ```cd ../<dependent project>```
+3. ```./sbt update```
+
+## Using maven published version of library
+
+Cassovary is published to maven central with crosspath scala versions 2.9.3 and 2.10.x. To use with sbt, use:
+
+```libraryDependencies += "com.twitter" %% "cassovary" % "3.2.0"```
+
+The only dependency that Cassovary uses which is not bundled with it because of its size is ```it.unimi.dsi.fastutil```.
+You can add that dependency in your sbt project as follows:
+
+```libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.4.4"```
 
 ## Comparison to Other Graph Libraries
 There are many excellent graph mining libraries already in existence. Most of
@@ -78,7 +89,9 @@ Please report any bugs to: <https://github.com/twitter/cassovary/issues>
 * [Ning Liang](https://twitter.com/ningliang)
 * [Ajeet Grewal](https://twitter.com/ajeet)
 
+There are [many external contributors](https://github.com/twitter/cassovary/graphs/contributors) as well.
+
 ## License
-Copyright 2012 Twitter, Inc.
+Copyright 2014 Twitter, Inc.
 
 Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
