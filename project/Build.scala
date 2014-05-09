@@ -5,29 +5,35 @@ import SonatypeKeys._
 
 
 object Cassovary extends Build {
+  val twitterUtilVersion = "6.12.1"
 
   val sharedSettings = Seq(
     version := "3.3.0",
     organization := "com.twitter",
     scalaVersion := "2.9.3",
     retrieveManaged := true,
-    crossScalaVersions := Seq("2.9.3","2.10.3"),
+    crossScalaVersions := Seq("2.9.1","2.10.3"),
     libraryDependencies ++= Seq(
       "com.google.guava" % "guava" % "11.0.2",
-      "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided",
+      "it.unimi.dsi" % "fastutil" % "6.4.4",
       "org.mockito" % "mockito-all" % "1.8.5" % "test",
       "com.twitter" %% "ostrich" % "9.1.0" cross CrossVersion.binaryMapped {
-        case "2.9.3" => "2.9.2"
+        case x if x startsWith "2.9" => "2.9.2"
         case x if x startsWith "2.10" => "2.10"
         case x => x
       },
-      "com.twitter" %% "util-logging" % "6.12.1" cross CrossVersion.binaryMapped {
-        case "2.9.3" => "2.9.2"
+      "com.twitter" %% "util-core" % twitterUtilVersion cross CrossVersion.binaryMapped {
+        case x if x startsWith "2.9" => "2.9.2"
+        case x if x startsWith "2.10" => "2.10"
+        case x => x
+      },
+      "com.twitter" %% "util-logging" % twitterUtilVersion cross CrossVersion.binaryMapped {
+        case x if x startsWith "2.9" => "2.9.2"
         case x if x startsWith "2.10" => "2.10"
         case x => x
       },
       "org.scala-tools.testing" %% "specs" % "1.6.9" % "test" cross CrossVersion.binaryMapped {
-        case "2.9.3" => "2.9.1"
+        case x if x startsWith "2.9" => "2.9.1"
         case x if x startsWith "2.10" => "2.10"
         case x => x
       },
@@ -39,8 +45,8 @@ object Cassovary extends Build {
     scalacOptions ++= Seq("-encoding", "utf8"),
     scalacOptions += "-deprecation",
 
-    javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
-    javacOptions in doc := Seq("-source", "1.6"),
+    javacOptions ++= Seq("-source", "1.7", "-target", "1.7"),
+    javacOptions in doc := Seq("-source", "1.7"),
 
     // Sonatype publishing
     publishArtifact in Test := false,
