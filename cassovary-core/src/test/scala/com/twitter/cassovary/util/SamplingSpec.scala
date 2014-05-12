@@ -42,10 +42,13 @@ class SamplingSpec extends WordSpec with ShouldMatchers {
         Sampling.randomSubset(100, array, rng).toSet.size shouldEqual 100
       }
       "is not biased towards any value" in {
-        (1 to 100).flatMap(_ => Sampling.randomSubset(5, array, rng))
-          .groupBy(identity)
-          .map{ case (k, v) => v.length}
-          .foreach(repeats => repeats should be < 15)
+        val positiveSubset = {
+          val start = rng.nextInt(100)
+          (start to (start + 49)).map(_ % 100 + 1).toSet
+        }
+        (1 to 100).flatMap(_ => Sampling.randomSubset(10, array, rng))
+          .map(x => if (positiveSubset.contains(x)) 1 else 0)
+          .sum should (be < 600 and be > 400)
       }
     }
   }

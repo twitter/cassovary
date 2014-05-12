@@ -115,19 +115,19 @@ object TestGraphs {
 
   /**
    * @param numNodes number of nodes in the graph
-   * @param avgOutDegree average out degree of each node
+   * @param probEdge probability of existence of an edge
    * @param graphDir store both directions or only one direction
    * @return a random Erdos-Renyi Directed graph
    */
-  def generateRandomGraph(numNodes: Int, avgOutDegree: Int, graphDir: StoredGraphDir = StoredGraphDir.BothInOut) = {
+  def generateRandomGraph(numNodes: Int, probEdge: Double, graphDir: StoredGraphDir = StoredGraphDir.BothInOut) = {
     val nodes = new Array[NodeIdEdgesMaxId](numNodes)
     val rand = new Random
-    val probEdge = avgOutDegree.toDouble / (numNodes - 1)
     val binomialDistribution = new BinomialDistribution(numNodes - 1, probEdge)
-    (0 until numNodes).par foreach { source =>
-      val edgesFrom = randomSubset(binomialDistribution, ((0 until source) ++ (source + 1 until numNodes)).toArray,
-        rand)
-      nodes(source) = NodeIdEdgesMaxId(source, edgesFrom)
+    val samplingArray = (0 until numNodes - 2).toArray
+    (0 until numNodes) foreach { source =>
+      val positiveBits = randomSubset(binomialDistribution, samplingArray, rand)
+      val edgesFromSource = positiveBits map (x => if (x < source) x else x + 1)
+      nodes(source) = NodeIdEdgesMaxId(source, edgesFromSource)
     }
     ArrayBasedDirectedGraph( () => nodes.iterator, graphDir)
   }
@@ -143,8 +143,8 @@ object TestGraphs {
     val nodes = new Array[IntArrayList](numNodes) map { _ => new IntArrayList() }
     def addMutualEdge(i: Int)(j: Int) {nodes(i).add(j); nodes(j).add(i)}
     val rand = new Random
-    val binomialDistribution = new BinomialDistribution(numNodes - 2, probEdge)
-    (0 until (numNodes - 1) / 2).par foreach {
+    val binomialDistribution = new BinomialDistribution(numNodes - 1, probEdge)
+    (0 to (numNodes - 1) / 2) foreach {
       lowerNode =>
         val higherNode = numNodes - 1 - lowerNode
         val (higherNodeNeighbors, lowerNodeNeighbors) = randomSubset(binomialDistribution,

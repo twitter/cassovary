@@ -170,7 +170,7 @@ class GraphUtilsSpec extends Specification {
   }
 
   "random walk on a large graph" should {
-    val graph = TestGraphs.generateRandomGraph(10 * 1000, 100)
+    val graph = TestGraphs.generateRandomGraph(10 * 1000, 0.01)
     val graphUtils = new GraphUtils(graph)
 
     "visit at least 10 nodes" in {

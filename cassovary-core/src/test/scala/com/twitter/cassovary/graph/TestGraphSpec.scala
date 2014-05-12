@@ -61,8 +61,8 @@ class TestGraphSpec extends WordSpec with ShouldMatchers {
   "a random graph" should {
     "(with 10 nodes) satisfy basic checks" in {
       val n = 10
-      val d = 5
-      val graph = TestGraphs.generateRandomGraph(n, d)
+      val edgeProbability = 0.5
+      val graph = TestGraphs.generateRandomGraph(n, edgeProbability)
       graph.nodeCount should be (n)
       graph.edgeCount should be <= (n * (n - 1).toLong)
       graph foreach { node =>
@@ -88,6 +88,23 @@ class TestGraphSpec extends WordSpec with ShouldMatchers {
   "a random undirected graph" should {
     "(with 15 nodes) satisfy basic checks" in {
       val n = 15
+      val graph = TestGraphs.generateRandomUndirectedGraph(n, 0.3)
+      graph.nodeCount should be (n)
+      graph.edgeCount should be <= (n * (n - 1).toLong)
+      graph foreach { node =>
+        node.inboundNodes().sorted should equal (node.outboundNodes().sorted)
+        node.inboundNodes().size should equal (node.inboundNodes().toSet.size)
+        node.inboundNodes() foreach { nbr =>
+          nbr should be >= 0
+          nbr should be < n
+          nbr should not be node.id
+          val neighborNode = graph.getNodeById(nbr).get
+          neighborNode.outboundNodes() should contain (node.id)
+        }
+      }
+    }
+    "(with 16 nodes) satisfy basic checks" in {
+      val n = 16
       val graph = TestGraphs.generateRandomUndirectedGraph(n, 0.3)
       graph.nodeCount should be (n)
       graph.edgeCount should be <= (n * (n - 1).toLong)

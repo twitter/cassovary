@@ -44,7 +44,8 @@ public class RandomWalkJava {
     int numNodes = 3;
     if (args.length > 0) numNodes = Integer.parseInt(args[0]);
     System.out.printf("Generating a random graph with %d nodes...\n", numNodes);
-    DirectedGraph graph = TestGraphs.generateRandomGraph(numNodes, Math.min(10, numNodes), StoredGraphDir.BothInOut());
+    DirectedGraph graph = TestGraphs.generateRandomGraph(numNodes, ((double) Math.min(10, numNodes)) / (numNodes - 1),
+            StoredGraphDir.BothInOut());
     System.out.printf("Generated a random directed graph with %s nodes and %s edges.\n", graph.nodeCount(),
             graph.edgeCount());
 
