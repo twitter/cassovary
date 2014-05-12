@@ -29,9 +29,15 @@ class BinomialDistribution(n: Int, p: Double) {
     pdf
   }
 
-  def sample(rng: Random): Int = {
-    val unifDouble = rng.nextDouble()
-    math.abs(Arrays.binarySearch(cdf, unifDouble))
+  def sample(rng: Random): Int = p match {
+    case prob if prob == 1.0 => n
+    case prob if prob == 0.0 => 0
+    case _ =>
+      val unifDouble = rng.nextDouble()
+      Arrays.binarySearch(cdf, unifDouble) match {
+        case found: Int if found >= 0 => found - 1
+        case negatedInsertionPointMinusOne: Int => -negatedInsertionPointMinusOne - 1
+      }
   }
 
   def samplesStream(rng: Random): Stream[Int] = sample(rng) #:: samplesStream(rng)

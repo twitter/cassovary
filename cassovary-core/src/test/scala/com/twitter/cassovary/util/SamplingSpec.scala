@@ -46,6 +46,10 @@ class SamplingSpec extends WordSpec with ShouldMatchers {
           val start = rng.nextInt(100)
           (start to (start + 49)).map(_ % 100 + 1).toSet
         }
+
+        // In 100 samplings we count how many times we pick a number belonging
+        // to '''positiveSet'''. By Hoeffding's inequality this
+        // number should between 400 and 600 with probability almost 1.
         (1 to 100).flatMap(_ => Sampling.randomSubset(10, array, rng))
           .map(x => if (positiveSubset.contains(x)) 1 else 0)
           .sum should (be < 600 and be > 400)

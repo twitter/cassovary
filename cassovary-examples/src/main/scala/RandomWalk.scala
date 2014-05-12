@@ -26,7 +26,8 @@ object RandomWalk {
   def main(args: Array[String]) {
     val numNodes = if (args.length > 0) args(0).toInt else 3
     printf("Generating a random graph with %d nodes...\n", numNodes)
-    val graph = TestGraphs.generateRandomGraph(numNodes, (10 min numNodes).toDouble / (numNodes - 1))
+    val graph = TestGraphs.generateRandomGraph(numNodes,
+      TestGraphs.getProbEdgeRandomDirected(numNodes, 10 min numNodes))
     printf("\nGenerated a random directed graph with %s nodes and %s edges.\n",
       graph.nodeCount, graph.edgeCount)
 

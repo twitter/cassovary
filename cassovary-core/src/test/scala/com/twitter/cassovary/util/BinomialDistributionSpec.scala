@@ -30,6 +30,8 @@ class BinomialDistributionSpec extends WordSpec with ShouldMatchers with Private
   val pdf = PrivateMethod[Array[Double]]('pdf)
   val cdf = PrivateMethod[Array[Double]]('cdf)
 
+  val rng = new Random
+
   "two point distribution" should {
     "have correct pdf" in {
       (twoPoint invokePrivate pdf())(0) should be (0.7)
@@ -49,6 +51,24 @@ class BinomialDistributionSpec extends WordSpec with ShouldMatchers with Private
     "have correct cdf" in {
       val expected = Array(0.2 * 0.2, 0.2 * 0.2 + 2 * 0.2 * 0.8)
       (twoTrials invokePrivate cdf()).zip(expected).foreach{case (x, y) => x should be (y plusOrMinus 0.001)}
+    }
+  }
+
+  "binomial distribution with probability 0.0 of success" should {
+    "return 0 when sampling" in {
+      val dist = new BinomialDistribution(10, 0.0)
+      dist.samplesStream(rng).take(10) foreach {
+        x => x should be (0)
+      }
+    }
+  }
+
+  "binomial distribution with probability 1.0 of success" should {
+    "return max when sampling" in {
+      val dist = new BinomialDistribution(10, 1.0)
+      dist.samplesStream(rng).take(10) foreach {
+        x => x should be (10)
+      }
     }
   }
 
@@ -72,7 +92,6 @@ class BinomialDistributionSpec extends WordSpec with ShouldMatchers with Private
 
     "give samples that follow pdf in terms of mse" in {
       val sampleSize = 10000
-      val rng = new Random
       val histogram = distribution10.samplesStream(rng).take(sampleSize)
         .groupBy(identity)
         .map{ case (x, y) => (x, y.length.toDouble / sampleSize)}
@@ -81,7 +100,7 @@ class BinomialDistributionSpec extends WordSpec with ShouldMatchers with Private
         val error = (distribution10 invokePrivate pdf())(i) - histogram.getOrElse(i, 0.0)
         mse += error * error
       }
-      mse should be (0.033 plusOrMinus 0.01)
+      mse should be (0.0 plusOrMinus 0.01) // checked experimentally to be true with high probability
     }
   }
 }

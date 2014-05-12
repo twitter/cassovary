@@ -18,7 +18,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.ShouldMatchers
 
 @RunWith(classOf[JUnitRunner])
-class TestGraphSpec extends WordSpec with ShouldMatchers {
+class TestGraphSpec extends WordSpec with ShouldMatchers with GraphBehaviours {
 
   "three node graph g3 stored in both directions" should {
     val graph = TestGraphs.g3
@@ -44,82 +44,64 @@ class TestGraphSpec extends WordSpec with ShouldMatchers {
     }
   }
 
-  "a complete graph" should {
-    " (with 20 nodes) satisfy basic checks" in {
+  "a complete graph" when {
+    "with 20 nodes" should {
       val n = 20
       val graph = TestGraphs.generateCompleteGraph(n)
-      graph.nodeCount should be (n)
-      graph.edgeCount should be (n * (n - 1))
-      graph foreach { node =>
-        val neighbors = (1 to n) filter { _ != node.id }
-        node.inboundNodes() should be(neighbors)
-        node.outboundNodes() should be(neighbors)
-      }
+      behave like completeGraph(graph, n)
     }
   }
 
-  "a random graph" should {
-    "(with 10 nodes) satisfy basic checks" in {
+  "a random graph" when {
+    "probability of edge is 0 and numNodes is 10" should {
       val n = 10
-      val edgeProbability = 0.5
-      val graph = TestGraphs.generateRandomGraph(n, edgeProbability)
-      graph.nodeCount should be (n)
-      graph.edgeCount should be <= (n * (n - 1).toLong)
-      graph foreach { node =>
-        (0 to 1) foreach { dir =>
-          val neighbors = if (dir == 0) node.outboundNodes() else node.inboundNodes()
-          // should not have duplicates
-          neighbors.size should be (neighbors.toSet.size)
-          neighbors foreach { nbr =>
-            nbr should be >= 0
-            nbr should be < n
-            nbr should not be node.id
-            val neighborNode = graph.getNodeById(nbr).get
-            val neighborNodeOtherDirEdges =
-              if (dir == 0) neighborNode.inboundNodes()
-              else neighborNode.outboundNodes()
-            neighborNodeOtherDirEdges should contain (node.id)
-          }
-        }
+      val graph = TestGraphs.generateRandomGraph(n, 0.0)
+      "have correct number of nodes and edges" in {
+        graph.nodeCount should be(n)
+        graph.edgeCount should be(0)
       }
+    }
+
+    "probability of edge is 1 and numNodes is 10" should {
+      val n = 10
+      val graph = TestGraphs.generateRandomGraph(n, 1.0)
+      behave like completeGraph(graph, n)
+    }
+
+    "probability of edge is 0.5 and numNodes is 10" should {
+      val n = 10
+      val d = 5
+      val graph = TestGraphs.generateRandomGraph(n, TestGraphs.getProbEdgeRandomDirected(n, d))
+      behave like correctDirectedGraph(graph, n)
     }
   }
 
-  "a random undirected graph" should {
-    "(with 15 nodes) satisfy basic checks" in {
+  "a random undirected graph" when {
+    "probability of edge is 0 and numNodes is 10" should {
+      val n = 10
+      val graph = TestGraphs.generateRandomUndirectedGraph(n, 0.0)
+      "have correct number of nodes and edges" in {
+        graph.nodeCount should be(n)
+        graph.edgeCount should be(0)
+      }
+    }
+
+    "probability of edge is 1 and numNodes is 10" should {
+      val n = 10
+      val graph = TestGraphs.generateRandomUndirectedGraph(n, 1.0)
+      behave like completeGraph(graph, n)
+    }
+
+    "probability of edge is 0.3 and numNodes is 15" should {
       val n = 15
       val graph = TestGraphs.generateRandomUndirectedGraph(n, 0.3)
-      graph.nodeCount should be (n)
-      graph.edgeCount should be <= (n * (n - 1).toLong)
-      graph foreach { node =>
-        node.inboundNodes().sorted should equal (node.outboundNodes().sorted)
-        node.inboundNodes().size should equal (node.inboundNodes().toSet.size)
-        node.inboundNodes() foreach { nbr =>
-          nbr should be >= 0
-          nbr should be < n
-          nbr should not be node.id
-          val neighborNode = graph.getNodeById(nbr).get
-          neighborNode.outboundNodes() should contain (node.id)
-        }
-      }
+      behave like correctUndirectedGraph(graph, n)
     }
-    "(with 16 nodes) satisfy basic checks" in {
+
+    "probability of edge is 0.3 and numNodes is 16" should {
       val n = 16
       val graph = TestGraphs.generateRandomUndirectedGraph(n, 0.3)
-      graph.nodeCount should be (n)
-      graph.edgeCount should be <= (n * (n - 1).toLong)
-      graph foreach { node =>
-        node.inboundNodes().sorted should equal (node.outboundNodes().sorted)
-        node.inboundNodes().size should equal (node.inboundNodes().toSet.size)
-        node.inboundNodes() foreach { nbr =>
-          nbr should be >= 0
-          nbr should be < n
-          nbr should not be node.id
-          val neighborNode = graph.getNodeById(nbr).get
-          neighborNode.outboundNodes() should contain (node.id)
-        }
-      }
+      behave like correctUndirectedGraph(graph, n)
     }
   }
-
 }

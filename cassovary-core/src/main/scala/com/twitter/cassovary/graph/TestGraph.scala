@@ -96,8 +96,8 @@ object TestGraphs {
 
   // a complete graph is where each node follows every other node
   def generateCompleteGraph(numNodes: Int) = {
-    val allNodes = (1 to numNodes).toList
-    val testNodes = (1 to numNodes).toList map { source =>
+    val allNodes = (0 until numNodes).toList
+    val testNodes = (0 until numNodes).toList map { source =>
       val allBut = allNodes.filter(_ != source)
       TestNode(source, allBut, allBut)
     }
@@ -114,6 +114,14 @@ object TestGraphs {
   }
 
   /**
+   * @return Probability of existence of every edge in a random E-R graph.
+   */
+  def getProbEdgeRandomDirected(numNodes: Int, avgOutDegree: Int) = {
+    require(numNodes > 1)
+    avgOutDegree.toDouble / (numNodes - 1)
+  }
+
+  /**
    * @param numNodes number of nodes in the graph
    * @param probEdge probability of existence of an edge
    * @param graphDir store both directions or only one direction
@@ -123,7 +131,7 @@ object TestGraphs {
     val nodes = new Array[NodeIdEdgesMaxId](numNodes)
     val rand = new Random
     val binomialDistribution = new BinomialDistribution(numNodes - 1, probEdge)
-    val samplingArray = (0 until numNodes - 2).toArray
+    val samplingArray = (0 until numNodes - 1).toArray
     (0 until numNodes) foreach { source =>
       val positiveBits = randomSubset(binomialDistribution, samplingArray, rand)
       val edgesFromSource = positiveBits map (x => if (x < source) x else x + 1)

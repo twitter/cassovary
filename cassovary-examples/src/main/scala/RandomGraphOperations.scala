@@ -27,7 +27,7 @@ object RandomGraphOperations {
 
     printf("Generating Erdos-Renyi random directed graph with n=%d nodes and avg outdegree=%d...\n",
       numNodes, avgOutDegree)
-    val graph = TestGraphs.generateRandomGraph(numNodes, avgOutDegree.toDouble / (numNodes - 1))
+    val graph = TestGraphs.generateRandomGraph(numNodes, TestGraphs.getProbEdgeRandomDirected(numNodes, avgOutDegree))
     //println(graph)
 
     println("Now computing the number of mutual edges of this graph...")

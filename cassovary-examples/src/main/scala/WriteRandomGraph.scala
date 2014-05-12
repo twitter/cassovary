@@ -29,7 +29,8 @@ object WriteRandomGraph {
     val avgOutDegree = math.ceil(math.log(numNodes)).toInt
 
     printf("Generating Erdos-Renyi random graph with n=%d nodes and log(n)=%d avg outdegree...\n", numNodes, avgOutDegree)
-    val genGraph = TestGraphs.generateRandomGraph(numNodes, avgOutDegree.toDouble / (numNodes - 1))
+    val genGraph = TestGraphs.generateRandomGraph(numNodes,
+      TestGraphs.getProbEdgeRandomDirected(numNodes, avgOutDegree))
 
     // Write graph to temporary file.
     val renumGraphDirName = System.getProperty("java.io.tmpdir")
