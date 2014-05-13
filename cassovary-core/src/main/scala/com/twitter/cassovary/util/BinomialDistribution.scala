@@ -30,8 +30,8 @@ class BinomialDistribution(n: Int, p: Double) {
   }
 
   def sample(rng: Random): Int = p match {
-    case prob if prob == 1.0 => n
-    case prob if prob == 0.0 => 0
+    case 1 => n
+    case 0 => 0
     case _ =>
       val unifDouble = rng.nextDouble()
       Arrays.binarySearch(cdf, unifDouble) match {

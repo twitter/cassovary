@@ -7,7 +7,7 @@ import SonatypeKeys._
 object Cassovary extends Build {
 
   val sharedSettings = Seq(
-    version := "3.3.0",
+    version := "3.3.1",
     organization := "com.twitter",
     scalaVersion := "2.9.3",
     retrieveManaged := true,
