@@ -14,6 +14,7 @@
 package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.StoredGraphDir._
+import com.twitter.cassovary.util.{Sampling, BinomialDistribution}
 import it.unimi.dsi.fastutil.ints.IntArrayList
 import scala.collection.mutable
 import scala.util.Random
@@ -95,8 +96,8 @@ object TestGraphs {
 
   // a complete graph is where each node follows every other node
   def generateCompleteGraph(numNodes: Int) = {
-    val allNodes = (1 to numNodes).toList
-    val testNodes = (1 to numNodes).toList map { source =>
+    val allNodes = (0 until numNodes).toList
+    val testNodes = (0 until numNodes).toList map { source =>
       val allBut = allNodes.filter(_ != source)
       TestNode(source, allBut, allBut)
     }
@@ -104,22 +105,37 @@ object TestGraphs {
   }
 
   /**
+   * Computes random subsets of `array` such that number of elements
+   * taken is sampled from `sizeDistribution`. Works in `O(p * n)` time.
+   */
+  private def randomSubset(sizeDistribution: BinomialDistribution, array: Array[Int], rand: Random) : Array[Int] = {
+    val positiveBitsNumber = sizeDistribution.sample(rand)
+    Sampling.randomSubset(positiveBitsNumber, array, rand)
+  }
+
+  /**
+   * @return Probability of existence of an edge in a random E-R graph.
+   */
+  def getProbEdgeRandomDirected(numNodes: Int, avgOutDegree: Int) = {
+    require(numNodes > 1)
+    avgOutDegree.toDouble / (numNodes - 1)
+  }
+
+  /**
    * @param numNodes number of nodes in the graph
-   * @param avgOutDegree average number of neighbors of each node
+   * @param probEdge probability of existence of an edge
    * @param graphDir store both directions or only one direction
    * @return a random Erdos-Renyi Directed graph
    */
-  def generateRandomGraph(numNodes: Int, avgOutDegree: Int, graphDir: StoredGraphDir = StoredGraphDir.BothInOut) = {
+  def generateRandomGraph(numNodes: Int, probEdge: Double, graphDir: StoredGraphDir = StoredGraphDir.BothInOut) = {
     val nodes = new Array[NodeIdEdgesMaxId](numNodes)
     val rand = new Random
-    val probEdge = avgOutDegree.toDouble / (numNodes - 1)
+    val binomialDistribution = new BinomialDistribution(numNodes - 1, probEdge)
+    val samplingArray = (0 until numNodes - 1).toArray
     (0 until numNodes) foreach { source =>
-      val outNeighbors = for {
-        i <- 0 to numNodes-1
-        if i != source
-        if rand.nextDouble() < probEdge
-      } yield i
-      nodes(source) = NodeIdEdgesMaxId(source, outNeighbors.toArray)
+      val positiveBits = randomSubset(binomialDistribution, samplingArray, rand)
+      val edgesFromSource = positiveBits map (x => if (x < source) x else x + 1)
+      nodes(source) = NodeIdEdgesMaxId(source, edgesFromSource)
     }
     ArrayBasedDirectedGraph( () => nodes.iterator, graphDir)
   }
@@ -133,15 +149,17 @@ object TestGraphs {
   def generateRandomUndirectedGraph(numNodes: Int, probEdge: Double,
                                     graphDir: StoredGraphDir = StoredGraphDir.BothInOut) = {
     val nodes = new Array[IntArrayList](numNodes) map { _ => new IntArrayList() }
+    def addMutualEdge(i: Int)(j: Int) {nodes(i).add(j); nodes(j).add(i)}
     val rand = new Random
-    (0 until numNodes) foreach { source =>
-        (source+1 until numNodes).foreach {
-          neighbor: Int =>
-            if (rand.nextDouble() < probEdge) {
-              nodes(source).add(neighbor)
-              nodes(neighbor).add(source)
-            }
-        }
+    val binomialDistribution = new BinomialDistribution(numNodes - 1, probEdge)
+    (0 to (numNodes - 1) / 2) foreach {
+      lowerNode =>
+        val higherNode = numNodes - 1 - lowerNode
+        val (higherNodeNeighbors, lowerNodeNeighbors) = randomSubset(binomialDistribution,
+          (0 until numNodes - 1).toArray, rand) partition (_ < lowerNode)
+        lowerNodeNeighbors.map(_ + 1) foreach addMutualEdge(lowerNode)
+        if (lowerNode != higherNode)
+          higherNodeNeighbors map (higherNode + _ + 1) foreach addMutualEdge(higherNode)
     }
     val nodesEdges = nodes.indices map { i =>
       val arr = new Array[Int](nodes(i).size)
@@ -149,5 +167,4 @@ object TestGraphs {
     }
     ArrayBasedDirectedGraph( () => nodesEdges.iterator, graphDir)
   }
-
 }

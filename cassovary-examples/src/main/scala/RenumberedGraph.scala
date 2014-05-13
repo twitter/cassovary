@@ -39,7 +39,8 @@ object RenumberedGraph {
     var rng = new Random()
     val nodeIds = Array.fill(numNodes) { math.abs(rng.nextInt(MaxNodeId)) }
 
-    val genGraph = TestGraphs.generateRandomGraph(numNodes, avgOutDegree)
+    val genGraph = TestGraphs.generateRandomGraph(numNodes,
+      TestGraphs.getProbEdgeRandomDirected(numNodes, avgOutDegree))
 
     // Write graph to temporary file, mapping all node ids from dense to sparse representation.
     val renumGraphDirName = System.getProperty("java.io.tmpdir")
