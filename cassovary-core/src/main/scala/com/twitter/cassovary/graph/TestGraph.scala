@@ -114,7 +114,7 @@ object TestGraphs {
   }
 
   /**
-   * @return Probability of existence of every edge in a random E-R graph.
+   * @return Probability of existence of an edge in a random E-R graph.
    */
   def getProbEdgeRandomDirected(numNodes: Int, avgOutDegree: Int) = {
     require(numNodes > 1)
