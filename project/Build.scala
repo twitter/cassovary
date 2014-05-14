@@ -42,6 +42,9 @@ object Cassovary extends Build {
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
     javacOptions in doc := Seq("-source", "1.6"),
 
+    fork in run := true,
+    javaOptions in run ++= Seq("-server"),
+
     // Sonatype publishing
     publishArtifact in Test := false,
     pomIncludeRepository := { _ => false },
