@@ -44,6 +44,7 @@ object Cassovary extends Build {
 
     fork in run := true,
     javaOptions in run ++= Seq("-server"),
+    outputStrategy := Some(StdoutOutput),
 
     // Sonatype publishing
     publishArtifact in Test := false,
