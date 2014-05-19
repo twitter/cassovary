@@ -14,7 +14,7 @@
 package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.DirectedGraph
-import com.twitter.cassovary.util.{NodeRenumberer,SequentialNodeRenumberer}
+import com.twitter.cassovary.util.{NodeNumberer,SequentialNodeNumberer}
 import java.util.concurrent.Executors
 import org.specs.Specification
 
@@ -28,17 +28,17 @@ class AdjacencyListGraphReaderSpec extends Specification with GraphMapEquality {
    * remapping node ids thru nodeRenumberer, and ensures that these are equivalent
    * @param g DirectedGraph
    * @param nodeMap Map of node ids to ids of its neighbors
-   * @param nodeRenumberer a node renumberer
+   * @param nodeNumberer a node renumberer
    */
-  def nodeMapEqualsRenumbered(g:DirectedGraph, nodeMap: Map[Int, List[Int]], nodeRenumberer: NodeRenumberer) = {
+  def nodeMapEqualsRenumbered(g:DirectedGraph, nodeMap: Map[Int, List[Int]], nodeNumberer: NodeNumberer[Int]) = {
     g.foreach { node =>
-      nodeMap.contains(nodeRenumberer.internalToExternal(node.id)) mustBe true
+      nodeMap.contains(nodeNumberer.internalToExternal(node.id)) mustBe true
       val neighbors = node.outboundNodes()
-      val nodesInMap = nodeMap(nodeRenumberer.internalToExternal(node.id))
-      nodesInMap.foreach { i => neighbors.contains(nodeRenumberer.externalToInternal(i)) mustBe true }
-      neighbors.foreach { i => nodesInMap.contains(nodeRenumberer.internalToExternal(i)) mustBe true }
+      val nodesInMap = nodeMap(nodeNumberer.internalToExternal(node.id))
+      nodesInMap.foreach { i => neighbors.contains(nodeNumberer.externalToInternal(i)) mustBe true }
+      neighbors.foreach { i => nodesInMap.contains(nodeNumberer.internalToExternal(i)) mustBe true }
     }
-    nodeMap.keys.foreach { id => g.existsNodeId(nodeRenumberer.externalToInternal(id)) mustBe true }
+    nodeMap.keys.foreach { id => g.existsNodeId(nodeNumberer.externalToInternal(id)) mustBe true }
   }
 
   var graph: DirectedGraph = _
@@ -65,7 +65,7 @@ class AdjacencyListGraphReaderSpec extends Specification with GraphMapEquality {
   }
 
   "AdjacencyListReader renumbered" should {
-    var seqRenumberer = new SequentialNodeRenumberer()
+    var seqRenumberer = new SequentialNodeNumberer[Int]()
 
     doBefore{
       graph = new AdjacencyListGraphReader("cassovary-core/src/test/resources/graphs/", "toy_6nodes_adj",

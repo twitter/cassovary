@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.graph
 
-import com.twitter.cassovary.util.{NodeRenumberer,SequentialNodeRenumberer,SharedArraySeq}
+import com.twitter.cassovary.util.{NodeNumberer,SequentialNodeNumberer,SharedArraySeq}
 import org.specs.Specification
 
 class SharedArraySeqSpec extends Specification {

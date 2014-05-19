@@ -15,7 +15,7 @@ package com.twitter.cassovary
 
 import com.twitter.cassovary.graph._
 import com.twitter.cassovary.util.io.ListOfEdgesGraphReader
-import com.twitter.cassovary.util.SequentialNodeRenumberer
+import com.twitter.cassovary.util.SequentialNodeNumberer
 import com.twitter.app.Flags
 import com.twitter.util.Stopwatch
 import java.util.concurrent.Executors
@@ -104,7 +104,7 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
 
     def readGraph(path : String, filename : String) : DirectedGraph = {
       new ListOfEdgesGraphReader(path, filename,
-        new SequentialNodeRenumberer()) {
+        new SequentialNodeNumberer()) {
         override val executorService = graphReadingThreadPool
       }.toArrayBasedDirectedGraph()
     }

@@ -19,17 +19,17 @@ import scala.collection.mutable.{ArrayBuffer,HashMap}
  * Renumbers node id values read from source file to internal sequentially increasing id value.
    Uses a synchronized map for thread safety when shared by multiple reader threads.
  */
-class SequentialNodeRenumberer extends NodeRenumberer {
+class SequentialNodeNumberer[@specialized(Int, Long) T] extends NodeNumberer[T] {
 
   // See comments in externalToInternal for why HashMap is not Concurrent or Synchronized.
-  val externalToInternalMap = HashMap[Int,Int]()
-  var internalToExternalMap = ArrayBuffer[Int]()
+  val externalToInternalMap = HashMap[T,Int]()
+  var internalToExternalMap = ArrayBuffer[T]()
 
   /**
    * Map external node id to internal node id, where internal nodes sequentially increase
    * from 0 for each newly seen external node id. Thread-safe; see body comments for details.
    */
-  def externalToInternal(externalNodeId: Int): Int =
+  def externalToInternal(externalNodeId: T): Int =
     /** 
      * We don't use Concurrent or Synchronized HashMap alone because of potential race:
      *  Thread1                        | Thread2
@@ -61,7 +61,7 @@ class SequentialNodeRenumberer extends NodeRenumberer {
       internalNodeId
     }
 
-  def internalToExternal(internalNodeId: Int): Int = {
+  def internalToExternal(internalNodeId: Int): T = {
     internalToExternalMap(internalNodeId)
   }
 

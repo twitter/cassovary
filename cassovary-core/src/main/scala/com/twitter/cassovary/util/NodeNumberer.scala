@@ -15,23 +15,21 @@ package com.twitter.cassovary.util
 
 /*
  * Maintains a map from "node id" values read from source graph file, to some internal id value.
- * Implementer SequentialNodeRenumberer uses this to map each input id to a sequentially increasing
+ * Implementer SequentialNodeNumberer uses this to map each input id to a sequentially increasing
  * value, effectively densifying the node id space and avoiding wasteful holes.
  * Implementer Identity does nothing to preserve existing behavior.
  * Usage: Graph reader calls nodeIdToNodeIdx(nodeId) on each read node.
  * On output, nodeIdxToNodeId(nodeIdx) called on each node index value to be output.
  */
 
-trait NodeRenumberer {
-  def externalToInternal(externalNodeId: Int): Int
-  def internalToExternal(internalNodeId: Int): Int
+trait NodeNumberer[@specialized(Int, Long) T] {
+  def externalToInternal(externalNodeId: T): Int
+  def internalToExternal(internalNodeId: Int): T
 }
 
-object NodeRenumberer {
-  final class Identity extends NodeRenumberer {
+object NodeNumberer {
+  final class IntIdentity extends NodeNumberer[Int] {
     def externalToInternal(externalNodeId: Int): Int = externalNodeId
     def internalToExternal(internalNodeId: Int): Int = internalNodeId
   }
 }
-
-

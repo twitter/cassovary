@@ -15,13 +15,13 @@
 /**
  * Generates a directed Erdos-Renyi random graph file with n log(n) edges 
  * and node ids distributed uniformly throughout the space of 0..MaxNodeId. 
- * Loads the graph file both with a SequentialNodeRenumberer and without,
+ * Loads the graph file both with a SequentialNodeNumberer and without,
  * and compares approximate representation sizes of the two.
  */
 
 import com.google.common.util.concurrent.MoreExecutors
 import com.twitter.cassovary.util.io.AdjacencyListGraphReader
-import com.twitter.cassovary.util.SequentialNodeRenumberer
+import com.twitter.cassovary.util.SequentialNodeNumberer
 import com.twitter.cassovary.graph.TestGraphs
 import java.io.{File,PrintWriter}
 import scala.math
@@ -58,7 +58,7 @@ object RenumberedGraph {
     gWriter.close()
 
     // Read graph file into memory with renumbering.
-    val readGraph = new AdjacencyListGraphReader(renumGraphDirName, renumGraphFileName, new SequentialNodeRenumberer()) {
+    val readGraph = new AdjacencyListGraphReader(renumGraphDirName, renumGraphFileName, new SequentialNodeNumberer[Int]()) {
       override val executorService = MoreExecutors.sameThreadExecutor()
     }.toArrayBasedDirectedGraph()
 
