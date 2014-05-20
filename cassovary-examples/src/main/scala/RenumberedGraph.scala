@@ -36,7 +36,7 @@ object RenumberedGraph {
 
     printf("Generating Erdos-Renyi random graph with n=%d nodes and log(n)=%d avg outdegree...\n", numNodes, avgOutDegree)
     // Generate mapping of each node id to a random integer in the space 0..MaxNodeId.
-    var rng = new Random()
+    val rng = new Random()
     val nodeIds = Array.fill(numNodes) { math.abs(rng.nextInt(MaxNodeId)) }
 
     val genGraph = TestGraphs.generateRandomGraph(numNodes,
