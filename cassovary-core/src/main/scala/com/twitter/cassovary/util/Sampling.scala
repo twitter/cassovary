@@ -13,6 +13,8 @@
  */
 package com.twitter.cassovary.util
 
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet
+import scala.collection.JavaConversions._
 import scala.util.Random
 
 object Sampling {
@@ -20,9 +22,9 @@ object Sampling {
    * O(size) time algorithm for random subset of a given range known as
    * Fischer-Yates shuffle.
    *
-   * If size > from.size returns all elements.
+   * If ```size > from.size``` returns all elements.
    *
-   * Be aware, that this method changes the {@code from} Array.
+   * Be aware, that this method changes the ```from``` Array.
    */
   def randomSubset[@specialized(Int) A](size: Int, from: Array[A], rng: Random): Array[A] = {
     if (size > from.size) {
@@ -36,6 +38,29 @@ object Sampling {
           from(swapIndex) = temp
       }
       from.slice(0, size)
+    }
+  }
+
+  /**
+   * Expected ```O(size)``` time algorithm for random subset of a given range.
+   *
+   * If ```size > from.size``` returns all elements.
+   */
+  def randomSubset(elements: Int, range: Range, rng: Random): Array[Int] = {
+    if (elements >= range.size) {
+      range.toArray
+    } else {
+      if (elements > range.size / 2) {
+        val complement = new IntOpenHashSet(randomSubset(range.size - elements, range, rng).toIterator)
+        range.filterNot(complement.contains).toArray
+      } else {
+        val result = new IntOpenHashSet()
+        while (result.size < elements) {
+          val randomElement = range(rng.nextInt(range.size))
+          result.add(randomElement)
+        }
+        result.toIntArray
+      }
     }
   }
 }
