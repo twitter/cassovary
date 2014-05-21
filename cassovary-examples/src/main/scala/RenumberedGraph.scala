@@ -21,7 +21,7 @@
 
 import com.google.common.util.concurrent.MoreExecutors
 import com.twitter.cassovary.util.io.AdjacencyListGraphReader
-import com.twitter.cassovary.util.SequentialNodeNumberer
+import com.twitter.cassovary.util.{Sampling, SequentialNodeNumberer}
 import com.twitter.cassovary.graph.TestGraphs
 import java.io.{File,PrintWriter}
 import scala.math
@@ -37,7 +37,7 @@ object RenumberedGraph {
     printf("Generating Erdos-Renyi random graph with n=%d nodes and log(n)=%d avg outdegree...\n", numNodes, avgOutDegree)
     // Generate mapping of each node id to a random integer in the space 0..MaxNodeId.
     val rng = new Random()
-    val nodeIds = Array.fill(numNodes) { math.abs(rng.nextInt(MaxNodeId)) }
+    val nodeIds = Sampling.randomSubset(numNodes, 0 to MaxNodeId, rng)
 
     val genGraph = TestGraphs.generateRandomGraph(numNodes,
       TestGraphs.getProbEdgeRandomDirected(numNodes, avgOutDegree))
