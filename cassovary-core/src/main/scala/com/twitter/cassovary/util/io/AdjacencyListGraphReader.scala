@@ -14,7 +14,7 @@
 package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
-import com.twitter.cassovary.util.NodeRenumberer
+import com.twitter.cassovary.util.NodeNumberer
 import scala.io.Source
 
 /**
@@ -40,14 +40,14 @@ import scala.io.Source
  * @param prefixFileNames the string that each part file starts with
  */
 class AdjacencyListGraphReader (val directory: String, override val prefixFileNames: String = "",
-                                val nodeRenumberer: NodeRenumberer = new NodeRenumberer.Identity()
+                                val nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity()
                                ) extends GraphReaderFromDirectory {
 
   /**
    * Read in nodes and edges from a single file
    * @param filename Name of file to read from
    */
-  private class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer)
+  private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[Int])
                       extends Iterator[NodeIdEdgesMaxId] {
 
     private val outEdgePattern = """^(\d+)\s+(\d+)""".r
@@ -61,13 +61,13 @@ class AdjacencyListGraphReader (val directory: String, override val prefixFileNa
       var i = 0
       val outEdgeCountInt = outEdgeCount.toInt
       val externalNodeId = id.toInt
-      val internalNodeId = nodeRenumberer.externalToInternal(externalNodeId)
+      val internalNodeId = nodeNumberer.externalToInternal(externalNodeId)
 
       var newMaxId = internalNodeId
       val outEdgesArr = new Array[Int](outEdgeCountInt)
       while (i < outEdgeCountInt) {
         val externalNghId = lines.next.trim.toInt
-        val internalNghId = nodeRenumberer.externalToInternal(externalNghId)
+        val internalNghId = nodeNumberer.externalToInternal(externalNghId)
         newMaxId = newMaxId max internalNghId
         outEdgesArr(i) = internalNghId
         i += 1
@@ -81,6 +81,6 @@ class AdjacencyListGraphReader (val directory: String, override val prefixFileNa
   }
 
   def oneShardReader(filename : String) : Iterator[NodeIdEdgesMaxId] = {
-    new OneShardReader(filename, nodeRenumberer)
+    new OneShardReader(filename, nodeNumberer)
   }
 }

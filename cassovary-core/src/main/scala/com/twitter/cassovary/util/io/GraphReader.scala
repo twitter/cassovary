@@ -17,8 +17,7 @@ import com.google.common.util.concurrent.MoreExecutors
 import com.twitter.cassovary.graph._
 import com.twitter.cassovary.graph.StoredGraphDir
 import com.twitter.cassovary.graph.StoredGraphDir.StoredGraphDir
-import com.twitter.cassovary.util.NodeRenumberer
-import java.io.File
+import com.twitter.cassovary.util.NodeNumberer
 import java.util.concurrent.ExecutorService
 
 /**
@@ -28,7 +27,7 @@ import java.util.concurrent.ExecutorService
  * which returns a sequence of functions that themselves return an Iterator
  * over NodeIdEdgesMaxId (see its type signature below as well).
  *
- * It is also required to provide a nodeRenumberer.
+ * It is also required to provide a nodeNumberer.
  *
  * NodeIdEdgesMaxId is a case class defined in ArrayBasedDirectedGraph
  * that stores 1) the id of a node, 2) the ids of its neighbors,
@@ -43,9 +42,9 @@ trait GraphReader {
   def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]]
 
   /**
-   * Define node renumberer
+   * Define node numberer
    */
-  def nodeRenumberer : NodeRenumberer
+  def nodeNumberer : NodeNumberer[Int]
 
   /**
    * Override to modify the graph's stored direction

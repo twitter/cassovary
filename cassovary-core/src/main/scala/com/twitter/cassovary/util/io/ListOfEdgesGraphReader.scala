@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.util.NodeRenumberer
+import com.twitter.cassovary.util.NodeNumberer
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
 import com.twitter.logging.Logger
 import it.unimi.dsi.fastutil.ints.{Int2IntArrayMap, Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
@@ -43,12 +43,12 @@ import scala.collection.mutable.ArrayBuffer
  * @param prefixFileNames the string that each part file starts with
  */
 class ListOfEdgesGraphReader(val directory: String, override val prefixFileNames: String,
-                             val nodeRenumberer: NodeRenumberer = new NodeRenumberer.Identity())
+                             val nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity())
     extends GraphReaderFromDirectory {
 
   private lazy val log = Logger.get
 
-  private class OneShardReader(filename: String, nodeRenumberer: NodeRenumberer)
+  private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[Int])
     extends Iterator[NodeIdEdgesMaxId] {
 
     private val holder = NodeIdEdgesMaxId(-1, null, -1)
@@ -75,8 +75,8 @@ class ListOfEdgesGraphReader(val directory: String, override val prefixFileNames
           line.trim match {
             case commentPattern(s) => ()
             case directedEdgePattern(from, to) =>
-              val internalFromId = nodeRenumberer.externalToInternal(from.toInt)
-              val internalToId = nodeRenumberer.externalToInternal(to.toInt)
+              val internalFromId = nodeNumberer.externalToInternal(from.toInt)
+              val internalToId = nodeNumberer.externalToInternal(to.toInt)
               if (edgesBySource.containsKey(internalFromId)) {
                 edgesBySource.get(internalFromId) += internalToId
               } else {
@@ -105,6 +105,6 @@ class ListOfEdgesGraphReader(val directory: String, override val prefixFileNames
   }
 
   def oneShardReader(filename : String) : Iterator[NodeIdEdgesMaxId] = {
-    new OneShardReader(filename, nodeRenumberer)
+    new OneShardReader(filename, nodeNumberer)
   }
 }
