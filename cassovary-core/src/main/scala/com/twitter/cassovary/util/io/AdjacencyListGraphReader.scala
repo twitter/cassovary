@@ -15,10 +15,12 @@ package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
 import com.twitter.cassovary.util.NodeNumberer
+import java.util.concurrent.ExecutorService
 import scala.io.Source
+import scala.util.matching.Regex
 
 /**
- * Reads in a multi-line adjacency list from multiple files in a directory.
+ * Reads in a multi-line adjacency list from multiple files in a directory, which ids are of type T.
  * Does not check for duplicate edges or nodes.
  *
  * You can optionally specify which files in a directory to read. For example, you may have files starting with
@@ -26,7 +28,7 @@ import scala.io.Source
  *
  * In each file, a node and its neighbors is defined by the first line being that
  * node's id and its # of neighbors, followed by that number of ids on subsequent lines.
- * For example,
+ * For example, when ids are Ints,
  *    241 3
  *    2
  *    4
@@ -36,37 +38,49 @@ import scala.io.Source
  *    ...
  * In this file, node 241 has 3 neighbors, namely 2, 4 and 1. Node 53 has 1 neighbor, 241.
  *
+ * It is also possible to load node ids with other separator than ` ` and with quotation mark. For
+ * details see [[ListOfEdgesGraphReader]].
+ *
  * @param directory the directory to read from
  * @param prefixFileNames the string that each part file starts with
+ * @param nodeNumberer nodeNumberer to use with node ids
+ * @param idReader function that can read id from String
+ * @param separator sign between nodes forming edge
+ * @param quotationMark quotation mark used with ids
  */
-class AdjacencyListGraphReader (val directory: String, override val prefixFileNames: String = "",
-                                val nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity()
-                               ) extends GraphReaderFromDirectory {
+class AdjacencyListGraphReader[T] (val directory: String, override val prefixFileNames: String = "",
+                                   val nodeNumberer: NodeNumberer[T], idReader: (String => T),
+                                   separator: String = " ", quotationMark: String = "")
+                               extends GraphReaderFromDirectory[T] {
 
   /**
    * Read in nodes and edges from a single file
    * @param filename Name of file to read from
    */
-  private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[Int])
+  private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[T])
                       extends Iterator[NodeIdEdgesMaxId] {
 
-    private val outEdgePattern = """^(\d+)\s+(\d+)""".r
+    val quotationMarkRegex = if (quotationMark.isEmpty) "" else "\\" + quotationMark
+    private val labelRegex = quotationMarkRegex + """(\w+)""" + quotationMarkRegex
+    private val outEdgePattern = ("^" +  labelRegex + separator + """(\d+)""").r
     private val lines = Source.fromFile(filename).getLines()
     private val holder = NodeIdEdgesMaxId(-1, null, -1)
 
     override def hasNext: Boolean = lines.hasNext
 
     override def next(): NodeIdEdgesMaxId = {
-      val outEdgePattern(id, outEdgeCount) = lines.next.trim
+      val outEdgePattern(id, outEdgeCount) = lines.next().trim
       var i = 0
       val outEdgeCountInt = outEdgeCount.toInt
-      val externalNodeId = id.toInt
+      val externalNodeId = idReader(id)
       val internalNodeId = nodeNumberer.externalToInternal(externalNodeId)
 
       var newMaxId = internalNodeId
       val outEdgesArr = new Array[Int](outEdgeCountInt)
       while (i < outEdgeCountInt) {
-        val externalNghId = lines.next.trim.toInt
+        val pattern = new Regex(labelRegex)
+        val pattern(neighborId) = lines.next().trim
+        val externalNghId = idReader(neighborId)
         val internalNghId = nodeNumberer.externalToInternal(externalNghId)
         newMaxId = newMaxId max internalNghId
         outEdgesArr(i) = internalNghId
@@ -83,4 +97,12 @@ class AdjacencyListGraphReader (val directory: String, override val prefixFileNa
   def oneShardReader(filename : String) : Iterator[NodeIdEdgesMaxId] = {
     new OneShardReader(filename, nodeNumberer)
   }
+}
+
+object AdjacencyListGraphReader {
+  def forIntIds(directory: String, prefixFileNames: String = "", threadPool: ExecutorService,
+                nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity()) =
+    new AdjacencyListGraphReader[Int](directory, prefixFileNames, nodeNumberer, _.toInt) {
+      override val executorService = threadPool
+    }
 }

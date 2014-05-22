@@ -13,34 +13,57 @@
  */
 package com.twitter.cassovary.util.io
 
-import org.specs.Specification
-import com.twitter.cassovary.graph.DirectedGraph
+import com.twitter.cassovary.graph.GraphBehaviours
+import com.twitter.cassovary.util.SequentialNodeNumberer
 import java.util.concurrent.Executors
+import org.scalatest.WordSpec
+import org.scalatest.matchers.ShouldMatchers
 
-class ListOfEdgesGraphReaderSpec extends Specification with GraphMapEquality {
+class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours with ShouldMatchers {
 
-  val nodeMap = Map(1 -> List(2, 3), 2 -> List(3), 3 -> List(4), 4 -> List(1))
+  val intGraphMap = Map(1 -> List(2, 3), 2 -> List(3), 3 -> List(4), 4 -> List(1))
 
-  var graph: DirectedGraph = _
+  val stringGraphMap = Map("a" -> List("b"), "b" -> List("c"), "c" -> List("d"), "d" -> List("e"),
+    "e" -> List("a"))
 
-  "ListOfEdgesReader" should {
+  private val DIRECTORY: String = "cassovary-core/src/test/resources/graphs/"
 
-    doBefore {
-      // Example using 2 threads to read in the graph
-      graph = new ListOfEdgesGraphReader("cassovary-core/src/test/resources/graphs/", "toy_list5edges") {
-        override val executorService = Executors.newFixedThreadPool(2)
-      }.toArrayBasedDirectedGraph()
+  trait GraphWithIntIds {
+    val graph = ListOfEdgesGraphReader.forIntIds(DIRECTORY, "toy_list5edges",
+      Executors.newFixedThreadPool(2)).toArrayBasedDirectedGraph()
+  }
+
+  trait GraphWithStringIds {
+    val seqNumberer = new SequentialNodeNumberer[String]()
+    val graph = new ListOfEdgesGraphReader(DIRECTORY, "toy_6nodes_list", seqNumberer,
+      idReader = identity){
+      override val executorService = Executors.newFixedThreadPool(2)
+    }.toSharedArrayBasedDirectedGraph()
+  }
+
+  "ListOfEdgesReader" when {
+    "using Int ids" should {
+
+      "provide the correct graph properties" in {
+        new GraphWithIntIds {
+          graph.nodeCount should be (4)
+          graph.edgeCount should be (5L)
+          graph.maxNodeId should be (4)
+        }
+      }
+
+      "contain the right nodes and edges" in {
+        new GraphWithIntIds {
+          behave like graphEquivalentToMap(graph, intGraphMap)
+        }
+      }
     }
-
-    "provide the correct graph properties" in {
-      graph.nodeCount mustBe 4
-      graph.edgeCount mustBe 5L
-      graph.maxNodeId mustBe 4
+    "using String ids" in {
+      new GraphWithStringIds {
+        graph.nodeCount should be (6)
+        graph.edgeCount should be (5L)
+        graph.maxNodeId should be (5)
+      }
     }
-
-    "contain the right nodes and edges" in {
-      nodeMapEquals(graph, nodeMap)
-    }
-
   }
 }

@@ -13,76 +13,86 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.DirectedGraph
-import com.twitter.cassovary.util.{NodeNumberer,SequentialNodeNumberer}
+import com.twitter.cassovary.graph.GraphBehaviours
+import com.twitter.cassovary.util.SequentialNodeNumberer
 import java.util.concurrent.Executors
-import org.specs.Specification
+import org.scalatest.WordSpec
+import org.scalatest.matchers.ShouldMatchers
 
-class AdjacencyListGraphReaderSpec extends Specification with GraphMapEquality {
+class AdjacencyListGraphReaderSpec extends WordSpec with ShouldMatchers with GraphBehaviours {
+  val DIRECTORY = "cassovary-core/src/test/resources/graphs/"
 
-  val nodeMap = Map( 10 -> List(11, 12, 13), 11 -> List(12, 14), 12 -> List(14),
+  val toy6nodeMap = Map( 10 -> List(11, 12, 13), 11 -> List(12, 14), 12 -> List(14),
     13 -> List(12, 14), 14 -> List(15), 15 -> List(10, 11))
 
-  /**
-   * Compares the nodes in a graph and those defined by the nodeMap (id -> ids of neighbors),
-   * remapping node ids thru nodeRenumberer, and ensures that these are equivalent
-   * @param g DirectedGraph
-   * @param nodeMap Map of node ids to ids of its neighbors
-   * @param nodeNumberer a node renumberer
-   */
-  def nodeMapEqualsRenumbered(g:DirectedGraph, nodeMap: Map[Int, List[Int]], nodeNumberer: NodeNumberer[Int]) = {
-    g.foreach { node =>
-      nodeMap.contains(nodeNumberer.internalToExternal(node.id)) mustBe true
-      val neighbors = node.outboundNodes()
-      val nodesInMap = nodeMap(nodeNumberer.internalToExternal(node.id))
-      nodesInMap.foreach { i => neighbors.contains(nodeNumberer.externalToInternal(i)) mustBe true }
-      neighbors.foreach { i => nodesInMap.contains(nodeNumberer.internalToExternal(i)) mustBe true }
-    }
-    nodeMap.keys.foreach { id => g.existsNodeId(nodeNumberer.externalToInternal(id)) mustBe true }
+  val toy7nodeMap = Map( "a" -> List("b"), "b" -> List("c", "d"), "c" -> List(), "d" -> List(), "" +
+    "e" -> List("f"), "f" -> List("a", "b", "g"), "g" -> List())
+
+  trait GraphWithoutRenumberer {
+    val graph = AdjacencyListGraphReader.forIntIds(DIRECTORY, "toy_6nodes_adj",
+      Executors.newFixedThreadPool(2)).toSharedArrayBasedDirectedGraph()
   }
 
-  var graph: DirectedGraph = _
+  trait GraphWithRenumberer {
+    val seqRenumberer = new SequentialNodeNumberer[Int]()
+    val graph = AdjacencyListGraphReader.forIntIds(DIRECTORY, "toy_6nodes_adj",
+      Executors.newFixedThreadPool(2), seqRenumberer).toSharedArrayBasedDirectedGraph()
+  }
+
+  trait GraphWithStringIds {
+    val seqNumberer = new SequentialNodeNumberer[String]()
+    val graph = new AdjacencyListGraphReader[String](DIRECTORY, "toy_7nodes_adj_StringIds", seqNumberer,
+      idReader = identity, separator = " ", quotationMark =  "\""){
+      override val executorService = Executors.newFixedThreadPool(2)
+    }.toSharedArrayBasedDirectedGraph()
+  }
 
   "AdjacencyListReader" should {
-
-    doBefore{
-      // Example using 2 threads to read in the graph
-      graph = new AdjacencyListGraphReader("cassovary-core/src/test/resources/graphs/", "toy_6nodes_adj") {
-          override val executorService = Executors.newFixedThreadPool(2)
-        }.toSharedArrayBasedDirectedGraph()
-    }
-
     "provide the correct graph properties" in {
-      graph.nodeCount mustBe 6
-      graph.edgeCount mustBe 11L
-      graph.maxNodeId mustBe 15
+      new GraphWithoutRenumberer {
+        graph.nodeCount should be(6)
+        graph.edgeCount should be(11L)
+        graph.maxNodeId should be(15)
+      }
     }
 
     "contain the right nodes and edges" in {
-      nodeMapEquals(graph, nodeMap)
-    }
-
-  }
-
-  "AdjacencyListReader renumbered" should {
-    var seqRenumberer = new SequentialNodeNumberer[Int]()
-
-    doBefore{
-      graph = new AdjacencyListGraphReader("cassovary-core/src/test/resources/graphs/", "toy_6nodes_adj",
-        seqRenumberer) {
-          override val executorService = Executors.newFixedThreadPool(2)
-        }.toSharedArrayBasedDirectedGraph()
-    }
-
-    "provide the correct graph properties" in {
-      graph.nodeCount mustBe 6
-      graph.edgeCount mustBe 11L
-      graph.maxNodeId mustBe 5  // Zero-based; node ids are 0 thru 5.
-    }
-
-    "contain the right renumbered nodes and edges" in {
-      nodeMapEqualsRenumbered(graph, nodeMap, seqRenumberer)
+      new GraphWithoutRenumberer {0
+        behave like graphEquivalentToMap(graph, toy6nodeMap)
+      }
     }
   }
 
+  "AdjacencyListReader renumbered" when {
+    "reading Int ids" should {
+
+      "provide the correct graph properties" in {
+        new GraphWithRenumberer {
+          graph.nodeCount should be(6)
+          graph.edgeCount should be(11L)
+          graph.maxNodeId should be(5) // Zero-based; node ids are 0 thru 5.
+        }
+      }
+
+      "contain the right renumbered nodes and edges" in {
+        new GraphWithRenumberer {
+          behave like renumberedGraphEquivalentToMap(graph, toy6nodeMap, seqRenumberer)
+        }
+      }
+    }
+    "reading String ids" should {
+      "provide the correct graph properties" in {
+        new GraphWithStringIds {
+          graph.nodeCount should be (7)
+          graph.edgeCount should be (7)
+          graph.maxNodeId should be (6)
+        }
+      }
+      "contain the right numbered nodes and edges" in {
+        new GraphWithStringIds {
+          behave like renumberedGraphEquivalentToMap(graph, toy7nodeMap, seqNumberer)
+        }
+      }
+    }
+  }
 }

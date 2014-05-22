@@ -58,7 +58,8 @@ object RenumberedGraph {
     gWriter.close()
 
     // Read graph file into memory with renumbering.
-    val readGraph = new AdjacencyListGraphReader(renumGraphDirName, renumGraphFileName, new SequentialNodeNumberer[Int]()) {
+    val readGraph = new AdjacencyListGraphReader[Int](renumGraphDirName, renumGraphFileName,
+      new SequentialNodeNumberer[Int](), _.toInt) {
       override val executorService = MoreExecutors.sameThreadExecutor()
     }.toArrayBasedDirectedGraph()
 
@@ -68,7 +69,8 @@ object RenumberedGraph {
     printf("First 3 nodes of renumbered graph: %s\n", readGraph.toString(3))
 
     // Read graph file into memory without renumbering.
-    val readGraph2 = new AdjacencyListGraphReader(renumGraphDirName, renumGraphFileName) {
+    val readGraph2 = new AdjacencyListGraphReader[Int](renumGraphDirName, renumGraphFileName,
+      new SequentialNodeNumberer[Int](), _.toInt) {
       override val executorService = MoreExecutors.sameThreadExecutor()
     }.toArrayBasedDirectedGraph()
     val rg2Complexity = readGraph2.approxStorageComplexity

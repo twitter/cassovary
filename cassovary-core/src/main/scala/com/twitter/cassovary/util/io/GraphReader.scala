@@ -14,37 +14,37 @@
 package com.twitter.cassovary.util.io
 
 import com.google.common.util.concurrent.MoreExecutors
-import com.twitter.cassovary.graph._
-import com.twitter.cassovary.graph.StoredGraphDir
 import com.twitter.cassovary.graph.StoredGraphDir.StoredGraphDir
+import com.twitter.cassovary.graph._
 import com.twitter.cassovary.util.NodeNumberer
 import java.util.concurrent.ExecutorService
 
 /**
- * Trait that classes should implement to read in graphs.
+ * Trait that classes should implement to read in graphs that nodes have
+ * ids of type `T`.
  *
- * The reader class is required to implement iteratorSeq, a method
- * which returns a sequence of functions that themselves return an Iterator
- * over NodeIdEdgesMaxId (see its type signature below as well).
+ * The reader class is required to implement `iteratorSeq`, a method
+ * which returns a sequence of functions that themselves return an `Iterator`
+ * over `NodeIdEdgesMaxId` (see its type signature below as well).
  *
- * It is also required to provide a nodeNumberer.
+ * It is also required to provide a `nodeNumberer[T]`.
  *
- * NodeIdEdgesMaxId is a case class defined in ArrayBasedDirectedGraph
+ * `NodeIdEdgesMaxId` is a case class defined in `ArrayBasedDirectedGraph`
  * that stores 1) the id of a node, 2) the ids of its neighbors,
  * and 3) the maximum id of itself and its neighbors.
  *
- * One useful reference implementation is AdjacencyListGraphReader.
+ * One useful reference implementation is `AdjacencyListGraphReader`.
  */
-trait GraphReader {
+trait GraphReader[T] {
   /**
-   * Should return a sequence of iterators over NodeIdEdgesMaxId objects
+   * Should return a sequence of iterators over `NodeIdEdgesMaxId` objects
    */
   def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]]
 
   /**
    * Define node numberer
    */
-  def nodeNumberer : NodeNumberer[Int]
+  def nodeNumberer : NodeNumberer[T]
 
   /**
    * Override to modify the graph's stored direction
@@ -57,14 +57,14 @@ trait GraphReader {
   def executorService: ExecutorService = MoreExecutors.sameThreadExecutor()
 
   /**
-   * Create an ArrayBasedDirectedGraph
+   * Create an `ArrayBasedDirectedGraph`
    */
   def toArrayBasedDirectedGraph() = {
     ArrayBasedDirectedGraph(iteratorSeq, executorService, storedGraphDir)
   }
 
   /**
-   * Create a SharedArrayBasedDirectedGraph
+   * Create a `SharedArrayBasedDirectedGraph`
    * @param numShards Number of shards to split the in-memory array into
    *                  128 is an arbitrary default
    */

@@ -22,14 +22,14 @@
  */
 
 import com.twitter.cassovary.util.io.AdjacencyListGraphReader
+import com.twitter.cassovary.util.NodeNumberer
 import java.util.concurrent.Executors
 
 object HelloLoadGraph {
   def main(args: Array[String]) {
     val threadPool = Executors.newFixedThreadPool(2)
-    val graph = new AdjacencyListGraphReader("cassovary-core/src/test/resources/graphs/", "toy_6nodes_adj") {
-      override val executorService = threadPool
-    }.toArrayBasedDirectedGraph()
+    val graph = AdjacencyListGraphReader.forIntIds("cassovary-core/src/test/resources/graphs/", "toy_6nodes_adj",
+      threadPool).toArrayBasedDirectedGraph()
 
     printf("\nHello Graph!\n\tA graph loaded from two adjacency list files with %s nodes has %s directed edges.\n",
       graph.nodeCount, graph.edgeCount)

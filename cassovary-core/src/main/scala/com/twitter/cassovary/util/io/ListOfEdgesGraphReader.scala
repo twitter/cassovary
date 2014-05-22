@@ -19,50 +19,76 @@ import com.twitter.logging.Logger
 import it.unimi.dsi.fastutil.ints.{Int2IntArrayMap, Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
 import scala.io.Source
 import scala.collection.mutable.ArrayBuffer
+import java.util.concurrent.ExecutorService
 
 /**
- * Reads in a multi-line list of edges from multiple files in a directory.
+ * Reads in a multi-line list of edges from multiple files in a directory, which nodes have ids of type T.
  * Does not check for duplicate edges or nodes.
  *
  * You can optionally specify which files in a directory to read. For example, you may have files starting with
  * "part-" that you'd like to read. Only these will be read in if you specify that as the file prefix.
  *
- * In each file, a directed edges is defined by a pair of integers: from and to.
- * For example,
+ * You should also specify `nodeNumberer`, `idReader`, `separator` between nodes in an edge
+ * and `quotationMark` if used with node ids.
+ *
+ * For a default version for `Int` graphs see [[ListOfEdgesGraphReader.forIntIds]] builder method.
+ *
+ * In each file, a directed edges is defined by a pair of T: from and to.
+ * For example, we use `String` ids with `"` `quotationMark` and ` ` (space) `separator`, when
+ * reading file:
+ * {{{
+ * "a" "b"
+ * "b" "d"
+ * "d" "c"
+ * "a" "e"
+ * ...
+ * }}}
+ * In this file, node `a` has two outgoing edges (to `b` and `e`), node `b` has an outgoing edge
+ * to node `d` and node `d` has an outgoing edge to node `c`.
+ *
+ * In the simplest case of Int graph from file:
+ * {{{
  * 1 3
  * 2 4
  * 4 3
  * 1 5
  * ...
- * In this file, node 1 has two outgoing edges (to 3 and 5), node 2 has an outgoing edge
- * to node 4 and node 4 has an outgoing edge to node 3.
+ * }}}
+ * We use empty `quotationMark` and `separator` and default `nodeRenumberer`.
  *
  * Note that, it is recommended to use AdjacencyListGraphReader, because of its efficiency.
  *
  * @param directory the directory to read from
  * @param prefixFileNames the string that each part file starts with
+ * @param nodeNumberer nodeNumberer to use with node ids
+ * @param idReader function that can read id from String
+ * @param separator sign between nodes forming edge
+ * @param quotationMark quotation mark used with ids
  */
-class ListOfEdgesGraphReader(val directory: String, override val prefixFileNames: String,
-                             val nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity())
-    extends GraphReaderFromDirectory {
+class ListOfEdgesGraphReader[T](val directory: String, override val prefixFileNames: String,
+                                val nodeNumberer: NodeNumberer[T], idReader: (String => T),
+                                separator: String = " ", quotationMark: String = "")
+  extends GraphReaderFromDirectory[T] {
 
   private lazy val log = Logger.get
 
-  private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[Int])
+  private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[T])
     extends Iterator[NodeIdEdgesMaxId] {
 
     private val holder = NodeIdEdgesMaxId(-1, null, -1)
 
     def readEdgesBySource(): (Int2ObjectMap[ArrayBuffer[Int]], Int2IntArrayMap) = {
       log.info("Starting reading from file %s...\n", filename)
-      val directedEdgePattern = """^(\d+)\s+(\d+)""".r
+      val quotationMarkRegex = if (quotationMark.isEmpty) "" else "\\" + quotationMark
+      val labelRegex = quotationMarkRegex + """(\w+)""" + quotationMarkRegex
+      val directedEdgePattern = (labelRegex + separator + labelRegex).r
       val commentPattern = """(^#.*)""".r
       val lines = Source.fromFile(filename).getLines()
 
       val edgesBySource = new Int2ObjectLinkedOpenHashMap[ArrayBuffer[Int]]()
       val nodeMaxOutEdgeId = new Int2IntArrayMap()
 
-      def updateNodeMaxOutEdgeId(node : Int, out : Int) {
+      def updateNodeMaxOutEdgeId(node: Int, out: Int) {
         if (nodeMaxOutEdgeId.containsKey(node)) {
           nodeMaxOutEdgeId.put(node, nodeMaxOutEdgeId.get(node) max out)
         } else {
@@ -75,8 +101,8 @@ class ListOfEdgesGraphReader(val directory: String, override val prefixFileNames
           line.trim match {
             case commentPattern(s) => ()
             case directedEdgePattern(from, to) =>
-              val internalFromId = nodeNumberer.externalToInternal(from.toInt)
-              val internalToId = nodeNumberer.externalToInternal(to.toInt)
+              val internalFromId = nodeNumberer.externalToInternal(idReader(from))
+              val internalToId = nodeNumberer.externalToInternal(idReader(to))
               if (edgesBySource.containsKey(internalFromId)) {
                 edgesBySource.get(internalFromId) += internalToId
               } else {
@@ -104,7 +130,15 @@ class ListOfEdgesGraphReader(val directory: String, override val prefixFileNames
     }
   }
 
-  def oneShardReader(filename : String) : Iterator[NodeIdEdgesMaxId] = {
+  def oneShardReader(filename: String): Iterator[NodeIdEdgesMaxId] = {
     new OneShardReader(filename, nodeNumberer)
   }
+}
+
+object ListOfEdgesGraphReader {
+  def forIntIds(directory: String, prefixFileNames: String = "", threadPool: ExecutorService,
+                nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity()) =
+    new ListOfEdgesGraphReader[Int](directory, prefixFileNames, new NodeNumberer.IntIdentity(), _.toInt) {
+      override val executorService = threadPool
+    }
 }
