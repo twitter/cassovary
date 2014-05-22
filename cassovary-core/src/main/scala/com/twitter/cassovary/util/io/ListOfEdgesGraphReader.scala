@@ -28,33 +28,22 @@ import java.util.concurrent.ExecutorService
  * You can optionally specify which files in a directory to read. For example, you may have files starting with
  * "part-" that you'd like to read. Only these will be read in if you specify that as the file prefix.
  *
- * You should also specify `nodeNumberer`, `idReader`, `separator` between nodes in an edge
- * and `quotationMark` if used with node ids.
+ * You should also specify `nodeNumberer`, `idReader` for reading node ids.
  *
  * For a default version for `Int` graphs see [[ListOfEdgesGraphReader.forIntIds]] builder method.
  *
  * In each file, a directed edges is defined by a pair of T: from and to.
- * For example, we use `String` ids with `"` `quotationMark` and ` ` (space) `separator`, when
+ * For example, we use `String` ids with ` ` (space) `separator`, when
  * reading file:
  * {{{
- * "a" "b"
- * "b" "d"
- * "d" "c"
- * "a" "e"
+ * a b
+ * b d
+ * d c
+ * a e
  * ...
  * }}}
  * In this file, node `a` has two outgoing edges (to `b` and `e`), node `b` has an outgoing edge
  * to node `d` and node `d` has an outgoing edge to node `c`.
- *
- * In the simplest case of Int graph from file:
- * {{{
- * 1 3
- * 2 4
- * 4 3
- * 1 5
- * ...
- * }}}
- * We use empty `quotationMark` and `separator` and default `nodeRenumberer`.
  *
  * Note that, it is recommended to use AdjacencyListGraphReader, because of its efficiency.
  *
@@ -62,15 +51,17 @@ import java.util.concurrent.ExecutorService
  * @param prefixFileNames the string that each part file starts with
  * @param nodeNumberer nodeNumberer to use with node ids
  * @param idReader function that can read id from String
- * @param separator sign between nodes forming edge
- * @param quotationMark quotation mark used with ids
  */
-class ListOfEdgesGraphReader[T](val directory: String, override val prefixFileNames: String,
-                                val nodeNumberer: NodeNumberer[T], idReader: (String => T),
-                                separator: String = " ", quotationMark: String = "")
-  extends GraphReaderFromDirectory[T] {
+class ListOfEdgesGraphReader[T](
+  val directory: String,
+  override val prefixFileNames: String,
+  val nodeNumberer: NodeNumberer[T],
+  idReader: (String => T)
+) extends GraphReaderFromDirectory[T] {
 
   private lazy val log = Logger.get
+
+  protected val separator = " "
 
   private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[T])
     extends Iterator[NodeIdEdgesMaxId] {
@@ -79,9 +70,7 @@ class ListOfEdgesGraphReader[T](val directory: String, override val prefixFileNa
 
     def readEdgesBySource(): (Int2ObjectMap[ArrayBuffer[Int]], Int2IntArrayMap) = {
       log.info("Starting reading from file %s...\n", filename)
-      val quotationMarkRegex = if (quotationMark.isEmpty) "" else "\\" + quotationMark
-      val labelRegex = quotationMarkRegex + """(\w+)""" + quotationMarkRegex
-      val directedEdgePattern = (labelRegex + separator + labelRegex).r
+      val directedEdgePattern = ("""^(\w+)""" + separator + """(\w+)""").r
       val commentPattern = """(^#.*)""".r
       val lines = Source.fromFile(filename).getLines()
 

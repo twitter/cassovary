@@ -42,7 +42,7 @@ class AdjacencyListGraphReaderSpec extends WordSpec with ShouldMatchers with Gra
   trait GraphWithStringIds {
     val seqNumberer = new SequentialNodeNumberer[String]()
     val graph = new AdjacencyListGraphReader[String](DIRECTORY, "toy_7nodes_adj_StringIds", seqNumberer,
-      idReader = identity, separator = " ", quotationMark =  "\""){
+      idReader = identity){
       override val executorService = Executors.newFixedThreadPool(2)
     }.toSharedArrayBasedDirectedGraph()
   }
