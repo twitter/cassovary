@@ -14,10 +14,11 @@
 package com.twitter.cassovary.util
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.twitter.concurrent.AsyncSemaphore
 import com.twitter.ostrich.stats.Stats
-import com.twitter.util.Duration
+import com.twitter.util.{Future, FuturePool, Duration}
 import java.util.ArrayList
-import java.util.concurrent._
+import java.util.concurrent.{Future => JFuture, _}
 import java.util.{List => JList}
 
 /**
@@ -105,7 +106,7 @@ object ExecutorUtils {
    * @param work the work to apply to the inputs
    */
   def parallelWork[T, A](executorService: ExecutorService, inputs: Seq[T],
-      work: T => A): JList[Future[A]] = {
+      work: T => A): JList[JFuture[A]] = {
     val workTasks = {
       val tasks = new ArrayList[Callable[A]](inputs.size)
       inputs foreach { input =>
@@ -134,5 +135,19 @@ object ExecutorUtils {
       work: T => A): Unit = {
     import scala.collection.JavaConversions._
     parallelWork(executorService, inputs, work) foreach { _.get }
+  }
+}
+
+/**
+ * Future pool that executes task asynchronously with bounded parallelism level.
+ */
+class BoundedFuturePool(originalFuturePool: FuturePool, parallelismLevel: Int) extends FuturePool {
+
+  private[this] lazy val parallelismSemaphore = new AsyncSemaphore(parallelismLevel)
+
+  override def apply[T](f: => T): Future[T] = {
+    parallelismSemaphore.acquireAndRun {
+      originalFuturePool.apply(f)
+    }
   }
 }
