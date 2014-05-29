@@ -89,8 +89,8 @@ object Cassovary extends Build {
     base = file("."),
     settings = Project.defaultSettings ++ sharedSettings ++ sonatypeSettings
   ).aggregate(
-      cassovaryCore, cassovaryExamples
-    )
+      cassovaryCore, cassovaryExamples, cassovaryBenchmarks
+  )
 
   lazy val cassovaryCore = Project(
     id = "cassovary-core",
