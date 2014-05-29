@@ -20,7 +20,7 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.ShouldMatchers
 
 class AdjacencyListGraphReaderSpec extends WordSpec with ShouldMatchers with GraphBehaviours {
-  val DIRECTORY = "cassovary-core/src/test/resources/graphs/"
+  val directory = "cassovary-core/src/test/resources/graphs/"
 
   val toy6nodeMap = Map( 10 -> List(11, 12, 13), 11 -> List(12, 14), 12 -> List(14),
     13 -> List(12, 14), 14 -> List(15), 15 -> List(10, 11))
@@ -29,19 +29,19 @@ class AdjacencyListGraphReaderSpec extends WordSpec with ShouldMatchers with Gra
     "e" -> List("f"), "f" -> List("a", "b", "g"), "g" -> List())
 
   trait GraphWithoutRenumberer {
-    val graph = AdjacencyListGraphReader.forIntIds(DIRECTORY, "toy_6nodes_adj",
+    val graph = AdjacencyListGraphReader.forIntIds(directory, "toy_6nodes_adj",
       Executors.newFixedThreadPool(2)).toSharedArrayBasedDirectedGraph()
   }
 
   trait GraphWithRenumberer {
     val seqRenumberer = new SequentialNodeNumberer[Int]()
-    val graph = AdjacencyListGraphReader.forIntIds(DIRECTORY, "toy_6nodes_adj",
+    val graph = AdjacencyListGraphReader.forIntIds(directory, "toy_6nodes_adj",
       Executors.newFixedThreadPool(2), seqRenumberer).toSharedArrayBasedDirectedGraph()
   }
 
   trait GraphWithStringIds {
     val seqNumberer = new SequentialNodeNumberer[String]()
-    val graph = new AdjacencyListGraphReader[String](DIRECTORY, "toy_7nodes_adj_StringIds", seqNumberer,
+    val graph = new AdjacencyListGraphReader[String](directory, "toy_7nodes_adj_StringIds", seqNumberer,
       idReader = identity){
       override val executorService = Executors.newFixedThreadPool(2)
     }.toSharedArrayBasedDirectedGraph()

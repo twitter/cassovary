@@ -17,6 +17,8 @@ import com.twitter.cassovary.graph.NodeIdEdgesMaxId
 import com.twitter.cassovary.util.NodeNumberer
 import java.util.concurrent.ExecutorService
 import scala.io.Source
+import com.twitter.util.NonFatal
+import java.io.IOException
 
 /**
  * Reads in a multi-line adjacency list from multiple files in a directory, which ids are of type T.
@@ -63,32 +65,40 @@ class AdjacencyListGraphReader[T] (
     extends Iterator[NodeIdEdgesMaxId] {
 
     private val outEdgePattern = ("""^(\w+)""" + separator + """(\d+)""").r
+    var lastLineParsed = 0
     private val lines = Source.fromFile(filename).getLines()
+      .map{x => {lastLineParsed += 1; x}}
     private val holder = NodeIdEdgesMaxId(-1, null, -1)
 
     override def hasNext: Boolean = lines.hasNext
 
     override def next(): NodeIdEdgesMaxId = {
-      val outEdgePattern(id, outEdgeCount) = lines.next().trim
       var i = 0
-      val outEdgeCountInt = outEdgeCount.toInt
-      val externalNodeId = idReader(id)
-      val internalNodeId = nodeNumberer.externalToInternal(externalNodeId)
+      try {
+        val outEdgePattern(id, outEdgeCount) = lines.next().trim
+        val outEdgeCountInt = outEdgeCount.toInt
+        val externalNodeId = idReader(id)
+        val internalNodeId = nodeNumberer.externalToInternal(externalNodeId)
 
-      var newMaxId = internalNodeId
-      val outEdgesArr = new Array[Int](outEdgeCountInt)
-      while (i < outEdgeCountInt) {
-        val externalNghId = idReader(lines.next().trim)
-        val internalNghId = nodeNumberer.externalToInternal(externalNghId)
-        newMaxId = newMaxId max internalNghId
-        outEdgesArr(i) = internalNghId
-        i += 1
+        var newMaxId = internalNodeId
+        val outEdgesArr = new Array[Int](outEdgeCountInt)
+          while (i < outEdgeCountInt) {
+            val externalNghId = idReader(lines.next().trim)
+            val internalNghId = nodeNumberer.externalToInternal(externalNghId)
+            newMaxId = newMaxId max internalNghId
+            outEdgesArr(i) = internalNghId
+            i += 1
+          }
+
+          holder.id = internalNodeId
+          holder.edges = outEdgesArr
+          holder.maxId = newMaxId
+          holder
+      } catch {
+        case NonFatal(exc) =>
+          throw new IOException("Parsing failed near line: %d if %s"
+            .format(lastLineParsed, filename), exc)
       }
-
-      holder.id = internalNodeId
-      holder.edges = outEdgesArr
-      holder.maxId = newMaxId
-      holder
     }
   }
 

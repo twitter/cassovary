@@ -26,16 +26,16 @@ class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours with Shou
   val stringGraphMap = Map("a" -> List("b"), "b" -> List("c"), "c" -> List("d"), "d" -> List("e"),
     "e" -> List("a"))
 
-  private val DIRECTORY: String = "cassovary-core/src/test/resources/graphs/"
+  private val directory: String = "cassovary-core/src/test/resources/graphs/"
 
   trait GraphWithIntIds {
-    val graph = ListOfEdgesGraphReader.forIntIds(DIRECTORY, "toy_list5edges",
+    val graph = ListOfEdgesGraphReader.forIntIds(directory, "toy_list5edges",
       Executors.newFixedThreadPool(2)).toArrayBasedDirectedGraph()
   }
 
   trait GraphWithStringIds {
     val seqNumberer = new SequentialNodeNumberer[String]()
-    val graph = new ListOfEdgesGraphReader(DIRECTORY, "toy_6nodes_list", seqNumberer,
+    val graph = new ListOfEdgesGraphReader(directory, "toy_6nodes_list", seqNumberer,
       idReader = identity){
       override val executorService = Executors.newFixedThreadPool(2)
     }.toSharedArrayBasedDirectedGraph()

@@ -20,6 +20,8 @@ import it.unimi.dsi.fastutil.ints.{Int2IntArrayMap, Int2ObjectMap, Int2ObjectLin
 import scala.io.Source
 import scala.collection.mutable.ArrayBuffer
 import java.util.concurrent.ExecutorService
+import com.twitter.util.NonFatal
+import java.io.IOException
 
 /**
  * Reads in a multi-line list of edges from multiple files in a directory, which nodes have ids of type T.
@@ -63,8 +65,11 @@ class ListOfEdgesGraphReader[T](
 
   protected val separator = " "
 
+
   private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[T])
     extends Iterator[NodeIdEdgesMaxId] {
+
+    var lastLineParsed = 0
 
     private val holder = NodeIdEdgesMaxId(-1, null, -1)
 
@@ -73,6 +78,7 @@ class ListOfEdgesGraphReader[T](
       val directedEdgePattern = ("""^(\w+)""" + separator + """(\w+)""").r
       val commentPattern = """(^#.*)""".r
       val lines = Source.fromFile(filename).getLines()
+        .map{x => {lastLineParsed += 1; x}}
 
       val edgesBySource = new Int2ObjectLinkedOpenHashMap[ArrayBuffer[Int]]()
       val nodeMaxOutEdgeId = new Int2IntArrayMap()
@@ -111,11 +117,17 @@ class ListOfEdgesGraphReader[T](
     override def hasNext: Boolean = edgesIterator.hasNext
 
     override def next(): NodeIdEdgesMaxId = {
-      val elem = edgesIterator.next()
-      holder.id = elem.getKey
-      holder.edges = elem.getValue.toArray
-      holder.maxId = nodeMaxOutEdgeId.get(elem.getKey)
-      holder
+      try {
+        val elem = edgesIterator.next()
+        holder.id = elem.getKey
+        holder.edges = elem.getValue.toArray
+        holder.maxId = nodeMaxOutEdgeId.get(elem.getKey)
+        holder
+      } catch {
+        case NonFatal(exc) =>
+          throw new IOException("Parsing failed near line: %d in %s"
+            .format(lastLineParsed, filename), exc)
+      }
     }
   }
 
