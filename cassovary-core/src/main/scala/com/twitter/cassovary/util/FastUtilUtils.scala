@@ -12,12 +12,17 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.twitter.cassovary.graph.util
+package com.twitter.cassovary.util
 
-import it.unimi.dsi.fastutil.ints.Int2IntMap
+import java.{util => jutil}
+
+import it.unimi.dsi.fastutil.ints.{Int2BooleanOpenHashMap, Int2IntMap, Int2IntOpenHashMap}
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 
-object FastUtilConversion {
+import scala.collection.JavaConversions._
+import scala.collection.mutable
+
+object FastUtilUtils {
 
   def object2IntMapToArray[T](map: Object2IntMap[T]): Array[(T, Int)] = {
     val result = new Array[(T, Int)](map.size)
@@ -47,4 +52,13 @@ object FastUtilConversion {
     result
   }
 
+  def int2IntMapToMap(map: Int2IntMap): mutable.Map[Int, Int] = {
+    map.asInstanceOf[jutil.Map[Int, Int]]
+  }
+
+  def newInt2BooleanOpenHashMap(): mutable.Map[Int, Boolean] =
+    new Int2BooleanOpenHashMap().asInstanceOf[jutil.Map[Int, Boolean]]
+
+  def newInt2IntOpenHashMap(): mutable.Map[Int, Int] =
+    new Int2IntOpenHashMap().asInstanceOf[jutil.Map[Int, Int]]
 }

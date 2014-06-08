@@ -18,25 +18,14 @@
 
 import com.google.common.base.Functions;
 import com.google.common.collect.Ordering;
-import com.twitter.cassovary.graph.DirectedGraph;
-import com.twitter.cassovary.graph.DirectedPath;
-import com.twitter.cassovary.graph.GraphDir;
-import com.twitter.cassovary.graph.GraphUtils;
+import com.twitter.cassovary.graph.*;
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams;
-import com.twitter.cassovary.graph.StoredGraphDir;
-import com.twitter.cassovary.graph.TestGraphs;
-import com.twitter.util.Duration;
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import java.lang.Integer;
-import java.lang.System;
-import java.util.Comparator;
+import scala.Tuple2;
+import scala.collection.JavaConverters$;
+
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
-import scala.Option;
-import scala.Tuple2;
 
 public class RandomWalkJava {
 
@@ -61,10 +50,11 @@ public class RandomWalkJava {
     // Do the walk and measure how long it took
     System.out.printf("Now doing a random walk of %s steps from Node 0...\n", numSteps);
     long startTime = System.nanoTime();
-    Tuple2<Int2IntMap, scala.Option<Int2ObjectMap<Object2IntMap<DirectedPath>>>> lm =
+    Tuple2<scala.collection.Map<Object, Object>, scala.Option<scala.collection.Map<Object,
+            Object2IntMap<DirectedPath>>>> lm =
             graphUtils.calculatePersonalizedReputation(0, walkParams);
     long endTime = System.nanoTime();
-    Int2IntMap neighbors = lm._1;
+    Map<Integer, Integer> neighbors = scalaIntsMapToJavaMap(lm._1());
     System.out.printf("Random walk visited %s nodes in %s ms:\n", neighbors.size(), (endTime - startTime)/1000000);
 
     // Sort neighbors (or nodes) in descending number of visits and take the top 10 neighbors
@@ -78,8 +68,8 @@ public class RandomWalkJava {
     for (int id : topNeighbors) {
       int numVisits = neighbors.get(id);
       System.out.printf("%8s%10s\t", id, numVisits);
-      if (lm._2.isDefined()) { // If Option is not None
-        Object2IntMap<DirectedPath> paths = lm._2.get().get(id);
+      if (lm._2().isDefined()) { // If Option is not None
+        Object2IntMap<DirectedPath> paths = lm._2().get().apply(id);
         int remaining = paths.size();
         for (Map.Entry<DirectedPath, Integer> ef : paths.entrySet()) {
           // Print a directed path and #visits along that path
@@ -95,5 +85,10 @@ public class RandomWalkJava {
       }
       System.out.println();
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Map<Integer, Integer> scalaIntsMapToJavaMap(scala.collection.Map<Object, Object> map) {
+    return (Map<Integer, Integer>) JavaConverters$.MODULE$.mapAsJavaMapConverter(map);
   }
 }

@@ -13,8 +13,8 @@
  */
 package com.twitter.cassovary.graph.tourist
 
-import com.twitter.cassovary.graph.util.FastUtilConversion
 import com.twitter.cassovary.graph.{DirectedPath, TestNode}
+import com.twitter.cassovary.util.FastUtilUtils
 import it.unimi.dsi.fastutil.ints.Int2IntMap
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 import org.scalatest.WordSpec
@@ -31,7 +31,7 @@ class NodeTouristSpec extends WordSpec with ShouldMatchers {
         visitor.visit(testNode(id))
       }
 
-      visitMapToArray(visitor.infoAllNodes) shouldEqual Array((1, 3), (2, 3), (3, 2), (4, 1))
+      visitor.infoAllNodes.toSeq should be  (Array((1, 3), (2, 3), (3, 2), (4, 1)).toSeq)
     }
   }
 
@@ -43,25 +43,53 @@ class NodeTouristSpec extends WordSpec with ShouldMatchers {
       }
       val info = visitor.infoAllNodes
 
-      pathMapToArray(info.get(1)) shouldEqual Array((DirectedPath(Array(1)), 5))
-      pathMapToArray(info.get(2)) shouldEqual Array((DirectedPath(Array(2)), 3))
-      pathMapToArray(info.get(3)) shouldEqual Array(
+      pathMapToSeq(info(1)) should be(Seq((DirectedPath(Array(1)), 5)))
+      pathMapToSeq(info(2)) should be(Seq((DirectedPath(Array(2)), 3)))
+      pathMapToSeq(info(3)) should be(Seq(
         (DirectedPath(Array(2, 3)), 3),
         (DirectedPath(Array(2, 3, 4, 3)), 1),
         (DirectedPath(Array(1, 3)), 1)
-      )
-      pathMapToArray(info.get(4)) shouldEqual Array(
+      ))
+      pathMapToSeq(info(4)) should be(Seq(
         (DirectedPath(Array(2, 3, 4)), 2),
         (DirectedPath(Array(1, 4)), 1)
-      )
+      ))
     }
   }
 
-  def pathMapToArray(map: Object2IntMap[DirectedPath]) = {
-    FastUtilConversion.object2IntMapToArray(map)
+  "PrevNbrCounter" should {
+    "store all previous neighbors" in {
+      val prevNbrCounter = new PrevNbrCounter(Some(2), false)
+      prevNbrCounter.recordPreviousNeighbor(5, 4)
+      prevNbrCounter.recordPreviousNeighbor(5, 2)
+      prevNbrCounter.recordPreviousNeighbor(5, 1)
+      prevNbrCounter.recordPreviousNeighbor(5, 3)
+      prevNbrCounter.recordPreviousNeighbor(5, 1)
+      prevNbrCounter.recordPreviousNeighbor(5, 4)
+
+      prevNbrCounter.infoOfNode(5).map(FastUtilUtils.int2IntMapToMap) should be
+        Some(Map(4 -> 2, 1 -> 2, 3 -> 1, 2 -> 1))
+    }
+
+    "store top 2 previous neighbors" in {
+      val prevNbrCounter = new PrevNbrCounter(None, false)
+      prevNbrCounter.recordPreviousNeighbor(5, 4)
+      prevNbrCounter.recordPreviousNeighbor(5, 2)
+      prevNbrCounter.recordPreviousNeighbor(5, 1)
+      prevNbrCounter.recordPreviousNeighbor(5, 3)
+      prevNbrCounter.recordPreviousNeighbor(5, 1)
+      prevNbrCounter.recordPreviousNeighbor(5, 4)
+
+      prevNbrCounter.infoOfNode(5).map(FastUtilUtils.int2IntMapToMap) should be
+        Some(Map(4 -> 2, 1 -> 2))
+    }
   }
 
-  def visitMapToArray(map: Int2IntMap) = {
-    FastUtilConversion.int2IntMapToArray(map)
+  def pathMapToSeq(map: Object2IntMap[DirectedPath]) = {
+    FastUtilUtils.object2IntMapToArray(map).toSeq
+  }
+
+  def visitMapToSeq(map: Int2IntMap) = {
+    FastUtilUtils.int2IntMapToArray(map).toSeq
   }
 }

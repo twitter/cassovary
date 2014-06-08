@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.graph
 
-import com.twitter.cassovary.graph.util.FastUtilConversion
+import com.twitter.cassovary.util.FastUtilUtils
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 import org.junit.runner.RunWith
 import org.scalatest.WordSpec
@@ -101,9 +101,10 @@ class DirectedPathCollectionSpec extends WordSpec with ShouldMatchers {
         paths.totalNumPaths shouldEqual 10
       }
     }
+  }
 
-    def pathMapToSeq(map: Object2IntMap[DirectedPath]) = {
-      FastUtilConversion.object2IntMapToArray(map).toSeq
-    }
+
+  def pathMapToSeq(map: Object2IntMap[DirectedPath]) = {
+    FastUtilUtils.object2IntMapToArray(map).toSeq
   }
 }

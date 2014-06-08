@@ -10,22 +10,12 @@
  * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
- */
+*/
 package com.twitter.cassovary.graph.tourist
 
-import com.twitter.cassovary.graph.Node
+import com.twitter.cassovary.util.FastUtilUtils
 
-/**
- * Represents the processing done when visiting a node.
- */
-trait NodeTourist {
-  /**
-   * Visit a node by its `id`
-   */
-  def visit(id: Int)
+class BoolInfoKeeper(override val onlyOnce: Boolean) extends InfoKeeper[Boolean] {
 
-  /**
-   * Visit a `node`
-   */
-  def visit(node: Node) { visit(node.id) }
+  protected val infoPerNode = FastUtilUtils.newInt2BooleanOpenHashMap()
 }
