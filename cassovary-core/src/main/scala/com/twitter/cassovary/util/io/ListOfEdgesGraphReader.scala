@@ -63,7 +63,7 @@ class ListOfEdgesGraphReader[T](
 
   private lazy val log = Logger.get
 
-  protected val separator = " "
+  protected val separator = "\\s"
 
 
   private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[T])

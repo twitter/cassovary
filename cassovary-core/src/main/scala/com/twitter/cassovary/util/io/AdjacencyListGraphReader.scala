@@ -15,13 +15,13 @@ package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
 import com.twitter.cassovary.util.NodeNumberer
-import java.util.concurrent.ExecutorService
-import scala.io.Source
 import com.twitter.util.NonFatal
 import java.io.IOException
+import java.util.concurrent.ExecutorService
+import scala.io.Source
 
 /**
- * Reads in a multi-line adjacency list from multiple files in a directory, which ids are of type T.
+ * Reads in a multi-line adjacency list from multiple files in a directory, where ids are of type T.
  * Does not check for duplicate edges or nodes.
  *
  * You can optionally specify which files in a directory to read. For example, you may have files starting with
@@ -39,7 +39,18 @@ import java.io.IOException
  *    ...
  * In this file, node 241 has 3 neighbors, namely 2, 4 and 1. Node 53 has 1 neighbor, 241.
  *
- *
+ * Similarly, when ids are String, input file should follow the example:
+ *    Alice 2
+ *    Bob
+ *    Chris
+ *    Bob 1
+ *    Chris
+ *    Chris 1
+ *    Bob
+ *    ...
+ * In this file Alice has 2 directed edges to Bob and Chris, Bob has an edge to Chris,
+ * and Chris has outgoing edge to Bob.
+ * *
  * @param directory the directory to read from
  * @param prefixFileNames the string that each part file starts with
  * @param nodeNumberer nodeNumberer to use with node ids
@@ -96,7 +107,7 @@ class AdjacencyListGraphReader[T] (
           holder
       } catch {
         case NonFatal(exc) =>
-          throw new IOException("Parsing failed near line: %d if %s"
+          throw new IOException("Parsing failed near line: %d in %s"
             .format(lastLineParsed, filename), exc)
       }
     }

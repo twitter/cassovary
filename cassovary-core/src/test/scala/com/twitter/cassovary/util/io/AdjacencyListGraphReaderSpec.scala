@@ -25,8 +25,18 @@ class AdjacencyListGraphReaderSpec extends WordSpec with ShouldMatchers with Gra
   val toy6nodeMap = Map( 10 -> List(11, 12, 13), 11 -> List(12, 14), 12 -> List(14),
     13 -> List(12, 14), 14 -> List(15), 15 -> List(10, 11))
 
-  val toy7nodeMap = Map( "a" -> List("b"), "b" -> List("c", "d"), "c" -> List(), "d" -> List(), "" +
+  val toy7nodeMapString = Map( "a" -> List("b"), "b" -> List("c", "d"), "c" -> List(), "d" -> List(), "" +
     "e" -> List("f"), "f" -> List("a", "b", "g"), "g" -> List())
+
+  val toy7nodeMapLong = Map(
+    10000000000000L -> List(20000000000000L),
+    20000000000000L -> List(30000000000000L, 40000000000000L),
+    30000000000000L -> List(),
+    40000000000000L -> List(),
+    50000000000000L -> List(60000000000000L),
+    60000000000000L -> List(10000000000000L, 20000000000000L, 70000000000000L),
+    70000000000000L -> List()
+  )
 
   trait GraphWithoutRenumberer {
     val graph = AdjacencyListGraphReader.forIntIds(directory, "toy_6nodes_adj",
@@ -43,6 +53,14 @@ class AdjacencyListGraphReaderSpec extends WordSpec with ShouldMatchers with Gra
     val seqNumberer = new SequentialNodeNumberer[String]()
     val graph = new AdjacencyListGraphReader[String](directory, "toy_7nodes_adj_StringIds", seqNumberer,
       idReader = identity){
+      override val executorService = Executors.newFixedThreadPool(2)
+    }.toSharedArrayBasedDirectedGraph()
+  }
+
+  trait GraphWithLongIds {
+    val seqNumberer = new SequentialNodeNumberer[Long]()
+    val graph = new AdjacencyListGraphReader[Long](directory, "toy_7nodes_adj_LongIds", seqNumberer,
+      idReader = _.toLong){
       override val executorService = Executors.newFixedThreadPool(2)
     }.toSharedArrayBasedDirectedGraph()
   }
@@ -90,7 +108,21 @@ class AdjacencyListGraphReaderSpec extends WordSpec with ShouldMatchers with Gra
       }
       "contain the right numbered nodes and edges" in {
         new GraphWithStringIds {
-          behave like renumberedGraphEquivalentToMap(graph, toy7nodeMap, seqNumberer)
+          behave like renumberedGraphEquivalentToMap(graph, toy7nodeMapString, seqNumberer)
+        }
+      }
+    }
+    "reading Long ids" should {
+      "provide the correct graph properties" in {
+        new GraphWithLongIds {
+          graph.nodeCount should be (7)
+          graph.edgeCount should be (7)
+          graph.maxNodeId should be (6)
+        }
+      }
+      "contain the right numbered nodes and edges" in {
+        new GraphWithLongIds {
+          behave like renumberedGraphEquivalentToMap(graph, toy7nodeMapLong, seqNumberer)
         }
       }
     }

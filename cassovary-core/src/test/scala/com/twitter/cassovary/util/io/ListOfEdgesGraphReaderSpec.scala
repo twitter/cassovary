@@ -24,7 +24,16 @@ class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours with Shou
   val intGraphMap = Map(1 -> List(2, 3), 2 -> List(3), 3 -> List(4), 4 -> List(1))
 
   val stringGraphMap = Map("a" -> List("b"), "b" -> List("c"), "c" -> List("d"), "d" -> List("e"),
-    "e" -> List("a"))
+    "e" -> List("f"), "f" -> List("a"))
+
+  val longGraphMap = Map(
+    100000000000L -> List(200000000000L),
+    200000000000L -> List(300000000000L),
+    300000000000L -> List(400000000000L),
+    400000000000L -> List(500000000000L),
+    500000000000L -> List(600000000000L),
+    600000000000L -> List(100000000000L)
+  )
 
   private val directory: String = "cassovary-core/src/test/resources/graphs/"
 
@@ -35,15 +44,22 @@ class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours with Shou
 
   trait GraphWithStringIds {
     val seqNumberer = new SequentialNodeNumberer[String]()
-    val graph = new ListOfEdgesGraphReader(directory, "toy_6nodes_list", seqNumberer,
+    val graph = new ListOfEdgesGraphReader(directory, "toy_6nodes_list_StringIds", seqNumberer,
       idReader = identity){
+      override val executorService = Executors.newFixedThreadPool(2)
+    }.toSharedArrayBasedDirectedGraph()
+  }
+
+  trait GraphWithLongIds {
+    val seqNumberer = new SequentialNodeNumberer[Long]()
+    val graph = new ListOfEdgesGraphReader(directory, "toy_6nodes_list_LongIds", seqNumberer,
+      idReader = _.toLong){
       override val executorService = Executors.newFixedThreadPool(2)
     }.toSharedArrayBasedDirectedGraph()
   }
 
   "ListOfEdgesReader" when {
     "using Int ids" should {
-
       "provide the correct graph properties" in {
         new GraphWithIntIds {
           graph.nodeCount should be (4)
@@ -58,11 +74,32 @@ class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours with Shou
         }
       }
     }
-    "using String ids" in {
-      new GraphWithStringIds {
-        graph.nodeCount should be (6)
-        graph.edgeCount should be (5L)
-        graph.maxNodeId should be (5)
+    "using String ids" should {
+      "provide the correct graph properties" in {
+        new GraphWithStringIds {
+          graph.nodeCount should be(6)
+          graph.edgeCount should be(6L)
+          graph.maxNodeId should be(5)
+        }
+      }
+      "contain the right nodes and edges" in {
+        new GraphWithStringIds {
+          behave like renumberedGraphEquivalentToMap(graph, stringGraphMap, seqNumberer)
+        }
+      }
+    }
+    "using Long ids" should {
+      "provide the correct graph properties" in {
+        new GraphWithStringIds {
+          graph.nodeCount should be(6)
+          graph.edgeCount should be(6L)
+          graph.maxNodeId should be(5)
+        }
+      }
+      "contain the right nodes and edges" in {
+        new GraphWithLongIds {
+          behave like renumberedGraphEquivalentToMap(graph, longGraphMap, seqNumberer)
+        }
       }
     }
   }

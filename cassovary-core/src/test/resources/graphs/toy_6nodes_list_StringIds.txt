@@ -1,5 +1,7 @@
+# 6 nodes cycle with String ids
 a b
 b c
 c d
+d e
 e f
 f a

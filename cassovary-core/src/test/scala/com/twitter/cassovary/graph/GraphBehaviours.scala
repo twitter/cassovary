@@ -12,8 +12,8 @@
  */
 package com.twitter.cassovary.graph
 
-import org.scalatest.WordSpec
 import com.twitter.cassovary.util.NodeNumberer
+import org.scalatest.WordSpec
 
 trait GraphBehaviours {
   this: WordSpec =>
@@ -111,7 +111,7 @@ trait GraphBehaviours {
         "unexpected node in a graph: " + nodeNumberer.internalToExternal(node.id))
       val neighbors = node.outboundNodes()
       val nodesInMap = nodeMap(nodeNumberer.internalToExternal(node.id))
-      assert(nodesInMap.forall { i => neighbors.contains(nodeNumberer.externalToInternal(i)) } === true ,
+      assert(nodesInMap.forall { i => neighbors.contains(nodeNumberer.externalToInternal(i)) } === true,
         "edge missing in the graph")
       assert(neighbors.forall { i => nodesInMap.contains(nodeNumberer.internalToExternal(i)) } === true,
         "unexpected edge in the graph")
