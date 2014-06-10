@@ -103,10 +103,7 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
     val graphReadingThreadPool = Executors.newFixedThreadPool(4)
 
     def readGraph(path : String, filename : String) : DirectedGraph = {
-      new ListOfEdgesGraphReader(path, filename,
-        new SequentialNodeNumberer()) {
-        override val executorService = graphReadingThreadPool
-      }.toArrayBasedDirectedGraph()
+      ListOfEdgesGraphReader.forIntIds(path, filename, graphReadingThreadPool).toArrayBasedDirectedGraph()
     }
 
     if (benchmarks.isEmpty) {

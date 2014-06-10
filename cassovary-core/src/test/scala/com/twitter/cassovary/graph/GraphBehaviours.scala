@@ -12,6 +12,7 @@
  */
 package com.twitter.cassovary.graph
 
+import com.twitter.cassovary.util.NodeNumberer
 import org.scalatest.WordSpec
 
 trait GraphBehaviours {
@@ -81,6 +82,42 @@ trait GraphBehaviours {
           assert(graph.getNodeById(nbr).get.outboundNodes().contains(node.id), "edge existence not consistent in nodes")
         }
       }
+    }
+  }
+
+  def graphEquivalentToMap(g: DirectedGraph, nodeMap: Map[Int, List[Int]]) = {
+    g.foreach {
+      node =>
+        assert(nodeMap.contains(node.id) === true, "unexpected node: " + node.id)
+        val neighbors = node.outboundNodes().toArray.sorted
+        val nodesInMap = nodeMap(node.id).toArray.sorted
+        assert(neighbors.length === nodesInMap.length, "node: " + node.id + " neighbors.length incorrect")
+        neighbors.iterator.zip(nodesInMap.iterator).foreach {
+          case (a, b) => assert(a === b, "node: " + node.id + " neighbors incorrect")
+        }
+    }
+  }
+
+  /**
+   * Compares the nodes in a graph and those defined by the nodeMap (id -> ids of neighbors),
+   * remapping node ids thru nodeRenumberer, and ensures that these are equivalent
+   * @param g DirectedGraph
+   * @param nodeMap Map of node ids to ids of its neighbors
+   * @param nodeNumberer a node renumberer
+   */
+  def renumberedGraphEquivalentToMap[T](g: DirectedGraph, nodeMap: Map[T, List[T]], nodeNumberer: NodeNumberer[T]) = {
+    g.foreach { node =>
+      assert(nodeMap.contains(nodeNumberer.internalToExternal(node.id)) === true,
+        "unexpected node in a graph: " + nodeNumberer.internalToExternal(node.id))
+      val neighbors = node.outboundNodes()
+      val nodesInMap = nodeMap(nodeNumberer.internalToExternal(node.id))
+      assert(nodesInMap.forall { i => neighbors.contains(nodeNumberer.externalToInternal(i)) } === true,
+        "edge missing in the graph")
+      assert(neighbors.forall { i => nodesInMap.contains(nodeNumberer.internalToExternal(i)) } === true,
+        "unexpected edge in the graph")
+    }
+    nodeMap.keys.foreach {
+      id => assert(g.existsNodeId(nodeNumberer.externalToInternal(id)) === true, "node " + id + " missing in graph")
     }
   }
 }

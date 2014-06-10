@@ -21,7 +21,7 @@ import java.io.File
  * A subtrait of GraphReader that reads files of names specified by prefix
  * and containing directory.
  */
-trait GraphReaderFromDirectory extends GraphReader {
+trait GraphReaderFromDirectory[T] extends GraphReader[T] {
   /**
    * Directory name to read files from
    */
