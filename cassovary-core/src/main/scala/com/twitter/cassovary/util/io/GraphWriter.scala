@@ -21,20 +21,34 @@ import java.io.{PrintWriter,Writer}
  * such that it could be read back in by a GraphReader.
  */
 object GraphWriter {
+  /**
+   * Writes `node` to a given `writer`.
+   */
+  private def writeNode(writer: PrintWriter)(node: Node) {
+    writer.println(node.id + " " + node.outboundCount)
+    node.outboundNodes().foreach { ngh =>
+      writer.println(ngh)
+    }
+  }
 
   /**
    * Writes given graph to given writer by iterating over all nodes and outbound edges.
    */
-  def writeDirectedGraph(graph: DirectedGraph, writer: Writer) = {
-    val gWriter = new PrintWriter(writer)
-    graph.foreach { v => {
-        gWriter.println(v.id + " " + v.outboundCount)
-        v.outboundNodes().foreach { ngh => 
-          gWriter.println(ngh)
-        }
-      }
+  def writeDirectedGraph(graph: DirectedGraph, writer: Writer): Unit = writeDirectedGraph(graph, Seq(writer))
+
+  /**
+   * Writes given graph to given writers dividing the graph into chunks
+   * of equal sizes of nodes.
+   */
+  def writeDirectedGraph(graph: DirectedGraph, writers: Seq[Writer]): Unit = {
+    val chunks = writers.size
+    val nodesForChunk = ((graph.nodeCount - 1) / chunks) + 1
+    graph.grouped(nodesForChunk).zip(writers.iterator).foreach {
+      case (nodes, writer) =>
+        val gWriter = new PrintWriter(writer)
+        nodes foreach writeNode(gWriter)
+        gWriter.close()
     }
-    gWriter.close()
   }
 
 }
