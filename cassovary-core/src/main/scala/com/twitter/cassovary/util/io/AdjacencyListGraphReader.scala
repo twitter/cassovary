@@ -66,7 +66,7 @@ class AdjacencyListGraphReader[T] (
   /**
    * Separator between node ids forming edge.
    */
-  protected val separator = " "
+  protected val separator = "\\s"
 
   /**
    * Read in nodes and edges from a single file
@@ -75,7 +75,7 @@ class AdjacencyListGraphReader[T] (
   private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[T])
     extends Iterator[NodeIdEdgesMaxId] {
 
-    private val outEdgePattern = ("""^(\w+)""" + separator + """(\d+)""").r
+    private val outEdgePattern = ("""^(\S+)""" + separator + """(\d+)$""").r
     var lastLineParsed = 0
     private val lines = Source.fromFile(filename).getLines()
       .map{x => {lastLineParsed += 1; x}}
@@ -94,7 +94,8 @@ class AdjacencyListGraphReader[T] (
         var newMaxId = internalNodeId
         val outEdgesArr = new Array[Int](outEdgeCountInt)
           while (i < outEdgeCountInt) {
-            val externalNghId = idReader(lines.next().trim)
+            val nextLine = lines.next()
+            val externalNghId = idReader(nextLine)
             val internalNghId = nodeNumberer.externalToInternal(externalNghId)
             newMaxId = newMaxId max internalNghId
             outEdgesArr(i) = internalNghId
@@ -107,8 +108,8 @@ class AdjacencyListGraphReader[T] (
           holder
       } catch {
         case NonFatal(exc) =>
-          throw new IOException("Parsing failed near line: %d in %s"
-            .format(lastLineParsed, filename), exc)
+          throw new IOException("Parsing failed near line: %d in %s , message: %s\n%s"
+            .format(lastLineParsed, filename, exc.getMessage, exc.getStackTraceString), exc)
       }
     }
   }

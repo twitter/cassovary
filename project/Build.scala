@@ -131,6 +131,7 @@ object Cassovary extends Build {
     base = file("cassovary-wikipedia"),
     settings = Project.defaultSettings ++ sharedSettings
   ).settings(
+      javaOptions in run ++= Seq("-d64", "-Xmx8G", "-Xms512m"),
       name := "cassovary-wikipedia",
       libraryDependencies ++= Seq(
         "it.unimi.dsi" % "fastutil" % "6.4.4",

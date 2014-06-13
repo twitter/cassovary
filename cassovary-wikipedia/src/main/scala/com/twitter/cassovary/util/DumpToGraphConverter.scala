@@ -17,99 +17,122 @@ import com.twitter.app.Flags
 import java.io.{File, FileOutputStream}
 import scala.io.Source
 import scala.util.matching.Regex
-import scala.xml.pull._
+import scala.xml.pull.XMLEventReader
+import com.twitter.logging.Logger
+import scala.concurrent.{Await, future, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import java.nio.charset.StandardCharsets
+import scala.collection.mutable
 
 /**
  * Converts wikipedia pages-articles dump file to adjacency list suitable for Cassovary.
  *
  * If `outputFilename` is None prints result to standard output.
  */
-class DumpToGraphConverter(inputFilename: String, outputFilename: Option[String]) {
+class DumpToGraphConverter(inputFilename: String, outputFilename: Option[String]) extends WikipediaDumpProcessor {
+  import ObfuscationTools._
 
-  def apply() {
-    var out: Option[FileOutputStream] = None
+  val minimumLinks = 2
 
-    outputFilename match {
-      case Some(filename) => out = Some(new FileOutputStream(filename))
-      case None => out = None
-    }
+  /**
+   * Special prefixes of wikipedia links that point not to a normal page.
+   */
+  val specialLinkPrefixes = Array(
+    "File:",
+    "Image:",
+    "User:",
+    "user:",
+    "d:", // discussion
+    "Special:",
+    "Extension:",
+    "media:",
+    "Special:", // special links
+    "#", // link to anchor
+    "{{", // talk page
+    "//", // subpage (todo: can be treated other way)
+    ":fr:", "fr:",
+    ":es:", "es:",
+    ":pt:", "pt:",
+    ":de:", "de:",
+    ":pl:", "pl:",
+    ":it:", "it:",
+    ":cn:", "cn:",
+    ":en:", "en:",
+    ":nl:", "nl:"
+  )
 
-    val xml = new XMLEventReader(Source.fromFile(inputFilename))
+  var out: Option[FileOutputStream] = None
 
-    var insidePage = false
-    var insideTitle = false
-    var insideText = false
-    var currentPage: Option[String] = None
-    var links = collection.mutable.Set[String]()
+  outputFilename match {
+    case Some(filename) => out = Some(new FileOutputStream(filename))
+    case None => out = None
+  }
 
-    val linksRegex = new Regex( """\[\[[^\]]+\]\]""")
-    for (event <- xml) {
-      event match {
-        case EvElemStart(_, "page", _, _) => {
-          insidePage = true
-          currentPage = Some("title not set")
-        }
-        case EvElemEnd(_, "page") => {
-          writePage(currentPage.get, links)
-          currentPage = None
-          links.clear()
-        }
-        case EvElemStart(_, "title", _, _) if insidePage => {
-          insideTitle = true
-        }
-        case EvElemStart(_, "text", _, _) if insidePage => {
-          insideText = true
-        }
-        case EvElemEnd(_, "title") if insideTitle => {
-          insideTitle = false
-        }
-        case EvElemEnd(_, "text") if insideText => {
-          insideText = false
-        }
-        case EvText(t) =>
-          if (insideTitle) {
-            currentPage = Some(t)
-          }
-          if (insideText) {
-            val linksInLine = linksRegex.findAllIn(t).toList
-            val pattern = """\A\[\[(.+)\]\]\Z""".r
-            linksInLine.foreach {
-              case pattern(name) =>
-                links += name
-              case _ => ()
-            }
-          }
-        case _ => // ignore
-      }
-    }
+  val xml = new XMLEventReader(Source.fromFile(inputFilename))
 
-    def writePage(pageName: String, links: collection.Set[String]) = {
+  var links = collection.mutable.LinkedHashSet[String]()
+
+  val linksRegex = new Regex( """(?<=(\[\[))[^\]]+(?=(\]\]))""") //matches: [[ * ]]
+
+  val printedPages = mutable.HashSet[String]()
+
+  def writePage(pageName: String, links: collection.Set[String]) = {
+    if (validPageName(pageName) && !printedPages.contains(pageName) && links.size >= minimumLinks) {
       out match {
         case Some(o) =>
-          o.write((pageName + " " + links.size).getBytes())
-          o.write(links.map(x => x.replace(" ", "_")).mkString("\n", "\n", "\n").getBytes())
+          o.write((pageName + "\t" + links.size).getBytes(StandardCharsets.UTF_8))
+          o.write(links.mkString("\n", "\n", "\n").getBytes(StandardCharsets.UTF_8))
           o.flush()
         case None =>
           print(pageName + " " + links.size)
-          print(links.map(x => x.replace(" ", "_")).mkString("\n", "\n", "\n"))
+          print(links.mkString("\n", "\n", "\n"))
       }
+      printedPages += pageName
     }
+  }
 
+  override def processPageTextLine(pageName: String, text: String): Unit = {
+    val linksInLine = linksRegex.findAllIn(text)
+    linksInLine
+      .filter(link => specialLinkPrefixes.find(prefix => link.startsWith(prefix)).isEmpty)
+      .foreach {
+      case link: String =>
+        link.split("\\|") match {
+          case Array(head, _*) =>
+            val obfuscated = obfuscate(head)
+            if (validPageName(obfuscated))
+              links += obfuscated
+          case _ =>
+            // link empty
+        }
+      case _ => ()
+    }
+  }
+
+  override def onPageEnd(pageName: String): Unit = {
+    writePage(obfuscate(pageName), links)
+    links.clear()
+  }
+
+  override def onProcessingFinished(): Unit = {
     out match {
       case Some(o) => o.close()
       case None => ()
     }
   }
-
 }
 
 object DumpToGraphConverter extends App {
+
+  private val log = Logger.get("DumpToGraphConverter")
 
   val flags = new Flags("Wikipedia dump to adjacency list graph converter")
   val fileFlag = flags[String]("f", "Filename of a single file to read from")
   val outputFlag = flags[String]("o", "Output filename to write to")
   val directoryFlag = flags[String]("d", "Directory to read all xml files from")
-  val extensionFlag = flags[String]("e", ".graph", "Extension of file to write to.")
+  val extensionFlag = flags[String]("e", ".graph", "Extension of file to write to " +
+    "(when processing multiple files.)")
   val helpFlag = flags("h", false, "Print usage")
   flags.parse(args)
 
@@ -127,16 +150,21 @@ object DumpToGraphConverter extends App {
         if (filesInDir.isEmpty) {
           println("WARNING: empty directory.")
         }
-        filesInDir.filter(file => file.endsWith("xml"))foreach {
-          file => convertFile(dirName + file, dirName + file.replace(".xml", extensionFlag()))
+        val futures = filesInDir.filter(file => file.endsWith("xml")) map {
+          file =>
+            future {
+              convertFile(dirName + file, dirName + file.replace(".xml", extensionFlag()))
+            }
         }
+        Await.ready (Future.sequence(futures.toList), Duration.Inf)
       case None =>
         convertFile(fileFlag(), outputFlag())
     }
   }
 
   def convertFile(inputFilename: String, outputFilename: String) {
-    println("Converting file: %s...".format(inputFilename))
+    log.info("Converting file: %s...".format(inputFilename))
     new DumpToGraphConverter(inputFilename, Some(outputFilename))()
+    log.info("Converted file: %s...".format(inputFilename))
   }
 }
