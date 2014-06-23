@@ -20,6 +20,9 @@ import com.twitter.cassovary.util.io.AdjacencyListGraphReader
 import com.twitter.app.Flags
 import com.twitter.ostrich.stats.Stats
 import com.twitter.logging.Logger
+import scala.concurrent.duration.Duration
+import java.util.concurrent.TimeUnit
+import com.twitter.util.Stopwatch
 
 class HashMapsBasedWikipediaGraph(val graph: DirectedGraph, val nodesNumberer: NodeNumberer[String],
                                   val disambiguition: HashArraysMultipleNames) extends WikipediaGraph {
@@ -47,9 +50,8 @@ object HashMapsBasedWikipediaGraph extends App {
   flags.parse(args)
 
 
-  Stats.time("reading wikipedia") {
-    readFromFiles(directoryFlag(), prefixFlag(), disambiguitionFlag())
-  }
+  val watch = Stopwatch.start()
+  readFromFiles(directoryFlag(), prefixFlag(), disambiguitionFlag())
 
-  log.info("Wikipedia read successfully in " + Stats.get("reading wikipedia"))
+  log.info("Wikipedia read successfully in " + watch())
 }
