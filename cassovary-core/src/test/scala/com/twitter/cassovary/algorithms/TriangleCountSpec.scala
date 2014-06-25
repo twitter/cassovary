@@ -32,14 +32,14 @@ class TriangleCountSpec extends WordSpec with ShouldMatchers {
       edgeReservoir.set(1, Seq(1, 2))
       edgeReservoir.set(2, Seq(2, 3))
       val tc = new TriangleCount(TestGraphs.generateCompleteGraph(4), TriangleCountParameters(10, 10))
-      tc.computeWedgesInEdgeReservoir(edgeReservoir) should equal (2)
+      tc.computeWedgesInEdgeReservoir(edgeReservoir) should equal(2)
 
       edgeReservoir.set(3, Seq(1, 2))
-      tc.computeWedgesInEdgeReservoir(edgeReservoir) should equal (2)
+      tc.computeWedgesInEdgeReservoir(edgeReservoir) should equal(2)
 
       edgeReservoir.set(4, Seq(0, 2))
       edgeReservoir.set(5, Seq(7, 8))
-      tc.computeWedgesInEdgeReservoir(edgeReservoir) should equal (5)
+      tc.computeWedgesInEdgeReservoir(edgeReservoir) should equal(5)
     }
 
     "Return correct results for a graph with no triangles" in {
@@ -49,22 +49,23 @@ class TriangleCountSpec extends WordSpec with ShouldMatchers {
       val (transitivity, triangles) = TriangleCount(graph, pars)
       transitivity should be(0.0 plusOrMinus 0.05)
 
-      triangles should be(0.0 plusOrMinus 10.0)
+      triangles should be(0.0 plusOrMinus 20.0)
     }
+
 
     "Return correct results for Erdos-Renly mutual graphs" in {
       val edgeProbability = 0.3
-      val numberOfNodes = 1000
+      val numberOfNodes = 200
       val erGraph = TestGraphs.generateRandomUndirectedGraph(numberOfNodes, edgeProbability)
-      val pars = TriangleCountParameters(2000, 2000)
-      val (transitivity, triangles) = averageOfPairs(TriangleCount(erGraph, pars), 5)
-      transitivity should be (edgeProbability plusOrMinus 0.15 * edgeProbability)
+      val pars = TriangleCountParameters(500, 500)
+      val (transitivity, triangles) = averageOfPairs(TriangleCount(erGraph, pars), 10)
+      transitivity should be(edgeProbability plusOrMinus 0.15 * edgeProbability)
 
-      def averageTrianglesInERGraph(nodes : Int, p : Double) = {
+      def averageTrianglesInERGraph(nodes: Int, p: Double) = {
         p * p * p * nodes * (nodes - 1) * (nodes - 2) / 6
       }
       val expectedTriangles = averageTrianglesInERGraph(numberOfNodes, edgeProbability)
-      triangles should be (expectedTriangles plusOrMinus (0.2 * expectedTriangles))
+      triangles should be(expectedTriangles plusOrMinus (0.3 * expectedTriangles))
     }
 
     "Return correct results for complete graph" in {
@@ -72,14 +73,14 @@ class TriangleCountSpec extends WordSpec with ShouldMatchers {
       val graph = TestGraphs.generateCompleteGraph(nodes)
       val pars = TriangleCountParameters(1000, 1000)
       val (transitivity, triangles) = averageOfPairs(TriangleCount(graph, pars), 5)
-      transitivity should be (1.0 plusOrMinus 0.1)
+      transitivity should be(1.0 plusOrMinus 0.1)
 
-      def trianglesInCompleteGraph(nodes : Int): Double = {
+      def trianglesInCompleteGraph(nodes: Int): Double = {
         (nodes * (nodes - 1) * (nodes - 2)) / 6
       }
 
       val expectedTriangles = trianglesInCompleteGraph(nodes)
-      triangles should be (expectedTriangles plusOrMinus (0.2 * expectedTriangles))
+      triangles should be(expectedTriangles plusOrMinus (0.25 * expectedTriangles))
     }
   }
 }
