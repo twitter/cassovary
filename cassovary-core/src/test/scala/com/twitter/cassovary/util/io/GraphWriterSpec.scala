@@ -46,7 +46,7 @@ class GraphWriterSpec extends WordSpec with ShouldMatchers {
       stringWriter.toString should be (expectedResult)
     }
     "write graph to multiple chunks" when {
-      "number of nodes is divisable by the number of chunks" in {
+      "number of nodes is divisible by the number of chunks" in {
         val graph = TestGraphs.g6
         val stringWriter1 = new StringWriter()
         val stringWriter2 = new StringWriter()
