@@ -14,7 +14,7 @@
 package com.twitter.cassovary
 
 import com.twitter.cassovary.graph._
-import com.twitter.cassovary.util.io.ListOfEdgesGraphReader
+import com.twitter.cassovary.util.io.{AdjacencyListGraphReader, ListOfEdgesGraphReader}
 import com.twitter.cassovary.util.SequentialNodeNumberer
 import com.twitter.app.Flags
 import com.twitter.util.Stopwatch
@@ -85,6 +85,7 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   val globalPRFlag = flags("globalpr", false, "run global pagerank benchmark")
   val pprFlag = flags("ppr", false, "run personalized pagerank benchmark")
   val reps = flags("reps", DEFAULT_REPS, "number of times to run benchmark")
+  val adjacencyList = flags("a", false, "graph in adjacency list format")
   flags.parse(args)
   if (localFileFlag.isDefined) files += ((SMALL_FILES_DIRECTORY, localFileFlag()))
   if (remoteFileFlag.isDefined) files += cacheRemoteFile(remoteFileFlag())
@@ -102,8 +103,11 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
      */
     val graphReadingThreadPool = Executors.newFixedThreadPool(4)
 
-    def readGraph(path : String, filename : String) : DirectedGraph = {
-      ListOfEdgesGraphReader.forIntIds(path, filename, graphReadingThreadPool).toArrayBasedDirectedGraph()
+    def readGraph(path : String, filename : String, adjacencyList: Boolean) : DirectedGraph = {
+      if (adjacencyList) {
+        AdjacencyListGraphReader.forIntIds(path, filename, graphReadingThreadPool).toArrayBasedDirectedGraph()
+      } else
+        ListOfEdgesGraphReader.forIntIds(path, filename, graphReadingThreadPool).toArrayBasedDirectedGraph()
     }
 
     if (benchmarks.isEmpty) {
@@ -114,7 +118,7 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
       case (path, filename) =>
         printf("Reading %s graph from %s\n", filename, path)
         val readingTime = Stopwatch.start()
-        val graph = readGraph(path, filename)
+        val graph = readGraph(path, filename, adjacencyList())
         printf("\tGraph %s loaded from list of edges with %s nodes and %s edges.\n" +
                "\tLoading Time: %s\n", filename, graph.nodeCount, graph.edgeCount, readingTime())
         for (b <- benchmarks) {
