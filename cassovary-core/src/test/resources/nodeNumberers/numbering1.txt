@@ -1,0 +1,4 @@
+banana 2
+orange 7
+spoon 29
+bike 12
