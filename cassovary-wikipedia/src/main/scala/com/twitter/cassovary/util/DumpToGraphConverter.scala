@@ -51,7 +51,7 @@ class DumpToGraphConverter(inputFilename: String, outputFilename: Option[String]
     "#", // link to anchor
     "{{", // talk page
     "//", // subpage (todo: can be treated other way)
-    ":fr:", "fr:",
+    ":fr:", "fr:", // language codes
     ":es:", "es:",
     ":pt:", "pt:",
     ":de:", "de:",
@@ -121,6 +121,8 @@ class DumpToGraphConverter(inputFilename: String, outputFilename: Option[String]
       case None => ()
     }
   }
+
+  override def onPageIdRead(pageName: String, pageId: Int): Unit = ()
 }
 
 object DumpToGraphConverter extends App {

@@ -29,10 +29,13 @@ trait WikipediaDumpProcessor {
 
   def onProcessingFinished(): Unit
 
+  def onPageIdRead(pageName: String, pageId: Int): Unit
+
   def apply(): Unit = {
     var insidePage = false
     var insideTitle = false
     var insideText = false
+    var insideId = false
 
     var currentPage: Option[String] = None
     for (event <- xml) {
@@ -48,11 +51,17 @@ trait WikipediaDumpProcessor {
         case EvElemStart(_, "title", _, _) if insidePage => {
           insideTitle = true
         }
+        case EvElemStart(_, "id", _, _) if insidePage => {
+          insideId = true
+        }
         case EvElemStart(_, "text", _, _) if insidePage => {
           insideText = true
         }
         case EvElemEnd(_, "title") if insideTitle => {
           insideTitle = false
+        }
+        case EvElemEnd(_, "id") if insideTitle => {
+          insideId = false
         }
         case EvElemEnd(_, "text") if insideText => {
           insideText = false
@@ -60,6 +69,9 @@ trait WikipediaDumpProcessor {
         case EvText(t) =>
           if (insideTitle) {
             currentPage = Some(t)
+          }
+          if (insideId) {
+            onPageIdRead(currentPage.get, t.toInt)
           }
           if (insideText) {
             processPageTextLine(currentPage.get, t)

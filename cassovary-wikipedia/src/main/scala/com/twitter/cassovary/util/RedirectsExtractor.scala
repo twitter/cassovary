@@ -16,9 +16,8 @@ package com.twitter.cassovary.util
 import com.twitter.app.Flags
 import com.twitter.logging.Logger
 import java.io.{File, FileWriter}
-import java.util.concurrent.{ConcurrentSkipListSet, ConcurrentHashMap}
 import scala.Some
-import scala.collection.JavaConversions._
+import scala.collection.{Map => GeneralMap}
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -54,6 +53,7 @@ class RedirectsExtractor(inputFileName: String) extends WikipediaDumpProcessor {
     }
   }
 
+  override def onPageIdRead(pageName: String, pageId: Int): Unit = ()
 }
 
 object RedirectsExtractor extends App {
@@ -69,15 +69,18 @@ object RedirectsExtractor extends App {
 
   val splitChar = "|"
 
-  def mergeOtherNames(mainNames: List[collection.Map[String, String]]): collection.Map[String, collection.Set[String]] = {
-    def seqop(resultMap: mutable.Map[String, mutable.Set[String]], map: collection.Map[String, String]) = {
+  def mergeOtherNames(mainNames: List[GeneralMap[String, String]]):
+    GeneralMap[String, collection.Set[String]] = {
+    def seqop(resultMap: mutable.Map[String, mutable.Set[String]],
+              map: GeneralMap[String, String]) = {
       map.foreach {
         case (k, v) => resultMap.getOrElseUpdate(k, mutable.Set.empty[String]) += v
       }
       resultMap
     }
 
-    def comboop(map1: mutable.Map[String, mutable.Set[String]], map2: mutable.Map[String, mutable.Set[String]]) = {
+    def comboop(map1: mutable.Map[String, mutable.Set[String]],
+                map2: mutable.Map[String, mutable.Set[String]]) = {
       map2.foreach {
         case (k, v) =>
           map1.getOrElseUpdate(k, mutable.Set.empty[String]) ++= v
@@ -111,18 +114,20 @@ object RedirectsExtractor extends App {
         if (filesInDir.isEmpty) {
           log.warning("WARNING: empty directory.")
         }
-        val futures: Array[Future[collection.Map[String, String]]] = filesInDir.filter(file => file.endsWith("xml")).map {
-          file =>
-            future {
-              val extractor = new RedirectsExtractor(dirName + "/" + file)
-              extractor()
-              extractor.mainName
-            }.recover {
-              case t => log.warning("Exception thrown, when extracting file: " +
-                file + ": " + t.getLocalizedMessage)
-              Map.empty[String, String]
-            }
-        }
+        val futures: Array[Future[GeneralMap[String, String]]] = filesInDir
+          .filter(file => file.endsWith("xml"))
+          .map {
+            file =>
+              future {
+                val extractor = new RedirectsExtractor(dirName + "/" + file)
+                extractor()
+                extractor.mainName
+              }.recover {
+                case t => log.warning("Exception thrown, when extracting file: " +
+                  file + ": " + t.getLocalizedMessage)
+                Map.empty[String, String]
+              }
+          }
         val finished = Future.sequence(futures.toList).map {
           case a =>
             write(a)
