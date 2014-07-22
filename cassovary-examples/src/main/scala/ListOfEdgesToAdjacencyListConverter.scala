@@ -44,7 +44,7 @@ object ListOfEdgesToAdjacencyListConverter extends App {
   val outputDirectoryFlag = flags[String]("od", "", "Output direcotry to write to (default: equal to input directory)")
   val outputPrefixFlag = flags[String]("of", "Output files prefix")
   val chunksFlag = flags[Int]("n", 32, "Number of chunks to write to")
-  val extensionFlag = flags[String]("e", ".graph", "Extension of files to write to.")
+  val extensionFlag = flags[String]("e", "graph", "Extension of files to write to.")
   val helpFlag = flags("h", false, "Print usage")
   flags.parse(args)
 
