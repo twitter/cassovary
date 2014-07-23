@@ -78,23 +78,10 @@ for updates.
 ## Bugs
 Please report any bugs to: <https://github.com/twitter/cassovary/issues>
 
-## Authors:
-* [Pankaj Gupta](https://twitter.com/pankaj)
-* [Dong Wang](https://twitter.com/dongwang218)
-* [Tao Tao](https://twitter.com/tao)
-* [John Sirois](https://twitter.com/johnsirois)
-* [Aneesh Sharma](https://twitter.com/aneeshs)
-* [Ashish Goel](https://twitter.com/ashishgoel)
-* [Mengqiu Wang](https://twitter.com/4ad)
-* [Ning Liang](https://twitter.com/ningliang)
-* [Ajeet Grewal](https://twitter.com/ajeet)
+## Acknowledgments
+Thanks to all the [contributors](https://github.com/twitter/cassovary/graphs/contributors) of Cassovary.
 
-There are [many external contributors](https://github.com/twitter/cassovary/graphs/contributors) as well.
-
-## Acknowledgment
-We use the [Yourkit](http://yourkit.com) Java Profiler for profiling and tuning Cassovary.
-
-[![Yourkit logo](http://projects.collide.info/attachments/download/1289/yklogo.png)](http://yourkit.com)
+We use the [Yourkit](http://yourkit.com) Java Profiler for profiling and tuning Cassovary. [![Yourkit logo](http://projects.collide.info/attachments/download/1289/yklogo.png)](http://yourkit.com)
 
 ## License
 Copyright 2014 Twitter, Inc.
