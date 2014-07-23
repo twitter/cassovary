@@ -91,6 +91,12 @@ Please report any bugs to: <https://github.com/twitter/cassovary/issues>
 
 There are [many external contributors](https://github.com/twitter/cassovary/graphs/contributors) as well.
 
+## Support
+To profile Cassovary we use special license of full featured [Yourkit](http://yourkit.com) Java Profiler.
+Visit their webpage for a full list of its features.
+
+[![Yourkit logo](http://projects.collide.info/attachments/download/1289/yklogo.png)](http://yourkit.com)
+
 ## License
 Copyright 2014 Twitter, Inc.
 
