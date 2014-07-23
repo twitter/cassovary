@@ -16,6 +16,7 @@ package com.twitter.cassovary.util
 
 import scala.collection.mutable
 import scala.io.Source
+import com.twitter.logging.Logger
 
 class MapNodeNumberer[T](externalToInternalMap: collection.Map[T, Int],
                          internalToExternalMap: collection.Map[Int, T])
@@ -26,6 +27,8 @@ class MapNodeNumberer[T](externalToInternalMap: collection.Map[T, Int],
 }
 
 object MapNodeNumberer {
+
+  private lazy val log = Logger.get()
 
   /**
    * Reads map numberer from file in the following format:
@@ -50,9 +53,11 @@ object MapNodeNumberer {
         val lineAsArray = line.split(" ")
         val name = lineAsArray(0)
         val id = lineAsArray(1).toInt
-        assert(!internalToExternal.contains(id), "Duplicate id found: " + id)
+        if (internalToExternal.contains(id))
+          log.error("Duplicate id found: " + id)
         internalToExternal += ((id, name))
-        assert(!externalToInternal.contains(name), "Duplicate name found: " + name)
+        if (externalToInternal.contains(name))
+          log.error("Duplicate name found: " + name)
         externalToInternal += ((name, id))
     }
 
