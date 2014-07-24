@@ -54,10 +54,10 @@ object MapNodeNumberer {
         val name = lineAsArray(0)
         val id = lineAsArray(1).toInt
         if (internalToExternal.contains(id))
-          log.error("Duplicate id found: " + id)
+          throw new Exception("Duplicate id found: " + id)
         internalToExternal += ((id, name))
         if (externalToInternal.contains(name))
-          log.error("Duplicate name found: " + name)
+          throw new Exception("Duplicate name found: " + name)
         externalToInternal += ((name, id))
     }
 

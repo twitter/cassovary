@@ -42,11 +42,13 @@ class MapNodeNumbererSpec extends WordSpec with ShouldMatchers with ClassicMatch
     }
 
     "find duplicated names" in {
-      MapNodeNumberer.forStringsFromFile(directory + "numbering-duplicatedId.txt")
+      evaluating (MapNodeNumberer.forStringsFromFile(directory + "numbering-duplicatedId.txt")) should
+        produce [Exception]
     }
 
     "find duplicated ids" in {
-      MapNodeNumberer.forStringsFromFile(directory + "numbering-duplicatedName.txt")
+      evaluating (MapNodeNumberer.forStringsFromFile(directory + "numbering-duplicatedName.txt")) should
+        produce [Exception]
     }
   }
 }
