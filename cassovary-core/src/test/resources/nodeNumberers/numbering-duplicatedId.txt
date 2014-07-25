@@ -1,0 +1,3 @@
+orange 12
+spoon 2
+table 12

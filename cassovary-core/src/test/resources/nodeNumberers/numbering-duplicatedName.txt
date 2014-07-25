@@ -1,0 +1,4 @@
+orange 12
+banana 3
+apple 7
+orange 2
