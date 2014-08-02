@@ -16,7 +16,7 @@ package com.twitter.cassovary.util
 
 import com.twitter.app.Flags
 import com.twitter.logging.Logger
-import java.io.{FileWriter, File, Writer}
+import java.io.{FileOutputStream, FileWriter, File, Writer}
 import scala.Some
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
@@ -24,19 +24,25 @@ import scala.concurrent.duration.Duration
 import scala.io.Source
 import scala.xml.pull.XMLEventReader
 
-class IdsExtractor(inputFileName: String, output: Writer) extends WikipediaDumpProcessor {
+class IdsExtractor(inputFileName: String, val outputFilename: Option[String] = None)
+  extends WikipediaDumpProcessor with Output {
   val separator = " "
 
   override def xml: XMLEventReader = new XMLEventReader(Source.fromFile(inputFileName))
 
-  override def onProcessingFinished(): Unit = ()
-
-  override def onPageIdRead(pageName: String, pageId: Int): Unit = {
-    // maybe should do this buffered
-    output.write(pageName + separator + pageId + "\n")
+  override def onProcessingFinished(): Unit = {
+    close()
   }
 
-  override def onPageEnd(pageName: String): Unit = ()
+  override def onPageIdRead(pageName: String, pageId: Int): Unit = {
+    import ObfuscationTools._
+    val obfuscated = obfuscate(pageName)
+    if (validPageName(obfuscated)) {
+      write(obfuscated + separator + pageId + "\n")
+    }
+  }
+
+  override def onPageEnd(pageName: String): Unit = {}
 
   override def processPageTextLine(pageName: String, text: String): Unit = ()
 }
@@ -48,6 +54,8 @@ object IdsExtractor extends App {
   val fileFlag = flags[String]("f", "Filename of a single file to read from")
   val directoryFlag = flags[String]("d", "Directory to read all xml files from")
   val outputFlag = flags[String]("o", "Output filename to write to")
+  val extensionFlag = flags[String]("e", ".ids", "Extension of file to write to " +
+    "(when processing multiple files.)")
   val helpFlag = flags("h", false, "Print usage")
   flags.parse(args)
 
@@ -65,24 +73,25 @@ object IdsExtractor extends App {
         if (filesInDir.isEmpty) {
           log.warning("WARNING: empty directory.")
         }
-        val output = new FileWriter(outputFlag())
         val futures: Array[Future[Unit]] = filesInDir
           .filter(f => f.endsWith("xml"))
           .map {
             file =>
               future {
-                val extractor = new IdsExtractor(dirName + "/" + file, output) // todo: output lock
+                val extractor = new IdsExtractor(dirName + "/" + file,
+                  Some(dirName + "/" + file.replace(".xml", extensionFlag())))
                 extractor()
               }.recover {
-                case t => log.warning("Exception thrown, when extracting file: " +
-                  file + ": " + t.getLocalizedMessage)
+                case t =>
+                  log.warning("Exception thrown, when extracting file: " +
+                    file + ": " + t.getLocalizedMessage)
+                  t.printStackTrace()
               }
           }
 
         Await.ready(Future.sequence(futures.toList), Duration.Inf)
       case None =>
-        val output = new FileWriter(outputFlag())
-        val extractor = new IdsExtractor(fileFlag(), output)
+        val extractor = new IdsExtractor(fileFlag(), Some(outputFlag()))
         extractor()
     }
   }

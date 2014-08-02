@@ -14,6 +14,8 @@
 package com.twitter.cassovary.util
 
 import scala.xml.pull.{XMLEventReader, EvElemStart, EvElemEnd, EvText}
+import com.twitter.logging.Logger
+import scala.collection.mutable
 
 /**
  * [apply] method reads Wikipedia dumps in xml format.
@@ -21,6 +23,8 @@ import scala.xml.pull.{XMLEventReader, EvElemStart, EvElemEnd, EvText}
  * Note that the processor runs concurrently.
  */
 trait WikipediaDumpProcessor {
+  private val log = Logger.get("WikipediaDumpProcessor")
+
   def xml: XMLEventReader
 
   def processPageTextLine(pageName: String, text: String): Unit
@@ -35,7 +39,9 @@ trait WikipediaDumpProcessor {
     var insidePage = false
     var insideTitle = false
     var insideText = false
-    var insideId = false
+    var insidePageId = false
+
+    val path = mutable.Stack[String]()
 
     var currentPage: Option[String] = None
     for (event <- xml) {
@@ -43,35 +49,55 @@ trait WikipediaDumpProcessor {
         case EvElemStart(_, "page", _, _) => {
           insidePage = true
           currentPage = Some("title not set")
+          path.push("page")
         }
         case EvElemEnd(_, "page") => {
           onPageEnd(currentPage.get)
           currentPage = None
+          path.pop()
         }
         case EvElemStart(_, "title", _, _) if insidePage => {
           insideTitle = true
+          path.push("title")
         }
         case EvElemStart(_, "id", _, _) if insidePage => {
-          insideId = true
+          if (path.top == "page")
+            insidePageId = true
+          path.push("id")
         }
         case EvElemStart(_, "text", _, _) if insidePage => {
+          path.push("text")
           insideText = true
         }
-        case EvElemEnd(_, "title") if insideTitle => {
+        case EvElemEnd(_, "title") => {
           insideTitle = false
+          path.pop()
         }
-        case EvElemEnd(_, "id") if insideTitle => {
-          insideId = false
+        case EvElemEnd(_, "id") => {
+          insidePageId = false
+          path.pop()
         }
-        case EvElemEnd(_, "text") if insideText => {
+        case EvElemEnd(_, "text") => {
           insideText = false
+          path.pop()
         }
-        case EvText(t) =>
+        case EvElemStart(_, n, _, _) => {
+          path.push(n)
+        }
+        case EvElemEnd(_, n) => {
+          path.pop()
+        }
+        case EvText(t) if !t.trim.isEmpty =>
           if (insideTitle) {
             currentPage = Some(t)
           }
-          if (insideId) {
-            onPageIdRead(currentPage.get, t.toInt)
+          if (insidePageId) {
+            try {
+              onPageIdRead(currentPage.get, t.trim.toInt)
+            } catch {
+              case e: NumberFormatException =>
+                log.warning("Unable to read page id (%s).".format(currentPage.get))
+            }
           }
           if (insideText) {
             processPageTextLine(currentPage.get, t)

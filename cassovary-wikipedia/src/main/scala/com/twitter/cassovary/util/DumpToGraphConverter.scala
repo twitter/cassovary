@@ -30,7 +30,8 @@ import scala.collection.mutable
  *
  * If `outputFilename` is None prints result to standard output.
  */
-class DumpToGraphConverter(inputFilename: String, outputFilename: Option[String]) extends WikipediaDumpProcessor {
+class DumpToGraphConverter(inputFilename: String, val outputFilename: Option[String])
+  extends WikipediaDumpProcessor with Output {
   import ObfuscationTools._
 
   val minimumLinks = 2
@@ -62,12 +63,6 @@ class DumpToGraphConverter(inputFilename: String, outputFilename: Option[String]
     ":nl:", "nl:"
   )
 
-  var out: Option[FileOutputStream] = None
-
-  outputFilename match {
-    case Some(filename) => out = Some(new FileOutputStream(filename))
-    case None => out = None
-  }
 
   val xml = new XMLEventReader(Source.fromFile(inputFilename))
 
@@ -79,15 +74,9 @@ class DumpToGraphConverter(inputFilename: String, outputFilename: Option[String]
 
   def writePage(pageName: String, links: collection.Set[String]) = {
     if (validPageName(pageName) && !printedPages.contains(pageName) && links.size >= minimumLinks) {
-      out match {
-        case Some(o) =>
-          o.write((pageName + "\t" + links.size).getBytes(StandardCharsets.UTF_8))
-          o.write(links.mkString("\n", "\n", "\n").getBytes(StandardCharsets.UTF_8))
-          o.flush()
-        case None =>
-          print(pageName + " " + links.size)
-          print(links.mkString("\n", "\n", "\n"))
-      }
+      write(pageName + "\t" + links.size)
+      write(links.mkString("\n", "\n", "\n"))
+      flush()
       printedPages += pageName
     }
   }
@@ -116,10 +105,7 @@ class DumpToGraphConverter(inputFilename: String, outputFilename: Option[String]
   }
 
   override def onProcessingFinished(): Unit = {
-    out match {
-      case Some(o) => o.close()
-      case None => ()
-    }
+    close()
   }
 
   override def onPageIdRead(pageName: String, pageId: Int): Unit = ()
