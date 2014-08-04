@@ -14,13 +14,6 @@
 
 package com.twitter.cassovary.util
 
-import com.twitter.app.Flags
-import com.twitter.logging.Logger
-import java.io.{FileOutputStream, FileWriter, File, Writer}
-import scala.Some
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent._
-import scala.concurrent.duration.Duration
 import scala.io.Source
 import scala.xml.pull.XMLEventReader
 
@@ -47,52 +40,12 @@ class IdsExtractor(inputFileName: String, val outputFilename: Option[String] = N
   override def processPageTextLine(pageName: String, text: String): Unit = ()
 }
 
-object IdsExtractor extends App {
-  private val log = Logger.get("IdsExtractor")
+object IdsExtractor extends FilesProcessor[Unit]("IdsExtractor") with App {
 
-  val flags = new Flags("Wikipedia dump ids extractor")
-  val fileFlag = flags[String]("f", "Filename of a single file to read from")
-  val directoryFlag = flags[String]("d", "Directory to read all xml files from")
-  val outputFlag = flags[String]("o", "Output filename to write to")
-  val extensionFlag = flags[String]("e", ".ids", "Extension of file to write to " +
-    "(when processing multiple files.)")
-  val helpFlag = flags("h", false, "Print usage")
-  flags.parse(args)
-
-  if (helpFlag()) {
-    println(flags.usage)
-  } else {
-    directoryFlag.get match {
-      case Some(dirName) =>
-        val dir = new File(dirName)
-        val filesInDir = dir.list()
-        if (filesInDir == null) {
-          throw new Exception("Current directory is " + System.getProperty("user.dir") +
-            " and nothing was found in dir " + dir)
-        }
-        if (filesInDir.isEmpty) {
-          log.warning("WARNING: empty directory.")
-        }
-        val futures: Array[Future[Unit]] = filesInDir
-          .filter(f => f.endsWith("xml"))
-          .map {
-            file =>
-              future {
-                val extractor = new IdsExtractor(dirName + "/" + file,
-                  Some(dirName + "/" + file.replace(".xml", extensionFlag())))
-                extractor()
-              }.recover {
-                case t =>
-                  log.warning("Exception thrown, when extracting file: " +
-                    file + ": " + t.getLocalizedMessage)
-                  t.printStackTrace()
-              }
-          }
-
-        Await.ready(Future.sequence(futures.toList), Duration.Inf)
-      case None =>
-        val extractor = new IdsExtractor(fileFlag(), Some(outputFlag()))
-        extractor()
-    }
+  override def processFile(inputFilename: String, outputFilename: Option[String]): Unit = {
+    val extractor = new IdsExtractor(inputFilename, outputFilename)
+    extractor()
   }
+
+  apply(args)
 }

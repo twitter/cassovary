@@ -13,15 +13,11 @@
  */
 package com.twitter.cassovary.util
 
-import com.twitter.app.Flags
 import com.twitter.logging.Logger
-import java.io.{File, FileWriter}
-import scala.Some
-import scala.collection.{Map => GeneralMap}
-import scala.collection.mutable
+import java.io.FileWriter
+import scala.collection.{Map => GeneralMap, mutable}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future, future}
+import scala.concurrent.Future
 import scala.io.Source
 import scala.util.matching.Regex
 import scala.xml.pull.XMLEventReader
@@ -30,7 +26,9 @@ class RedirectsExtractor(inputFileName: String) extends WikipediaDumpProcessor {
 
   import ObfuscationTools._
 
-  val mainName = new mutable.HashMap[String, String]
+  private val mainName = new mutable.HashMap[String, String]
+
+  def getRedirects = mainName
 
   val xml: XMLEventReader = new XMLEventReader(Source.fromFile(inputFileName))
 
@@ -43,7 +41,7 @@ class RedirectsExtractor(inputFileName: String) extends WikipediaDumpProcessor {
   override def onPageEnd(pageName: String): Unit = ()
 
   override def processPageTextLine(pageName: String, text: String): Unit = {
-    val redirectRegex = new Regex("""(?<=#REDIRECT \[\[)[^\]]+(?=\]\])""")
+    val redirectRegex = new Regex( """(?<=#REDIRECT \[\[)[^\]]+(?=\]\])""")
     redirectRegex.findAllIn(text).foreach {
       case redirectTo =>
         val obfuscatedPageName = obfuscate(pageName)
@@ -56,21 +54,36 @@ class RedirectsExtractor(inputFileName: String) extends WikipediaDumpProcessor {
   override def onPageIdRead(pageName: String, pageId: Int): Unit = ()
 }
 
-object RedirectsExtractor extends App {
+object RedirectsExtractor
+  extends FilesProcessor[mutable.HashMap[String, String]]("RedirectsExtractor")
+  with App
+{
 
   private val log = Logger.get("RedirectsExtractor")
 
-  val flags = new Flags("Wikipedia dump multiple page title resolver")
-  val fileFlag = flags[String]("f", "Filename of a single file to read from")
-  val directoryFlag = flags[String]("d", "Directory to read all xml files from")
-  val outputFlag = flags[String]("o", "Output filename to write to")
-  val helpFlag = flags("h", false, "Print usage")
-  flags.parse(args)
+  val splitChar = " "
 
-  val splitChar = "|"
+  apply(args)
 
-  def mergeOtherNames(mainNames: List[GeneralMap[String, String]]):
-    GeneralMap[String, collection.Set[String]] = {
+  override def processFile(inputFilename: String,
+                           outputFilename: Option[String]): mutable.HashMap[String, String] = {
+    val extractor = new RedirectsExtractor(inputFilename)
+    extractor()
+    extractor.getRedirects
+  }
+
+  /**
+   * Combines results from processing and writes them to a single file
+   * specified by the `outputFlag`.
+   */
+  override def combineResults(partialResutls: Seq[Future[mutable.HashMap[String, String]]]): Unit = {
+    for (allResults <- Future.sequence(partialResutls)) {
+      write(allResults)
+    }
+  }
+
+  def mergeOtherNames(mainNames: Seq[GeneralMap[String, String]]):
+  GeneralMap[String, collection.Set[String]] = {
     def seqop(resultMap: mutable.Map[String, mutable.Set[String]],
               map: GeneralMap[String, String]) = {
       map.foreach {
@@ -87,57 +100,17 @@ object RedirectsExtractor extends App {
       }
       map1
     }
-    mainNames.par.aggregate(mutable.Map[String, mutable.Set[String]]()) (seqop, comboop)
+    mainNames.par.aggregate(mutable.Map[String, mutable.Set[String]]())(seqop, comboop)
   }
 
-  def write(otherNamesMaps : List[collection.Map[String, String]]) {
+  def write(otherNamesMaps: Seq[collection.Map[String, String]]) {
     log.info("Writing to file...")
     val writer = new FileWriter(outputFlag())
     val otherNames = mergeOtherNames(otherNamesMaps)
     otherNames.keysIterator foreach {
-      mainName => writer.write(mainName + otherNames(mainName).mkString(splitChar, splitChar, "\n"))
+      mainName => writer.write(mainName + otherNames(mainName).mkString(splitChar,
+        splitChar, "\n"))
     }
     writer.close()
-  }
-
-  if (helpFlag()) {
-    println(flags.usage)
-  } else {
-    directoryFlag.get match {
-      case Some(dirName) =>
-        val dir = new File(dirName)
-        val filesInDir = dir.list()
-        if (filesInDir == null) {
-          throw new Exception("Current directory is " + System.getProperty("user.dir") +
-            " and nothing was found in dir " + dir)
-        }
-        if (filesInDir.isEmpty) {
-          log.warning("WARNING: empty directory.")
-        }
-        val futures: Array[Future[GeneralMap[String, String]]] = filesInDir
-          .filter(file => file.endsWith("xml"))
-          .map {
-            file =>
-              future {
-                val extractor = new RedirectsExtractor(dirName + "/" + file)
-                extractor()
-                extractor.mainName
-              }.recover {
-                case t => log.warning("Exception thrown, when extracting file: " +
-                  file + ": " + t.getLocalizedMessage)
-                Map.empty[String, String]
-              }
-          }
-        val finished = Future.sequence(futures.toList).map {
-          case a =>
-            write(a)
-        }
-
-        Await.ready(finished, Duration.Inf)
-      case None =>
-        val extractor = new RedirectsExtractor(fileFlag())
-        extractor()
-        write(List(extractor.mainName))
-    }
   }
 }

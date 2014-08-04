@@ -13,17 +13,10 @@
  */
 package com.twitter.cassovary.util
 
-import com.twitter.app.Flags
-import java.io.{File, FileOutputStream}
+import scala.collection.mutable
 import scala.io.Source
 import scala.util.matching.Regex
 import scala.xml.pull.XMLEventReader
-import com.twitter.logging.Logger
-import scala.concurrent.{Await, future, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import java.nio.charset.StandardCharsets
-import scala.collection.mutable
 
 /**
  * Converts wikipedia pages-articles dump file to adjacency list suitable for Cassovary.
@@ -32,6 +25,7 @@ import scala.collection.mutable
  */
 class DumpToGraphConverter(inputFilename: String, val outputFilename: Option[String])
   extends WikipediaDumpProcessor with Output {
+
   import ObfuscationTools._
 
   val minimumLinks = 2
@@ -111,48 +105,11 @@ class DumpToGraphConverter(inputFilename: String, val outputFilename: Option[Str
   override def onPageIdRead(pageName: String, pageId: Int): Unit = ()
 }
 
-object DumpToGraphConverter extends App {
+object DumpToGraphConverter extends FilesProcessor[Unit]("DumpToGraphConverter") with App {
 
-  private val log = Logger.get("DumpToGraphConverter")
-
-  val flags = new Flags("Wikipedia dump to adjacency list graph converter")
-  val fileFlag = flags[String]("f", "Filename of a single file to read from")
-  val outputFlag = flags[String]("o", "Output filename to write to")
-  val directoryFlag = flags[String]("d", "Directory to read all xml files from")
-  val extensionFlag = flags[String]("e", ".graph", "Extension of file to write to " +
-    "(when processing multiple files.)")
-  val helpFlag = flags("h", false, "Print usage")
-  flags.parse(args)
-
-  if (helpFlag()) {
-    println(flags.usage)
-  } else {
-    directoryFlag.get match {
-      case Some(dirName) =>
-        val dir = new File(dirName)
-        val filesInDir = dir.list()
-        if (filesInDir == null) {
-          throw new Exception("Current directory is " + System.getProperty("user.dir") +
-            " and nothing was found in dir " + dir)
-        }
-        if (filesInDir.isEmpty) {
-          println("WARNING: empty directory.")
-        }
-        val futures = filesInDir.filter(file => file.endsWith("xml")) map {
-          file =>
-            future {
-              convertFile(dirName + file, dirName + file.replace(".xml", extensionFlag()))
-            }
-        }
-        Await.ready (Future.sequence(futures.toList), Duration.Inf)
-      case None =>
-        convertFile(fileFlag(), outputFlag())
-    }
+  def processFile(inputFilename: String, outputFilename: Option[String]) {
+    new DumpToGraphConverter(inputFilename, outputFilename)()
   }
 
-  def convertFile(inputFilename: String, outputFilename: String) {
-    log.info("Converting file: %s...".format(inputFilename))
-    new DumpToGraphConverter(inputFilename, Some(outputFilename))()
-    log.info("Converted file: %s...".format(inputFilename))
-  }
+  apply(args)
 }

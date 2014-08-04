@@ -13,15 +13,10 @@
  */
 package com.twitter.cassovary.util
 
-import scala.xml.pull.{XMLEventReader, EvElemStart, EvElemEnd, EvText}
 import com.twitter.logging.Logger
 import scala.collection.mutable
+import scala.xml.pull.{XMLEventReader, EvElemStart, EvElemEnd, EvText}
 
-/**
- * [apply] method reads Wikipedia dumps in xml format.
- *
- * Note that the processor runs concurrently.
- */
 trait WikipediaDumpProcessor {
   private val log = Logger.get("WikipediaDumpProcessor")
 
@@ -107,5 +102,9 @@ trait WikipediaDumpProcessor {
     }
     onProcessingFinished()
   }
+
+}
+
+object WikipediaDumpProcessor {
 
 }
