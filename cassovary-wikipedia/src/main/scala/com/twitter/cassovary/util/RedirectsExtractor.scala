@@ -17,10 +17,11 @@ import com.twitter.logging.Logger
 import java.io.FileWriter
 import scala.collection.{Map => GeneralMap, mutable}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.io.Source
 import scala.util.matching.Regex
 import scala.xml.pull.XMLEventReader
+import scala.concurrent.duration.Duration
 
 class RedirectsExtractor(inputFileName: String) extends WikipediaDumpProcessor {
 
@@ -54,34 +55,12 @@ class RedirectsExtractor(inputFileName: String) extends WikipediaDumpProcessor {
   override def onPageIdRead(pageName: String, pageId: Int): Unit = ()
 }
 
-object RedirectsExtractor
-  extends FilesProcessor[mutable.HashMap[String, String]]("RedirectsExtractor")
-  with App
-{
-
-  private val log = Logger.get("RedirectsExtractor")
-
-  val splitChar = " "
-
-  apply(args)
-
-  override def processFile(inputFilename: String,
-                           outputFilename: Option[String]): mutable.HashMap[String, String] = {
-    val extractor = new RedirectsExtractor(inputFilename)
-    extractor()
-    extractor.getRedirects
-  }
-
-  /**
-   * Combines results from processing and writes them to a single file
-   * specified by the `outputFlag`.
-   */
-  override def combineResults(partialResutls: Seq[Future[mutable.HashMap[String, String]]]): Unit = {
-    for (allResults <- Future.sequence(partialResutls)) {
-      write(allResults)
-    }
-  }
-
+/**
+ * Merges a sequence of maps String -> String into one String -> Set[String], such that
+ * if `a: String -> b: String` is in any of input maps, there will be
+ * `a: String -> C: Set[String]` in output map, such that `C` contains `b`.
+ */
+trait RedirectsMerger {
   def mergeOtherNames(mainNames: Seq[GeneralMap[String, String]]):
   GeneralMap[String, collection.Set[String]] = {
     def seqop(resultMap: mutable.Map[String, mutable.Set[String]],
@@ -102,15 +81,42 @@ object RedirectsExtractor
     }
     mainNames.par.aggregate(mutable.Map[String, mutable.Set[String]]())(seqop, comboop)
   }
+}
 
-  def write(otherNamesMaps: Seq[collection.Map[String, String]]) {
-    log.info("Writing to file...")
-    val writer = new FileWriter(outputFlag())
-    val otherNames = mergeOtherNames(otherNamesMaps)
-    otherNames.keysIterator foreach {
-      mainName => writer.write(mainName + otherNames(mainName).mkString(splitChar,
-        splitChar, "\n"))
+object RedirectsExtractor
+  extends FilesProcessor[collection.Map[String, String]]("RedirectsExtractor")
+  with RedirectsMerger
+  with App
+{
+
+  private val log = Logger.get("RedirectsExtractor")
+
+  val splitChar = " "
+
+  apply(args)
+
+  override def processFile(inputFilename: String,
+                           outputFilename: Option[String]): collection.Map[String, String] = {
+    val extractor = new RedirectsExtractor(inputFilename)
+    extractor()
+    extractor.getRedirects
+  }
+
+  /**
+   * Combines results from processing and writes them to a single file
+   * specified by the `outputFlag`.
+   */
+  override def combineResults(partialResutls: Seq[Future[collection.Map[String, String]]]): Unit = {
+    val done: Future[Unit] = for (allResults <- Future.sequence(partialResutls)) yield {
+      log.info("Writing to file...")
+      val writer = new FileWriter(outputFlag())
+      val otherNames = mergeOtherNames(allResults)
+      otherNames.keysIterator foreach {
+        mainName => writer.write(mainName + otherNames(mainName).mkString(splitChar,
+          splitChar, "\n"))
+      }
+      writer.close()
     }
-    writer.close()
+    Await.ready(done, Duration.Inf)
   }
 }
