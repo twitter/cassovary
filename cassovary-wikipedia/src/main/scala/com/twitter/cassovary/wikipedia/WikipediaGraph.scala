@@ -21,5 +21,5 @@ trait WikipediaGraph {
 
   def nodesNumberer: NodeNumberer[String]
 
-  def disambiguition: MultipleNames[String]
+  def disambiguation: MultipleNames[String]
 }

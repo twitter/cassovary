@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit
 import com.twitter.util.Stopwatch
 
 class HashMapsBasedWikipediaGraph(val graph: DirectedGraph, val nodesNumberer: NodeNumberer[String],
-                                  val disambiguition: HashArraysMultipleNames) extends WikipediaGraph {
+                                  val disambiguation: HashArraysMultipleNames) extends WikipediaGraph {
 
 }
 

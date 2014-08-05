@@ -94,7 +94,7 @@ class AdjacencyListGraphReader[T] (
         var newMaxId = internalNodeId
         val outEdgesArr = new Array[Int](outEdgeCountInt)
           while (i < outEdgeCountInt) {
-            val nextLine = lines.next()
+            val nextLine = lines.next().trim
             val externalNghId = idReader(nextLine)
             val internalNghId = nodeNumberer.externalToInternal(externalNghId)
             newMaxId = newMaxId max internalNghId

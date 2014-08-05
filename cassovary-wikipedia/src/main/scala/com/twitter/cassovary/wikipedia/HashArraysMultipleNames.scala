@@ -13,7 +13,6 @@
  */
 package com.twitter.cassovary.wikipedia
 
-import scala.collection.mutable
 import scala.io.Source
 
 class HashArraysMultipleNames(
@@ -21,12 +20,13 @@ class HashArraysMultipleNames(
   mainName: collection.Map[String, String]
 ) extends MultipleNames[String] {
 
-  override def getOtherNames(name: String): Set[String] = otherNames(name)
+  def getOtherNames(name: String): Set[String] = otherNames(name)
 
-  override def getMainName(name: String): String = mainName(name)
+  def getMainName(name: String): String = mainName(name)
 }
 
 object HashArraysMultipleNames {
+  val splitChar = "|"
   /**
    * Reads `MultipleNames` from file written in format:
    * {{{
@@ -36,18 +36,14 @@ object HashArraysMultipleNames {
    * }}}
    */
   def readFromFile(filename: String) = {
-    val otherNames = mutable.HashMap[String, Set[String]]()
-    val mainName = mutable.HashMap[String, String]()
-    Source.fromFile(filename).getLines() foreach {
-      line =>
-        val splitted = line.split("|")
+    val otherNames = Source.fromFile(filename).getLines()
+      .map { line =>
+        val splitted = line.split(splitChar)
         val main = splitted(0)
-        val other = splitted.drop(1).toSet
-        otherNames(main) = other
-        other.foreach {
-          o => mainName(o) = main
-        }
-    }
+        val others = splitted.drop(1).toSet
+        main -> others
+    }.toMap
+    val mainName = otherNames.flatMap {case (main, other) => other.map( (_, main))}
     new HashArraysMultipleNames(otherNames, mainName)
   }
 }
