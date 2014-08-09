@@ -17,46 +17,21 @@ import scala.collection.mutable
 import scala.io.Source
 import scala.util.matching.Regex
 import scala.xml.pull.XMLEventReader
+import java.io.Writer
 
 /**
  * Converts wikipedia pages-articles dump file to adjacency list suitable for Cassovary.
  *
  * If `outputFilename` is None prints result to standard output.
  */
-class DumpToGraphConverter(inputFilename: String, val outputFilename: Option[String])
-  extends WikipediaDumpProcessor with Output {
+class DumpToGraphConverter(inputFilename: String, writer: Writer)
+  extends WikipediaDumpProcessor {
 
   import ObfuscationTools._
 
+  def this(inputFilename: String, out: Option[String]) = this(inputFilename, writerFor(out))
+
   val minimumLinks = 2
-
-  /**
-   * Special prefixes of wikipedia links that point not to a normal page.
-   */
-  val specialLinkPrefixes = Array(
-    "File:",
-    "Image:",
-    "User:",
-    "user:",
-    "d:", // discussion
-    "Special:",
-    "Extension:",
-    "media:",
-    "Special:", // special links
-    "#", // link to anchor
-    "{{", // talk page
-    "//", // subpage (todo: can be treated other way)
-    ":fr:", "fr:", // language codes
-    ":es:", "es:",
-    ":pt:", "pt:",
-    ":de:", "de:",
-    ":pl:", "pl:",
-    ":it:", "it:",
-    ":cn:", "cn:",
-    ":en:", "en:",
-    ":nl:", "nl:"
-  )
-
 
   val xml = new XMLEventReader(Source.fromFile(inputFilename))
 
@@ -66,19 +41,17 @@ class DumpToGraphConverter(inputFilename: String, val outputFilename: Option[Str
 
   val printedPages = mutable.HashSet[String]()
 
-  def writePage(pageName: String, links: collection.Set[String]) = {
+  def writePage(pageName: String, links: collection.Set[String]) {
     if (validPageName(pageName) && !printedPages.contains(pageName) && links.size >= minimumLinks) {
-      write(pageName + "\t" + links.size)
-      write(links.mkString("\n", "\n", "\n"))
-      flush()
+      writer.write(pageName + "\t" + links.size)
+      writer.write(links.mkString("\n", "\n", "\n"))
       printedPages += pageName
     }
   }
 
-  override def processPageTextLine(pageName: String, text: String): Unit = {
+  def processPageTextLine(pageName: String, text: String) {
     val linksInLine = linksRegex.findAllIn(text)
     linksInLine
-      .filter(link => specialLinkPrefixes.find(prefix => link.startsWith(prefix)).isEmpty)
       .foreach {
       case link: String =>
         link.split("\\|") match {
@@ -93,22 +66,22 @@ class DumpToGraphConverter(inputFilename: String, val outputFilename: Option[Str
     }
   }
 
-  override def onPageEnd(pageName: String): Unit = {
+  def onPageEnd(pageName: String) {
     writePage(obfuscate(pageName), links)
     links.clear()
   }
 
-  override def onProcessingFinished(): Unit = {
-    close()
+  def onProcessingFinished() {
+    writer.close()
   }
 
-  override def onPageIdRead(pageName: String, pageId: Int): Unit = ()
+  def onPageIdRead(pageName: String, pageId: Int) = ()
 }
 
 object DumpToGraphConverter extends FilesProcessor[Unit]("DumpToGraphConverter") with App {
 
-  def processFile(inputFilename: String, outputFilename: Option[String]) {
-    new DumpToGraphConverter(inputFilename, outputFilename)()
+  def processFile(inputFilename: String) {
+    new DumpToGraphConverter(inputFilename, Some(inputFilename.replace(".xml", extensionFlag())))()
   }
 
   apply(args)

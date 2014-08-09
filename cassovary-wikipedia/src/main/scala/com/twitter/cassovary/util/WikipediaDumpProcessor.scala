@@ -16,6 +16,10 @@ package com.twitter.cassovary.util
 import com.twitter.logging.Logger
 import scala.collection.mutable
 import scala.xml.pull.{XMLEventReader, EvElemStart, EvElemEnd, EvText}
+import scala.concurrent.{Await, Future}
+import scala.collection
+import scala.collection
+import scala.concurrent.duration.Duration
 
 trait WikipediaDumpProcessor {
   private val log = Logger.get("WikipediaDumpProcessor")
@@ -102,9 +106,31 @@ trait WikipediaDumpProcessor {
     }
     onProcessingFinished()
   }
-
 }
 
-object WikipediaDumpProcessor {
+object WikipediaDumpProcessor
+  extends FilesProcessor[collection.Map[String, String]]("WikipediaDumpProcessor")
+  with App
+{
+  apply(args)
 
+  override def processFile(inputFilename: String):
+  collection.Map[String, String] = {
+    val idsExtractor = new IdsExtractor(inputFilename, Some(inputFilename.replace(".xml",
+      extensionFlag() + "ids")))
+    idsExtractor()
+
+    new DumpToGraphConverter(inputFilename, Some(inputFilename.replace(".xml",
+      extensionFlag() + "graph")))()
+
+    val extractor = new RedirectsExtractor(inputFilename)
+    extractor()
+    extractor.getRedirects
+  }
+
+  override def combineAndPrintResults(partialResults: Seq[Future[collection.Map[String, String]]]): Unit = {
+    val rm = new RedirectsMerger
+    val done = rm.combineAndPrintRedirects(partialResults, writerFor(Some(directoryFlag() + "/" + "Wikipedia.red")))
+    Await.ready(done, Duration.Inf)
+  }
 }

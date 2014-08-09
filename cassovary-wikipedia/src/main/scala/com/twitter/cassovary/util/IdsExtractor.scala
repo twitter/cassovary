@@ -14,36 +14,38 @@
 
 package com.twitter.cassovary.util
 
+import java.io.Writer
 import scala.io.Source
 import scala.xml.pull.XMLEventReader
 
-class IdsExtractor(inputFileName: String, val outputFilename: Option[String] = None)
-  extends WikipediaDumpProcessor with Output {
-  val separator = " "
+class IdsExtractor(inputFilename: String, val writer: Writer)
+  extends WikipediaDumpProcessor {
 
-  override def xml: XMLEventReader = new XMLEventReader(Source.fromFile(inputFileName))
+  def this(inputFilename: String, out: Option[String]) = this(inputFilename, writerFor(out))
 
-  override def onProcessingFinished(): Unit = {
-    close()
+  def xml = new XMLEventReader(Source.fromFile(inputFilename))
+
+  def onProcessingFinished(): Unit = {
+    writer.close()
   }
 
-  override def onPageIdRead(pageName: String, pageId: Int): Unit = {
+  def onPageIdRead(pageName: String, pageId: Int): Unit = {
     import ObfuscationTools._
     val obfuscated = obfuscate(pageName)
     if (validPageName(obfuscated)) {
-      write(obfuscated + separator + pageId + "\n")
+      writer.write(obfuscated + splitChar + pageId + "\n")
     }
   }
 
-  override def onPageEnd(pageName: String): Unit = {}
+  def onPageEnd(pageName: String): Unit = {}
 
-  override def processPageTextLine(pageName: String, text: String): Unit = ()
+  def processPageTextLine(pageName: String, text: String): Unit = ()
 }
 
 object IdsExtractor extends FilesProcessor[Unit]("IdsExtractor") with App {
 
-  override def processFile(inputFilename: String, outputFilename: Option[String]): Unit = {
-    val extractor = new IdsExtractor(inputFilename, outputFilename)
+  override def processFile(inputFilename: String): Unit = {
+    val extractor = new IdsExtractor(inputFilename, Some(inputFilename.replace(".xml", extensionFlag())))
     extractor()
   }
 

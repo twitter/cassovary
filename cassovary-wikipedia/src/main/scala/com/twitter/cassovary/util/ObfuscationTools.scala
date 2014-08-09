@@ -24,6 +24,33 @@ object ObfuscationTools {
   }
 
   def validPageName(s: String): Boolean = {
-    !s.isEmpty
+    !s.isEmpty && specialLinkPrefixes.find(s.startsWith).isEmpty
   }
+
+  /**
+   * Special prefixes of wikipedia links that point not to a normal page.
+   */
+  val specialLinkPrefixes = Array(
+    "File:",
+    "Image:",
+    "User:",
+    "user:",
+    "d:", // discussion
+    "Special:",
+    "Extension:",
+    "media:",
+    "Special:", // special links
+    "#", // link to anchor
+    "{{", // talk page
+    "//", // subpage (todo: can be treated other way)
+    ":fr:", "fr:", // language codes
+    ":es:", "es:",
+    ":pt:", "pt:",
+    ":de:", "de:",
+    ":pl:", "pl:",
+    ":it:", "it:",
+    ":cn:", "cn:",
+    ":en:", "en:",
+    ":nl:", "nl:"
+  )
 }

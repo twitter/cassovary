@@ -14,11 +14,11 @@
 
 package com.twitter.cassovary.util
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import com.twitter.app.Flags
 import com.twitter.logging.Logger
 import java.io.File
 import scala.Some
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 
@@ -42,11 +42,11 @@ abstract class FilesProcessor[R](name: String) {
   val fileFlag = flags[String]("f", "Filename of a single file to read from")
   val directoryFlag = flags[String]("d", "Directory to read all xml files from")
   val outputFlag = flags[String]("o", "Output filename to write to")
-  val extensionFlag = flags[String]("e", ".ids", "Extension of file to write to " +
+  val extensionFlag = flags[String]("e", ".wiki", "Extension of file to write to " +
     "(when processing multiple files.)")
   val helpFlag = flags("h", false, "Print usage")
 
-  def apply(args: Array[String]) {
+  def apply(args: Array[String]): Unit = {
     flags.parse(args)
 
     if (helpFlag()) {
@@ -69,23 +69,22 @@ abstract class FilesProcessor[R](name: String) {
             file =>
               future {
                 try {
-                  processFile(dir + "/" + file, Some(dirName + "/" +
-                    file.replace(".xml", extensionFlag())))
+                  processFile(dir + "/" + file)
                 } catch {
                   case e: Exception => throw new Exception("Exception thrown, when " +
                     "extracting file: " + file, e)
                 }
               }
           }
-          combineResults(futures.toSeq)
+          combineAndPrintResults(futures)
         case None =>
-          val res = processFile(fileFlag(), Some(outputFlag()))
-          combineResults(Seq(Future.successful(res)))
+          val res = processFile(fileFlag())
+          combineAndPrintResults(Seq(Future.successful(res)))
       }
     }
   }
 
-  def processFile(inputFilename: String, outputFilename: Option[String]): R
+  def processFile(inputFilename: String): R
 
   /**
    * Combines results from file processing phase.
@@ -94,14 +93,16 @@ abstract class FilesProcessor[R](name: String) {
    * processed. For each failed processing puts warning to the log
    * and ignores the failure.
    */
-  def combineResults(partialResutls: Seq[Future[R]]): Unit = {
-    val failedIgnored = partialResutls.map {
-      f: Future[R] => f.map(x => ()).recover {
-        case t: Throwable =>
-          log.warning(t.getMessage)
-          ()
+  def combineAndPrintResults(partialResults: Seq[Future[R]]): Unit = {
+    partialResults.foreach {
+      f: Future[R] => f.onFailure {
+        case t: Throwable => log.warning(t.getMessage)
+//        f.map(x => ()).recover {
+//        case t: Throwable =>
+//          log.warning(t.getMessage)
+//          ()
       }
     }
-    Await.ready(Future.sequence(failedIgnored), Duration.Inf)
+    Await.ready(Future.sequence(partialResults), Duration.Inf)
   }
 }

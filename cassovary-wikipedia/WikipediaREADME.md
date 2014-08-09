@@ -7,7 +7,7 @@ analysing it in Cassovary.
 
 ## Parsing Wikipedia dumps
 
-There are tree tools to parse Wikipedia dumps:
+There are three tools to parse Wikipedia dumps:
 1. IdsExtractor - extracts page ids writes files containing only page title and page id.
 2. RedirectsExtractor - extracts automatic redirections of pages. For example
 both *Twitter* and *tweeted* point to the same page: [Twitter](http://en.wikipedia.org/wiki/Twitter).
