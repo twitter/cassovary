@@ -13,11 +13,11 @@
  */
 package com.twitter.cassovary.util
 
+import java.io.Writer
 import scala.collection.mutable
 import scala.io.Source
 import scala.util.matching.Regex
 import scala.xml.pull.XMLEventReader
-import java.io.Writer
 
 /**
  * Converts wikipedia pages-articles dump file to adjacency list suitable for Cassovary.
@@ -78,11 +78,13 @@ class DumpToGraphConverter(inputFilename: String, writer: Writer)
   def onPageIdRead(pageName: String, pageId: Int) = ()
 }
 
-object DumpToGraphConverter extends FilesProcessor[Unit]("DumpToGraphConverter") with App {
+object DumpToGraphConverter extends App {
 
-  def processFile(inputFilename: String) {
-    new DumpToGraphConverter(inputFilename, Some(inputFilename.replace(".xml", extensionFlag())))()
+  val fileProcessor = new FilesProcessor[Unit]("DumpToGraphConverter") {
+    def processFile(inputFilename: String) {
+      new DumpToGraphConverter(inputFilename, Some(inputFilename.replace(".xml", extensionFlag())))()
+    }
   }
 
-  apply(args)
+  fileProcessor.apply(args)
 }

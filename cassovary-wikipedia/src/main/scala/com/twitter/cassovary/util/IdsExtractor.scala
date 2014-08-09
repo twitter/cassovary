@@ -42,12 +42,15 @@ class IdsExtractor(inputFilename: String, val writer: Writer)
   def processPageTextLine(pageName: String, text: String): Unit = ()
 }
 
-object IdsExtractor extends FilesProcessor[Unit]("IdsExtractor") with App {
+object IdsExtractor extends App {
 
-  override def processFile(inputFilename: String): Unit = {
-    val extractor = new IdsExtractor(inputFilename, Some(inputFilename.replace(".xml", extensionFlag())))
-    extractor()
+  val fileProcessor = new FilesProcessor[Unit]("IdsExtractor") {
+    override def processFile(inputFilename: String): Unit = {
+      val extractor = new IdsExtractor(inputFilename, Some(inputFilename.replace(".xml",
+        extensionFlag())))
+      extractor()
+    }
   }
 
-  apply(args)
+  fileProcessor.apply(args)
 }

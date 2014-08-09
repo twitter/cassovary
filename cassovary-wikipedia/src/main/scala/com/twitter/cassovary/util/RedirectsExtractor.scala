@@ -14,14 +14,14 @@
 package com.twitter.cassovary.util
 
 import com.twitter.logging.Logger
-import java.io.{Writer, FileWriter}
-import scala.collection.{Map => GeneralMap, mutable}
+import java.io.Writer
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.io.Source
 import scala.util.matching.Regex
 import scala.xml.pull.XMLEventReader
-import scala.concurrent.duration.Duration
 
 class RedirectsExtractor(inputFileName: String) extends WikipediaDumpProcessor {
 
@@ -96,25 +96,25 @@ class RedirectsMerger {
   }
 }
 
-object RedirectsExtractor
-  extends FilesProcessor[collection.Map[String, String]]("RedirectsExtractor")
-  with App
-{
+object RedirectsExtractor extends App {
 
-  apply(args)
 
-  def processFile(inputFilename: String): collection.Map[String, String] = {
-    val extractor = new RedirectsExtractor(inputFilename)
-    extractor()
-    extractor.getRedirects
+  val fileProcessor = new FilesProcessor[collection.Map[String, String]]("RedirectsExtractor") {
+    def processFile(inputFilename: String): collection.Map[String, String] = {
+      val extractor = new RedirectsExtractor(inputFilename)
+      extractor()
+      extractor.getRedirects
+    }
+
+    /**
+     * Combines results from processing and writes them to a single file
+     * specified by the `outputFlag`.
+     */
+    override def combineAndPrintResults(partialResutls: Seq[Future[collection.Map[String, String]]]): Unit = {
+      val rm = new RedirectsMerger
+      Await.ready(rm.combineAndPrintRedirects(partialResutls, writerFor(Some(outputFlag()))), Duration.Inf)
+    }
   }
 
-  /**
-   * Combines results from processing and writes them to a single file
-   * specified by the `outputFlag`.
-   */
-  override def combineAndPrintResults(partialResutls: Seq[Future[collection.Map[String, String]]]): Unit = {
-    val rm = new RedirectsMerger
-    Await.ready(rm.combineAndPrintRedirects(partialResutls, writerFor(Some(outputFlag()))), Duration.Inf)
-  }
+  fileProcessor.apply(args)
 }
