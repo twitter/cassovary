@@ -107,17 +107,20 @@ trait WikipediaDumpProcessor {
 }
 
 object WikipediaDumpsProcessor {
+  private val log = Logger.get("WikipediaDumpsProcessor")
+
   def main(args: Array[String]) {
     val fileProcessor = new FilesProcessor[collection.Map[String, String]]("WikipediaDumpProcessor") {
 
       override def processFile(inputFilename: String):
       collection.Map[String, String] = {
-        val idsExtractor = new IdsExtractor(inputFilename, Some(inputFilename.replace(".xml",
-          extensionFlag() + "ids")))
-        idsExtractor()
+        new IdsExtractor(inputFilename, Some(inputFilename.replace(".xml",
+          extensionFlag() + "ids")))()
+        log.info("Ids extracted")
 
         new DumpToGraphConverter(inputFilename, Some(inputFilename.replace(".xml",
           extensionFlag() + "graph")))()
+        log.info("Links to graph format converted")
 
         val extractor = new RedirectsExtractor(inputFilename)
         extractor()
@@ -128,6 +131,7 @@ object WikipediaDumpsProcessor {
         val rm = new RedirectsMerger
         val done = rm.combineAndPrintRedirects(partialResults, writerFor(Some(directoryFlag() + "/" + "Wikipedia.red")))
         Await.ready(done, Duration.Inf)
+        log.info("Redirects extracted and merged")
       }
     }
 
