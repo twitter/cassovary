@@ -35,7 +35,7 @@ object SharedArrayBasedDirectedGraph {
    * Eg each NodeIdEdgesMaxId could correspond to one graph dump file.
    *
    * This function builds the graph using similar steps as in ArrayBasedDirectedGraph.
-   * The main difference here is that instead of each node  has a separate edge array,
+   * The main difference here is that instead of each node has a separate edge array,
    * here one shared array is used, thus each node can find its edges through
    * an offset into this shared array. The avoid huge arrays, this edge array
    * is also sharded based on node's id.
@@ -60,9 +60,8 @@ object SharedArrayBasedDirectedGraph {
     val sharedEdgeArraySizeCount = new Array[AtomicInteger](numOfShards)
     for (i <- 0 until numOfShards) sharedEdgeArraySizeCount(i) = new AtomicInteger()
 
-    /* Read everything to determine total num of edge and max id
-     * for each shard, calculate the total num of out edges
-     * an edge fall in a shard when the source node hashed to the shard
+    /* Read everything to determine the total num of outgoing edges and max id for each shard.
+     * An edge fall in a shard when the source node id is hashed to the index of the shard.
      */
     log.info("read out num of edges and max id from files in parallel")
     val futures = Stats.time("graph_dump_read_out_num_of_edge_and_max_id_parallel") {
