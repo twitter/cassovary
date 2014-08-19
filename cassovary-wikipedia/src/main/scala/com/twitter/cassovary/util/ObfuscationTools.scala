@@ -14,13 +14,14 @@
 
 package com.twitter.cassovary.util
 
+/**
+ * Utils shared by all Wikipedia dumps processing tools.
+ */
 object ObfuscationTools {
   def obfuscate(s: String) = {
     s.trim()
       .replaceAll("\\p{Z}", "_") // All separators to underscore
       .replaceAll("\\p{C}", "")  // Ingore all other characters
-    //      .replaceAll("")
-    //    Normalizer.normalize(s.trim.replaceAll("[ \\n]", "_"), Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", "")
   }
 
   def validPageName(s: String): Boolean = {
@@ -29,6 +30,9 @@ object ObfuscationTools {
 
   /**
    * Special prefixes of wikipedia links that point not to a normal page.
+   *
+   * List created manually (no official documentation of dumps exists). May
+   * need improvements in the future.
    */
   val specialLinkPrefixes = Array(
     "File:",

@@ -23,12 +23,27 @@ import scala.io.Source
 import scala.util.matching.Regex
 import scala.xml.pull.XMLEventReader
 
+/**
+ * Extracts redirects between Wikipedia pages from XML Wikipedia dumps.
+ *
+ * When the redirects are extracted after calling `apply` method
+ * defined in `WikipediaDumpProcessor`, it is possible to
+ * retrieve them using `getRedirects` function.
+ *
+ * @param inputFileName file to read from
+ */
 class RedirectsExtractor(inputFileName: String) extends WikipediaDumpProcessor {
 
   import ObfuscationTools._
 
+  /**
+   * For each page name stores its main title.
+   */
   private val mainName = new mutable.HashMap[String, String]
 
+  /**
+   * @return Map of (redirected page title -> main page title) pairs.
+   */
   def getRedirects: collection.Map[String, String] = mainName
 
   val xml = new XMLEventReader(Source.fromFile(inputFileName))
@@ -41,6 +56,13 @@ class RedirectsExtractor(inputFileName: String) extends WikipediaDumpProcessor {
 
   def onPageEnd(pageName: String) = ()
 
+  /**
+   * Redirects are usually defined in the first line of page text in
+   * form (?<=#REDIRECT mainPageTitle).
+   *
+   * When processing text and encounter redirect, we add pageTitle -> mainPageTitle
+   * to `mainName`.
+   */
   def processPageTextLine(pageName: String, text: String) {
     val redirectRegex = new Regex( """(?<=#REDIRECT \[\[)[^\]]+(?=\]\])""")
     redirectRegex.findAllIn(text).foreach {
@@ -56,9 +78,7 @@ class RedirectsExtractor(inputFileName: String) extends WikipediaDumpProcessor {
 }
 
 /**
- * Merges a sequence of maps String -> String into one String -> Set[String], such that
- * if `a: String -> b: String` is in any of input maps, there will be
- * `a: String -> C: Set[String]` in output map, such that `C` contains `b`.
+ * Merges redirects obtained from independent [RedirectExtractor]s.
  */
 class RedirectsMerger {
   private val log = Logger.get("RedirectsMerger")
@@ -71,6 +91,11 @@ class RedirectsMerger {
     map1 ++ map2.map { case (k, v) => k -> (map1.getOrElse(k, Set()) ++ v)}
   }
 
+  /**
+   * Merges a sequence of maps String -> String into one String -> Set[String], such that
+   * if `a: String -> b: String` is in any of input maps, there will be
+   * `a: String -> C: Set[String]` in output map, such that `C` contains `b`.
+   */
   def mergeOtherNames(mainNames: Seq[collection.Map[String, String]]):
     collection.Map[String, Set[String]] = {
     def seqop(resultMap: Map[String, Set[String]],
@@ -81,6 +106,16 @@ class RedirectsMerger {
     mainNames.par.aggregate(Map[String, Set[String]]())(seqop, mergeSetMaps)
   }
 
+  /**
+   * Combines results from many [RedirectsExtractor]s and prints them to
+   * the `writer`.
+   *
+   * Output format is:
+   *   mainName1 otherName11 otherName12 otherName13 ....
+   *   mainName2 otherName21 otherName22
+   *   ...
+   *
+   */
   def combineAndPrintRedirects(partialResutls: Seq[Future[collection.Map[String, String]]],
                                writer: Writer): Future[Unit] = {
     val done: Future[Unit] = for (allResults <- Future.sequence(partialResutls)) yield {
@@ -96,10 +131,16 @@ class RedirectsMerger {
   }
 }
 
+/**
+ * Extracts redirects from multiple files, combines them and prints to a single file.
+ *
+ * See [FileProcessor] for usage options.
+ */
 object RedirectsExtractor extends App {
 
-
   val fileProcessor = new FilesProcessor[collection.Map[String, String]]("RedirectsExtractor") {
+    override protected def defaultExtension: String = ".reds"
+
     def processFile(inputFilename: String): collection.Map[String, String] = {
       val extractor = new RedirectsExtractor(inputFilename)
       extractor()

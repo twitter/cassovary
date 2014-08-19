@@ -37,12 +37,16 @@ import scala.concurrent.duration.Duration
 abstract class FilesProcessor[R](name: String) {
   private val log = Logger.get("Files processor")
 
+  /**
+   * @return Default extension of output file.
+   */
+  protected def defaultExtension = ".wiki"
 
   val flags = new Flags(name)
-  val fileFlag = flags[String]("f", "Filename of a single file to read from")
-  val directoryFlag = flags[String]("d", "Directory to read all xml files from")
-  val outputFlag = flags[String]("o", "Output filename to write to")
-  val extensionFlag = flags[String]("e", ".wiki", "Extension of file to write to " +
+  val fileFlag = flags[String]("file", "Filename of a single file to read from")
+  val directoryFlag = flags[String]("dir", "Directory to read all xml files from")
+  val outputFlag = flags[String]("out", "Output filename to write to")
+  val extensionFlag = flags[String]("extension", defaultExtension, "Extension of file to write to " +
     "(when processing multiple files.)")
   val helpFlag = flags("h", false, "Print usage")
 
@@ -97,10 +101,6 @@ abstract class FilesProcessor[R](name: String) {
     partialResults.foreach {
       f: Future[R] => f.onFailure {
         case t: Throwable => log.warning(t.getMessage)
-//        f.map(x => ()).recover {
-//        case t: Throwable =>
-//          log.warning(t.getMessage)
-//          ()
       }
     }
     Await.ready(Future.sequence(partialResults), Duration.Inf)

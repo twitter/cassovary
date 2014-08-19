@@ -18,10 +18,20 @@ import java.io.{Writer, OutputStreamWriter, PrintWriter}
 
 package object util {
 
+  /**
+   * Charset used for all output.
+   */
   val outputCharset = "UTF-8"
 
+  /**
+   * Char used to split outputed values.
+   */
   val splitChar = " "
 
+  /**
+   * Creates writer for either file (when `out` is defined) or
+   * standard output if `out` is None.
+   */
   def writerFor(out: Option[String]): Writer =
     out match {
       case Some(filename) => new PrintWriter(filename, outputCharset)

@@ -21,8 +21,6 @@ import scala.xml.pull.XMLEventReader
 
 /**
  * Converts wikipedia pages-articles dump file to adjacency list suitable for Cassovary.
- *
- * If `outputFilename` is None prints result to standard output.
  */
 class DumpToGraphConverter(inputFilename: String, writer: Writer)
   extends WikipediaDumpProcessor {

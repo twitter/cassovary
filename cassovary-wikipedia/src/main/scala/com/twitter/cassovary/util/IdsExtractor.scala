@@ -18,6 +18,16 @@ import java.io.Writer
 import scala.io.Source
 import scala.xml.pull.XMLEventReader
 
+/**
+ * Extracts id of pages from Wikipedia dumps.
+ *
+ * Writes result as a list of title, id pairs.
+ *
+ * Resulting title is obfuscated using [ObfuscationTools].
+ *
+ * @param inputFilename input filename
+ * @param writer writer to write results to.
+ */
 class IdsExtractor(inputFilename: String, val writer: Writer)
   extends WikipediaDumpProcessor {
 
@@ -45,6 +55,9 @@ class IdsExtractor(inputFilename: String, val writer: Writer)
 object IdsExtractor extends App {
 
   val fileProcessor = new FilesProcessor[Unit]("IdsExtractor") {
+
+    override protected def defaultExtension: String = ".ids"
+
     override def processFile(inputFilename: String): Unit = {
       val extractor = new IdsExtractor(inputFilename, Some(inputFilename.replace(".xml",
         extensionFlag())))

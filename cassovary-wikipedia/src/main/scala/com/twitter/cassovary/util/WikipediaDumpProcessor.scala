@@ -19,6 +19,12 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.xml.pull.{XMLEventReader, EvElemStart, EvElemEnd, EvText}
 
+/**
+ * General tool to process Wikipedia pages stored in XML dumps.
+ *
+ * Encapsulates XML event based parser and provides handfull methods
+ * for parsing Wikipedia pages.
+ */
 trait WikipediaDumpProcessor {
   private val log = Logger.get("WikipediaDumpProcessor")
 
@@ -106,6 +112,12 @@ trait WikipediaDumpProcessor {
   }
 }
 
+/**
+ * Performs three types of Wikipedia dumps analysis:
+ *   [IdsExtractor], [RedirectsExtractor] and [DumpToGraphConverter].
+ *
+ * See [FilesProcessor] for possible arguments.
+ */
 object WikipediaDumpsProcessor {
   private val log = Logger.get("WikipediaDumpsProcessor")
 
@@ -127,9 +139,11 @@ object WikipediaDumpsProcessor {
         extractor.getRedirects
       }
 
-      override def combineAndPrintResults(partialResults: Seq[Future[collection.Map[String, String]]]): Unit = {
+      override def combineAndPrintResults(
+          partialResults: Seq[Future[collection.Map[String, String]]]): Unit = {
         val rm = new RedirectsMerger
-        val done = rm.combineAndPrintRedirects(partialResults, writerFor(Some(directoryFlag() + "/" + "Wikipedia.red")))
+        val done = rm.combineAndPrintRedirects(partialResults, writerFor(Some(directoryFlag() +
+          "/" + "wikipedia.reds")))
         Await.ready(done, Duration.Inf)
         log.info("Redirects extracted and merged")
       }
