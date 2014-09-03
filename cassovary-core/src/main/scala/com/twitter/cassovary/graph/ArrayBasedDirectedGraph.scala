@@ -116,7 +116,8 @@ object ArrayBasedDirectedGraph {
         (nodes: Seq[Node]) => {
           nodes foreach { node =>
             val nodeId = node.id
-            assert(table(nodeId) == null, "Duplicate node detected. (" + nodeId + ")")
+            if (table(nodeId) != null)
+              log.warning("Duplicate node detected. (" + nodeId + ")")
             table(nodeId) = node
             nodeIdSet(nodeId) = 1
             storedGraphDir match {

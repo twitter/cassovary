@@ -1,0 +1,267 @@
+<mediawiki version="0.8" xml:lang="en">
+  <siteinfo>
+    <sitename>Wikipedia</sitename>
+    <base>http://en.wikipedia.org/wiki/Main_Page</base>
+    <generator>MediaWiki 1.24wmf11</generator>
+    <case>first-letter</case>
+    <namespaces>
+      <namespace key="-2" case="first-letter">Media</namespace>
+      <namespace key="-1" case="first-letter">Special</namespace>
+      <namespace key="0" case="first-letter" />
+      <namespace key="1" case="first-letter">Talk</namespace>
+      <namespace key="2" case="first-letter">User</namespace>
+      <namespace key="3" case="first-letter">User talk</namespace>
+      <namespace key="4" case="first-letter">Wikipedia</namespace>
+      <namespace key="5" case="first-letter">Wikipedia talk</namespace>
+      <namespace key="6" case="first-letter">File</namespace>
+      <namespace key="7" case="first-letter">File talk</namespace>
+      <namespace key="8" case="first-letter">MediaWiki</namespace>
+      <namespace key="9" case="first-letter">MediaWiki talk</namespace>
+      <namespace key="10" case="first-letter">Template</namespace>
+      <namespace key="11" case="first-letter">Template talk</namespace>
+      <namespace key="12" case="first-letter">Help</namespace>
+      <namespace key="13" case="first-letter">Help talk</namespace>
+      <namespace key="14" case="first-letter">Category</namespace>
+      <namespace key="15" case="first-letter">Category talk</namespace>
+      <namespace key="100" case="first-letter">Portal</namespace>
+      <namespace key="101" case="first-letter">Portal talk</namespace>
+      <namespace key="108" case="first-letter">Book</namespace>
+      <namespace key="109" case="first-letter">Book talk</namespace>
+      <namespace key="118" case="first-letter">Draft</namespace>
+      <namespace key="119" case="first-letter">Draft talk</namespace>
+      <namespace key="446" case="first-letter">Education Program</namespace>
+      <namespace key="447" case="first-letter">Education Program talk</namespace>
+      <namespace key="710" case="first-letter">TimedText</namespace>
+      <namespace key="711" case="first-letter">TimedText talk</namespace>
+      <namespace key="828" case="first-letter">Module</namespace>
+      <namespace key="829" case="first-letter">Module talk</namespace>
+    </namespaces>
+  </siteinfo>
+  <page>
+    <title>AccessibleComputing</title>
+    <ns>0</ns>
+    <id>10</id>
+    <redirect title="Computer accessibility" />
+    <revision>
+      <id>381202555</id>
+      <parentid>381200179</parentid>
+      <timestamp>2010-08-26T22:38:36Z</timestamp>
+      <contributor>
+        <username>OlEnglish</username>
+        <id>7181920</id>
+      </contributor>
+      <minor />
+      <comment>[[Help:Reverting|Reverted]] edits by [[Special:Contributions/76.28.186.133|76.28.186.133]] ([[User talk:76.28.186.133|talk]]) to last version by Gurch</comment>
+      <text xml:space="preserve">#REDIRECT [[Computer accessibility]] {{R from CamelCase}}</text>
+      <sha1>lo15ponaybcg2sf49sstw9gdjmdetnk</sha1>
+      <model>wikitext</model>
+      <format>text/x-wiki</format>
+    </revision>
+  </page>
+  <page>
+    <title>Anarchism</title>
+    <ns>0</ns>
+    <id>12</id>
+    <revision>
+      <id>614238459</id>
+      <parentid>614218053</parentid>
+      <timestamp>2014-06-24T15:21:46Z</timestamp>
+      <contributor>
+        <username>NawlinWiki</username>
+        <id>301395</id>
+      </contributor>
+      <minor />
+      <comment>Changed protection level of Anarchism: Persistent [[WP:Sock puppetry|sock-puppetry]] ([Edit=Allow only autoconfirmed users] (expires 15:21, 24 December 2014 (UTC)) [Move=Allow only administrators] (indefinite))</comment>
+      <text xml:space="preserve">{{Redirect2|Anarchist|Anarchists|the fictional character|Anarchist (comics)|other uses|Anarchists (disambiguation)}}
+        ==LONG TEXT CUT==
+==See also==
+* [[Anarchist economics]]
+* [[Anarchist symbolism]]
+* [[Libertarianism]]
+* [[Lists of anarchism topics]]
+* [[List of anarchist communities]]
+* [[List of anarchist movements by region]]
+* [[List of films dealing with Anarchism]]
+* [[Outline of anarchism]]
+* {{Lookfrom|Anarch}}
+{{Portal bar|Anarchism|Social and political philosophy|Social movements}}
+
+{{Anarchism}}
+{{Philosophy topics}}
+{{Political culture}}
+{{Political ideologies}} 
+{{Social and political philosophy}}
+{{Aspects of Capitalism}}
+
+{{Good article}}
+
+[[Category:Anarchism| ]]
+[[Category:Political culture]]
+[[Category:Political ideologies]]
+[[Category:Social theories]]
+[[Category:Anti-fascism]]
+[[Category:Anti-capitalism]]
+[[Category:Far-left politics]]
+
+{{Link FA|eo}}
+{{Link FA|id}}</text>
+      <sha1>asvd3ut1gmu135057a0om9ttg9pp1qh</sha1>
+      <model>wikitext</model>
+      <format>text/x-wiki</format>
+    </revision>
+  </page>
+  <page>
+    <title>AfghanistanHistory</title>
+    <ns>0</ns>
+    <id>13</id>
+    <redirect title="History of Afghanistan" />
+    <revision>
+      <id>74466652</id>
+      <parentid>15898948</parentid>
+      <timestamp>2006-09-08T04:15:52Z</timestamp>
+      <contributor>
+        <username>Rory096</username>
+        <id>750223</id>
+      </contributor>
+      <comment>cat rd</comment>
+      <text xml:space="preserve">#REDIRECT [[History of Afghanistan]] {{R from CamelCase}}</text>
+      <sha1>d4tdz2eojqzamnuockahzcbrgd1t9oi</sha1>
+      <model>wikitext</model>
+      <format>text/x-wiki</format>
+    </revision>
+  </page>
+  <page>
+    <title>AfghanistanGeography</title>
+    <ns>0</ns>
+    <id>14</id>
+    <redirect title="Geography of Afghanistan" />
+    <revision>
+      <id>407008307</id>
+      <parentid>74466619</parentid>
+      <timestamp>2011-01-10T03:56:19Z</timestamp>
+      <contributor>
+        <username>Graham87</username>
+        <id>194203</id>
+      </contributor>
+      <minor />
+      <comment>1 revision from [[:nost:AfghanistanGeography]]: import old edit, see [[User:Graham87/Import]]</comment>
+      <text xml:space="preserve">#REDIRECT [[Geography of Afghanistan]] {{R from CamelCase}}</text>
+      <sha1>0uwuuhiam59ufbu0uzt9lookwtx9f4r</sha1>
+      <model>wikitext</model>
+      <format>text/x-wiki</format>
+    </revision>
+  </page>
+  <page>
+    <title>AfghanistanPeople</title>
+    <ns>0</ns>
+    <id>15</id>
+    <redirect title="Demography of Afghanistan" />
+    <revision>
+      <id>135089040</id>
+      <parentid>74466558</parentid>
+      <timestamp>2007-06-01T13:59:37Z</timestamp>
+      <contributor>
+        <username>RussBot</username>
+        <id>279219</id>
+      </contributor>
+      <minor />
+      <comment>Robot: Fixing [[Special:DoubleRedirects|double-redirect]] -&quot;Demographics of Afghanistan&quot; +&quot;Demography of Afghanistan&quot;</comment>
+      <text xml:space="preserve">#REDIRECT [[Demography of Afghanistan]] {{R from CamelCase}}</text>
+      <sha1>744dgrl7ef5p53yffn2a989ly1dyr8f</sha1>
+      <model>wikitext</model>
+      <format>text/x-wiki</format>
+    </revision>
+  </page>
+  <page>
+    <title>AfghanistanCommunications</title>
+    <ns>0</ns>
+    <id>18</id>
+    <redirect title="Communications in Afghanistan" />
+    <revision>
+      <id>74466499</id>
+      <parentid>15898952</parentid>
+      <timestamp>2006-09-08T04:14:42Z</timestamp>
+      <contributor>
+        <username>Rory096</username>
+        <id>750223</id>
+      </contributor>
+      <comment>cat rd</comment>
+      <text xml:space="preserve">#REDIRECT [[Communications in Afghanistan]] {{R from CamelCase}}</text>
+      <sha1>2gt5g76thwz1sgiig4ju2qz3r2qvwko</sha1>
+      <model>wikitext</model>
+      <format>text/x-wiki</format>
+    </revision>
+  </page>
+  <page>
+    <title>AmoeboidTaxa</title>
+    <ns>0</ns>
+    <id>24</id>
+    <redirect title="Amoeboid" />
+    <revision>
+      <id>74466889</id>
+      <parentid>15898958</parentid>
+      <timestamp>2006-09-08T04:17:51Z</timestamp>
+      <contributor>
+        <username>Rory096</username>
+        <id>750223</id>
+      </contributor>
+      <comment>cat rd</comment>
+      <text xml:space="preserve">#REDIRECT [[Amoeboid]] {{R from CamelCase}}</text>
+      <sha1>k84gqaug0izzy1ber1dq8bogr2a6txa</sha1>
+      <model>wikitext</model>
+      <format>text/x-wiki</format>
+    </revision>
+  </page>
+    <page>
+        <title>Eiffel</title>
+        <ns>0</ns>
+        <id>10000</id>
+        <revision>
+            <id>599306601</id>
+            <parentid>581899147</parentid>
+            <timestamp>2014-03-12T16:41:41Z</timestamp>
+            <contributor>
+                <username>TheLongTone</username>
+                <id>10614794</id>
+            </contributor>
+            <comment>/* Engineering */ remove rubbish</comment>
+            <text xml:space="preserve">__NOTOC__
+'''Eiffel''' may refer to:
+
+==Engineering==
+* [[Eiffel Tower]] in Paris, designed by Gustave Eiffel
+* [[Maria Pia Bridge]] in Porto, Portugal, designed and build by Gustave Eiffel
+* [[Eiffel Bridge, Ungheni]], Moldova, designed by Gustave Eiffel
+* [[Eiffel Bridge, Zrenjanin]], Serbia, built by Gustave Eiffel's company in Paris
+* [[Eiffel (company)]], successor of Gustave Eiffel's engineering company
+
+==People with the surname==
+* [[Gustave Eiffel]] (1832–1923), engineer and designer of the Eiffel Tower and the Statue of Liberty
+* [[Erika Eiffel]], an American woman who famously &quot;married&quot; the Eiffel Tower
+
+==Entertainment==
+* [[Eiffel 65]], an electronic music group
+* &quot;[[Alec Eiffel]]&quot;, a song by the alternative rock band Pixies
+* [[Eiffel (band)]], a French rock group
+
+==Computing==
+* [[Eiffel Software]], a software company
+* [[EiffelStudio]], a development environment for the Eiffel programming language
+* [[Eiffel (programming language)]], developed by Bertrand Meyer
+
+== See also ==
+* [[Eifel]], region of Germany, origin of this surname
+* [[Jean Effel]]
+
+== References ==
+{{Reflist}}
+
+{{disambiguation|surname|geo}}
+{{DEFAULTSORT:Eiffel}}</text>
+            <sha1>31x3gg6qhy7oxv090i7ki97r6dzglpv</sha1>
+            <model>wikitext</model>
+            <format>text/x-wiki</format>
+        </revision>
+    </page>
+
+</mediawiki>
