@@ -18,11 +18,16 @@ import com.twitter.cassovary.graph.StoredGraphDir._
 
 object SharedArrayBasedDirectedNode {
   /**
-   * creates an array based directed node (uni-directional or bi-directional)
+   * Creates a shared array based directed node (uni-directional or bi-directional) for
+   * outgoing edges. Reverse edge arrays are not shared.
+   *
    * @param nodeId an id of the node
-   * @param neighbors a seq of ids of the neighbors read from file
-   * @param sharedArray a two-dimensional array that stores the shared edges of all nodes
-   * @param dir the stored graph direction (OnlyIn, OnlyOut, BothInOut or Mutual)
+   * @param edgeArrOffset an offset into the shared array for outgoing edges
+   * @param edgeArrLen the number of outgoing edges
+   * @param sharedEdgeArray a two-dimensional array that holds the underlying data for
+   *                        the shared array based graph
+   * @param dir the stored graph direction(s) (OnlyIn, OnlyOut, BothInOut or Mutual)
+   * @param reverseDirEdges a reverse edge array, one per node
    *
    * @return a node
    */

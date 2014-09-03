@@ -273,5 +273,5 @@ trait Node {
 }
 
 object Node {
-  private lazy val randGen: Random = new Random;
+  private lazy val randGen: Random = new Random
 }
