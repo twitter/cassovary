@@ -31,7 +31,11 @@ object Cassovary extends Build {
         case x if x startsWith "2.10" => "2.10"
         case x => x
       },
-      "org.scalatest" %% "scalatest" % "1.9.2" % "test",
+      "org.scalatest" %% "scalatest" % "1.9.2" % "test" cross CrossVersion.binaryMapped {
+              case "2.9.3" => "2.9.2"
+              case x if x startsWith "2.10" => "2.10"
+              case x => x
+      },
       "junit" % "junit" % "4.10" % "test"
     ),
     resolvers += "twitter repo" at "http://maven.twttr.com",
@@ -89,7 +93,7 @@ object Cassovary extends Build {
     base = file("."),
     settings = Project.defaultSettings ++ sharedSettings ++ sonatypeSettings
   ).aggregate(
-      cassovaryCore, cassovaryExamples, cassovaryBenchmarks
+      cassovaryCore, cassovaryExamples, cassovaryBenchmarks, cassovaryServer
   )
 
   lazy val cassovaryCore = Project(
@@ -124,4 +128,26 @@ object Cassovary extends Build {
         }
       )
   ).dependsOn(cassovaryCore)
+
+  lazy val cassovaryServer = Project(
+    id = "cassovary-server",
+    base = file("cassovary-server"),
+    settings = Project.defaultSettings ++ sharedSettings
+  ).settings(
+      name := "cassovary-server",
+      libraryDependencies ++= Seq(
+        "it.unimi.dsi" % "fastutil" % "6.4.4",
+        "com.twitter" %% "finagle-http" % "6.20.0" cross CrossVersion.binaryMapped {
+          case "2.9.3" => "2.9.2"
+          case x if x startsWith "2.10" => "2.10"
+          case x => x
+        },
+        "com.twitter" %% "finagle-ostrich4" % "6.20.0"  cross CrossVersion.binaryMapped {
+          case "2.9.3" => "2.9.2"
+          case x if x startsWith "2.10" => "2.10"
+          case x => x
+        }
+      )
+  ).dependsOn(cassovaryCore)
+
 }
