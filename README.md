@@ -17,6 +17,9 @@ examples of using the library. See
 [this README](https://github.com/twitter/cassovary/blob/master/cassovary-examples/ExamplesREADME.md)
 to get started with the examples.
 
+Some other subprojects to check are cassovary-benchmarks for helping benchmark
+some graph algorithms and cassovary-server that exposes Cassovary on a web server.
+
 ## Building
 
 Cassovary is built using [sbt](https://github.com/sbt/sbt) and was tested last using sbt version 0.13.
