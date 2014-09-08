@@ -262,7 +262,7 @@ class ArrayBasedDirectedGraph private (nodes: Array[Node], maxId: Int,
   def iterator = nodes.iterator.filter { _ != null }
 
   def getNodeById(id: Int) = {
-    if (id >= nodes.size) {
+    if ( (id < 0) || (id >= nodes.size)) {
       None
     } else {
       val node = nodes(id)

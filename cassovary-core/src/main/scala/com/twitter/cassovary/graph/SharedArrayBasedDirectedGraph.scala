@@ -263,7 +263,7 @@ class SharedArrayBasedDirectedGraph private (nodeIdSet: Array[Byte], offsetTable
   def iterator = (0 to maxId).flatMap(getNodeById(_)).iterator
 
   def getNodeById(id: Int) = {
-    if ((id >= nodeIdSet.size) || (nodeIdSet(id) == 0)) {
+    if ((id < 0) || (id >= nodeIdSet.size) || (nodeIdSet(id) == 0)) {
       None
     } else {
       val reverseEdges = reverseDirEdgeArray match {

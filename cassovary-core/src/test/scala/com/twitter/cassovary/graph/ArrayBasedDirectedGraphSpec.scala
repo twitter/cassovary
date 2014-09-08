@@ -113,6 +113,7 @@ class ArrayBasedDirectedGraphSpec extends Specification {
       getNode(4).get must DeepEqualsNode((NodeMaker(4, Array(1))))
       getNode(5).get must DeepEqualsNode((NodeMaker(5, Array(2), Array())))
       getNode(6) mustEqual None
+      getNode(-1) mustEqual None
     }
 
     "iterate over all nodes" in {
@@ -136,6 +137,7 @@ class ArrayBasedDirectedGraphSpec extends Specification {
       getNode(4).get must DeepEqualsNode((NodeMaker(4, Array())))
       getNode(5).get must DeepEqualsNode((NodeMaker(5, Array(2), Array())))
       getNode(6) mustEqual None
+      getNode(-1) mustEqual None
     }
 
     "iterate over all nodes" in {
