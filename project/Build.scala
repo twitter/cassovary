@@ -16,6 +16,14 @@ object Cassovary extends Build {
       "com.google.guava" % "guava" % "11.0.2",
       "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided",
       "org.mockito" % "mockito-all" % "1.8.5" % "test",
+      "com.twitter" %% "util-core" % "6.16.0" cross CrossVersion.binaryMapped {
+        case "2.9.3" => "2.9.2"
+        case x if x startsWith "2.10" => "2.10"
+        case x => x
+      } excludeAll (
+          ExclusionRule(organization = "junit"),
+          ExclusionRule(organization = "org.scala-tools.testing"),
+          ExclusionRule(organization = "org.mockito")),
       "com.twitter" %% "ostrich" % "9.1.0" cross CrossVersion.binaryMapped {
         case "2.9.3" => "2.9.2"
         case x if x startsWith "2.10" => "2.10"

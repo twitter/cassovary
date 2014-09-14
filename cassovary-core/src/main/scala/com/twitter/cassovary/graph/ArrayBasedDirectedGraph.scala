@@ -14,14 +14,13 @@
 package com.twitter.cassovary.graph
 
 import com.google.common.annotations.VisibleForTesting
-import com.google.common.util.concurrent.MoreExecutors
-import com.twitter.cassovary.graph.node._
 import com.twitter.cassovary.graph.StoredGraphDir._
-import com.twitter.cassovary.util.ExecutorUtils
+import com.twitter.cassovary.graph.node._
+import com.twitter.cassovary.util.BoundedFuturePool
 import com.twitter.logging.Logger
 import com.twitter.ostrich.stats.Stats
+import com.twitter.util.{Await, FuturePool, Future}
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{ExecutorService, Future}
 import scala.collection.mutable
 
 /**
@@ -29,9 +28,10 @@ import scala.collection.mutable
  * id of itself and ids of nodes in its out edges
  */
 case class NodeIdEdgesMaxId(var id: Int, var edges: Array[Int], var maxId: Int)
+
 object NodeIdEdgesMaxId {
   def apply(id: Int, edges: Array[Int]) =
-      new NodeIdEdgesMaxId(id, edges, edges.foldLeft[Int](id)((x, y) => x max y))
+    new NodeIdEdgesMaxId(id, edges, edges.foldLeft[Int](id)((x, y) => x max y))
 }
 
 /**
@@ -39,48 +39,102 @@ object NodeIdEdgesMaxId {
  * it consists of a seq of nodes with out-edges, a max overall id, and
  * a max id of nodes with out-edges
  */
-private case class NodesMaxIds(nodesInOneThread: Seq[Node],
-    maxIdInPart: Int, nodeWithOutEdgesMaxIdInPart: Int)
+private case class NodesMaxIds(nodesInOnePart: Seq[Node],
+                               maxIdInPart: Int, nodeWithOutEdgesMaxIdInPart: Int)
 
-/**
- * provides methods for constructing an array based graph
- */
 object ArrayBasedDirectedGraph {
-  private lazy val log = Logger.get
+  def apply(iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]], parallelismLimit: Int,
+            storedGraphDir: StoredGraphDir):
+  ArrayBasedDirectedGraph = {
+    val constructor = new ArrayBasedDirectedGraphConstructor(iteratorSeq, parallelismLimit, storedGraphDir)
+    constructor()
+  }
+
+  @VisibleForTesting
+  def apply(iteratorFunc: () => Iterator[NodeIdEdgesMaxId],
+            storedGraphDir: StoredGraphDir): ArrayBasedDirectedGraph = apply(Seq(iteratorFunc), 1, storedGraphDir)
 
   /**
-   * Construct an array-based graph from an sequence of iterators over NodeIdEdgesMaxId
-   * This function builds the array-based graph from a seq of nodes with out edges
-   * using the following steps:
-   * 0. read from file and construct a sequence of Nodes
-   * 1. create an array of size maxNodeid
-   * 2. mark all positions in the array where there is a node
-   * 3. instantiate nodes that only have in-edges (thus has not been created in the input)
-   * next steps apply only if in-edge is needed
-   * 4. calculate in-edge array sizes
-   * 5. (if in-edge dir only) remove out edges
-   * 6. instantiate in-edge arrays
-   * 7. iterate over the sequence of nodes again, instantiate in-edges
+   * Constructs array based directed graph
    */
-  def apply(iteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxId] ], executorService: ExecutorService,
-      storedGraphDir: StoredGraphDir) = {
+  private class ArrayBasedDirectedGraphConstructor(
+    iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]],
+    parallelismLimit: Int,
+    storedGraphDir: StoredGraphDir
+  ) {
+    private lazy val log = Logger.get()
 
-    val nodesOutEdges = new mutable.ArrayBuffer[Seq[Node]]
-    var maxNodeId = 0
-    var nodeWithOutEdgesMaxId = 0
-    var numEdges = 0L
-    var numNodes = 0
+    private val futurePool = new BoundedFuturePool(FuturePool.unboundedPool, parallelismLimit)
 
-    log.debug("loading nodes and out edges from file in parallel")
-    val futures = Stats.time("graph_dump_load_partial_nodes_and_out_edges_parallel") {
-      def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) =
-          Stats.time("graph_load_read_out_edge_from_dump_files") {
+    /**
+     * Construct an array-based graph from an sequence of iterators over NodeIdEdgesMaxId
+     * This function builds the array-based graph from a seq of nodes with out edges
+     * using the following steps:
+     * 0. read from file and construct a sequence of Nodes
+     * 1. create an array of nodes and mark all positions in the array where there is a node
+     * 2. instantiate nodes that only have in-edges (thus has not been created in the input)
+     * next steps apply only if in-edge is needed
+     * 3. calculate in-edge array sizes
+     * 4. (if in-edge dir only) remove out edges
+     * 5. instantiate in-edge arrays
+     * 6. iterate over the sequence of nodes again, instantiate in-edges
+     */
+    def apply(): ArrayBasedDirectedGraph = {
+
+      val result: Future[ArrayBasedDirectedGraph] = for {
+        (nodesOutEdges, maxNodeId, nodeWithOutEdgesMaxId) <- fillOutEdges(iteratorSeq, storedGraphDir)
+        (table, nodeIdSet) <- markStoredNodes(nodesOutEdges, maxNodeId, storedGraphDir)
+        NodesWithNoOutEdgesAndGraphStats(nodesWithNoOutEdges, nodeWithOutEdgesCount, numEdges, numNodes) =
+        createNodesWithNoOutEdges(table, nodeIdSet, maxNodeId, storedGraphDir)
+        _ <- Future.when(storedGraphDir == StoredGraphDir.BothInOut) {
+          fillMissingInEdges(table, nodesOutEdges, nodesWithNoOutEdges, nodeIdSet, maxNodeId)
+        }
+      } yield
+        new ArrayBasedDirectedGraph(table.asInstanceOf[Array[Node]], maxNodeId,
+          nodeWithOutEdgesMaxId, nodeWithOutEdgesCount, numNodes, numEdges, storedGraphDir)
+
+      Await.result(result)
+    }
+
+    /**
+     * Reads `iteratorSeq`'s edges, creates nodes and puts them in an `ArrayBuffer[Seq[Node]]`.
+     * In every node only edges directly read from input are set.
+     * @return Future with read edges of type `Buffer[Seq[Node]]`, max node id and nodeWithOutEdgesMaxId
+     */
+    private def fillOutEdges(iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]], storedGraphDir: StoredGraphDir):
+    Future[(mutable.Buffer[Seq[Node]], Int, Int)] = {
+      log.debug("loading nodes and out edges from file in parallel")
+      val nodesOutEdges = new mutable.ArrayBuffer[Seq[Node]]
+      var maxNodeId = 0
+      var nodeWithOutEdgesMaxId = 0
+
+      val outEdges: Future[Seq[NodesMaxIds]] = Stats.timeFutureMillis(
+        "graph_dump_load_partial_nodes_and_out_edges_parallel") {
+        Future.collect(iteratorSeq.map(i => readOutEdges(i, storedGraphDir)))
+      }
+
+      outEdges.map {
+        case outEdgesList => outEdgesList.foreach {
+          case NodesMaxIds(nodesInOnePart, maxIdInPart, nodeWithOutEdgesMaxIdInPart) =>
+            nodesOutEdges += nodesInOnePart
+            maxNodeId = maxNodeId max maxIdInPart
+            nodeWithOutEdgesMaxId = nodeWithOutEdgesMaxId max nodeWithOutEdgesMaxIdInPart
+        }
+          (nodesOutEdges, maxNodeId, nodeWithOutEdgesMaxId)
+      }
+    }
+
+    /**
+     * Reads out edges from iteratorFunc and returns `NodesMaxIds` object.
+     */
+    private def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId], storedGraphDir: StoredGraphDir):
+    Future[NodesMaxIds] = futurePool {
+      Stats.time("graph_load_read_out_edge_from_dump_files") {
         val nodes = new mutable.ArrayBuffer[Node]
         var newMaxId = 0
         var varNodeWithOutEdgesMaxId = 0
         var id = 0
         var edgesLength = 0
-        var edges: Array[Int] = Array.empty[Int]
 
         val iterator = iteratorFunc()
         iterator foreach { item =>
@@ -94,97 +148,109 @@ object ArrayBasedDirectedGraph {
         }
         NodesMaxIds(nodes, newMaxId, varNodeWithOutEdgesMaxId)
       }
-
-      ExecutorUtils.parallelWork[ () => Iterator[NodeIdEdgesMaxId], NodesMaxIds](executorService,
-          iteratorSeq, readOutEdges)
     }
 
-    futures.toArray map { future =>
-      val f = future.asInstanceOf[Future[NodesMaxIds]]
-      val NodesMaxIds(nodesInOneThread, maxIdInPart, nodeWithOutEdgesMaxIdInPart) = f.get
-      nodesOutEdges += nodesInOneThread
-      maxNodeId = maxNodeId max maxIdInPart
-      nodeWithOutEdgesMaxId = nodeWithOutEdgesMaxId max nodeWithOutEdgesMaxIdInPart
-    }
 
-    val nodeIdSet = new Array[Byte](maxNodeId + 1)
-    val table = new Array[Node](maxNodeId + 1)
-
-    log.debug("mark the ids of all stored nodes in nodeIdSet")
-    Stats.time("graph_load_mark_ids_of_stored_nodes") {
-      def markAllNodes = {
-        (nodes: Seq[Node]) => {
-          nodes foreach { node =>
-            val nodeId = node.id
-            assert(table(nodeId) == null, "Duplicate node detected. (" + nodeId + ")")
-            table(nodeId) = node
-            nodeIdSet(nodeId) = 1
-            storedGraphDir match {
-              case StoredGraphDir.OnlyIn =>
-                node.inboundNodes foreach { inEdge => nodeIdSet(inEdge) = 1 }
-              case _ =>
-                node.outboundNodes foreach { outEdge => nodeIdSet(outEdge) = 1 }
-            }
-          }
-        }
+    /**
+     * Marks all nodes existing in the graph and creates nodes that have `storedGraphDir` consistent
+     * edges.
+     * @return array of created nodes and array of bytes - an indicator of nodes existence in a graph
+     */
+    private def markStoredNodes(nodesOutEdges: Seq[Seq[Node]], maxNodeId: Int, storedGraphDir: StoredGraphDir):
+    Future[(Array[Node], Array[Byte])] = {
+      val table = new Array[Node](maxNodeId + 1)
+      val nodeIdSet = new Array[Byte](maxNodeId + 1)
+      log.debug("mark the ids of all stored nodes in nodeIdSet")
+      Stats.timeFutureMillis("graph_load_mark_ids_of_stored_nodes") {
+        Future.join(
+          nodesOutEdges.map(n =>
+            futurePool {
+              markExistingAndCreateWithOutEdgesNodes(n, table, nodeIdSet, storedGraphDir)
+            })
+        ).map(_ => (table, nodeIdSet))
       }
-      ExecutorUtils.parallelForEach[Seq[Node], Unit](executorService, nodesOutEdges, markAllNodes)
     }
 
-    // creating nodes that have only in edges but no out edges
-    // also calculates the total number of edges
-    val nodesWithNoOutEdges = new mutable.ArrayBuffer[Node]
-    var nodeWithOutEdgesCount = 0
-    log.debug("creating nodes that have only in-coming edges")
-    Stats.time("graph_load_creating_nodes_without_out_edges") {
-      for ( id <- 0 to maxNodeId ) {
-        if (nodeIdSet(id) == 1) {
-          numNodes += 1
-          if (table(id) == null) {
-            val node = ArrayBasedDirectedNode(id, ArrayBasedDirectedNode.noNodes, storedGraphDir)
-            table(id) = node
-            if (storedGraphDir == StoredGraphDir.BothInOut)
-              nodesWithNoOutEdges += node
-          } else {
-            nodeWithOutEdgesCount += 1
-            storedGraphDir match {
-              case StoredGraphDir.OnlyIn =>
-                numEdges += table(id).inboundNodes.size
-              case _ =>
-                numEdges += table(id).outboundNodes.size
-            }
-          }
+    /**
+     * Marks in `nodeIdSet` nodes from `nodes` that are in the graph and copies new nodes that
+     * have outgoing edges to `table`.
+     * @return Future of unit that completes, when all nodes are marked and created.
+     */
+    private def markExistingAndCreateWithOutEdgesNodes(nodes: Seq[Node], table: Array[Node],
+                                                       nodeIdSet: Array[Byte], storedGraphDir: StoredGraphDir) {
+      nodes foreach { node =>
+        val nodeId = node.id
+        assert(table(nodeId) == null, "Duplicate node detected. (" + nodeId + ")")
+        table(nodeId) = node
+        nodeIdSet(nodeId) = 1
+        storedGraphDir match {
+          case StoredGraphDir.OnlyIn =>
+            node.inboundNodes foreach { inEdge => nodeIdSet(inEdge) = 1}
+          case _ =>
+            node.outboundNodes foreach { outEdge => nodeIdSet(outEdge) = 1}
         }
       }
     }
 
-    // the work below is needed for BothInOut directions only
-    if (storedGraphDir == StoredGraphDir.BothInOut) {
-      val allNodes = new mutable.ArrayBuffer[Seq[Node]]
-      allNodes ++= nodesOutEdges
-      allNodes += nodesWithNoOutEdges
+    case class NodesWithNoOutEdgesAndGraphStats(
+      nodesWithNoOutEdges: mutable.ArrayBuffer[Node],
+      nodeWithOutEdgesCount: Int,
+      numEdges: Long,
+      numNodes: Int
+    )
 
-      log.debug("calculating in edges sizes")
-      val inEdgesSizes = findInEdgesSizes()
-
-      def populateInEdges() {
-        def readInEdges = Stats.time("graph_load_read_in_edge_from_dump_files") {
-          (nodes: Seq[Node]) => {
-            nodes foreach { node =>
-              node.outboundNodes foreach { outEdge =>
-                val index = inEdgesSizes(outEdge).getAndIncrement()
-                table(outEdge).asInstanceOf[BiDirectionalNode].inEdges(index) = node.id
+    /**
+     * Creates nodes that have no out edges and counts following graph properties: number of nodes,
+     * number of edges, number of nodes with out edges.
+     *
+     * @return `NodeWithNoOutEdgesAndGraphStats` object that wraps all the data
+     */
+    private def createNodesWithNoOutEdges(table: Array[Node], nodeIdSet: Array[Byte], maxNodeId: Int,
+                                          storedGraphDir: StoredGraphDir): NodesWithNoOutEdgesAndGraphStats = {
+      val nodesWithNoOutEdges = new mutable.ArrayBuffer[Node]()
+      var nodeWithOutEdgesCount = 0
+      var numEdges = 0L
+      var numNodes = 0
+      log.debug("creating nodes that have only in-coming edges")
+      Stats.time("graph_load_creating_nodes_without_out_edges") {
+        for (id <- 0 to maxNodeId) {
+          if (nodeIdSet(id) == 1) {
+            numNodes += 1
+            if (table(id) == null) {
+              val node = ArrayBasedDirectedNode(id, ArrayBasedDirectedNode.noNodes, storedGraphDir)
+              table(id) = node
+              if (storedGraphDir == StoredGraphDir.BothInOut)
+                nodesWithNoOutEdges += node
+            } else {
+              nodeWithOutEdgesCount += 1
+              storedGraphDir match {
+                case StoredGraphDir.OnlyIn =>
+                  numEdges += table(id).inboundNodes().size
+                case _ =>
+                  numEdges += table(id).outboundNodes().size
               }
             }
           }
         }
-        ExecutorUtils.parallelForEach[Seq[Node], Unit](executorService, nodesOutEdges, readInEdges)
       }
+      NodesWithNoOutEdgesAndGraphStats(nodesWithNoOutEdges, nodeWithOutEdgesCount, numEdges, numNodes)
+    }
 
-      def instantiateInEdges() {
-        Stats.time("graph_load_instantiate_in_edge_arrays") {
-          def instantiateInEdgesTask = {
-            (nodes: Seq[Node]) => {
+    /**
+     * Fills missing InEdges when StoredGraphDir is BothInOut in `table` Array.
+     *
+     * @return Future of unit that is completed, when all missing in edges are filled in nodes from the `table`.
+     */
+    private def fillMissingInEdges(table: Array[Node], nodesOutEdges: Seq[Seq[Node]],
+                                   nodesWithNoOutEdges: Seq[Node], nodeIdSet: Array[Byte], numNodes: Int):
+    Future[Unit] = {
+      log.debug("calculating in edges sizes")
+
+      def instantiateInEdges(inEdgesSizes: Array[AtomicInteger]): Future[Unit] = {
+        log.debug("instantiate in edges")
+        Stats.timeFutureMillis("graph_load_instantiate_in_edge_arrays") {
+          val futures = (nodesOutEdges.iterator ++ Iterator(nodesWithNoOutEdges)).map {
+            (nodes: Seq[Node]) => futurePool {
               nodes foreach { node =>
                 val biDirNode = node.asInstanceOf[BiDirectionalNode]
                 val nodeId = biDirNode.id
@@ -196,48 +262,60 @@ object ArrayBasedDirectedGraph {
                 inEdgesSizes(nodeId).set(0)
               }
             }
-          }
-
-          ExecutorUtils.parallelForEach[Seq[Node], Unit](executorService, allNodes,
-              instantiateInEdgesTask)
+          }.toSeq
+          Future.join(futures)
         }
       }
 
-      log.debug("instantiating in edge arrays")
-      instantiateInEdges()
+      def populateInEdges(inEdgesSizes: Array[AtomicInteger]): Future[Unit] = {
+        log.debug("populate in edges")
+        Stats.timeFutureMillis("graph_load_read_in_edge_from_dump_files") {
+          val futures = nodesOutEdges.map {
+            (nodes: Seq[Node]) => futurePool {
+              nodes foreach { node =>
+                node.outboundNodes foreach { outEdge =>
+                  val index = inEdgesSizes(outEdge).getAndIncrement
+                  table(outEdge).asInstanceOf[BiDirectionalNode].inEdges(index) = node.id
+                }
+              }
+            }
+          }
+          Future.join(futures)
+        }
+      }
 
-      log.debug("populate in edges")
-      populateInEdges()
+      for {
+        inEdgesSizes <- findInEdgesSizes(nodesOutEdges, nodeIdSet, numNodes)
+        _ <- instantiateInEdges(inEdgesSizes)
+        _ <- populateInEdges(inEdgesSizes)
+      } yield ()
     }
 
-    def findInEdgesSizes() = Stats.time("graph_load_find_in_edge_sizes") {
-      val atomicIntArray = new Array[AtomicInteger](maxNodeId + 1)
-      var id = 0
-      while (id <= maxNodeId) {
-        if (nodeIdSet(id) == 1) {
-          atomicIntArray(id) = new AtomicInteger()
+    /**
+     * Calculates sizes of incoming edges arrays.
+     *
+     * @return Future of an array of atomic integers holding number of incoming edges to node `i`
+     *         on position `i`
+     */
+    private def findInEdgesSizes(nodesOutEdges: Seq[Seq[Node]],
+                                 nodeIdSet: Array[Byte], maxNodeId: Int): Future[Array[AtomicInteger]] = {
+      Stats.time("graph_load_find_in_edge_sizes") {
+        val atomicIntArray = Array.tabulate[AtomicInteger](maxNodeId + 1) {
+          i => if (nodeIdSet(i) == 1) new AtomicInteger() else null
         }
-        id += 1
-      }
-      def findInEdgeSizesTask = {
-        (nodes: Seq[Node]) => {
-          nodes foreach { node =>
-            node.outboundNodes foreach { outEdge => atomicIntArray(outEdge).incrementAndGet() }
+
+        val futures = nodesOutEdges map {
+          nodes => futurePool {
+            nodes foreach {
+              node => node.outboundNodes foreach { outEdge => atomicIntArray(outEdge).incrementAndGet()}
+            }
           }
         }
-      }
-      ExecutorUtils.parallelForEach[Seq[Node], Unit](executorService,
-          nodesOutEdges, findInEdgeSizesTask)
-      atomicIntArray
-    }
 
-    new ArrayBasedDirectedGraph(table.asInstanceOf[Array[Node]], maxNodeId,
-      nodeWithOutEdgesMaxId, nodeWithOutEdgesCount, numNodes, numEdges, storedGraphDir)
+        Future.join(futures).map(_ => atomicIntArray)
+      }
+    }
   }
-  @VisibleForTesting
-  def apply( iteratorFunc: () => Iterator[NodeIdEdgesMaxId],
-        storedGraphDir: StoredGraphDir): ArrayBasedDirectedGraph =
-    apply(Seq(iteratorFunc), MoreExecutors.sameThreadExecutor(), storedGraphDir)
 }
 
 
@@ -253,13 +331,13 @@ object ArrayBasedDirectedGraph {
  * @param storedGraphDir the graph direction(s) stored
  */
 class ArrayBasedDirectedGraph private (nodes: Array[Node], maxId: Int,
-    val nodeWithOutEdgesMaxId: Int,
-    val nodeWithOutEdgesCount: Int, val nodeCount: Int, val edgeCount: Long,
-    val storedGraphDir: StoredGraphDir) extends DirectedGraph {
+                              val nodeWithOutEdgesMaxId: Int,
+                              val nodeWithOutEdgesCount: Int, val nodeCount: Int, val edgeCount: Long,
+                              val storedGraphDir: StoredGraphDir) extends DirectedGraph {
 
   override lazy val maxNodeId = maxId
 
-  def iterator = nodes.iterator.filter { _ != null }
+  def iterator = nodes.iterator.filter (_ != null)
 
   def getNodeById(id: Int) = {
     if ( (id < 0) || (id >= nodes.size)) {

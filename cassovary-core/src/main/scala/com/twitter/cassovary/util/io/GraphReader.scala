@@ -56,11 +56,13 @@ trait GraphReader[T] {
    */
   def executorService: ExecutorService = MoreExecutors.sameThreadExecutor()
 
+  def parallelismLimit: Int = Runtime.getRuntime.availableProcessors
+
   /**
    * Create an `ArrayBasedDirectedGraph`
    */
   def toArrayBasedDirectedGraph() = {
-    ArrayBasedDirectedGraph(iteratorSeq, executorService, storedGraphDir)
+    ArrayBasedDirectedGraph(iteratorSeq, parallelismLimit, storedGraphDir)
   }
 
   /**
