@@ -75,7 +75,7 @@ class AdjacencyListGraphReaderSpec extends WordSpec with ShouldMatchers with Gra
     }
 
     "contain the right nodes and edges" in {
-      new GraphWithoutRenumberer {0
+      new GraphWithoutRenumberer {
         behave like graphEquivalentToMap(graph, toy6nodeMap)
       }
     }
