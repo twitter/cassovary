@@ -11,65 +11,62 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.graph
+package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.util.{NodeNumberer,SequentialNodeNumberer,SharedArraySeq}
-import org.specs.Specification
+import com.twitter.cassovary.util.SharedArraySeq
+import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.WordSpec
 
-class SharedArraySeqSpec extends Specification {
+class SharedArraySeqSpec extends WordSpec with ShouldMatchers {
   val arr1 = Array(1,2,3)
   val arr2 = Array(4,5)
-  var sharedArray: Array[Array[Int]] = _
 
-  val singleShard = beforeContext {
-    sharedArray = Array[Array[Int]](arr1)
-  }
+  "SharedArraySeq" when {
+    "single shard" should {
+      val sharedArray = Array[Array[Int]](arr1)
 
-  val multiShard = beforeContext {
-    sharedArray = Array[Array[Int]](arr1, arr2)
-  }
+      "construct seqs correctly" in {
+        val seq1 = new SharedArraySeq(0, sharedArray, 0, 3)
+        seq1.toList shouldEqual arr1.toList
+        (new SharedArraySeq(0, sharedArray, 1, 2)).toList shouldEqual List(2, 3)
+        seq1(0) shouldEqual 1
+        seq1(1) shouldEqual 2
+        seq1(2) shouldEqual 3
+        evaluating { seq1(3) } should produce [IndexOutOfBoundsException]
+      }
 
-  "single shard SharedArraySeq" definedAs singleShard should {
-
-    "constructs seqs correctly" in {
-      val seq1 = new SharedArraySeq(0, sharedArray, 0, 3)
-      seq1.toList mustEqual arr1.toList
-      (new SharedArraySeq(0, sharedArray, 1, 2)).toList mustEqual List(2, 3)
-      seq1(0) mustEqual 1
-      seq1(1) mustEqual 2
-      seq1(2) mustEqual 3
-      seq1(3) must throwA[IndexOutOfBoundsException]
+      "implement foreach correctly" in {
+        ((new SharedArraySeq(0, sharedArray, 0, 3)) map { _ + 1 }) shouldEqual List(2, 3, 4)
+      }
     }
 
-    "implements foreach correctly" in {
-      ((new SharedArraySeq(0, sharedArray, 0, 3)) map { _ + 1 }) mustEqual List(2, 3, 4)
-    }
-  }
+    "multiple shard" should {
+      val sharedArray = Array[Array[Int]](arr1, arr2)
 
-  "multiple shard SharedArraySeq" definedAs multiShard should {
+      "construct seqs correctly" in {
+        val seq1 = new SharedArraySeq(0, sharedArray, 0, 3)
+        seq1.toList shouldEqual arr1.toList
+        val seq2 = new SharedArraySeq(1, sharedArray, 0, 2)
+        seq2.toList shouldEqual arr2.toList
+        val seq3 = new SharedArraySeq(20, sharedArray, 0, 3)
+        seq3.toList shouldEqual arr1.toList
+        val seq4 = new SharedArraySeq(111, sharedArray, 0, 2)
+        seq4.toList shouldEqual arr2.toList
 
-    "constructs seqs correctly" in {
-      val seq1 = new SharedArraySeq(0, sharedArray, 0, 3)
-      seq1.toList mustEqual arr1.toList
-      val seq2 = new SharedArraySeq(1, sharedArray, 0, 2)
-      seq2.toList mustEqual arr2.toList
-      val seq3 = new SharedArraySeq(20, sharedArray, 0, 3)
-      seq3.toList mustEqual arr1.toList
-      val seq4 = new SharedArraySeq(111, sharedArray, 0, 2)
-      seq4.toList mustEqual arr2.toList
+        seq1(0) shouldEqual 1
+        seq1(1) shouldEqual 2
+        seq1(2) shouldEqual 3
+        evaluating { seq1(3) } should produce [IndexOutOfBoundsException]
 
-      seq1(0) mustEqual 1
-      seq1(1) mustEqual 2
-      seq1(2) mustEqual 3
-      seq1(3) must throwA[IndexOutOfBoundsException]
+        seq2(0) shouldEqual 4
+        seq2(1) shouldEqual 5
+        evaluating { seq2(2) } should produce [IndexOutOfBoundsException]
+      }
 
-      seq2(0) mustEqual 4
-      seq2(1) mustEqual 5
-      seq2(2) must throwA[IndexOutOfBoundsException]
-    }
+      "implement foreach correctly" in {
+        ((new SharedArraySeq(111, sharedArray, 0, 2)) map { _ + 1 }) shouldEqual List(5, 6)
+      }
 
-    "implements foreach correctly" in {
-      ((new SharedArraySeq(111, sharedArray, 0, 2)) map { _ + 1 }) mustEqual List(5, 6)
     }
   }
 }
