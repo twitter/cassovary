@@ -11,9 +11,8 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.util.io
+package com.twitter.cassovary.util
 
-import com.twitter.cassovary.util.SharedArraySeq
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.WordSpec
 
