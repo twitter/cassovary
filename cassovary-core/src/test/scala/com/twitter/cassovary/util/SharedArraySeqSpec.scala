@@ -65,7 +65,6 @@ class SharedArraySeqSpec extends WordSpec with ShouldMatchers {
       "implement foreach correctly" in {
         ((new SharedArraySeq(111, sharedArray, 0, 2)) map { _ + 1 }) shouldEqual List(5, 6)
       }
-
     }
   }
 }
