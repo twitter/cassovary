@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.graph.bipartite
 
-import com.twitter.cassovary.graph.util.SmallBoundedPriorityQueue
+import com.twitter.cassovary.util.SmallBoundedPriorityQueue
 import com.twitter.cassovary.graph.{GraphUtils, Node}
 import com.twitter.logging.Logger
 import com.twitter.ostrich.stats.Stats
