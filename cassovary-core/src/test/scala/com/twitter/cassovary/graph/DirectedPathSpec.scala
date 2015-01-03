@@ -13,52 +13,41 @@
  */
 package com.twitter.cassovary.graph
 
-import org.specs.Specification
+import org.scalatest.WordSpec
+import org.scalatest.matchers.ShouldMatchers
 
-class DirectedPathSpec extends Specification {
+class DirectedPathSpec extends WordSpec with ShouldMatchers  {
 
   "path of many nodes" should {
-    val testPathIds = Array(10, 11, 12, 14, 15, 11, 14, 0)
-
     "length, append, exists, equals" in {
+      val testPathIds = Array(10, 11, 12, 14, 15, 11, 14, 0)
       val path = DirectedPath.builder()
       path.append(testPathIds(0))
-      path.snapshot mustEqual DirectedPath(Array(testPathIds(0)))
+      path.snapshot shouldEqual DirectedPath(Array(testPathIds(0)))
       (1 until testPathIds.length - 2) foreach { indx =>
         val node = testPathIds(indx)
         path.append(node)
         val snapshotted = path.snapshot
-        snapshotted.length mustEqual (indx + 1)
-        snapshotted.exists(node) mustEqual true
-        snapshotted.exists(testPathIds(indx - 1)) mustEqual true
-        snapshotted.exists(testPathIds(testPathIds.length - 1)) mustEqual false
+        snapshotted.length shouldEqual (indx + 1)
+        snapshotted.exists(node) shouldEqual true
+        snapshotted.exists(testPathIds(indx - 1)) shouldEqual true
+        snapshotted.exists(testPathIds(testPathIds.length - 1)) shouldEqual false
       }
 
       val path2 = DirectedPath.builder()
       path2.append(testPathIds(0))
-      (path.snapshot == path2.snapshot) mustEqual false
+      (path.snapshot == path2.snapshot) shouldEqual false
 
       path.clear()
-      path.snapshot.length mustEqual 0
+      path.snapshot.length shouldEqual 0
       path.append(testPathIds(0)).append(testPathIds(1))
+      path.snapshot.length shouldEqual 2
 
       path2.clear()
       path2.append(testPathIds(0))
       path2.append(testPathIds(1))
-      path2.snapshot mustEqual DirectedPath(Array(testPathIds(0), testPathIds(1)))
-      (path.snapshot == path2.snapshot) mustEqual true
+      path2.snapshot shouldEqual DirectedPath(Array(testPathIds(0), testPathIds(1)))
+      (path.snapshot == path2.snapshot) shouldEqual true
     }
-
-    "a path of ints" in {
-      val path = DirectedPath.builder()
-      path.append(testPathIds(0))
-      path.snapshot mustEqual DirectedPath(Array(testPathIds(0)))
-      path.clear()
-      path.snapshot.length mustEqual 0
-      path.append(testPathIds(0)).append(testPathIds(1))
-      path.snapshot.length mustEqual 2
-      path.snapshot mustEqual DirectedPath(Array(testPathIds(0), testPathIds(1)))
-    }
-
   }
 }
