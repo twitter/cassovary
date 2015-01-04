@@ -13,58 +13,60 @@
  */
 package com.twitter.cassovary.graph
 
-import org.specs.Specification
+import org.junit.runner.RunWith
+import org.scalatest.WordSpec
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.matchers.ShouldMatchers
 
-class DirectedGraphSpec extends Specification {
-  var graph: DirectedGraph = _
+@RunWith(classOf[JUnitRunner])
+class DirectedGraphSpec extends WordSpec with ShouldMatchers {
 
-  val twoNodeGraph = beforeContext {
-    graph = TestGraphs.g2_mutual
-  }
+  val twoNodeGraph = TestGraphs.g2_mutual
+  val sixNodeGraph = TestGraphs.g6
 
-  val sixNodeGraph = beforeContext {
-    graph = TestGraphs.g6
-  }
-
-  "two node graph with each following the other" definedAs twoNodeGraph should {
+  "two node graph with each following the other" should {
     "nodeCount and edgeCount should be correct" in {
-      graph.nodeCount mustEqual 2
-      graph.edgeCount mustEqual 2
+      twoNodeGraph.nodeCount shouldEqual 2
+      twoNodeGraph.edgeCount shouldEqual 2
     }
 
     "maxNodeId should be correct" in {
-      graph.maxNodeId mustEqual 2
+      twoNodeGraph.maxNodeId shouldEqual 2
     }
 
     "elements should return all the nodes" in {
-      graph.iterator.toList.map { _.id }.sortBy (+_) mustEqual List(1, 2)
+      twoNodeGraph.iterator.toList.map {
+        _.id
+      }.sortBy(+_) shouldEqual List(1, 2)
     }
 
     "getNodeById should work in both positive and negative cases" in {
-      graph.getNodeById(1) mustEqual Some(TestNode(1, List(2), List(2)))
-      graph.getNodeById(2) mustEqual Some(TestNode(2, List(1), List(1)))
-      graph.getNodeById(3) mustEqual None
+      twoNodeGraph.getNodeById(1) shouldEqual Some(TestNode(1, List(2), List(2)))
+      twoNodeGraph.getNodeById(2) shouldEqual Some(TestNode(2, List(1), List(1)))
+      twoNodeGraph.getNodeById(3) shouldEqual None
     }
   }
 
-  "six node graph" definedAs sixNodeGraph should {
+  "six node graph" should {
     "nodeCount and edgeCount should be correct" in {
-      graph.nodeCount mustEqual 6
-      graph.edgeCount mustEqual 11
+      sixNodeGraph.nodeCount shouldEqual 6
+      sixNodeGraph.edgeCount shouldEqual 11
     }
 
     "maxNodeId should be correct" in {
-      graph.maxNodeId mustEqual 15
+      sixNodeGraph.maxNodeId shouldEqual 15
     }
 
     "elements should return all the nodes" in {
-      graph.iterator.toList.map { _.id }.sortBy(+_) mustEqual List(10, 11, 12, 13, 14, 15)
+      sixNodeGraph.iterator.toList.map {
+        _.id
+      }.sortBy(+_) shouldEqual List(10, 11, 12, 13, 14, 15)
     }
 
     "existsNodeId should work in both positive and negative cases" in {
-      graph.existsNodeId(10) mustEqual true
-      graph.existsNodeId(11) mustEqual true
-      graph.existsNodeId(122) mustEqual false
+      sixNodeGraph.existsNodeId(10) shouldEqual true
+      sixNodeGraph.existsNodeId(11) shouldEqual true
+      sixNodeGraph.existsNodeId(122) shouldEqual false
     }
   }
 
