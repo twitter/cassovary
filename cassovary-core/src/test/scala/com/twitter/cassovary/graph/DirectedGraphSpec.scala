@@ -24,50 +24,47 @@ class DirectedGraphSpec extends WordSpec with ShouldMatchers {
   val twoNodeGraph = TestGraphs.g2_mutual
   val sixNodeGraph = TestGraphs.g6
 
-  "two node graph with each following the other" should {
-    "nodeCount and edgeCount should be correct" in {
-      twoNodeGraph.nodeCount shouldEqual 2
-      twoNodeGraph.edgeCount shouldEqual 2
+  "DirectedGraph" when {
+    "two node with each following the other" should {
+      "nodeCount and edgeCount be correct" in {
+        twoNodeGraph.nodeCount shouldEqual 2
+        twoNodeGraph.edgeCount shouldEqual 2
+      }
+
+      "maxNodeId be correct" in {
+        twoNodeGraph.maxNodeId shouldEqual 2
+      }
+
+      "elements return all the nodes" in {
+        twoNodeGraph.iterator.toList.map {_.id }.toSet shouldEqual Set(1, 2)
+      }
+
+      "getNodeById work in both positive and negative cases" in {
+        twoNodeGraph.getNodeById(1) shouldEqual Some(TestNode(1, List(2), List(2)))
+        twoNodeGraph.getNodeById(2) shouldEqual Some(TestNode(2, List(1), List(1)))
+        twoNodeGraph.getNodeById(3) shouldEqual None
+      }
     }
 
-    "maxNodeId should be correct" in {
-      twoNodeGraph.maxNodeId shouldEqual 2
-    }
+    "six node graph" should {
+      "nodeCount and edgeCount be correct" in {
+        sixNodeGraph.nodeCount shouldEqual 6
+        sixNodeGraph.edgeCount shouldEqual 11
+      }
 
-    "elements should return all the nodes" in {
-      twoNodeGraph.iterator.toList.map {
-        _.id
-      }.sortBy(+_) shouldEqual List(1, 2)
-    }
+      "maxNodeId be correct" in {
+        sixNodeGraph.maxNodeId shouldEqual 15
+      }
 
-    "getNodeById should work in both positive and negative cases" in {
-      twoNodeGraph.getNodeById(1) shouldEqual Some(TestNode(1, List(2), List(2)))
-      twoNodeGraph.getNodeById(2) shouldEqual Some(TestNode(2, List(1), List(1)))
-      twoNodeGraph.getNodeById(3) shouldEqual None
-    }
-  }
+      "elements return all the nodes" in {
+        sixNodeGraph.iterator.toList.map {_.id }.toSet shouldEqual Set(10, 11, 12, 13, 14, 15)
+      }
 
-  "six node graph" should {
-    "nodeCount and edgeCount should be correct" in {
-      sixNodeGraph.nodeCount shouldEqual 6
-      sixNodeGraph.edgeCount shouldEqual 11
-    }
-
-    "maxNodeId should be correct" in {
-      sixNodeGraph.maxNodeId shouldEqual 15
-    }
-
-    "elements should return all the nodes" in {
-      sixNodeGraph.iterator.toList.map {
-        _.id
-      }.sortBy(+_) shouldEqual List(10, 11, 12, 13, 14, 15)
-    }
-
-    "existsNodeId should work in both positive and negative cases" in {
-      sixNodeGraph.existsNodeId(10) shouldEqual true
-      sixNodeGraph.existsNodeId(11) shouldEqual true
-      sixNodeGraph.existsNodeId(122) shouldEqual false
+      "existsNodeId work in both positive and negative cases" in {
+        sixNodeGraph.existsNodeId(10) shouldEqual true
+        sixNodeGraph.existsNodeId(11) shouldEqual true
+        sixNodeGraph.existsNodeId(122) shouldEqual false
+      }
     }
   }
-
 }
