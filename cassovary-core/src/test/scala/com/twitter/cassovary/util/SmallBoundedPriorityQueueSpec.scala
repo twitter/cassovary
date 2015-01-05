@@ -16,12 +16,24 @@ package com.twitter.cassovary.util
 import org.scalatest.WordSpec
 import org.scalatest.matchers.ShouldMatchers
 
+import scala.reflect.ClassManifest
+
 class SmallBoundedPriorityQueueSpec extends WordSpec with ShouldMatchers {
+  def emptyQueue[A](maxSize: Int)(implicit m: ClassManifest[A], ord: Ordering[A]) = {
+    new SmallBoundedPriorityQueue[A](maxSize)
+  }
+
+  def fullQueue[A](content: List[A])(implicit m: ClassManifest[A], ord: Ordering[A]) = {
+    val q = new SmallBoundedPriorityQueue[A](content.length)
+    content.foreach(q += _)
+    q
+  }
+
   "SmallBoundedPriorityQueue of 3 ints" when {
-    val q = new SmallBoundedPriorityQueue[Int](3)
 
     "empty" should {
       "return empty list" in {
+        val q = emptyQueue[Int](3)
         q.top(0).toList shouldEqual List()
         q.top(1).toList shouldEqual List()
       }
@@ -29,6 +41,7 @@ class SmallBoundedPriorityQueueSpec extends WordSpec with ShouldMatchers {
 
     "not full" should {
       "add elements" in {
+        val q = emptyQueue[Int](3)
         q += 4
         q.top(1).toList shouldEqual List(4)
         q += 3
@@ -40,6 +53,7 @@ class SmallBoundedPriorityQueueSpec extends WordSpec with ShouldMatchers {
 
     "full" should {
       "substitute lowest element correctly" in {
+        val q = fullQueue[Int](List(4, 3, 30))
         q += 10
         q.top(3).toList shouldEqual List(30, 10, 4)
         q += 100
@@ -49,12 +63,14 @@ class SmallBoundedPriorityQueueSpec extends WordSpec with ShouldMatchers {
       }
 
       "return correct number of elements" in {
-        q.top(1).toList shouldEqual List(100)
+        val q = fullQueue[Int](List(4, 3, 30))
+        q.top(1).toList shouldEqual List(30)
       }
     }
 
     "cleared" should {
       "start over" in {
+        val q = fullQueue[Int](List(40, 130, 30))
         q.clear()
         q.size shouldEqual 0
         q += 1
@@ -65,10 +81,10 @@ class SmallBoundedPriorityQueueSpec extends WordSpec with ShouldMatchers {
   }
 
   "SmallBoundedPriorityQueue of 5 strings" when {
-    val q = new SmallBoundedPriorityQueue[String](5)
 
     "not full" should {
       "add elements" in {
+        val q = emptyQueue[String](5)
         q += "ab"
         q += "cd"
         q.top(2).toList shouldEqual List("cd", "ab")
@@ -81,13 +97,15 @@ class SmallBoundedPriorityQueueSpec extends WordSpec with ShouldMatchers {
 
     "full" should {
       "substitute lowest element correctly" in {
+        val q = fullQueue[String](List("fd", "cd", "be", "ar", "ab"))
         q += "zz"
         q += "xx"
         q.top(5).toList shouldEqual List("zz", "xx", "fd", "cd", "be")
       }
 
       "return correct number of elements" in {
-        q.top(3).toList shouldEqual List("zz", "xx", "fd")
+        val q = fullQueue[String](List("ar", "ab", "fd", "cd", "be"))
+        q.top(3).toList shouldEqual List("fd", "cd", "be")
       }
     }
   }
