@@ -13,59 +13,58 @@
  */
 package com.twitter.cassovary.graph
 
-import org.specs.Specification
+import org.junit.runner.RunWith
+import org.scalatest.WordSpec
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.matchers.ShouldMatchers
 
-class DirectedGraphSpec extends Specification {
-  var graph: DirectedGraph = _
+@RunWith(classOf[JUnitRunner])
+class DirectedGraphSpec extends WordSpec with ShouldMatchers {
 
-  val twoNodeGraph = beforeContext {
-    graph = TestGraphs.g2_mutual
+  val twoNodeGraph = TestGraphs.g2_mutual
+  val sixNodeGraph = TestGraphs.g6
+
+  "DirectedGraph" when {
+    "two node with each following the other" should {
+      "nodeCount and edgeCount be correct" in {
+        twoNodeGraph.nodeCount shouldEqual 2
+        twoNodeGraph.edgeCount shouldEqual 2
+      }
+
+      "maxNodeId be correct" in {
+        twoNodeGraph.maxNodeId shouldEqual 2
+      }
+
+      "elements return all the nodes" in {
+        twoNodeGraph.iterator.toList.map {_.id }.toSet shouldEqual Set(1, 2)
+      }
+
+      "getNodeById work in both positive and negative cases" in {
+        twoNodeGraph.getNodeById(1) shouldEqual Some(TestNode(1, List(2), List(2)))
+        twoNodeGraph.getNodeById(2) shouldEqual Some(TestNode(2, List(1), List(1)))
+        twoNodeGraph.getNodeById(3) shouldEqual None
+      }
+    }
+
+    "six node graph" should {
+      "nodeCount and edgeCount be correct" in {
+        sixNodeGraph.nodeCount shouldEqual 6
+        sixNodeGraph.edgeCount shouldEqual 11
+      }
+
+      "maxNodeId be correct" in {
+        sixNodeGraph.maxNodeId shouldEqual 15
+      }
+
+      "elements return all the nodes" in {
+        sixNodeGraph.iterator.toList.map {_.id }.toSet shouldEqual Set(10, 11, 12, 13, 14, 15)
+      }
+
+      "existsNodeId work in both positive and negative cases" in {
+        sixNodeGraph.existsNodeId(10) shouldEqual true
+        sixNodeGraph.existsNodeId(11) shouldEqual true
+        sixNodeGraph.existsNodeId(122) shouldEqual false
+      }
+    }
   }
-
-  val sixNodeGraph = beforeContext {
-    graph = TestGraphs.g6
-  }
-
-  "two node graph with each following the other" definedAs twoNodeGraph should {
-    "nodeCount and edgeCount should be correct" in {
-      graph.nodeCount mustEqual 2
-      graph.edgeCount mustEqual 2
-    }
-
-    "maxNodeId should be correct" in {
-      graph.maxNodeId mustEqual 2
-    }
-
-    "elements should return all the nodes" in {
-      graph.iterator.toList.map { _.id }.sortBy (+_) mustEqual List(1, 2)
-    }
-
-    "getNodeById should work in both positive and negative cases" in {
-      graph.getNodeById(1) mustEqual Some(TestNode(1, List(2), List(2)))
-      graph.getNodeById(2) mustEqual Some(TestNode(2, List(1), List(1)))
-      graph.getNodeById(3) mustEqual None
-    }
-  }
-
-  "six node graph" definedAs sixNodeGraph should {
-    "nodeCount and edgeCount should be correct" in {
-      graph.nodeCount mustEqual 6
-      graph.edgeCount mustEqual 11
-    }
-
-    "maxNodeId should be correct" in {
-      graph.maxNodeId mustEqual 15
-    }
-
-    "elements should return all the nodes" in {
-      graph.iterator.toList.map { _.id }.sortBy(+_) mustEqual List(10, 11, 12, 13, 14, 15)
-    }
-
-    "existsNodeId should work in both positive and negative cases" in {
-      graph.existsNodeId(10) mustEqual true
-      graph.existsNodeId(11) mustEqual true
-      graph.existsNodeId(122) mustEqual false
-    }
-  }
-
 }
