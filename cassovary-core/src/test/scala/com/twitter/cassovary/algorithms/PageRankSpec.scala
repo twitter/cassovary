@@ -13,53 +13,53 @@
  */
 package com.twitter.cassovary.algorithms
 
-import org.specs.Specification
-import com.twitter.cassovary.graph.{DirectedGraph, TestGraphs}
-import org.specs.matcher.Matcher
-import scala.Predef._
-import scala.Some
+import com.twitter.cassovary.graph.TestGraphs
+import org.scalatest.matchers._
+import org.scalatest.WordSpec
 
-class PageRankSpec extends Specification {
+class PageRankSpec extends WordSpec with ShouldMatchers {
 
-  case class MapAlmostEquals(a: Map[Int,Double]) extends Matcher[Array[Double]]() {
-    def apply(b: => Array[Double]) = (
-      {
-        a.foldLeft(true) { case (truth, (i, d)) => truth && b(i) - d < 0.000001 }
-      },
-      "Mapped integers are equal",
-      "Mapped integers aren't! Expected: %s Actual: %s".format(b.deep.mkString(", "), a)
-    )
+  val EPSILON = 1e-6
+
+  def almostEqualMap(expected: Map[Int, Double]) = new Matcher[Array[Double]] {
+    def apply(left: Array[Double]) = {
+      MatchResult(
+        expected forall { case (i,d) => math.abs(left(i) - d) < EPSILON },
+        "Mapped integers aren't equal! \nExpected: %s \nActual: %s".format(
+          expected.mkString(", "), left.mkString(", ")),
+        "Mapped integers are equal"
+      )
+    }
   }
 
   "PageRank" should {
 
-    var graphG6: DirectedGraph = TestGraphs.g6
-    var graphComplete: DirectedGraph = TestGraphs.generateCompleteGraph(10)
+    lazy val graphG6 = TestGraphs.g6
 
     "Return a uniform array with 0 iterations" in {
       val params = PageRankParams(0.1, Some(0))
       val pr = PageRank(graphG6, params)
-      pr must MapAlmostEquals(Map(10 -> 1.0/6, 11 -> 1.0/6, 12 -> 1.0/6, 13 -> 1.0/6, 14 -> 1.0/6, 15 -> 1.0/6))
+      pr should almostEqualMap(Map(10 -> 1.0/6, 11 -> 1.0/6, 12 -> 1.0/6, 13 -> 1.0/6, 14 -> 1.0/6, 15 -> 1.0/6))
     }
 
     "Return the correct values with 1 iteration" in {
       val params = PageRankParams(0.9, Some(1))
       val pr = PageRank(graphG6, params)
-      pr must MapAlmostEquals(Map(10 -> (.1/6 + .9/12), 11 -> (.1/6 + .9*(1.0/18+1.0/12)),
+      pr should almostEqualMap(Map(10 -> (.1/6 + .9/12), 11 -> (.1/6 + .9*(1.0/18+1.0/12)),
         12 -> (.1/6 + .9*(1.0/6+1.0/18)), 13 -> (.1/6 + .1/2), 14 -> (.1/6 + .9/3), 15 -> 1.0/6))
     }
 
     "At 2 iterations PageRank still sums to 1" in {
       val params = PageRankParams(0.9, Some(2))
       val pr = PageRank(graphG6, params)
-      pr.sum mustEqual 1.0
+      pr.sum shouldEqual 1.0
     }
 
     "For a complete graph, 100 iterations still maintains the same values" in {
+      val graphComplete = TestGraphs.generateCompleteGraph(10)
       val params = PageRankParams(0.9, Some(100))
       val pr = PageRank(graphComplete, params)
-      graphComplete.foreach { n => pr(n.id) mustEqual 0.1 }
+      graphComplete.foreach { n => pr(n.id) shouldEqual 0.1 }
     }
-
   }
 }
