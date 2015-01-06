@@ -62,7 +62,7 @@ class SmallBoundedPriorityQueueSpec extends WordSpec with ShouldMatchers {
         q.top(3) shouldEqual Seq(100, 30, 10)
       }
 
-      "return correct number of elements" in {
+      "return correct prefix" in {
         val q = fullQueue[Int](List(4, 3, 30))
         q.top(1) shouldEqual Seq(30)
       }
@@ -103,7 +103,7 @@ class SmallBoundedPriorityQueueSpec extends WordSpec with ShouldMatchers {
         q.top(5) shouldEqual Seq("zz", "xx", "fd", "cd", "be")
       }
 
-      "return correct number of elements" in {
+      "return correct prefix" in {
         val q = fullQueue[String](List("ar", "ab", "fd", "cd", "be"))
         q.top(3) shouldEqual Seq("fd", "cd", "be")
       }
