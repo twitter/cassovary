@@ -13,58 +13,13 @@
  */
 package com.twitter.cassovary.graph.node
 
-import com.twitter.cassovary.graph.{DeepEqualsNode, Node, StoredGraphDir}
-import com.twitter.cassovary.graph.StoredGraphDir._
-import org.specs.Specification
+import com.twitter.cassovary.graph.StoredGraphDir
 
-class ArrayBasedDirectedNodeSpec extends Specification {
-
-  var onlyInNode: Node = _
-  var onlyOutNode: Node = _
-  var mutualNode: Node = _
-  var bothNode: Node = _
-  val nodeId = 100
-  val neighbors = Array(1,2,3)
-  val inEdges = Array(4,5)
-
-  val small = beforeContext {
-    onlyInNode = new Node {
-      val id = nodeId
-      def inboundNodes = neighbors
-      val outboundNodes = Nil
-    }
-    onlyOutNode = new Node {
-      val id = nodeId
-      def outboundNodes = neighbors
-      val inboundNodes = Nil
-    }
-    mutualNode = new Node {
-      val id = nodeId
-      def inboundNodes = neighbors
-      def outboundNodes = neighbors
-    }
-    bothNode = new Node {
-      val id = nodeId
-      def inboundNodes = inEdges
-      def outboundNodes = neighbors
-    }
-  }
-
-  "array based directed node" definedAs small should {
-
-    "constructs uni-directional nodes correctly" in {
-      ArrayBasedDirectedNode(nodeId, neighbors, StoredGraphDir.OnlyIn) must
-          DeepEqualsNode(onlyInNode)
-      ArrayBasedDirectedNode(nodeId, neighbors, StoredGraphDir.OnlyOut) must
-          DeepEqualsNode(onlyOutNode)
-      ArrayBasedDirectedNode(nodeId, neighbors, StoredGraphDir.Mutual) must
-         DeepEqualsNode(mutualNode)
-    }
-
-    "constructs bi-directional nodes correctly" in {
-      val node = ArrayBasedDirectedNode(nodeId, neighbors, StoredGraphDir.BothInOut)
-      node.asInstanceOf[BiDirectionalNode].inEdges = inEdges
-      node must DeepEqualsNode(bothNode)
-    }
-  }
+class ArrayBasedDirectedNodeSpec extends NodeBehaviors {
+  val actualIn = ArrayBasedDirectedNode(nodeId, neighbors, StoredGraphDir.OnlyIn)
+  val actualOut = ArrayBasedDirectedNode(nodeId, neighbors, StoredGraphDir.OnlyOut)
+  val actualMutual = ArrayBasedDirectedNode(nodeId, neighbors, StoredGraphDir.Mutual)
+  val actualBoth = ArrayBasedDirectedNode(nodeId, neighbors, StoredGraphDir.BothInOut)
+  actualBoth.asInstanceOf[BiDirectionalNode].inEdges = inEdges
+  correctlyConstructNodes(actualIn, actualOut, actualMutual, actualBoth)
 }
