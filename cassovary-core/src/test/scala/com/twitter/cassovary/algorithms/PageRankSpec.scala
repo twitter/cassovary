@@ -49,7 +49,7 @@ class PageRankSpec extends WordSpec with ShouldMatchers {
         12 -> (.1/6 + .9*(1.0/6+1.0/18)), 13 -> (.1/6 + .1/2), 14 -> (.1/6 + .9/3), 15 -> 1.0/6))
     }
 
-    "At 2 iterations PageRank still sums to 1" in {
+    "At 2 iterations still sum to 1" in {
       val params = PageRankParams(0.9, Some(2))
       val pr = PageRank(graphG6, params)
       pr.sum shouldEqual 1.0

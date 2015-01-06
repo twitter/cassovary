@@ -20,30 +20,32 @@ class SynchronizedDynamicNodeSpec extends WordSpec with ShouldMatchers {
 
   def fixture(id: Int) = new SynchronizedDynamicNode(id)
 
-  "Two SynchronizedDynamicNodes equal iff their nodeIds are equal" in {
-    val node1 = fixture(1)
-    val node2 = fixture(1)
-    node1.addInBoundNode(2)
-    val node3 = fixture(2)
-    node1 shouldEqual node2
-    node1 == node3 shouldEqual false
-  }
+  "SynchronizedDynamicNodes" should {
+    "be equal if their nodeIds are equal" in {
+      val node1 = fixture(1)
+      val node2 = fixture(1)
+      node1.addInBoundNode(2)
+      val node3 = fixture(2)
+      node1 shouldEqual node2
+      node1 should not equal (node3)
+    }
 
-  "add/delete functions perform correctly" in {
-    val node = fixture(1)
-    node.addInBoundNode(2)
-    node.addInBoundNode(3)
-    node.inboundNodes.toList shouldEqual List(2, 3)
-    node.removeInBoundNode(3)
-    node.removeInBoundNode(4) // non-existing items won't throw exceptions
-    node.inboundNodes.toList shouldEqual List(2)
+    "perform add/delete functions correctly" in {
+      val node = fixture(1)
+      node.addInBoundNode(2)
+      node.addInBoundNode(3)
+      node.inboundNodes.toList shouldEqual List(2, 3)
+      node.removeInBoundNode(3)
+      node.removeInBoundNode(4) // non-existing items won't throw exceptions
+      node.inboundNodes.toList shouldEqual List(2)
 
-    node.addOutBoundNode(2)
-    node.addOutBoundNode(3)
-    node.outboundNodes.toList shouldEqual List(2, 3)
-    node.removeOutBoundNode(3)
-    node.removeOutBoundNode(4)
-    node.outboundNodes.toList shouldEqual List(2)
+      node.addOutBoundNode(2)
+      node.addOutBoundNode(3)
+      node.outboundNodes.toList shouldEqual List(2, 3)
+      node.removeOutBoundNode(3)
+      node.removeOutBoundNode(4)
+      node.outboundNodes.toList shouldEqual List(2)
+    }
   }
 }
 
