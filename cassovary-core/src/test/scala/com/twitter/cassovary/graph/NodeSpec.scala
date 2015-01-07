@@ -13,112 +13,118 @@
  */
 package com.twitter.cassovary.graph
 
-import org.specs.Specification
+import org.scalatest.WordSpec
+import org.scalatest.matchers.ShouldMatchers
 
-class NodeSpec extends Specification {
+class NodeSpec extends WordSpec with ShouldMatchers {
 
-  var node: Node = _
+  def noInboundOrOutboundEdges = TestNode(1, Nil, Nil)
+  def onlyInboundEdges = TestNode(1, List(2), Nil)
+  def onlyOutboundEdges = TestNode(1, Nil, List(2))
+  def inboundAndOutboundEdges = TestNode(1, List(2), List(3))
 
-  val noInboundOrOutboundEdges = beforeContext(node = TestNode(1, Nil, Nil))
-  val onlyInboundEdges = beforeContext(node = TestNode(1, List(2), Nil))
-  val onlyOutboundEdges = beforeContext(node = TestNode(1, Nil, List(2)))
-  val inboundAndOutboundEdges = beforeContext(node = TestNode(1, List(2), List(3)))
-
-  def noInboundEdges = {
+  def noInboundEdges(node: Node): Unit = {
     "have no inbound edges" in {
-      node.inboundCount mustBe 0
-      node.inboundNodes.size mustBe 0
-      node.isInboundNode(1) mustBe false
+      node.inboundCount shouldEqual 0
+      node.inboundNodes().size shouldEqual 0
+      node.isInboundNode(1) shouldEqual false
     }
 
     "produce no random inbound edges" in {
-      node.randomInboundNode must beNone
-      node.randomNeighborSet(4, GraphDir.InDir).size mustBe 0
+      node.randomInboundNode should be (None)
+      node.randomNeighborSet(4, GraphDir.InDir).size shouldEqual 0
     }
   }
 
-  def noOutboundEdges = {
+  def noOutboundEdges(node: Node): Unit = {
     "have no outbound edges" in {
-      node.outboundCount mustBe 0
-      node.outboundNodes.size mustBe 0
-      node.isOutboundNode(1) mustBe false
+      node.outboundCount shouldEqual 0
+      node.outboundNodes().size shouldEqual 0
+      node.isOutboundNode(1) shouldEqual false
     }
 
     "produce no random outbound edges" in {
-      node.randomOutboundNode must beNone
-      node.randomNeighborSet(4, GraphDir.OutDir).size mustBe 0
+      node.randomOutboundNode should be (None)
+      node.randomNeighborSet(4, GraphDir.OutDir).size shouldEqual 0
     }
   }
 
-  "A node with no inbound or outbound edges" definedAs noInboundOrOutboundEdges should {
-    "lack any edges" in {
-      noInboundEdges
-      noOutboundEdges
-    }
+  "A node with no inbound or outbound edges" should {
+    val node = noInboundOrOutboundEdges
+    behave like noInboundEdges(node)
+    behave like noOutboundEdges(node)
   }
 
-  "A node with only inbound edges" definedAs onlyInboundEdges should {
+  "A node with only inbound edges" should {
     "have an inbound edge" in {
-      node.inboundCount mustBe 1
-      node.inboundNodes must contain(2)
-      node.isInboundNode(1) mustBe false
-      node.isInboundNode(2) mustBe true
+      val node = onlyInboundEdges
+      node.inboundCount shouldEqual 1
+      node.inboundNodes should contain(2)
+      node.isInboundNode(1) shouldEqual false
+      node.isInboundNode(2) shouldEqual true
     }
 
     "produce a random inbound edge" in {
-      node.randomInboundNode must equalTo(Some(2))
-      node.randomNeighborSet(4, GraphDir.InDir).size mustBe 4
-      node.randomNeighborSet(4, GraphDir.InDir)(0) mustBe 2
+      val node = onlyInboundEdges
+      node.randomInboundNode shouldEqual Some(2)
+      node.randomNeighborSet(4, GraphDir.InDir).size shouldEqual 4
+      node.randomNeighborSet(4, GraphDir.InDir)(0) shouldEqual 2
     }
 
-    "lack any outbound edges" in { noOutboundEdges }
+    behave like noOutboundEdges(onlyInboundEdges)
   }
 
 
-  "A node with only outbound edges" definedAs onlyOutboundEdges should {
-    "lack any inbound edges" in { noInboundEdges }
+  "A node with only outbound edges" should {
+    behave like noInboundEdges(onlyOutboundEdges)
 
     "have an outbound edge" in {
-      node.outboundCount mustBe 1
-      node.outboundNodes must contain(2)
-      node.isOutboundNode(1) mustBe false
-      node.isOutboundNode(2) mustBe true
+      val node = onlyOutboundEdges
+      node.outboundCount shouldEqual 1
+      node.outboundNodes should contain (2)
+      node.isOutboundNode(1) shouldEqual false
+      node.isOutboundNode(2) shouldEqual true
     }
 
     "produce a random outbound edge" in {
-      node.randomOutboundNode must equalTo(Some(2))
-      node.randomNeighborSet(4, GraphDir.OutDir).size mustBe 4
-      node.randomNeighborSet(4, GraphDir.OutDir)(0) mustBe 2
+      val node = onlyOutboundEdges
+      node.randomOutboundNode shouldEqual Some(2)
+      node.randomNeighborSet(4, GraphDir.OutDir).size shouldEqual 4
+      node.randomNeighborSet(4, GraphDir.OutDir)(0) shouldEqual 2
     }
   }
 
-  "A node with inbound and outbound edges" definedAs inboundAndOutboundEdges should {
+  "A node with inbound and outbound edges" should {
     "have an inbound edge" in {
-      node.inboundCount mustBe 1
-      node.inboundNodes must contain(2)
-      node.isInboundNode(1) mustBe false
-      node.isInboundNode(2) mustBe true
-      node.isInboundNode(3) mustBe false
+      val node = inboundAndOutboundEdges
+      node.inboundCount shouldEqual 1
+      node.inboundNodes should contain (2)
+      node.isInboundNode(1) shouldEqual false
+      node.isInboundNode(2) shouldEqual true
+      node.isInboundNode(3) shouldEqual false
     }
 
     "produce a random inbound edge" in {
-      node.randomInboundNode must be equalTo(Some(2))
-      node.randomNeighborSet(4, GraphDir.InDir).size mustBe 4
-      node.randomNeighborSet(4, GraphDir.InDir)(0) mustBe 2
+      val node = inboundAndOutboundEdges
+      node.randomInboundNode shouldEqual Some(2)
+      node.randomNeighborSet(4, GraphDir.InDir).size shouldEqual 4
+      node.randomNeighborSet(4, GraphDir.InDir)(0) shouldEqual 2
     }
 
     "have an outbound edge" in {
-      node.outboundCount mustBe 1
-      node.outboundNodes must contain(3)
-      node.isOutboundNode(1) mustBe false
-      node.isOutboundNode(2) mustBe false
-      node.isOutboundNode(3) mustBe true
+      val node = inboundAndOutboundEdges
+      node.outboundCount shouldEqual 1
+      node.outboundNodes should contain (3)
+      node.isOutboundNode(1) shouldEqual false
+      node.isOutboundNode(2) shouldEqual false
+      node.isOutboundNode(3) shouldEqual true
     }
 
     "produce a random outbound edge" in {
-      node.randomOutboundNode must equalTo(Some(3))
-      node.randomNeighborSet(4, GraphDir.OutDir).size mustBe 4
-      node.randomNeighborSet(4, GraphDir.OutDir)(0) mustBe 3
+      val node = inboundAndOutboundEdges
+      node.randomOutboundNode shouldEqual Some(3)
+      node.randomNeighborSet(4, GraphDir.OutDir).size shouldEqual 4
+      node.randomNeighborSet(4, GraphDir.OutDir)(0) shouldEqual 3
     }
   }
 }
