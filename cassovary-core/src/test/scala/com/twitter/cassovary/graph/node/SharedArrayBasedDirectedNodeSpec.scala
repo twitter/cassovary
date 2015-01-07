@@ -13,59 +13,17 @@
  */
 package com.twitter.cassovary.graph.node
 
-import com.twitter.cassovary.graph.{DeepEqualsNode, Node, StoredGraphDir}
-import com.twitter.cassovary.graph.StoredGraphDir._
-import org.specs.Specification
+import com.twitter.cassovary.graph.{Node, StoredGraphDir}
 
-class SharedArrayBasedDirectedNodeSpec extends Specification {
-
-  var onlyInNode: Node = _
-  var onlyOutNode: Node = _
-  var mutualNode: Node = _
-  var bothNode: Node = _
-  val nodeId = 100
-  val neighbors = Array(1,2,3)
-  val inEdges = Array(4,5)
+class SharedArrayBasedDirectedNodeSpec extends NodeBehaviors {
   val sharedArray = Array[Array[Int]](neighbors)
-
-  val small = beforeContext {
-    onlyInNode = new Node {
-      val id = nodeId
-      def inboundNodes = neighbors
-      val outboundNodes = Nil
-    }
-    onlyOutNode = new Node {
-      val id = nodeId
-      def outboundNodes = neighbors
-      val inboundNodes = Nil
-    }
-    mutualNode = new Node {
-      val id = nodeId
-      def inboundNodes = neighbors
-      def outboundNodes = neighbors
-    }
-    bothNode = new Node {
-      val id = nodeId
-      def inboundNodes = inEdges
-      def outboundNodes = neighbors
-    }
-  }
-
-  "array based directed node" definedAs small should {
-
-    "constructs uni-directional nodes correctly" in {
-      SharedArrayBasedDirectedNode(nodeId, 0, 3, sharedArray,
-          StoredGraphDir.OnlyIn) must DeepEqualsNode(onlyInNode)
-      SharedArrayBasedDirectedNode(nodeId, 0, 3, sharedArray,
-          StoredGraphDir.OnlyOut) must DeepEqualsNode(onlyOutNode)
-      SharedArrayBasedDirectedNode(nodeId, 0, 3, sharedArray,
-          StoredGraphDir.Mutual) must DeepEqualsNode(mutualNode)
-    }
-
-    "constructs bi-directional nodes correctly" in {
-      val node = SharedArrayBasedDirectedNode(nodeId, 0, 3, sharedArray,
+  val actualIn = SharedArrayBasedDirectedNode(nodeId, 0, 3, sharedArray,
+          StoredGraphDir.OnlyIn)
+  val actualOut = SharedArrayBasedDirectedNode(nodeId, 0, 3, sharedArray,
+          StoredGraphDir.OnlyOut)
+  val actualMutual = SharedArrayBasedDirectedNode(nodeId, 0, 3, sharedArray,
+          StoredGraphDir.Mutual)
+  val actualBoth = SharedArrayBasedDirectedNode(nodeId, 0, 3, sharedArray,
           StoredGraphDir.BothInOut, Some(inEdges))
-      node must DeepEqualsNode(bothNode)
-    }
-  }
+  correctlyConstructNodes(actualIn, actualOut, actualMutual, actualBoth)
 }
