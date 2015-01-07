@@ -13,33 +13,39 @@
  */
 package com.twitter.cassovary.graph.node
 
-import org.specs.Specification
+import org.scalatest.WordSpec
+import org.scalatest.matchers.ShouldMatchers
 
-class SynchronizedDynamicNodeSpec extends Specification {
-  "Two SynchronizedDynamicNodes equal iff their nodeIds are equal" in {
-    val node1 = new SynchronizedDynamicNode(1)
-    val node2 = new SynchronizedDynamicNode(1)
-    node1.addInBoundNode(2)
-    val node3 = new SynchronizedDynamicNode(2)
-    node1 mustEqual node2
-    node1 == node3 mustBe false
-  }
+class SynchronizedDynamicNodeSpec extends WordSpec with ShouldMatchers {
 
-  "add/delete functions perform correctly" in {
-    val node = new SynchronizedDynamicNode(1)
-    node.addInBoundNode(2)
-    node.addInBoundNode(3)
-    node.inboundNodes.toList mustEqual List(2, 3)
-    node.removeInBoundNode(3)
-    node.removeInBoundNode(4) // non-existing items won't throw exceptions
-    node.inboundNodes.toList mustEqual List(2)
+  def fixture(id: Int) = new SynchronizedDynamicNode(id)
 
-    node.addOutBoundNode(2)
-    node.addOutBoundNode(3)
-    node.outboundNodes.toList mustEqual List(2, 3)
-    node.removeOutBoundNode(3)
-    node.removeOutBoundNode(4)
-    node.outboundNodes.toList mustEqual List(2)
+  "SynchronizedDynamicNodes" should {
+    "be equal if their nodeIds are equal" in {
+      val node1 = fixture(1)
+      val node2 = fixture(1)
+      node1.addInBoundNode(2)
+      val node3 = fixture(2)
+      node1 shouldEqual node2
+      node1 should not equal (node3)
+    }
+
+    "perform add/delete functions correctly" in {
+      val node = fixture(1)
+      node.addInBoundNode(2)
+      node.addInBoundNode(3)
+      node.inboundNodes.toList shouldEqual List(2, 3)
+      node.removeInBoundNode(3)
+      node.removeInBoundNode(4) // non-existing items won't throw exceptions
+      node.inboundNodes.toList shouldEqual List(2)
+
+      node.addOutBoundNode(2)
+      node.addOutBoundNode(3)
+      node.outboundNodes.toList shouldEqual List(2, 3)
+      node.removeOutBoundNode(3)
+      node.removeOutBoundNode(4)
+      node.outboundNodes.toList shouldEqual List(2)
+    }
   }
 }
 
