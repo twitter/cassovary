@@ -11,10 +11,10 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.graph
+package com.twitter.cassovary.graph.tourist
 
-import com.twitter.cassovary.graph.tourist.{VisitsCounter, PathsCounter}
 import com.twitter.cassovary.graph.util.FastUtilConversion
+import com.twitter.cassovary.graph.{DirectedPath, TestNode}
 import it.unimi.dsi.fastutil.ints.Int2IntMap
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 import org.scalatest.WordSpec
