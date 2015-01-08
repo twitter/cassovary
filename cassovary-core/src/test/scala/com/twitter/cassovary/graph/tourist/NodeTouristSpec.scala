@@ -36,7 +36,7 @@ class NodeTouristSpec extends WordSpec with ShouldMatchers {
   }
 
   "PathsCounter" should {
-    "count paths properly with one homenode" in {
+    "count paths properly with 2 home nodes" in {
       val visitor = new PathsCounter(10, List(1, 2))
       List(1, 2, 3, 4, 1, 2, 3, 4, 3, 1, 1, 4, 1, 3, 2, 3) foreach { id: Int =>
         visitor.visit(id)
