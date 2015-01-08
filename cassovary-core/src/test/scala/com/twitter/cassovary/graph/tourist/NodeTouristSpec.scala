@@ -31,7 +31,7 @@ class NodeTouristSpec extends WordSpec with ShouldMatchers {
         visitor.visit(testNode(id))
       }
 
-      visitMapToSeq(visitor.infoAllNodes) shouldEqual Array((1, 3), (2, 3), (3, 2), (4, 1)).toSeq
+      visitMapToArray(visitor.infoAllNodes) shouldEqual Array((1, 3), (2, 3), (3, 2), (4, 1))
     }
   }
 
@@ -43,25 +43,25 @@ class NodeTouristSpec extends WordSpec with ShouldMatchers {
       }
       val info = visitor.infoAllNodes
 
-      pathMapToSeq(info.get(1)) shouldEqual Array((DirectedPath(Array(1)), 5)).toSeq
-      pathMapToSeq(info.get(2)) shouldEqual Array((DirectedPath(Array(2)), 3)).toSeq
-      pathMapToSeq(info.get(3)) shouldEqual Array(
+      pathMapToArray(info.get(1)) shouldEqual Array((DirectedPath(Array(1)), 5))
+      pathMapToArray(info.get(2)) shouldEqual Array((DirectedPath(Array(2)), 3))
+      pathMapToArray(info.get(3)) shouldEqual Array(
         (DirectedPath(Array(2, 3)), 3),
         (DirectedPath(Array(2, 3, 4, 3)), 1),
         (DirectedPath(Array(1, 3)), 1)
-      ).toSeq
-      pathMapToSeq(info.get(4)) shouldEqual Array(
+      )
+      pathMapToArray(info.get(4)) shouldEqual Array(
         (DirectedPath(Array(2, 3, 4)), 2),
         (DirectedPath(Array(1, 4)), 1)
-      ).toSeq
+      )
     }
   }
 
-  def pathMapToSeq(map: Object2IntMap[DirectedPath]) = {
-    FastUtilConversion.object2IntMapToArray(map).toSeq
+  def pathMapToArray(map: Object2IntMap[DirectedPath]) = {
+    FastUtilConversion.object2IntMapToArray(map)
   }
 
-  def visitMapToSeq(map: Int2IntMap) = {
-    FastUtilConversion.int2IntMapToArray(map).toSeq
+  def visitMapToArray(map: Int2IntMap) = {
+    FastUtilConversion.int2IntMapToArray(map)
   }
 }
