@@ -13,11 +13,13 @@
  */
 package com.twitter.cassovary.graph
 
-import org.specs.mock.Mockito
-import org.specs.Specification
+import org.scalatest.mock.MockitoSugar
+import org.scalatest.WordSpec
+import org.scalatest.matchers.ShouldMatchers
+import org.mockito.Mockito._
 import scala.util.Random
 
-class TraverserSpec extends Specification with Mockito {
+class TraverserSpec extends WordSpec with MockitoSugar with ShouldMatchers {
 
   class TestIter extends Iterator[Int] {
     var i = 0
@@ -30,7 +32,7 @@ class TraverserSpec extends Specification with Mockito {
       val biter = new TestIter with BoundedIterator[Int] {
         lazy val maxSteps = 3L
       }
-      biter.toSeq.toList mustEqual List(10, 20, 30)
+      biter.toSeq.toList shouldEqual List(10, 20, 30)
     }
    }
 
@@ -44,12 +46,12 @@ class TraverserSpec extends Specification with Mockito {
       val randomTraverser = new RandomTraverser(
         graph, dir, Seq(10), resetProb, None, false, new Random, None, false)
       val homeNode = getNode(10)
-      randomTraverser.next must_== homeNode
+      randomTraverser.next shouldEqual homeNode
       var curr = homeNode
       for (i <- 1 to 10) {
         val next = randomTraverser.next
-        next must_!= curr
-        curr.isNeighbor(dir, next.id) must_== true
+        next should not be curr
+        curr.isNeighbor(dir, next.id) shouldEqual true
         curr = next
       }
     }
@@ -59,7 +61,7 @@ class TraverserSpec extends Specification with Mockito {
         "if option not set, walk will run into infinite loop" in {
       val mockRandom = mock[Random]
       //mock random always returns the last element
-      mockRandom.nextDouble() returns 1.0
+      when(mockRandom.nextDouble()).thenReturn(1.0)
       val graph3 = TestGraphs.g3
       def getNode(id: Int) = graph3.getNodeById(id).get
 
@@ -69,18 +71,18 @@ class TraverserSpec extends Specification with Mockito {
         val randomTraverser = new RandomTraverser(
             graph3, dir, Seq(10), resetProb, None, true, mockRandom, None, false)
         val homeNode = getNode(10)
-        mockRandom.nextInt(1) returns 0
-        randomTraverser.next must_== homeNode
-        mockRandom.nextInt(2) returns 1
+        when(mockRandom.nextInt(1)).thenReturn(0)
+        randomTraverser.next shouldEqual homeNode
+        when(mockRandom.nextInt(2)).thenReturn(1)
         var next = randomTraverser.next
-        next.id mustEqual 12
+        next.id shouldEqual 12
         next = randomTraverser.next
-        next.id mustEqual 11
+        next.id shouldEqual 11
         //the set of edges are (10->11), (10->12), (11->12), (12->11)
         //if onceOnly is not set, we will visit 12
         //but because 12 has been seen, we reset to homenode
         next = randomTraverser.next
-        next.id mustEqual 10
+        next.id shouldEqual 10
       }
     }
 
@@ -88,7 +90,7 @@ class TraverserSpec extends Specification with Mockito {
         "when visit the same node twice, even when resetprob equals 0" in {
       val mockRandom = mock[Random]
       //mock random always returns the last element
-      mockRandom.nextDouble() returns 1.0
+      when(mockRandom.nextDouble()).thenReturn(1.0)
 
       val resetProb = 0.0
       List(GraphDir.OutDir, GraphDir.InDir) foreach { dir =>
@@ -96,49 +98,20 @@ class TraverserSpec extends Specification with Mockito {
         val randomTraverser = new RandomTraverser(graph, dir, Seq(12),
             resetProb, None, true, mockRandom, None, false)
         val homeNode = getNode(12)
-        mockRandom.nextInt(1) returns 0
-        randomTraverser.next must_== homeNode
+        when(mockRandom.nextInt(1)).thenReturn(0)
+        randomTraverser.next shouldEqual homeNode
         var next = randomTraverser.next
-        next.id mustEqual 14
+        next.id shouldEqual 14
         next = randomTraverser.next
-        next.id mustEqual 15
+        next.id shouldEqual 15
         //node 15 has 2 neighbors (10,11), we visit 11
-        mockRandom.nextInt(2) returns 1
+        when(mockRandom.nextInt(2)).thenReturn(1)
         next = randomTraverser.next
-        next.id mustEqual 11
+        next.id shouldEqual 11
         //11 has 2 neighbors (12,14), our mockRandom will pick 14
         //but 14 has been visited before, reset back to homenode(12)
         next = randomTraverser.next
-        next.id mustEqual 12
-      }
-    }
-
-    "test onlyOnce option on graph6, when it is set to true, walk should reset to homenode when " +
-        "visit the same node twice, even when resetprob equals 0" in {
-      val mockRandom = mock[Random]
-      //mock random always returns the last element
-      mockRandom.nextDouble() returns 1.0
-
-      val resetProb = 0.0
-      List(GraphDir.OutDir, GraphDir.InDir) foreach { dir =>
-        val dir = GraphDir.OutDir
-        val randomTraverser = new RandomTraverser(graph, dir, Seq(12),
-          resetProb, None, true, mockRandom, None, false)
-        val homeNode = getNode(12)
-        mockRandom.nextInt(1) returns 0
-        randomTraverser.next must_== homeNode
-        var next = randomTraverser.next
-        next.id mustEqual 14
-        next = randomTraverser.next
-        next.id mustEqual 15
-        //node 15 has 2 neighbors (10,11), we visit 11
-        mockRandom.nextInt(2) returns 1
-        next = randomTraverser.next
-        next.id mustEqual 11
-        //11 has 2 neighbors (12,14), our mockRandom will pick 14
-        //but 14 has been visited before, reset back to homenode(12)
-        next = randomTraverser.next
-        next.id mustEqual 12
+        next.id shouldEqual 12
       }
     }
 
@@ -149,10 +122,10 @@ class TraverserSpec extends Specification with Mockito {
         val randomTraverser = new RandomTraverser(graph, dir, Seq(10), resetProb,
           None, false, new Random, None, false)
         val homeNode = getNode(10)
-        randomTraverser.next must_== homeNode
+        randomTraverser.next shouldEqual homeNode
         var curr = homeNode
         for (i <- 1 to 10) {
-          randomTraverser.next must_== curr
+          randomTraverser.next shouldEqual curr
         }
       }
     }
@@ -169,12 +142,12 @@ class TraverserSpec extends Specification with Mockito {
       }
 
       val ids = bfs.toSeq.map { _.id }.toList
-      ids must_== List(11, 12, 13, 12, 14, 14, 12, 14, 14, 15)
-      bfs.depth(10) mustEqual Some(0)
-      List(11, 12, 13) foreach { bfs.depth(_) mustEqual Some(1) }
-      List(14) foreach { bfs.depth(_) mustEqual Some(2) }
-      List(15) foreach { bfs.depth(_) mustEqual Some(3) }
-      bfs.depth(16) mustEqual None
+      ids shouldEqual List(11, 12, 13, 12, 14, 14, 12, 14, 14, 15)
+      bfs.depth(10) shouldEqual Some(0)
+      List(11, 12, 13) foreach { bfs.depth(_) shouldEqual Some(1) }
+      List(14) foreach { bfs.depth(_) shouldEqual Some(2) }
+      List(15) foreach { bfs.depth(_) shouldEqual Some(3) }
+      bfs.depth(16) shouldEqual None
     }
 
     "yield all nodes in BFS order in unique id walk" in {
@@ -184,12 +157,12 @@ class TraverserSpec extends Specification with Mockito {
         lazy val maxSteps = 10L
       }
       val ids = bfs.toSeq.map { _.id }.toList
-      ids must_== List(11, 12, 13, 14, 15)
-      bfs.depth(10) mustEqual Some(0)
-      List(11, 12, 13) foreach { bfs.depth(_) mustEqual Some(1) }
-      List(14) foreach { bfs.depth(_) mustEqual Some(2) }
-      List(15) foreach { bfs.depth(_) mustEqual Some(3) }
-      bfs.depth(16) mustEqual None
+      ids shouldEqual List(11, 12, 13, 14, 15)
+      bfs.depth(10) shouldEqual Some(0)
+      List(11, 12, 13) foreach { bfs.depth(_) shouldEqual Some(1) }
+      List(14) foreach { bfs.depth(_) shouldEqual Some(2) }
+      List(15) foreach { bfs.depth(_) shouldEqual Some(3) }
+      bfs.depth(16) shouldEqual None
     }
 
     "yield all nodes in BFS order walk with constraint numOfFriendsThresh" in {
@@ -199,11 +172,11 @@ class TraverserSpec extends Specification with Mockito {
         lazy val maxSteps = 10L
       }
       val ids = bfs.toSeq.map { _.id }.toList
-      ids must_== List(10, 11, 12, 14, 14, 15, 15, 10, 11, 10)
-      bfs.depth(15) mustEqual Some(0)
-      List(10, 11) foreach { bfs.depth(_) mustEqual Some(1) }
-      List(12, 14) foreach { bfs.depth(_) mustEqual Some(2) }
-      List(13, 16) foreach { bfs.depth(_) mustEqual None }
+      ids shouldEqual List(10, 11, 12, 14, 14, 15, 15, 10, 11, 10)
+      bfs.depth(15) shouldEqual Some(0)
+      List(10, 11) foreach { bfs.depth(_) shouldEqual Some(1) }
+      List(12, 14) foreach { bfs.depth(_) shouldEqual Some(2) }
+      List(13, 16) foreach { bfs.depth(_) shouldEqual None }
     }
   }
 
@@ -214,14 +187,14 @@ class TraverserSpec extends Specification with Mockito {
       val dir = GraphDir.OutDir
       val trav = new DepthFirstTraverser(graph, dir, Seq(10), true)
       val ids = trav.toSeq.map { _.id }.toList
-      ids must_== List(10, 11, 12, 14, 15, 13)
+      ids shouldEqual List(10, 11, 12, 14, 15, 13)
 
-      trav.distance(10) mustEqual Some(0)
-      trav.distance(11) mustEqual Some(1)
-      trav.distance(12) mustEqual Some(2)
-      trav.distance(14) mustEqual Some(3)
-      trav.distance(15) mustEqual Some(4)
-      trav.distance(13) mustEqual Some(1)
+      trav.distance(10) shouldEqual Some(0)
+      trav.distance(11) shouldEqual Some(1)
+      trav.distance(12) shouldEqual Some(2)
+      trav.distance(14) shouldEqual Some(3)
+      trav.distance(15) shouldEqual Some(4)
+      trav.distance(13) shouldEqual Some(1)
     }
 
     "yield all nodes in DFS order in expected order in non-unique id walk (outDir)" in {
@@ -230,11 +203,11 @@ class TraverserSpec extends Specification with Mockito {
         lazy val maxSteps = 7L
       }
       val ids = trav.toSeq.map { _.id }.toList
-      ids must_== List(10, 11, 12, 14, 15, 10, 11)
+      ids shouldEqual List(10, 11, 12, 14, 15, 10, 11)
 
-      trav.distance(10) mustEqual Some(0)
-      trav.distance(11) mustEqual Some(1)
-      trav.distance(12) mustEqual Some(2)
+      trav.distance(10) shouldEqual Some(0)
+      trav.distance(11) shouldEqual Some(1)
+      trav.distance(12) shouldEqual Some(2)
     }
 
     "yield all nodes in DFS order in expected order in unique id walk (inDir)" in {
@@ -243,14 +216,14 @@ class TraverserSpec extends Specification with Mockito {
         lazy val maxSteps = 11L
       }
       val ids = trav.toSeq.map { _.id }.toList
-      ids must_== List(10, 15, 14, 11, 12, 13)
+      ids shouldEqual List(10, 15, 14, 11, 12, 13)
 
-      trav.distance(10) mustEqual Some(0)
-      trav.distance(15) mustEqual Some(1)
-      trav.distance(14) mustEqual Some(2)
-      trav.distance(11) mustEqual Some(3)
-      trav.distance(12) mustEqual Some(3)
-      trav.distance(13) mustEqual Some(4)
+      trav.distance(10) shouldEqual Some(0)
+      trav.distance(15) shouldEqual Some(1)
+      trav.distance(14) shouldEqual Some(2)
+      trav.distance(11) shouldEqual Some(3)
+      trav.distance(12) shouldEqual Some(3)
+      trav.distance(13) shouldEqual Some(4)
     }
   }
 }
