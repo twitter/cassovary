@@ -25,7 +25,6 @@ trait GraphBehaviours {
     "have number of edges less than in full graph" in {
       assert(graph.edgeCount <= (numNodes * (numNodes - 1).toLong))
     }
-
   }
 
   def completeGraph(graph: => DirectedGraph, numNodes: Int) {

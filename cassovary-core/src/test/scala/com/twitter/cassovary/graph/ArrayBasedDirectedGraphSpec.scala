@@ -46,44 +46,6 @@ case class DeepEqualsNodeIterable(aIterable: Iterable[Node]) extends Matcher[Ite
   )
 }
 
-
-object NodeMaker {
-  def apply(id: Int, in: Array[Int]): Node = {
-    apply(id, Array(), in)
-  }
-
-  def apply(nodeId: Int, out: Array[Int], in: Array[Int]): Node = {
-    apply(nodeId, out, in, StoredGraphDir.BothInOut)
-  }
-
-  def apply(nodeId: Int, out: Array[Int], in: Array[Int], storedGraphDir: StoredGraphDir): Node = {
-    val node = storedGraphDir match {
-      case StoredGraphDir.OnlyIn => new Node {
-        val id = nodeId
-        def inboundNodes = out
-        def outboundNodes = Nil
-      }
-      case StoredGraphDir.OnlyOut => new Node {
-        val id = nodeId
-        def inboundNodes = Nil
-        def outboundNodes = out
-      }
-      case StoredGraphDir.Mutual => new Node {
-        val id = nodeId
-        def inboundNodes = out
-        def outboundNodes = out
-      }
-      case StoredGraphDir.BothInOut => new Node {
-        val id = nodeId
-        def inboundNodes = in
-        def outboundNodes = out
-      }
-    }
-
-    node
-  }
-}
-
 class ArrayBasedDirectedGraphSpec extends Specification {
   var graph: DirectedGraph = _
 
@@ -107,11 +69,11 @@ class ArrayBasedDirectedGraphSpec extends Specification {
 
   "the graph" definedAs smallGraph should {
     "map in and out edges" in {
-      getNode(1).get must DeepEqualsNode((NodeMaker(1, Array(2, 3, 4), Array(2))))
-      getNode(2).get must DeepEqualsNode((NodeMaker(2, Array(1), Array(1, 5))))
-      getNode(3).get must DeepEqualsNode((NodeMaker(3, Array(1))))
-      getNode(4).get must DeepEqualsNode((NodeMaker(4, Array(1))))
-      getNode(5).get must DeepEqualsNode((NodeMaker(5, Array(2), Array())))
+      getNode(1).get must DeepEqualsNode(Node(1, Array(2, 3, 4), Array(2)))
+      getNode(2).get must DeepEqualsNode(Node(2, Array(1), Array(1, 5)))
+      getNode(3).get must DeepEqualsNode(Node(3, Nil, Array(1)))
+      getNode(4).get must DeepEqualsNode(Node(4, Nil, Array(1)))
+      getNode(5).get must DeepEqualsNode(Node(5, Array(2), Nil))
       getNode(6) mustEqual None
       getNode(-1) mustEqual None
     }
@@ -131,11 +93,11 @@ class ArrayBasedDirectedGraphSpec extends Specification {
 
   "graph containing only out edges" definedAs smallGraphOutOnly should {
     "map only out edges" in {
-      getNode(1).get must DeepEqualsNode((NodeMaker(1, Array(2, 3, 4), Array())))
-      getNode(2).get must DeepEqualsNode((NodeMaker(2, Array(1), Array())))
-      getNode(3).get must DeepEqualsNode((NodeMaker(3, Array())))
-      getNode(4).get must DeepEqualsNode((NodeMaker(4, Array())))
-      getNode(5).get must DeepEqualsNode((NodeMaker(5, Array(2), Array())))
+      getNode(1).get must DeepEqualsNode(Node(1, Array(2, 3, 4), Nil))
+      getNode(2).get must DeepEqualsNode(Node(2, Array(1), Nil))
+      getNode(3).get must DeepEqualsNode(Node(3, Nil, Nil))
+      getNode(4).get must DeepEqualsNode(Node(4, Nil, Nil))
+      getNode(5).get must DeepEqualsNode(Node(5, Array(2), Nil))
       getNode(6) mustEqual None
       getNode(-1) mustEqual None
     }
@@ -155,11 +117,11 @@ class ArrayBasedDirectedGraphSpec extends Specification {
 
   "graph containing only in edges" definedAs smallGraphInOnly should {
     "map only in edges" in {
-      getNode(1).get must DeepEqualsNode((NodeMaker(1, Array(), Array(2, 3, 4))))
-      getNode(2).get must DeepEqualsNode((NodeMaker(2, Array(), Array(1))))
-      getNode(3).get must DeepEqualsNode((NodeMaker(3, Array())))
-      getNode(4).get must DeepEqualsNode((NodeMaker(4, Array())))
-      getNode(5).get must DeepEqualsNode((NodeMaker(5, Array(), Array(2))))
+      getNode(1).get must DeepEqualsNode((Node(1, Nil, Array(2, 3, 4))))
+      getNode(2).get must DeepEqualsNode((Node(2, Nil, Array(1))))
+      getNode(3).get must DeepEqualsNode((Node(3, Nil, Nil)))
+      getNode(4).get must DeepEqualsNode((Node(4, Nil, Nil)))
+      getNode(5).get must DeepEqualsNode((Node(5, Nil, Array(2))))
       getNode(6) mustEqual None
     }
 

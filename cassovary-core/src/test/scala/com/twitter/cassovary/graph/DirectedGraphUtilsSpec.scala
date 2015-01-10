@@ -57,6 +57,7 @@ class DirectedGraphUtilsSpec extends WordSpec with ShouldMatchers {
         directedGraphUtils.getNumMutualEdges shouldEqual 4L
       }
     }
+  }
 
     "three node" should {
       val (graph, directedGraphUtils) = utils(TestGraphs.g3)
@@ -64,14 +65,16 @@ class DirectedGraphUtilsSpec extends WordSpec with ShouldMatchers {
         directedGraphUtils.getNumMutualEdges shouldEqual 1L
       }
     }
+  }
 
-    "six node" should {
-      val (graph, directedGraphUtils) = utils(TestGraphs.g6)
+  "six node graph" should {
+    val (graph, directedGraphUtils) = utils(TestGraphs.g6)
 
       "mutual edge check" in {
         directedGraphUtils.getNumMutualEdges shouldEqual 0L
       }
     }
+  }
 
     "checks on complete" should {
       val graph = TestGraphs.generateCompleteGraph(10)

@@ -269,9 +269,13 @@ trait Node {
      outboundNodes.take(10).foldLeft("OutboundNodes[" + outboundCount + "] =>"){ (accum, node) =>
        accum + node + "|"} + "\n"
    }
-
 }
 
 object Node {
   private lazy val randGen: Random = new Random
+  def apply(nodeId: Int, out: Seq[Int], in: Seq[Int]) = new Node {
+    val id = nodeId
+    def inboundNodes() = in
+    def outboundNodes() = out
+  }
 }
