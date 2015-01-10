@@ -13,9 +13,10 @@
  */
 package com.twitter.cassovary.graph
 
-import org.specs.Specification
+import org.scalatest.WordSpec
+import org.scalatest.matchers.ShouldMatchers
 
-class DirectedGraphUtilsSpec extends Specification {
+class DirectedGraphUtilsSpec extends WordSpec with ShouldMatchers {
 
   private def utils(graph: DirectedGraph) = {
     (graph, new DirectedGraphUtils(graph))
@@ -24,38 +25,38 @@ class DirectedGraphUtilsSpec extends Specification {
   "two node graph with each following the other" should {
     val (graph, directedGraphUtils) = utils(TestGraphs.g2_mutual)
     "#mutualedges should be 1" in {
-      directedGraphUtils.getNumMutualEdges mustEqual 1L
+      directedGraphUtils.getNumMutualEdges shouldEqual 1L
     }
   }
 
   "mutual edges on six node graph with only one dir stored" should {
     "be correct with only out dir" in {
       val directedGraphUtils = new DirectedGraphUtils(TestGraphs.g6_onlyout)
-      directedGraphUtils.getNumMutualEdges mustEqual 0L
+      directedGraphUtils.getNumMutualEdges shouldEqual 0L
     }
 
     "be correct with only in dir" in {
       val directedGraphUtils = new DirectedGraphUtils(TestGraphs.g6_onlyin)
-      directedGraphUtils.getNumMutualEdges mustEqual 0L
+      directedGraphUtils.getNumMutualEdges shouldEqual 0L
     }
   }
 
   "mutual edges on seven node graph with only one dir stored" should {
     "be correct with only out dir" in {
       val directedGraphUtils = new DirectedGraphUtils(TestGraphs.g7_onlyout)
-      directedGraphUtils.getNumMutualEdges mustEqual 4L
+      directedGraphUtils.getNumMutualEdges shouldEqual 4L
     }
 
     "be correct with only in dir" in {
       val directedGraphUtils = new DirectedGraphUtils(TestGraphs.g7_onlyin)
-      directedGraphUtils.getNumMutualEdges mustEqual 4L
+      directedGraphUtils.getNumMutualEdges shouldEqual 4L
     }
   }
 
   "three node graph" should {
     val (graph, directedGraphUtils) = utils(TestGraphs.g3)
     "#mutualedges should be 1" in {
-      directedGraphUtils.getNumMutualEdges mustEqual 1L
+      directedGraphUtils.getNumMutualEdges shouldEqual 1L
     }
   }
 
@@ -63,7 +64,7 @@ class DirectedGraphUtilsSpec extends Specification {
     val (graph, directedGraphUtils) = utils(TestGraphs.g6)
 
     "mutual edge check" in {
-      directedGraphUtils.getNumMutualEdges mustEqual 0L
+      directedGraphUtils.getNumMutualEdges shouldEqual 0L
     }
   }
 
@@ -71,7 +72,7 @@ class DirectedGraphUtilsSpec extends Specification {
     val graph = TestGraphs.generateCompleteGraph(10)
     val directedGraphUtils = new DirectedGraphUtils(graph)
     "mutual edge check" in {
-      directedGraphUtils.getNumMutualEdges mustEqual graph.edgeCount/2
+      directedGraphUtils.getNumMutualEdges shouldEqual graph.edgeCount/2
     }
   }
 }
