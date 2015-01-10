@@ -13,9 +13,7 @@
  */
 package com.twitter.cassovary.graph.bipartite
 
-import com.twitter.cassovary.graph.bipartite.BipartiteGraphDir._
 import com.twitter.cassovary.graph.GraphDir
-import com.twitter.cassovary.graph.GraphDir._
 import org.scalatest.WordSpec
 import org.scalatest.matchers.ShouldMatchers
 import scala.collection.mutable
