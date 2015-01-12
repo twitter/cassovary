@@ -20,10 +20,6 @@ import scala.collection.mutable
 
 class BipartiteGraphSpec extends WordSpec with ShouldMatchers {
 
-  var graph: BipartiteGraph = _
-  var leftNodes: Array[BipartiteNode] = _
-  var rightNodes: Array[BipartiteNode] = _
-
   def bipartiteExampleSingleSide() = {
    /*
    lN -> 1 to 5
@@ -35,58 +31,57 @@ class BipartiteGraphSpec extends WordSpec with ShouldMatchers {
    5 --> i: (), o: (5,10,8)
    */
 
-    leftNodes = new Array[BipartiteNode](6)
-
+    val leftNodes = new Array[BipartiteNode](6)
     var inBounds: Array[Int] = Array()
     var outBounds: Array[Int] = Array()
-    createLeftNode(1, inBounds, outBounds)
+    leftNodes(1) = createLeftNode(1, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array(5, 10)
-    createLeftNode(2, inBounds, outBounds)
+    leftNodes(2) = createLeftNode(2, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array()
-    createLeftNode(3, inBounds, outBounds)
+    leftNodes(3) = createLeftNode(3, inBounds, outBounds)
 
 
     inBounds = Array()
     outBounds = Array(14)
-    createLeftNode(4, inBounds, outBounds)
+    leftNodes(4) = createLeftNode(4, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array(5, 10, 8)
-    createLeftNode(5, inBounds, outBounds)
+    leftNodes(5) = createLeftNode(5, inBounds, outBounds)
 
-    rightNodes = new Array[BipartiteNode](124)
+    val rightNodes = new Array[BipartiteNode](124)
     inBounds = Array(4)
     outBounds = Array()
-    createRightNode(14, inBounds, outBounds)
+    rightNodes(14) = createRightNode(14, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array()
-    createRightNode(4, inBounds, outBounds)
+    rightNodes(4) = createRightNode(4, inBounds, outBounds)
 
     inBounds = Array(2, 5)
     outBounds = Array()
-    createRightNode(5, inBounds, outBounds)
+    rightNodes(5) = createRightNode(5, inBounds, outBounds)
 
     inBounds = Array(5)
     outBounds = Array()
-    createRightNode(8, inBounds, outBounds)
+    rightNodes(8) = createRightNode(8, inBounds, outBounds)
 
     inBounds = Array(2, 5)
     outBounds = Array()
-    createRightNode(10, inBounds, outBounds)
+    rightNodes(10) = createRightNode(10, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array()
-    createRightNode(123, inBounds, outBounds)
+    rightNodes(123) = createRightNode(123, inBounds, outBounds)
 
     val leftSide = BipartiteSide(leftNodes, 5, 6)
     val rightSide = BipartiteSide(rightNodes, 6, 0)
 
-    graph = new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.LeftToRight)
+    new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.LeftToRight)
   }
 
   def bipartiteExampleDoubleSide() = {
@@ -100,63 +95,63 @@ class BipartiteGraphSpec extends WordSpec with ShouldMatchers {
    5 --> i: (4,10), o: (5,10,8)
    */
 
-    leftNodes = new Array[BipartiteNode](6)
+    val leftNodes = new Array[BipartiteNode](6)
 
     var inBounds: Array[Int] = Array(4, 5, 123, 10)
     var outBounds: Array[Int] = Array()
-    createLeftNode(1, inBounds, outBounds)
+    leftNodes(1) = createLeftNode(1, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array(5, 10)
-    createLeftNode(2, inBounds, outBounds)
+    leftNodes(2) = createLeftNode(2, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array()
-    createLeftNode(3, inBounds, outBounds)
+    leftNodes(3) = createLeftNode(3, inBounds, outBounds)
 
 
     inBounds = Array(14)
     outBounds = Array(14)
-    createLeftNode(4, inBounds, outBounds)
+    leftNodes(4) = createLeftNode(4, inBounds, outBounds)
 
     inBounds = Array(4, 10)
     outBounds = Array(5, 10, 8)
-    createLeftNode(5, inBounds, outBounds)
+    leftNodes(5) = createLeftNode(5, inBounds, outBounds)
 
-    rightNodes = new Array[BipartiteNode](124)
+    val rightNodes = new Array[BipartiteNode](124)
     inBounds = Array(4)
     outBounds = Array(4)
-    createRightNode(14, inBounds, outBounds)
+    rightNodes(14) = createRightNode(14, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array(1, 5)
-    createRightNode(4, inBounds, outBounds)
+    rightNodes(4) = createRightNode(4, inBounds, outBounds)
 
     inBounds = Array(2, 5)
     outBounds = Array(1)
-    createRightNode(5, inBounds, outBounds)
+    rightNodes(5) = createRightNode(5, inBounds, outBounds)
 
     inBounds = Array(5)
     outBounds = Array()
-    createRightNode(8, inBounds, outBounds)
+    rightNodes(8) = createRightNode(8, inBounds, outBounds)
 
     inBounds = Array(2, 5)
     outBounds = Array(1, 5)
-    createRightNode(10, inBounds, outBounds)
+    rightNodes(10) = createRightNode(10, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array(1)
-    createRightNode(123, inBounds, outBounds)
+    rightNodes(123) = createRightNode(123, inBounds, outBounds)
 
     val leftSide = BipartiteSide(leftNodes, 5, 6)
     val rightSide = BipartiteSide(rightNodes, 6, 7)
 
-    graph = new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.Both)
+    new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.Both)
   }
 
   "Bipartite Graph Single Side Input" should {
+    val graph = bipartiteExampleSingleSide()
     "have loaded correct number of nodes and edges" in {
-      bipartiteExampleSingleSide()
       graph.leftNodeCount shouldEqual 5
       graph.leftOutEdgeCount shouldEqual 6
       graph.rightNodeCount shouldEqual 6
@@ -164,7 +159,6 @@ class BipartiteGraphSpec extends WordSpec with ShouldMatchers {
     }
 
     "have the right input to output node mapping" in {
-      bipartiteExampleSingleSide()
       val leftNbrSet = mutable.Set[Int]()
       (-5 to -1).toArray foreach { id =>
         val node = graph.getNodeById(id).get.asInstanceOf[BipartiteNode]
@@ -200,8 +194,8 @@ class BipartiteGraphSpec extends WordSpec with ShouldMatchers {
   }
 
   "Bipartite Graph Double Sides input " should {
+    val graph = bipartiteExampleDoubleSide()
     "have loaded correct number of nodes and edges" in {
-      bipartiteExampleDoubleSide()
       graph.leftNodeCount shouldEqual 5
       graph.leftOutEdgeCount shouldEqual 6
       graph.rightNodeCount shouldEqual 6
@@ -250,13 +244,11 @@ class BipartiteGraphSpec extends WordSpec with ShouldMatchers {
     }
   }
 
-  private def createLeftNode(id: Int, inNodes: Array[Int], outNodes: Array[Int]) {
-    val node = new LeftNode(id, inNodes, outNodes)
-    leftNodes(id) = node
+  private def createLeftNode(id: Int, inNodes: Array[Int], outNodes: Array[Int]) = {
+    new LeftNode(id, inNodes, outNodes)
   }
 
-  private def createRightNode(id: Int, inNodes: Array[Int], outNodes: Array[Int]) {
-    val node = new RightNode(id, inNodes, outNodes)
-    rightNodes(id) = node
+  private def createRightNode(id: Int, inNodes: Array[Int], outNodes: Array[Int]) = {
+    new RightNode(id, inNodes, outNodes)
   }
 }
