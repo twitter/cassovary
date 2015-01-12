@@ -48,8 +48,8 @@ trait BipartiteNode extends Node {
  * all of its in and out edges point to nodes in the RHS, and thus all edge ids have positive values
  * @param nodeId the original (positive) id value of the node (unique on the LHS),
  *        will be internalized to nodeId * -1
- * @param in original (positive) ids of the nodes on the RHS pointed by in-coming edges
- * @param out original (positive) ids of the nodes on the RHS pointed by out-going edges
+ * @param inboundNodes original (positive) ids of the nodes on the RHS pointed by in-coming edges
+ * @param outboundNodes original (positive) ids of the nodes on the RHS pointed by out-going edges
  */
 class LeftNode(nodeId: Int, val inboundNodes: Seq[Int],
     val outboundNodes: Seq[Int]) extends BipartiteNode {

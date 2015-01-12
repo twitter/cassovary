@@ -13,19 +13,14 @@
  */
 package com.twitter.cassovary.graph.bipartite
 
-import com.twitter.cassovary.graph.bipartite.BipartiteGraphDir._
 import com.twitter.cassovary.graph.GraphDir
-import com.twitter.cassovary.graph.GraphDir._
-import org.specs.Specification
+import org.scalatest.WordSpec
+import org.scalatest.matchers.ShouldMatchers
 import scala.collection.mutable
 
-class BipartiteGraphSpec extends Specification {
+class BipartiteGraphSpec extends WordSpec with ShouldMatchers {
 
-  var graph: BipartiteGraph = _
-  var leftNodes: Array[BipartiteNode] = _
-  var rightNodes: Array[BipartiteNode] = _
-
-  val bipartiteExampleSingleSide = beforeContext {
+  def bipartiteExampleSingleSide() = {
    /*
    lN -> 1 to 5
    rN -> 4,8,5,10,123,0
@@ -36,61 +31,60 @@ class BipartiteGraphSpec extends Specification {
    5 --> i: (), o: (5,10,8)
    */
 
-    leftNodes = new Array[BipartiteNode](6)
-
+    val leftNodes = new Array[BipartiteNode](6)
     var inBounds: Array[Int] = Array()
     var outBounds: Array[Int] = Array()
-    createLeftNode(1, inBounds, outBounds)
+    leftNodes(1) = createLeftNode(1, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array(5, 10)
-    createLeftNode(2, inBounds, outBounds)
+    leftNodes(2) = createLeftNode(2, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array()
-    createLeftNode(3, inBounds, outBounds)
+    leftNodes(3) = createLeftNode(3, inBounds, outBounds)
 
 
     inBounds = Array()
     outBounds = Array(14)
-    createLeftNode(4, inBounds, outBounds)
+    leftNodes(4) = createLeftNode(4, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array(5, 10, 8)
-    createLeftNode(5, inBounds, outBounds)
+    leftNodes(5) = createLeftNode(5, inBounds, outBounds)
 
-    rightNodes = new Array[BipartiteNode](124)
+    val rightNodes = new Array[BipartiteNode](124)
     inBounds = Array(4)
     outBounds = Array()
-    createRightNode(14, inBounds, outBounds)
+    rightNodes(14) = createRightNode(14, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array()
-    createRightNode(4, inBounds, outBounds)
+    rightNodes(4) = createRightNode(4, inBounds, outBounds)
 
     inBounds = Array(2, 5)
     outBounds = Array()
-    createRightNode(5, inBounds, outBounds)
+    rightNodes(5) = createRightNode(5, inBounds, outBounds)
 
     inBounds = Array(5)
     outBounds = Array()
-    createRightNode(8, inBounds, outBounds)
+    rightNodes(8) = createRightNode(8, inBounds, outBounds)
 
     inBounds = Array(2, 5)
     outBounds = Array()
-    createRightNode(10, inBounds, outBounds)
+    rightNodes(10) = createRightNode(10, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array()
-    createRightNode(123, inBounds, outBounds)
+    rightNodes(123) = createRightNode(123, inBounds, outBounds)
 
     val leftSide = BipartiteSide(leftNodes, 5, 6)
     val rightSide = BipartiteSide(rightNodes, 6, 0)
 
-    graph = new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.LeftToRight)
+    new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.LeftToRight)
   }
 
-  val bipartiteExampleDoubleSide = beforeContext {
+  def bipartiteExampleDoubleSide() = {
    /*
    lN -> 1 to 5
    rN -> 4,8,5,10,123,0
@@ -101,159 +95,160 @@ class BipartiteGraphSpec extends Specification {
    5 --> i: (4,10), o: (5,10,8)
    */
 
-    leftNodes = new Array[BipartiteNode](6)
+    val leftNodes = new Array[BipartiteNode](6)
 
     var inBounds: Array[Int] = Array(4, 5, 123, 10)
     var outBounds: Array[Int] = Array()
-    createLeftNode(1, inBounds, outBounds)
+    leftNodes(1) = createLeftNode(1, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array(5, 10)
-    createLeftNode(2, inBounds, outBounds)
+    leftNodes(2) = createLeftNode(2, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array()
-    createLeftNode(3, inBounds, outBounds)
+    leftNodes(3) = createLeftNode(3, inBounds, outBounds)
 
 
     inBounds = Array(14)
     outBounds = Array(14)
-    createLeftNode(4, inBounds, outBounds)
+    leftNodes(4) = createLeftNode(4, inBounds, outBounds)
 
     inBounds = Array(4, 10)
     outBounds = Array(5, 10, 8)
-    createLeftNode(5, inBounds, outBounds)
+    leftNodes(5) = createLeftNode(5, inBounds, outBounds)
 
-    rightNodes = new Array[BipartiteNode](124)
+    val rightNodes = new Array[BipartiteNode](124)
     inBounds = Array(4)
     outBounds = Array(4)
-    createRightNode(14, inBounds, outBounds)
+    rightNodes(14) = createRightNode(14, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array(1, 5)
-    createRightNode(4, inBounds, outBounds)
+    rightNodes(4) = createRightNode(4, inBounds, outBounds)
 
     inBounds = Array(2, 5)
     outBounds = Array(1)
-    createRightNode(5, inBounds, outBounds)
+    rightNodes(5) = createRightNode(5, inBounds, outBounds)
 
     inBounds = Array(5)
     outBounds = Array()
-    createRightNode(8, inBounds, outBounds)
+    rightNodes(8) = createRightNode(8, inBounds, outBounds)
 
     inBounds = Array(2, 5)
     outBounds = Array(1, 5)
-    createRightNode(10, inBounds, outBounds)
+    rightNodes(10) = createRightNode(10, inBounds, outBounds)
 
     inBounds = Array()
     outBounds = Array(1)
-    createRightNode(123, inBounds, outBounds)
+    rightNodes(123) = createRightNode(123, inBounds, outBounds)
 
     val leftSide = BipartiteSide(leftNodes, 5, 6)
     val rightSide = BipartiteSide(rightNodes, 6, 7)
 
-    graph = new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.Both)
+    new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.Both)
   }
 
-  "Bipartite Graph Single Side Input" definedAs bipartiteExampleSingleSide should{
+  "Bipartite Graph Single Side Input" should {
+    val graph = bipartiteExampleSingleSide()
     "have loaded correct number of nodes and edges" in {
-      graph.leftNodeCount mustEqual 5
-      graph.leftOutEdgeCount mustEqual 6
-      graph.rightNodeCount mustEqual 6
-      graph.rightOutEdgeCount mustEqual 0
+      graph.leftNodeCount shouldEqual 5
+      graph.leftOutEdgeCount shouldEqual 6
+      graph.rightNodeCount shouldEqual 6
+      graph.rightOutEdgeCount shouldEqual 0
     }
 
     "have the right input to output node mapping" in {
       val leftNbrSet = mutable.Set[Int]()
       (-5 to -1).toArray foreach { id =>
         val node = graph.getNodeById(id).get.asInstanceOf[BipartiteNode]
-        node.isLeftNode mustEqual true
+        node.isLeftNode shouldEqual true
         node.neighborIds(GraphDir.OutDir) foreach { nbrId =>
           val nbrNode = graph.getNodeById(nbrId).get.asInstanceOf[BipartiteNode]
-          nbrNode.isLeftNode mustEqual false
+          nbrNode.isLeftNode shouldEqual false
           leftNbrSet += nbrNode.id
         }
-        node.neighborIds(GraphDir.InDir).toList mustEqual Nil
+        node.neighborIds(GraphDir.InDir).toList shouldEqual Nil
       }
 
-      leftNbrSet mustEqual Set(14, 5, 8, 10)
+      leftNbrSet shouldEqual Set(14, 5, 8, 10)
 
       val rightNbrSet = mutable.Set[Int]()
       Array(14, 4, 5, 8, 10, 123) foreach { id =>
         val node = graph.getNodeById(id).get.asInstanceOf[BipartiteNode]
-        node.isLeftNode mustEqual false
+        node.isLeftNode shouldEqual false
         node.neighborIds(GraphDir.InDir) foreach { nbrId =>
           val nbrNode = graph.getNodeById(nbrId).get.asInstanceOf[BipartiteNode]
-          nbrNode.isLeftNode mustEqual true
+          nbrNode.isLeftNode shouldEqual true
           rightNbrSet += nbrNode.id
         }
-        node.neighborIds(GraphDir.OutDir).toList mustEqual Nil
+        node.neighborIds(GraphDir.OutDir).toList shouldEqual Nil
       }
-      rightNbrSet mustEqual Set(2, 4, 5)
+      rightNbrSet shouldEqual Set(2, 4, 5)
 
-      graph.getNodeById(0) mustEqual None
-      graph.getNodeById(-10) mustEqual None
-      graph.getNodeById(11) mustEqual None
-      graph.getNodeById(150) mustEqual None
+      graph.getNodeById(0) shouldEqual None
+      graph.getNodeById(-10) shouldEqual None
+      graph.getNodeById(11) shouldEqual None
+      graph.getNodeById(150) shouldEqual None
     }
   }
 
-  "Bipartite Graph Double Sides input " definedAs bipartiteExampleDoubleSide should{
+  "Bipartite Graph Double Sides input " should {
+    val graph = bipartiteExampleDoubleSide()
     "have loaded correct number of nodes and edges" in {
-      graph.leftNodeCount mustEqual 5
-      graph.leftOutEdgeCount mustEqual 6
-      graph.rightNodeCount mustEqual 6
-      graph.rightOutEdgeCount mustEqual 7
+      graph.leftNodeCount shouldEqual 5
+      graph.leftOutEdgeCount shouldEqual 6
+      graph.rightNodeCount shouldEqual 6
+      graph.rightOutEdgeCount shouldEqual 7
     }
 
     "have the right input to output node mapping" in {
+      bipartiteExampleDoubleSide()
       val leftInNbrSet = mutable.Set[Int]()
       val leftOutNbrSet = mutable.Set[Int]()
       (-5 to -1).toArray foreach { id =>
         val node = graph.getNodeById(id).get.asInstanceOf[BipartiteNode]
-        node.isLeftNode mustEqual true
+        node.isLeftNode shouldEqual true
         node.neighborIds(GraphDir.OutDir) foreach { nbrId =>
           val nbrNode = graph.getNodeById(nbrId).get.asInstanceOf[BipartiteNode]
-          nbrNode.isLeftNode mustEqual false
+          nbrNode.isLeftNode shouldEqual false
           leftOutNbrSet += nbrNode.id
         }
         node.neighborIds(GraphDir.InDir) foreach { nbrId =>
           val nbrNode = graph.getNodeById(nbrId).get.asInstanceOf[BipartiteNode]
-          nbrNode.isLeftNode mustEqual false
+          nbrNode.isLeftNode shouldEqual false
           leftInNbrSet += nbrNode.id
         }
       }
-      leftOutNbrSet mustEqual Set(14, 5, 8, 10)
-      leftInNbrSet mustEqual Set(14, 4, 5, 10, 123)
+      leftOutNbrSet shouldEqual Set(14, 5, 8, 10)
+      leftInNbrSet shouldEqual Set(14, 4, 5, 10, 123)
 
       val rightInNbrSet = mutable.Set[Int]()
       val rightOutNbrSet = mutable.Set[Int]()
       Array(14, 4, 5, 8, 10, 123) foreach { id =>
         val node = graph.getNodeById(id).get.asInstanceOf[BipartiteNode]
-        node.isLeftNode mustEqual false
+        node.isLeftNode shouldEqual false
         node.neighborIds(GraphDir.InDir) foreach { nbrId =>
           val nbrNode = graph.getNodeById(nbrId).get.asInstanceOf[BipartiteNode]
-          nbrNode.isLeftNode mustEqual true
+          nbrNode.isLeftNode shouldEqual true
           rightInNbrSet += nbrNode.id
         }
         node.neighborIds(GraphDir.OutDir) foreach { nbrId =>
           val nbrNode = graph.getNodeById(nbrId).get.asInstanceOf[BipartiteNode]
-          nbrNode.isLeftNode mustEqual true
+          nbrNode.isLeftNode shouldEqual true
           rightOutNbrSet += nbrNode.id
         }
       }
-      rightOutNbrSet mustEqual Set(1, 4, 5)
-      rightInNbrSet mustEqual Set(2, 4, 5)
+      rightOutNbrSet shouldEqual Set(1, 4, 5)
+      rightInNbrSet shouldEqual Set(2, 4, 5)
     }
   }
 
-  private def createLeftNode(id: Int, inNodes: Array[Int], outNodes: Array[Int]) {
-    val node = new LeftNode(id, inNodes, outNodes)
-    leftNodes(id) = node
+  private def createLeftNode(id: Int, inNodes: Array[Int], outNodes: Array[Int]) = {
+    new LeftNode(id, inNodes, outNodes)
   }
 
-  private def createRightNode(id: Int, inNodes: Array[Int], outNodes: Array[Int]) {
-    val node = new RightNode(id, inNodes, outNodes)
-    rightNodes(id) = node
+  private def createRightNode(id: Int, inNodes: Array[Int], outNodes: Array[Int]) = {
+    new RightNode(id, inNodes, outNodes)
   }
 }
