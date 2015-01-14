@@ -14,39 +14,50 @@
 package com.twitter.cassovary.graph.tourist
 
 import com.twitter.cassovary.graph.Node
-import it.unimi.dsi.fastutil.ints.{Int2IntMap, Int2ObjectOpenHashMap}
+import scala.collection.mutable
 
 /**
- * Info keeper records info per node and returns output per node or for all nodes
+ * Info keeper records info per node id and returns output per node or for all nodes
  */
-trait InfoKeeper[@specialized(Int) I, @specialized(Int) O, M] {
+trait InfoKeeper[@specialized(Int, Boolean) O] {
+
+  protected def infoPerNode: mutable.Map[Int, O]
+
   /**
    * Keep info only the first time a node is seen
    */
   val onlyOnce = false
 
   /**
-   * Record information {@code info} of node {@code id}
+   * Record information `info` of node `id`
    */
-  def recordInfo(id: Int, info: I)
+  def recordInfo(id: Int, info: O) {
+    if (!(onlyOnce && infoAllNodes.contains(id))) {
+      infoPerNode.put(id, info)
+    }
+  }
 
   /**
-   * Get information of a paticular node by its {@code id}
+   * Get information of a paticular node by its `id`
    */
-  def infoOfNode(id: Int): Option[O]
+  def infoOfNode(id: Int): Option[O] = {
+    infoAllNodes.get(id)
+  }
 
   /**
-   * Get information of a particular {@code node}.
+   * Get information of a particular `node`.
    */
   def infoOfNode(node: Node): Option[O] = infoOfNode(node.id)
 
   /**
    * Clear underlying map
    */
-  def clear()
+  def clear() {
+    infoPerNode.clear()
+  }
 
   /**
-   * Get info for all nodes
+   * Get info for all nodes (immutable version visible outside)
    */
-  def infoAllNodes: M
+  def infoAllNodes: collection.Map[Int, O] = infoPerNode
 }

@@ -14,42 +14,49 @@
 package com.twitter.cassovary.graph.tourist
 
 import it.unimi.dsi.fastutil.ints._
-import java.util.Comparator
+import java.{util => jutil}
+import scala.collection.JavaConversions._
 
 /**
  * A NodeTourist that keeps track of the previous immediate neighbor of a
  * given node in visiting sequence.
  */
 class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce: Boolean)
-    extends InfoKeeper[Int, Int2IntMap, Int2ObjectMap[Int2IntMap]] {
+    extends InfoKeeper[Int2IntMap] {
 
   /**
    * Keep info only the first time a node is seen
    */
   def this() = this(None, false)
 
-  val infoPerNode = new Int2ObjectOpenHashMap[Int2IntOpenHashMap]
+  protected val underlyingMap = new Int2ObjectOpenHashMap[Int2IntOpenHashMap]
+
+  override def infoPerNode = underlyingMap.asInstanceOf[jutil.Map[Int, Int2IntMap]]
 
   /**
    * Priority queue and comparator for sorting prev nbrs. Reused across nodes.
    */
-   val comparator = new PrevNbrComparator(infoPerNode, true)
+   val comparator = new PrevNbrComparator(underlyingMap, true)
    val priQ = new IntHeapPriorityQueue(comparator)
 
+  override def recordInfo(id: Int, nodeMap: Int2IntMap) {
+    throw new UnsupportedOperationException("Use recordPreviousNeighbor instead")
+  }
+
   /**
-   * Record the previous neighbor {@code nodeId} of {@code id}.
+   * Record the previous neighbor `nodeId` of `id`
    */
-  def recordInfo(id: Int, nodeId: Int) {
+  def recordPreviousNeighbor(id: Int, nodeId: Int) {
     if (!(onlyOnce && infoPerNode.containsKey(id))) {
       nbrCountsPerNodeOrDefault(id).add(nodeId, 1)
     }
   }
 
   /**
-   * Top previous neighborhos until node {@code id}
+   * Top previous neighborhos until node `id`
    */
-  def infoOfNode(id: Int): Option[Int2IntMap] = {
-    if (infoPerNode.containsKey(id)) {
+  override def infoOfNode(id: Int): Option[Int2IntMap] = {
+    if (underlyingMap.containsKey(id)) {
       Some(topPrevNbrsTill(id, numTopPathsPerNode))
     } else {
       None
@@ -57,27 +64,19 @@ class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce:
   }
 
   /**
-   * Clear all infos
-   */
-  def clear() {
-    infoPerNode.clear()
-  }
-
-
-  /**
-   * Returns top {@code num} neighbors ending at {@code nodeId}
+   * Returns top `num` neighbors ending at `nodeId`
    * Results are sorted in decreasing order of occurrence
    */
-  private def topPrevNbrsTill(nodeId: Int, num: Option[Int]): Int2IntMap = {
+  private def topPrevNbrsTill(nodeId: Int, num: Option[Int]): Int2IntArrayMap = {
     val result = new Int2IntArrayMap
 
     comparator.setNode(nodeId)
     priQ.clear()
 
-    val infoMap = infoPerNode.get(nodeId)
+    val infoMap = infoPerNode(nodeId)
     val nodeIterator = infoMap.keySet.iterator
     while (nodeIterator.hasNext) {
-      val nbrId = nodeIterator.nextInt
+      val nbrId = nodeIterator.next()
       priQ.enqueue(nbrId)
     }
 
@@ -88,31 +87,32 @@ class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce:
 
     while (result.size < size && !priQ.isEmpty) {
       val nbrId = priQ.dequeueInt()
-      result.put(nbrId, infoMap.get(nbrId))
+      result += ((nbrId, infoMap(nbrId)))
     }
 
     result
   }
 
-  def infoAllNodes: Int2ObjectMap[Int2IntMap] = {
+  override def infoAllNodes: collection.Map[Int, Int2IntMap] = {
     val result = new Int2ObjectOpenHashMap[Int2IntMap]
-    val nodeIterator = infoPerNode.keySet.iterator
+    val nodeIterator = underlyingMap.keySet.iterator
     while (nodeIterator.hasNext) {
       val node = nodeIterator.nextInt
       result.put(node, topPrevNbrsTill(node, numTopPathsPerNode))
     }
-    result
+    result.asInstanceOf[jutil.Map[Int, Int2IntMap]]
   }
 
   private def nbrCountsPerNodeOrDefault(node: Int): Int2IntOpenHashMap = {
     if (!infoPerNode.containsKey(node)) {
-      infoPerNode.put(node, new Int2IntOpenHashMap)
+      underlyingMap.put(node, new Int2IntOpenHashMap)
     }
-    infoPerNode.get(node)
+    underlyingMap.get(node)
   }
 }
 
-class PrevNbrComparator(nbrCountsPerId: Int2ObjectOpenHashMap[Int2IntOpenHashMap], descending: Boolean) extends IntComparator {
+class PrevNbrComparator(nbrCountsPerId: Int2ObjectOpenHashMap[Int2IntOpenHashMap],
+                        descending: Boolean) extends IntComparator {
 
   var infoMap: Int2IntOpenHashMap = null
 

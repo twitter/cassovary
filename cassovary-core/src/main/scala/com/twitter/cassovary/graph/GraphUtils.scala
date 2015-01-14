@@ -15,68 +15,50 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.tourist._
-import com.twitter.logging.Logger
 import com.twitter.ostrich.stats.Stats
-
-import it.unimi.dsi.fastutil.ints.{Int2IntMap, Int2ObjectMap}
+import it.unimi.dsi.fastutil.ints.Int2IntMap
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 import scala.util.Random
+
 
 /**
  * This class contains some common graph utilities and convenience functions.
  */
 
 class GraphUtils(val graph: Graph) {
+
   import GraphUtils._
 
-  private val log = Logger.get
-
   /**
-   * Do a walk on the {@code nodes} in a graph.
-   * @param nodes the nodes to visit in this walk
-   * @param tourists each tourist maintains some state and updates that state on visiting a node
-   * @return Seq of tourist-specific-returned information
-   */
-
-  def walk(nodes: Iterator[Node], walkFunc: (Node => Unit)) = {
-    nodes foreach { node =>
-      walkFunc(node)
-    }
-  }
-
-  /**
-   * The following are different types of graph traversals (aka "walks").
-   */
-
-  /**
-   * This is a breadth-first walk along the direction specified by {@code dir}.
+   * This is a breadth-first all paths walk with possible multiple visits to a node
+   * along the direction specified by `dir`.
+   *
+   * All paths walk is a queue based walk, where each node adds all her neighbors to the queue
+   * and each node can be visited multiple times.
    * @param startNodeId(s) node(s) to start the random walk from. These must exist in the graph.
-   * @param walkParams the parameters specifying this random walk
-   * @return a tuple of two elements
-   *         The first is a counter tracking a visited node's id V and the number of visits to that node.
-   *         The second is a counter tracking a visited node's id V and a set of neighbors. The neighbors
-   *         are sorted in decreasing order by occurrence
-   */
-  def bfsWalk(dir: GraphDir, startNodeId: Int, walkParams: RandomWalkParams)():
+   * @param numTopPathsPerNode number of paths per node to keep track of
+   * @param walkLimits walk limits
+   * @return a pair of elements
+   *         1. Counter tracking a visited node's id V and the number of visits to that node.
+   *         2. Counter tracking a visited node's id V and a set of neighbors. The neighbors
+   *         are sorted in decreasing order by occurrence.*/
+  def allPathsWalk(dir: GraphDir, startNodeId: Int, numTopPathsPerNode: Int,
+                   walkLimits: Walk.Limits):
       (VisitsCounter, PrevNbrCounter) = {
 
     val visitsCounter = new VisitsCounter
-    val prevNbrCounter = new PrevNbrCounter(walkParams.numTopPathsPerNode, walkParams.visitSameNodeOnce)
+    val prevNbrCounter = new PrevNbrCounter(Some(numTopPathsPerNode), false)
 
     if (graph.existsNodeId(startNodeId)) {
       val traversedNodes = new BreadthFirstTraverser(graph, dir, Seq(startNodeId),
-        walkParams.maxDepth, walkParams.maxNumEdgesThresh, walkParams.numSteps,
-        walkParams.visitSameNodeOnce, Some(prevNbrCounter))
-      with BoundedIterator[Node] {
-        val maxSteps = walkParams.numSteps
-      }
+        walkLimits, Some(prevNbrCounter))
 
       Stats.incr("bfs_walk_request", 1)
       Stats.time ("bfs_walk_traverse") {
-        walk(traversedNodes, { node =>
+        traversedNodes.foreach { node =>
           // prevNbrCounter is mutated within BreadthFirstTraverser
           visitsCounter.visit(node)
-        })
+        }
       }
     }
 
@@ -84,26 +66,49 @@ class GraphUtils(val graph: Graph) {
   }
 
   /**
-   * Do a random walk starting from the set of nodes with ids {@code startNodeIds}.
+   * This is a breadth-first walk along the direction specified by `dir`.
+   * @param startNodeId node to start the random walk from. These must exist in the graph.
+   * @param walkLimits walk limits
+   * @return a sequence of visited nodes and depths of the visit (or empty sequence if
+   *         startNodeId was not found in the graph)
+   */
+  def bfsWalk(startNodeId: Int, dir: GraphDir, walkLimits: Walk.Limits):
+    Seq[(Int, Int)] = {
+
+    val prevNbrCounter = new PrevNbrCounter(Some(1), false)
+
+    if (graph.existsNodeId(startNodeId)) {
+      val traversedNodes = new BreadthFirstTraverser(graph, dir, Seq(startNodeId),
+        walkLimits, Some(prevNbrCounter))
+
+      Stats.incr("bfs_walk_request", 1)
+      Stats.time ("bfs_walk_traverse") {
+        traversedNodes.map { node =>
+          (node.id, traversedNodes.depth(node.id).get)
+        }.toSeq
+      }
+    } else Seq()
+  }
+
+  /**
+   * Do a random walk starting from the set of nodes with ids `startNodeIds`.
    * The walk maintains a count of the number of times that nodes have been visited
    * during the walk.
    * @param startNodeIds nodes to start the random walk from
-   * @param walkParams the {@link RandomWalkParams} random walk parameters
+   * @param walkParams the `RandomWalkParams` random walk parameters
    * @return a tuple of two elements.
    *         The first is a counter tracking a visited node's id to the number of visits to that node.
    *         The second is a counter tracking a visited node's id to the paths visited while hitting
    *         that node. The paths are sorted in decreasing order by occurrence
-   *         Each path is kept as a {@link DirectedPath}.
+   *         Each path is kept as a `DirectedPath`.
    */
   def randomWalk(dir: GraphDir, startNodeIds: Seq[Int], walkParams: RandomWalkParams)():
       (VisitsCounter, Option[PathsCounter]) = {
-    val startNodesExist = (startNodeIds.length > 0) && startNodeIds.foldLeft(true) { (exists, elem) =>
-      exists && graph.existsNodeId(elem)
-    }
+    val startNodesExist = (startNodeIds.length > 0) && startNodeIds.forall(graph.existsNodeId)
 
     val visitsCounter = new VisitsCounter
     val pathsCounterOption = walkParams.numTopPathsPerNode match {
-      case Some(k) if (k > 0) => Some(new PathsCounter(k, startNodeIds))
+      case Some(k) if k > 0 => Some(new PathsCounter(k, startNodeIds))
       case _ => None
     }
 
@@ -112,12 +117,12 @@ class GraphUtils(val graph: Graph) {
         walkParams.numSteps, walkParams)
 
       Stats.time("random_walk_traverse") {
-        walk(traversedNodes, { node =>
+        traversedNodes.foreach { node =>
           visitsCounter.visit(node)
           if (pathsCounterOption.isDefined) {
             pathsCounterOption.get.visit(node)
           }
-        })
+        }
       }
     }
     (visitsCounter, pathsCounterOption)
@@ -126,15 +131,15 @@ class GraphUtils(val graph: Graph) {
   /**
    * Calculates the reputation of graph nodes personalized to a given node based on a random walk.
    * @param startNodeIds the ids of the node to get personalized reputations for
-   * @param walkParams the {@link RandomWalkParams} random walk parameters
+   * @param walkParams the `RandomWalkParams` random walk parameters
    * @return a 2-tuple:
    *         1. List of (node's id, the number of visits made to the node) sorted in decreasing
    *            order of the number of visits, and
    *         2. A mapping, for a visited node with id V to the top paths leading to V
-   *            in the form of (P as a {@link DirectedPath}, frequency of walking P).
+   *            in the form of (P as a `DirectedPath`, frequency of walking P).
    */
   def calculatePersonalizedReputation(startNodeIds: Seq[Int], walkParams: RandomWalkParams):
-      (Int2IntMap, Option[Int2ObjectMap[Object2IntMap[DirectedPath]]]) = {
+      (collection.Map[Int, Int], Option[collection.Map[Int, Object2IntMap[DirectedPath]]]) = {
     Stats.time ("%s_total".format("PTC")) {
       val (visitsCounter, pathsCounterOption) = randomWalk(walkParams.dir, startNodeIds, walkParams)
       val topPathsOption = pathsCounterOption flatMap { counter => Some(counter.infoAllNodes) }
@@ -143,7 +148,7 @@ class GraphUtils(val graph: Graph) {
   }
 
   def calculatePersonalizedReputation(startNodeId: Int, walkParams: RandomWalkParams):
-      (Int2IntMap, Option[Int2ObjectMap[Object2IntMap[DirectedPath]]]) = {
+      (collection.Map[Int, Int], Option[collection.Map[Int, Object2IntMap[DirectedPath]]]) = {
     calculatePersonalizedReputation(Seq(startNodeId), walkParams)
   }
 
@@ -155,10 +160,12 @@ class GraphUtils(val graph: Graph) {
    * 2. A mapping for a visited node with id V to the top paths leading to V
    *    in the form of (P as a {@link DirectedPath}, frequency of walking P).
    */
-  def calculateBFS(startNodeId: Int, walkParams: RandomWalkParams):
-      (Int2IntMap, Int2ObjectMap[Int2IntMap]) = {
-    Stats.time("%s_total".format("BFS")) {
-      val (visitsCounter, prevNbrCounter) = bfsWalk(walkParams.dir, startNodeId, walkParams)
+  def calculateAllPathsWalk(startNodeId: Int, dir: GraphDir, numTopPathsPerNode: Int,
+                            walkLimits: Walk.Limits):
+      (collection.Map[Int, Int], collection.Map[Int, Int2IntMap]) = {
+    Stats.time("%s_total".format("AllPathsWalk")) {
+      val (visitsCounter, prevNbrCounter) = allPathsWalk(dir, startNodeId,
+        numTopPathsPerNode, walkLimits)
       (visitsCounter.infoAllNodes, prevNbrCounter.infoAllNodes)
     }
   }
@@ -166,11 +173,10 @@ class GraphUtils(val graph: Graph) {
   /**
    * @param id the id of the node to count neighbors of
    * @param dir the direction of interest
-   * @return number of neighbors (i.e., number of nodes 1 hop away) in {@code dir}.
+   * @return number of neighbors (i.e., number of nodes 1 hop away) in `dir`.
    *         Warning: Lossy: Returns 0 if id is not found.
    */
-  def neighborCount(id: Int, dir: GraphDir) = funcById(id, dir,
-    (nd: Node, dir: GraphDir) => nd.neighborCount(dir), 0)
+  def neighborCount(id: Int, dir: GraphDir) = graph.getNodeById(id).map(_.neighborCount((dir))).getOrElse(0)
 
 
   /**
@@ -180,34 +186,15 @@ class GraphUtils(val graph: Graph) {
    */
   def getNumMutualEdgesBothDirs(node: Node): Long = {
     val (dirSmall, dirLarge) = if (node.outboundCount < node.inboundCount)
-      (node.outboundNodes, node.inboundNodes)
+      (node.outboundNodes(), node.inboundNodes())
     else
-      (node.inboundNodes, node.outboundNodes)
+      (node.inboundNodes(), node.outboundNodes())
     val setSmall = dirSmall.toSet
     val numEdges = dirLarge.foldLeft(0L) { (num, curr) =>
       if (setSmall contains curr) num+1
       else num
     }
     numEdges
-  }
-
-  // helper to be used in functions that take nodeId and need to log warnings
-  // in the case that the id is not found
-  private def onNodeIdNotFound(desc: String, id: Int) {
-    log.warning("(%s) Node with id = %d not found!", desc, id)
-  }
-
-  // convenience wrapper for methods that run on node ids
-  private def funcById[T](id: Int, dir: GraphDir, f: (Node, GraphDir) => T): Option[T] = {
-    graph.getNodeById(id) match {
-      case Some(node) => Some(f(node, dir))
-      case None => None
-    }
-  }
-
-  // convenience wrapper for methods that provide a default value if node is not found
-  private def funcById[T](id: Int, dir: GraphDir, f: (Node, GraphDir) => T, defaultVal: T): T = {
-    funcById(id, dir, f).getOrElse(defaultVal)
   }
 }
 
@@ -216,11 +203,11 @@ object GraphUtils {
   /**
    * Parameters of a walk (such as a random walk, or a breadth first walk).
    * @param numSteps number of steps to take in the walk
-   * @param resetProbability the probability with which to reset back to {@code startNodeId}.
+   * @param resetProbability the probability with which to reset back to `startNodeId`.
    *        Must lie between 0.0 and 1.0, both inclusive. Ignored for non-random walks
    * @param maxNumEdgesThresh Max number of edges allowed for a node
-   *        beyond which the next random step is {@code startNodeId} regardless of anything else
-   * @param numTopPathsPerNode the number of top paths to {@code node} to maintain, None if we don't
+   *        beyond which the next random step is `startNodeId` regardless of anything else
+   * @param numTopPathsPerNode the number of top paths to `node` to maintain, None if we don't
    *        want to maintain them at all
    * @param maxDepth the maximum depth to visit in depth-related search (e.g. startNodeId has
    *        depth 0, its immediate neighbors have depth 1, etc.). None if we don't want to maintain

@@ -67,6 +67,14 @@ object TestGraphs {
     NodeIdEdgesMaxId(12, Array(11))
     ).iterator, StoredGraphDir.BothInOut)
 
+  def g5 = ArrayBasedDirectedGraph( ()  => Seq(
+    NodeIdEdgesMaxId(10, Array(11, 12, 13)),
+    NodeIdEdgesMaxId(11, Array(12)),
+    NodeIdEdgesMaxId(12, Array(11)),
+    NodeIdEdgesMaxId(13, Array(14)),
+    NodeIdEdgesMaxId(14, Array())
+    ).iterator, StoredGraphDir.BothInOut)
+
   val nodeSeqIterator = () => Seq(
       NodeIdEdgesMaxId(10, Array(11, 12, 13)),
       NodeIdEdgesMaxId(11, Array(12, 14)),

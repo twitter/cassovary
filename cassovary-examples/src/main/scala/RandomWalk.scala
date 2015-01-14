@@ -42,7 +42,7 @@ object RandomWalk {
     printf("%8s%10s\t%s\n", "NodeId", "#Visits", "Top 2 Paths with counts")
     topNeighbors.toList.sortWith((x1, x2) => x2._2.intValue < x1._2.intValue).take(10).foreach { case (id, numVisits) =>
       if (paths.isDefined) {
-        val topPaths = paths.get.get(id).map { case (DirectedPath(nodes), count) =>
+        val topPaths = paths.get(id).map { case (DirectedPath(nodes), count) =>
           nodes.mkString("->") + " (%s)".format(count)
         }
         printf("%8s%10s\t%s\n", id, numVisits, topPaths.mkString(" | "))
