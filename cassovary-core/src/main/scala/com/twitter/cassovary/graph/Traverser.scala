@@ -571,7 +571,7 @@ trait PathLengthTracker extends DepthFirstTraverser {
  * Finishing time of a node is time just after all `dir` neighbors of the node became finished
  * (or when it is visited if it has no `dir` neighbors that should be processed later).
  */
-trait DiscoveryAndDepthTimeTracker extends DepthFirstTraverser {
+trait DiscoveryAndFinishTimeTracker extends DepthFirstTraverser {
   private[this] var time: Int = _ // automatically initialized to 0 before first enqueue
 
   private lazy val discoveryTime = new IntInfoKeeper(false)

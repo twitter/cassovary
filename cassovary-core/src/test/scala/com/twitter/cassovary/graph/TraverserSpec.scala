@@ -198,7 +198,7 @@ class TraverserSpec extends WordSpec with MockitoSugar with ShouldMatchers {
   "DepthFirstTraverser" should {
     "yield all nodes in DFS order with expected finishing times" in {
       val trav = new DepthFirstTraverser(TestGraphs.g5, GraphDir.OutDir, Seq(10))
-        with DiscoveryAndDepthTimeTracker
+        with DiscoveryAndFinishTimeTracker
       val ids = trav.toSeq.map(_.id).toList
       ids shouldEqual List(10, 11, 12, 13, 14)
 
@@ -219,7 +219,7 @@ class TraverserSpec extends WordSpec with MockitoSugar with ShouldMatchers {
     "yield all nodes in DFS order in expected order (outDir)" in {
       val dir = GraphDir.OutDir
       val trav = new DepthFirstTraverser(graph, dir, Seq(10))
-        with PathLengthTracker with DiscoveryAndDepthTimeTracker
+        with PathLengthTracker with DiscoveryAndFinishTimeTracker
       val ids = trav.toSeq.map { _.id }.toList
 
       ids shouldEqual List(10, 11, 12, 14, 15, 13)
@@ -249,7 +249,7 @@ class TraverserSpec extends WordSpec with MockitoSugar with ShouldMatchers {
     "yield all nodes in DFS order in expected order in unique id walk (inDir)" in {
       val dir = GraphDir.InDir
       val trav = new DepthFirstTraverser(graph, dir, Seq(10), Walk.Limits(None, None, Some(10L)))
-        with PathLengthTracker with DiscoveryAndDepthTimeTracker
+        with PathLengthTracker with DiscoveryAndFinishTimeTracker
       val ids = trav.toSeq.map { _.id }.toList
 
       ids shouldEqual List(10, 15, 14, 11, 12, 13)
