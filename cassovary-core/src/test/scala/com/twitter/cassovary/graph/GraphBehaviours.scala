@@ -93,7 +93,7 @@ trait GraphBehaviours {
 
   // verify a graph constructed from a supplied map of node id -> array of edges (outedges unless
   // OnlyIn direction is to be stored in which case the supplied edges are incoming edges)
-  def verifyGraph(makeGraph: (() => Iterator[NodeIdEdgesMaxId], StoredGraphDir) => DirectedGraph,
+  def verifyGraphBuilding(builder: (() => Iterator[NodeIdEdgesMaxId], StoredGraphDir) => DirectedGraph,
                   givenEdges: Map[Int, Array[Int]]): Unit =
   {
     def cross(k: Int, s: Array[Int]) = for (e <- s) yield (e, k)
@@ -102,7 +102,7 @@ trait GraphBehaviours {
     val noEdges = Map.empty[Int, Array[Int]]
     def iteratorFunc = () => { givenEdges map { case (k, s) => NodeIdEdgesMaxId(k, s) } toIterator }
     for (dir <- List(StoredGraphDir.BothInOut, StoredGraphDir.OnlyOut, StoredGraphDir.OnlyIn)) {
-      val graph = makeGraph(iteratorFunc, dir)
+      val graph = builder(iteratorFunc, dir)
       "Graph constructed in direction " + dir should {
         val inEdges: Map[Int, Array[Int]] = dir match {
           case StoredGraphDir.OnlyIn => givenEdges
