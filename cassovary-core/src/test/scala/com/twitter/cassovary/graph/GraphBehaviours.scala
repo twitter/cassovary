@@ -98,19 +98,19 @@ trait GraphBehaviours {
   {
     def cross(k: Int, s: Array[Int]) = for (e <- s) yield (e, k)
 
-    val allids: Set[Int] = givenEdges.keys.toSet ++ givenEdges.values.toSet.flatMap { x: Array[Int] => x.toSet }
+    val allIds: Set[Int] = givenEdges.keys.toSet ++ givenEdges.values.toSet.flatMap { x: Array[Int] => x }
     val noEdges = Map.empty[Int, Array[Int]]
     def iteratorFunc = () => { givenEdges map { case (k, s) => NodeIdEdgesMaxId(k, s) } toIterator }
     for (dir <- List(StoredGraphDir.BothInOut, StoredGraphDir.OnlyOut, StoredGraphDir.OnlyIn)) {
       val graph = makeGraph(iteratorFunc, dir)
-      "Direction " + dir should {
+      "Graph constructed in direction " + dir should {
         val inEdges: Map[Int, Array[Int]] = dir match {
           case StoredGraphDir.OnlyIn => givenEdges
           case StoredGraphDir.OnlyOut => noEdges
           case StoredGraphDir.BothInOut =>
             givenEdges.toArray flatMap { case (k, s) => cross(k, s) } groupBy(_._1) mapValues {_.map(_._2) }
         }
-        verifyInOutEdges(graph, allids.size,
+        verifyInOutEdges(graph, allIds.size,
           if (dir == StoredGraphDir.OnlyIn) noEdges else givenEdges, inEdges)
       }
     }
