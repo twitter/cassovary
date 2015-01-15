@@ -19,7 +19,7 @@ import java.util.Arrays
 /**
  * Represents a directed path of nodes in a graph. No loop detection is done.
  */
-case class DirectedPath(val nodes: Array[Int]) {
+case class DirectedPath(nodes: Array[Int]) {
 
   /**
    * @return the number of nodes on this path
@@ -43,6 +43,10 @@ case class DirectedPath(val nodes: Array[Int]) {
 
   override def hashCode(): Int = {
     Arrays.hashCode(nodes)
+  }
+
+  override def toString(): String = {
+    "DirectedPath(" + nodes.mkString(",") + ")"
   }
 }
 

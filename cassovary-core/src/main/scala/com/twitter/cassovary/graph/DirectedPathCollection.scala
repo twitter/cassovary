@@ -42,7 +42,7 @@ class DirectedPathCollection {
    */
   def appendToCurrentPath(node: Int) {
     currPath.append(node)
-    pathCountsPerIdWithDefault(node).add(currPath.snapshot, 1)
+    pathCountsPerIdWithDefault(node).addTo(currPath.snapshot, 1)
   }
 
   /**
@@ -54,11 +54,10 @@ class DirectedPathCollection {
 
   /**
    * @return an map of top DirectedPaths with occurrence
-   *         ending at {@code node}, sorted decreasing
+   *         ending at `node`, sorted decreasing
    */
   def topPathsTill(node: Int, num: Int): Object2IntMap[DirectedPath] = {
     val pathCountMap = pathCountsPerIdWithDefault(node)
-    val pathCount = pathCountMap.size
     val returnMap = new Object2IntArrayMap[DirectedPath]
 
     comparator.setNode(node)
@@ -95,7 +94,7 @@ class DirectedPathCollection {
   }
 
   /**
-   * @return the total number of unique paths that end at {@code node}
+   * @return the total number of unique paths that end at `node`
    */
   def numUniquePathsTill(node: Int) = pathCountsPerIdWithDefault(node).size
 
@@ -113,7 +112,7 @@ class DirectedPathCollection {
   }
 
   /**
-   * @return true if entry for {@code node} exists, false otherwise
+   * @return true if entry for `node` exists, false otherwise
    */
   def containsNode(node: Int): Boolean = {
     pathCountsPerId.containsKey(node)
@@ -148,10 +147,18 @@ class PathCounterComparator(pathCountsPerId: Int2ObjectOpenHashMap[Object2IntOpe
   override def compare(dp1: DirectedPath, dp2: DirectedPath): Int = {
     val dp1Count = infoMap.getInt(dp1)
     val dp2Count = infoMap.getInt(dp2)
-    if (descending) {
-      dp2Count - dp1Count
+    if (dp1Count != dp2Count) {
+      if (descending) {
+        dp2Count - dp1Count
+      } else {
+        dp1Count - dp2Count
+      }
     } else {
-      dp1Count - dp2Count
+      if (descending) {
+        dp2.length - dp1.length
+      } else {
+        dp1.length - dp2.length
+      }
     }
   }
 }

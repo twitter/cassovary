@@ -6,6 +6,8 @@ import SonatypeKeys._
 
 object Cassovary extends Build {
 
+  val fastUtilsVersion = "6.6.0"
+
   val sharedSettings = Seq(
     version := "3.3.1",
     organization := "com.twitter",
@@ -14,7 +16,7 @@ object Cassovary extends Build {
     crossScalaVersions := Seq("2.9.3","2.10.3"),
     libraryDependencies ++= Seq(
       "com.google.guava" % "guava" % "11.0.2",
-      "it.unimi.dsi" % "fastutil" % "6.4.4" % "provided",
+      "it.unimi.dsi" % "fastutil" % fastUtilsVersion % "provided",
       "org.mockito" % "mockito-all" % "1.8.5" % "test",
       "com.twitter" %% "util-core" % "6.16.0" cross CrossVersion.binaryMapped {
         case "2.9.3" => "2.9.2"
@@ -118,7 +120,7 @@ object Cassovary extends Build {
     settings = Project.defaultSettings ++ sharedSettings
   ).settings(
     name := "cassovary-examples",
-    libraryDependencies ++= Seq("it.unimi.dsi" % "fastutil" % "6.4.4")
+    libraryDependencies ++= Seq("it.unimi.dsi" % "fastutil" % fastUtilsVersion)
   ).dependsOn(cassovaryCore)
 
   lazy val cassovaryBenchmarks = Project(
@@ -128,7 +130,7 @@ object Cassovary extends Build {
   ).settings(
       name := "cassovary-benchmarks",
       libraryDependencies ++= Seq(
-        "it.unimi.dsi" % "fastutil" % "6.4.4",
+        "it.unimi.dsi" % "fastutil" % fastUtilsVersion,
         "com.twitter" %% "util-app" % "6.12.1" cross CrossVersion.binaryMapped {
           case "2.9.3" => "2.9.2"
           case x if x startsWith "2.10" => "2.10"
@@ -144,7 +146,7 @@ object Cassovary extends Build {
   ).settings(
       name := "cassovary-server",
       libraryDependencies ++= Seq(
-        "it.unimi.dsi" % "fastutil" % "6.4.4",
+        "it.unimi.dsi" % "fastutil" % fastUtilsVersion,
         "com.twitter" %% "finagle-http" % "6.20.0" cross CrossVersion.binaryMapped {
           case "2.9.3" => "2.9.2"
           case x if x startsWith "2.10" => "2.10"
