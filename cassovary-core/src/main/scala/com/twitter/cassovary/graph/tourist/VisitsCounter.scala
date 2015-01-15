@@ -29,7 +29,7 @@ class VisitsCounter extends IntInfoKeeper(false) with NodeTourist {
   val priQ = new IntHeapPriorityQueue(comparator)
 
   def visit(id: Int) {
-    underlyingMap.addTo(id, 1)
+    underlyingMap.add(id, 1)
   }
 
   /**

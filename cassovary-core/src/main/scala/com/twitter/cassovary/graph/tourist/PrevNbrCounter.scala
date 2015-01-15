@@ -48,7 +48,7 @@ class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce:
    */
   def recordPreviousNeighbor(id: Int, nodeId: Int) {
     if (!(onlyOnce && infoPerNode.containsKey(id))) {
-      nbrCountsPerNodeOrDefault(id).addTo(nodeId, 1)
+      nbrCountsPerNodeOrDefault(id).add(nodeId, 1)
     }
   }
 
@@ -140,4 +140,3 @@ class PrevNbrComparator(nbrCountsPerId: Int2ObjectOpenHashMap[Int2IntOpenHashMap
     }
   }
 }
-
