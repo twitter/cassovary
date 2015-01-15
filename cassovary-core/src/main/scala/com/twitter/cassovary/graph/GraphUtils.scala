@@ -24,7 +24,6 @@ import scala.util.Random
 /**
  * This class contains some common graph utilities and convenience functions.
  */
-
 class GraphUtils(val graph: Graph) {
 
   import GraphUtils._
