@@ -31,9 +31,7 @@ trait GraphBehaviours extends ShouldMatchers {
 
   def completeGraph(graph: => DirectedGraph, numNodes: Int) {
     "have correct number of nodes" in {
-      withClue("wrong number of nodes") {
-        graph.nodeCount shouldEqual numNodes
-      }
+      graph.nodeCount shouldEqual numNodes
     }
     "have all possible edges" in {
       graph.edgeCount shouldEqual (numNodes * (numNodes - 1).toLong)
