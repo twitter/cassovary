@@ -15,31 +15,34 @@ package com.twitter.cassovary.graph
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.NodeNumberer
 import org.scalatest.WordSpec
+import org.scalatest.matchers.ShouldMatchers
 
-trait GraphBehaviours {
+trait GraphBehaviours extends ShouldMatchers {
   this: WordSpec =>
 
   private def correctNumberOfNodesAndEdges(graph: DirectedGraph, numNodes: Int) {
     "have correct number of nodes" in {
-      assert(graph.nodeCount === numNodes)
+      graph.nodeCount shouldEqual numNodes
     }
     "have number of edges less than in full graph" in {
-      assert(graph.edgeCount <= (numNodes * (numNodes - 1).toLong))
+      graph.edgeCount should be <= (numNodes * (numNodes - 1).toLong)
     }
   }
 
   def completeGraph(graph: => DirectedGraph, numNodes: Int) {
     "have correct number of nodes" in {
-      assert(graph.nodeCount === numNodes, "wrong number of nodes")
+      withClue("wrong number of nodes") {
+        graph.nodeCount shouldEqual numNodes
+      }
     }
     "have all possible edges" in {
-      assert(graph.edgeCount === (numNodes * (numNodes - 1).toLong))
+      graph.edgeCount shouldEqual (numNodes * (numNodes - 1).toLong)
       graph foreach { node =>
         val neighbors = (0 until numNodes) filter {
           _ != node.id
         }
-        assert(node.inboundNodes().sorted === neighbors)
-        assert(node.outboundNodes().sorted === neighbors)
+        node.inboundNodes().sorted shouldEqual neighbors
+        node.outboundNodes().sorted shouldEqual neighbors
       }
     }
   }
@@ -51,16 +54,26 @@ trait GraphBehaviours {
       graph foreach { node =>
         (0 to 1) foreach { dir =>
           val neighbors = if (dir == 0) node.outboundNodes() else node.inboundNodes()
-          assert(neighbors.size === neighbors.toSet.size, "duplicates in neighbors array detected")
+          withClue("duplicates in neighbors array detected") {
+            neighbors.size shouldEqual neighbors.toSet.size
+          }
           neighbors foreach { nbr =>
-            assert(nbr >= 0, "nbr.id < 0 (" + nbr + ")")
-            assert(nbr < numNodes, "nbr.id >= numNodes (" + nbr + ")")
-            assert(nbr != node.id, "self-loop in graph")
+            withClue("nbr.id < 0 (" + nbr + ")") {
+              nbr should be >= 0
+            }
+            withClue("nbr.id >= numNodes (" + nbr + ")") {
+              nbr should be < numNodes
+            }
+            withClue("self-loop in graph") {
+              nbr should not be node.id
+            }
             val neighborNode = graph.getNodeById(nbr).get
             val neighborNodeOtherDirEdges =
               if (dir == 0) neighborNode.inboundNodes()
               else neighborNode.outboundNodes()
-            assert(neighborNodeOtherDirEdges.contains(node.id), "edge existence not consistent in nodes")
+            withClue("edge existence not consistent in nodes") {
+              neighborNodeOtherDirEdges should contain (node.id)
+            }
           }
         }
       }
@@ -75,12 +88,17 @@ trait GraphBehaviours {
 
     def check(id: Int, a: Seq[Int], b: Option[Array[Int]]) {
       if (a.isEmpty) {
-        assert(b.isEmpty || b.get.isEmpty,
-          "graph's nodeid " + id + " is empty but supplied edges is not: " + b)
+        withClue("graph's nodeid " + id + " is empty but supplied edges is not: " + b) {
+          b should (be ('empty) or be(Some(Array.empty[Int])))
+        }
       } else {
-        assert(b.isDefined, "graph's nodeid " + id + " is not empty but supplied edges is")
-        assert(a.toSet == b.get.toSet, "graph's nodeid " + id + "'s edges do not match: in graph = " +
-          a.toSet + " edges = " + b.get.toSet)
+        withClue("graph's nodeid " + id + " is not empty but supplied edges is") {
+          b should not be 'empty
+        }
+        withClue("graph's nodeid " + id + "'s edges do not match: in graph = " +
+          a.toSet + " edges = " + b.get.toSet) {
+          a.toSet shouldEqual b.get.toSet
+        }
       }
     }
 
@@ -121,14 +139,23 @@ trait GraphBehaviours {
 
     "be consistent among all nodes" in {
       graph foreach { node =>
-        assert(node.inboundNodes().sorted === node.outboundNodes().sorted, "inbound nodes not equal to outbound nodes" +
-          "in undirected graph")
-        assert(node.inboundNodes().size === node.inboundNodes().toSet.size)
+        withClue("inbound nodes not equal to outbound nodes in undirected graph") {
+          node.inboundNodes().sorted shouldEqual node.outboundNodes().sorted
+        }
+        node.inboundNodes().size shouldEqual node.inboundNodes().toSet.size
         node.inboundNodes() foreach { nbr =>
-          assert(nbr >= 0, "nbr.id < 0 (" + nbr + ")")
-          assert(nbr < numNodes, "nbr.id >= numNodes (" + nbr + ")")
-          assert(nbr != node.id, "node " + node.id + " contains self-loop")
-          assert(graph.getNodeById(nbr).get.outboundNodes().contains(node.id), "edge existence not consistent in nodes")
+          withClue("nbr.id < 0 (" + nbr + ")") {
+            nbr should be >= 0
+          }
+          withClue("nbr.id >= numNodes (" + nbr + ")") {
+            nbr should be < numNodes
+          }
+          withClue("node " + node.id + " contains self-loop") {
+            nbr should not be node.id
+          }
+          withClue("edge existence not consistent in nodes") {
+            graph.getNodeById(nbr).get.outboundNodes() should contain (node.id)
+          }
         }
       }
     }
@@ -137,12 +164,16 @@ trait GraphBehaviours {
   def graphEquivalentToMap(g: DirectedGraph, nodeMap: Map[Int, List[Int]]) = {
     g.foreach {
       node =>
-        assert(nodeMap.contains(node.id) === true, "unexpected node: " + node.id)
+        withClue("unexpected node: " + node.id) {
+          nodeMap.contains(node.id) shouldEqual true
+        }
         val neighbors = node.outboundNodes().toArray.sorted
         val nodesInMap = nodeMap(node.id).toArray.sorted
-        assert(neighbors.length === nodesInMap.length, "node: " + node.id + " neighbors.length incorrect")
+        withClue("node: " + node.id + " neighbors.length incorrect") {
+          neighbors.length shouldEqual nodesInMap.length
+        }
         neighbors.iterator.zip(nodesInMap.iterator).foreach {
-          case (a, b) => assert(a === b, "node: " + node.id + " neighbors incorrect")
+          case (a, b) => withClue("node: " + node.id + " neighbors incorrect") { a shouldEqual b }
         }
     }
   }
@@ -156,17 +187,22 @@ trait GraphBehaviours {
    */
   def renumberedGraphEquivalentToMap[T](g: DirectedGraph, nodeMap: Map[T, List[T]], nodeNumberer: NodeNumberer[T]) = {
     g.foreach { node =>
-      assert(nodeMap.contains(nodeNumberer.internalToExternal(node.id)) === true,
-        "unexpected node in a graph: " + nodeNumberer.internalToExternal(node.id))
+      withClue("unexpected node in a graph: " + nodeNumberer.internalToExternal(node.id)) {
+        nodeMap.contains(nodeNumberer.internalToExternal(node.id)) shouldEqual true
+      }
       val neighbors = node.outboundNodes()
       val nodesInMap = nodeMap(nodeNumberer.internalToExternal(node.id))
-      assert(nodesInMap.forall { i => neighbors.contains(nodeNumberer.externalToInternal(i)) } === true,
-        "edge missing in the graph")
-      assert(neighbors.forall { i => nodesInMap.contains(nodeNumberer.internalToExternal(i)) } === true,
-        "unexpected edge in the graph")
+      withClue("edge missing in the graph") {
+        nodesInMap.forall { i => neighbors.contains(nodeNumberer.externalToInternal(i)) } shouldEqual true
+      }
+      withClue("unexpected edge in the graph") {
+        neighbors.forall { i => nodesInMap.contains(nodeNumberer.internalToExternal(i)) } shouldEqual true
+      }
     }
     nodeMap.keys.foreach {
-      id => assert(g.existsNodeId(nodeNumberer.externalToInternal(id)) === true, "node " + id + " missing in graph")
+      id => withClue("node " + id + " missing in graph") {
+        g.existsNodeId(nodeNumberer.externalToInternal(id)) shouldEqual true
+      }
     }
   }
 }
