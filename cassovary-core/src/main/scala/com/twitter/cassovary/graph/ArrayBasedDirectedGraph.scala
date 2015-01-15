@@ -24,6 +24,13 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable
 
 /**
+ * Construct an array based directed graph based on a set of edges. The graph can be constructed in
+ * the following ways based on the stored direction:
+ * 1. If OnlyIn or OnlyOut edges need to be kept, supply only those edges in the edges iteratorSeq
+ * 2. If BothInOut edges need to be kept, supply only the outgoing edges in the edges iteratorSeq
+ */
+
+/**
  * This case class holds a node's id, all its out edges, and the max
  * id of itself and ids of nodes in its out edges
  */

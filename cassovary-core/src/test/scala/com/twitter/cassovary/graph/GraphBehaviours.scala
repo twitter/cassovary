@@ -12,13 +12,14 @@
  */
 package com.twitter.cassovary.graph
 
+import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.NodeNumberer
 import org.scalatest.WordSpec
 
 trait GraphBehaviours {
   this: WordSpec =>
 
-  def correctNumberOfNodesAndEdges(graph: DirectedGraph, numNodes: Int) {
+  private def correctNumberOfNodesAndEdges(graph: DirectedGraph, numNodes: Int) {
     "have correct number of nodes" in {
       assert(graph.nodeCount === numNodes)
     }
@@ -62,6 +63,55 @@ trait GraphBehaviours {
             assert(neighborNodeOtherDirEdges.contains(node.id), "edge existence not consistent in nodes")
           }
         }
+      }
+    }
+  }
+
+  val sampleGraphEdges = Map(1 -> Array(2,3,4), 2 -> Array(1), 3 -> Array(4), 5 -> Array(1, 10))
+
+  def verifyInOutEdges(graph: DirectedGraph, numNodes: Int,
+                       outEdges: Map[Int, Array[Int]],
+                       inEdges: Map[Int, Array[Int]]): Unit = {
+
+    def check(id: Int, a: Seq[Int], b: Option[Array[Int]]) {
+      if (a.isEmpty) {
+        assert(b.isEmpty || b.get.isEmpty,
+          "graph's nodeid " + id + " is empty but supplied edges is not: " + b)
+      } else {
+        assert(b.isDefined, "graph's nodeid " + id + " is not empty but supplied edges is")
+        assert(a.toSet == b.get.toSet, "graph's nodeid " + id + "'s edges do not match: in graph = " +
+          a.toSet + " edges = " + b.get.toSet)
+      }
+    }
+
+    correctNumberOfNodesAndEdges(graph, numNodes)
+    for (node <- graph) {
+      check(node.id, node.outboundNodes(), outEdges.get(node.id))
+      check(node.id, node.inboundNodes(), inEdges.get(node.id))
+    }
+  }
+
+  // verify a graph constructed from a supplied map of node id -> array of edges (outedges unless
+  // OnlyIn direction is to be stored in which case the supplied edges are incoming edges)
+  def verifyGraphBuilding(builder: (() => Iterator[NodeIdEdgesMaxId], StoredGraphDir) => DirectedGraph,
+                  givenEdges: Map[Int, Array[Int]]): Unit =
+  {
+    def cross(k: Int, s: Array[Int]) = for (e <- s) yield (e, k)
+
+    val allIds: Set[Int] = givenEdges.keys.toSet ++ givenEdges.values.toSet.flatMap { x: Array[Int] => x }
+    val noEdges = Map.empty[Int, Array[Int]]
+    def iteratorFunc = () => { givenEdges map { case (k, s) => NodeIdEdgesMaxId(k, s) } toIterator }
+    for (dir <- List(StoredGraphDir.BothInOut, StoredGraphDir.OnlyOut, StoredGraphDir.OnlyIn)) {
+      val graph = builder(iteratorFunc, dir)
+      "Graph constructed in direction " + dir should {
+        val inEdges: Map[Int, Array[Int]] = dir match {
+          case StoredGraphDir.OnlyIn => givenEdges
+          case StoredGraphDir.OnlyOut => noEdges
+          case StoredGraphDir.BothInOut =>
+            givenEdges.toArray flatMap { case (k, s) => cross(k, s) } groupBy(_._1) mapValues {_.map(_._2) }
+        }
+        verifyInOutEdges(graph, allIds.size,
+          if (dir == StoredGraphDir.OnlyIn) noEdges else givenEdges, inEdges)
       }
     }
   }
