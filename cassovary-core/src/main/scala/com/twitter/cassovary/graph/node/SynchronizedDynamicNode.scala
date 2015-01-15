@@ -22,7 +22,9 @@ import scala.collection.mutable.ArrayBuffer
 class SynchronizedDynamicNode(val id: Int) extends DynamicNode {
   protected val inEdges = new ArrayBuffer[Int]
   protected val outEdges = new ArrayBuffer[Int]
-  val DELETED_MARKER = 0
+  val DELETED_MARKER = Integer.MIN_VALUE
+  if (id == DELETED_MARKER)
+    throw new IllegalArgumentException("ID " + DELETED_MARKER + " is not allowed.")
 
   /**
    * Override functions of base class.
@@ -85,6 +87,6 @@ class SynchronizedDynamicNode(val id: Int) extends DynamicNode {
   override def toString = {
     val inNodes = synchronized { inboundNodes.toList }
     val outNodes = synchronized { outboundNodes.toList }
-    "SynchronizedDynamicNode(id=%d, out=%s, in=%s)".format(id, inNodes, outNodes)
+    "SynchronizedDynamicNode(id=%d, out=%s, in=%s)".format(id, outNodes, inNodes)
   }
 }
