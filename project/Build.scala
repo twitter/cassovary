@@ -34,11 +34,6 @@ object Cassovary extends Build {
         case x if x startsWith "2.10" => "2.10"
         case x => x
       },
-      "org.scala-tools.testing" %% "specs" % "1.6.9" % "test" cross CrossVersion.binaryMapped {
-        case "2.9.3" => "2.9.1"
-        case x if x startsWith "2.10" => "2.10"
-        case x => x
-      },
       "org.scalatest" %% "scalatest" % "1.9.2" % "test" cross CrossVersion.binaryMapped {
               case "2.9.3" => "2.9.2"
               case x if x startsWith "2.10" => "2.10"
