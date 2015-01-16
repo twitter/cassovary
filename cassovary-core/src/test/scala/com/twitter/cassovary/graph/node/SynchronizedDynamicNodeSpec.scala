@@ -48,11 +48,9 @@ class SynchronizedDynamicNodeSpec extends WordSpec with ShouldMatchers {
     }
 
     "throw an exception if id is DELETED_MARKER" in {
-      val DELETED_MARKER = fixture(1).DELETED_MARKER
       intercept[IllegalArgumentException] {
-        fixture(DELETED_MARKER)
+        fixture(SynchronizedDynamicNode.DELETED_MARKER)
       }
     }
   }
 }
-

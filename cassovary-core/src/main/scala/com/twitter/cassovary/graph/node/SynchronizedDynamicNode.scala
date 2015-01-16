@@ -22,20 +22,19 @@ import scala.collection.mutable.ArrayBuffer
 class SynchronizedDynamicNode(val id: Int) extends DynamicNode {
   protected val inEdges = new ArrayBuffer[Int]
   protected val outEdges = new ArrayBuffer[Int]
-  val DELETED_MARKER = Integer.MIN_VALUE
-  if (id == DELETED_MARKER)
-    throw new IllegalArgumentException("ID " + DELETED_MARKER + " is not allowed.")
+  require(id != SynchronizedDynamicNode.DELETED_MARKER,
+    "ID " + SynchronizedDynamicNode.DELETED_MARKER + " is not allowed.")
 
   /**
    * Override functions of base class.
    */
   def inboundNodes = {
     val array = synchronized { inEdges.toArray }
-    array filter { _ != DELETED_MARKER}
+    array filter { _ != SynchronizedDynamicNode.DELETED_MARKER}
   }
   def outboundNodes = synchronized {
     val array = synchronized { outEdges.toArray }
-    array filter {_ != DELETED_MARKER}
+    array filter {_ != SynchronizedDynamicNode.DELETED_MARKER}
   }
 
   override def equals(other: Any) = {
@@ -79,7 +78,7 @@ class SynchronizedDynamicNode(val id: Int) extends DynamicNode {
     // TODO(taotao): reclaim deleted slots.
     val pos = edges.indexOf(nodeId)
     if (pos >= 0) {
-      edges(pos) = DELETED_MARKER
+      edges(pos) = SynchronizedDynamicNode.DELETED_MARKER
     }
     pos
   }
@@ -89,4 +88,8 @@ class SynchronizedDynamicNode(val id: Int) extends DynamicNode {
     val outNodes = synchronized { outboundNodes.toList }
     "SynchronizedDynamicNode(id=%d, out=%s, in=%s)".format(id, outNodes, inNodes)
   }
+}
+
+object SynchronizedDynamicNode {
+  val DELETED_MARKER = Integer.MIN_VALUE
 }
