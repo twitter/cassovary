@@ -14,6 +14,7 @@
 package com.twitter.cassovary.graph.node
 
 import scala.collection.mutable.ArrayBuffer
+import SynchronizedDynamicNode.DELETED_MARKER
 
 /**
  * A Node supports add and delete operation on its in/out edges.
@@ -22,19 +23,19 @@ import scala.collection.mutable.ArrayBuffer
 class SynchronizedDynamicNode(val id: Int) extends DynamicNode {
   protected val inEdges = new ArrayBuffer[Int]
   protected val outEdges = new ArrayBuffer[Int]
-  require(id != SynchronizedDynamicNode.DELETED_MARKER,
-    "ID " + SynchronizedDynamicNode.DELETED_MARKER + " is not allowed.")
+  require(id != DELETED_MARKER,
+    "ID " + DELETED_MARKER + " is not allowed.")
 
   /**
    * Override functions of base class.
    */
   def inboundNodes = {
     val array = synchronized { inEdges.toArray }
-    array filter { _ != SynchronizedDynamicNode.DELETED_MARKER}
+    array filter { _ != DELETED_MARKER}
   }
   def outboundNodes = synchronized {
     val array = synchronized { outEdges.toArray }
-    array filter {_ != SynchronizedDynamicNode.DELETED_MARKER}
+    array filter {_ != DELETED_MARKER}
   }
 
   override def equals(other: Any) = {
@@ -78,7 +79,7 @@ class SynchronizedDynamicNode(val id: Int) extends DynamicNode {
     // TODO(taotao): reclaim deleted slots.
     val pos = edges.indexOf(nodeId)
     if (pos >= 0) {
-      edges(pos) = SynchronizedDynamicNode.DELETED_MARKER
+      edges(pos) = DELETED_MARKER
     }
     pos
   }
