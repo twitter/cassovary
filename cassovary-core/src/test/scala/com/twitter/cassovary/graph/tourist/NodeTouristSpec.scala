@@ -47,8 +47,8 @@ class NodeTouristSpec extends WordSpec with ShouldMatchers {
       pathMapToSeq(info(2)) should be(Seq((DirectedPath(Array(2)), 3)))
       pathMapToSeq(info(3)) should be(Seq(
         (DirectedPath(Array(2, 3)), 3),
-        (DirectedPath(Array(2, 3, 4, 3)), 1),
-        (DirectedPath(Array(1, 3)), 1)
+        (DirectedPath(Array(1, 3)), 1),
+        (DirectedPath(Array(2, 3, 4, 3)), 1)
       ))
       pathMapToSeq(info(4)) should be(Seq(
         (DirectedPath(Array(2, 3, 4)), 2),

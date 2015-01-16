@@ -78,19 +78,19 @@ class DirectedPathCollectionSpec extends WordSpec with ShouldMatchers {
         ).toSeq
         pathMapToSeq(paths.topPathsTill(testPathIds(2), 10)) shouldEqual Array(
           (getPath(1, 2), 2),
-          (getPath(1, 0, 3, 2), 1),
-          (getPath(0, 1, 2), 1)
+          (getPath(0, 1, 2), 1),
+          (getPath(1, 0, 3, 2), 1)
         ).toSeq
         pathMapToSeq(paths.topPathsTill(testPathIds(3), 10)) shouldEqual Array(
           (getPath(1, 2, 3), 2),
-          (getPath(1, 0, 3, 2, 3), 1),
-          (getPath(1, 0, 3), 1)
+          (getPath(1, 0, 3), 1),
+          (getPath(1, 0, 3, 2, 3), 1)
         ).toSeq
 
         pathMapToSeq(paths.topPathsTill(testPathIds(2), 3)) shouldEqual Array(
           (getPath(1, 2), 2),
-          (getPath(1, 0, 3, 2), 1),
-          (getPath(0, 1, 2), 1)
+          (getPath(0, 1, 2), 1),
+          (getPath(1, 0, 3, 2), 1)
         ).toSeq
 
         paths.numUniquePathsTill(testPathIds(0)) shouldEqual 2
