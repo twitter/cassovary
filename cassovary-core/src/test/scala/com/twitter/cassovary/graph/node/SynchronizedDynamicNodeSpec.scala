@@ -46,6 +46,11 @@ class SynchronizedDynamicNodeSpec extends WordSpec with ShouldMatchers {
       node.removeOutBoundNode(4)
       node.outboundNodes.toList shouldEqual List(2)
     }
+
+    "throw an exception if id is DELETED_MARKER" in {
+      intercept[IllegalArgumentException] {
+        fixture(SynchronizedDynamicNode.DELETED_MARKER)
+      }
+    }
   }
 }
-

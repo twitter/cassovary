@@ -47,12 +47,12 @@ class SynchronizedDynamicGraphSpec extends WordSpec with ShouldMatchers {
 
   "Add new edges in OnlyIn graph" in {
     val graph = createTempGraph(StoredGraphDir.OnlyIn)
-    graph.addEdge(1, 2)
-    val node1 = graph.getNodeById(1).get
+    graph.addEdge(0, 1)
+    val node1 = graph.getNodeById(0).get
     node1.inboundNodes.toList shouldEqual List()
     node1.outboundNodes.toList shouldEqual List()
-    val node2 = graph.getNodeById(2).get
-    node2.inboundNodes.toList shouldEqual List(1)
+    val node2 = graph.getNodeById(1).get
+    node2.inboundNodes.toList shouldEqual List(0)
     node2.outboundNodes.toList shouldEqual List()
   }
 
