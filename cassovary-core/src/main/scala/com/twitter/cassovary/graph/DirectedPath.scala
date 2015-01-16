@@ -44,6 +44,10 @@ case class DirectedPath(val nodes: Array[Int]) {
   override def hashCode(): Int = {
     Arrays.hashCode(nodes)
   }
+
+  override def toString() = {
+    "DirectedPath(" + nodes.mkString(",") + ")"
+  }
 }
 
 object DirectedPath {

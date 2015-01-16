@@ -42,7 +42,7 @@ class DirectedPathCollection {
    */
   def appendToCurrentPath(node: Int) {
     currPath.append(node)
-    pathCountsPerIdWithDefault(node).add(currPath.snapshot, 1)
+    pathCountsPerIdWithDefault(node).addTo(currPath.snapshot, 1)
   }
 
   /**
@@ -53,8 +53,10 @@ class DirectedPathCollection {
   }
 
   /**
-   * @return an map of top DirectedPaths with occurrence
-   *         ending at {@code node}, sorted decreasing
+   * @return a map of {path -> count} for paths ending at `node`, sorted in decreasing order of count.
+   *         Paths with the same count are sorted shortest path first.
+   *
+   *         Returns at most `num` pairs in the map.
    */
   def topPathsTill(node: Int, num: Int): Object2IntMap[DirectedPath] = {
     val pathCountMap = pathCountsPerIdWithDefault(node)
@@ -95,7 +97,7 @@ class DirectedPathCollection {
   }
 
   /**
-   * @return the total number of unique paths that end at {@code node}
+   * @return the total number of unique paths that end at `node`
    */
   def numUniquePathsTill(node: Int) = pathCountsPerIdWithDefault(node).size
 
@@ -113,7 +115,7 @@ class DirectedPathCollection {
   }
 
   /**
-   * @return true if entry for {@code node} exists, false otherwise
+   * @return true if entry for `node` exists, false otherwise
    */
   def containsNode(node: Int): Boolean = {
     pathCountsPerId.containsKey(node)
@@ -137,7 +139,8 @@ class DirectedPathCollection {
 
 }
 
-class PathCounterComparator(pathCountsPerId: Int2ObjectOpenHashMap[Object2IntOpenHashMap[DirectedPath]], descending: Boolean) extends Comparator[DirectedPath] {
+class PathCounterComparator(pathCountsPerId: Int2ObjectOpenHashMap[Object2IntOpenHashMap[DirectedPath]], descending: Boolean)
+  extends Comparator[DirectedPath] {
 
   var infoMap: Object2IntOpenHashMap[DirectedPath] = null
 
@@ -145,13 +148,25 @@ class PathCounterComparator(pathCountsPerId: Int2ObjectOpenHashMap[Object2IntOpe
     infoMap = pathCountsPerId.get(id)
   }
 
+  /**
+   * Compares paths using counts and (if equal) lengths (reversed).
+   */
   override def compare(dp1: DirectedPath, dp2: DirectedPath): Int = {
     val dp1Count = infoMap.getInt(dp1)
     val dp2Count = infoMap.getInt(dp2)
-    if (descending) {
-      dp2Count - dp1Count
+
+    if (dp1Count != dp2Count) {
+      if (descending) {
+        dp2Count - dp1Count
+      } else {
+        dp1Count - dp2Count
+      }
     } else {
-      dp1Count - dp2Count
+      if (descending) {
+        dp1.length - dp2.length
+      } else {
+        dp2.length - dp1.length
+      }
     }
   }
 }
