@@ -14,7 +14,6 @@
 package com.twitter.cassovary.graph.node
 
 import scala.collection.mutable.ArrayBuffer
-import SynchronizedDynamicNode.DELETED_MARKER
 
 /**
  * A Node supports add and delete operation on its in/out edges.
@@ -23,8 +22,10 @@ import SynchronizedDynamicNode.DELETED_MARKER
 class SynchronizedDynamicNode(val id: Int) extends DynamicNode {
   protected val inEdges = new ArrayBuffer[Int]
   protected val outEdges = new ArrayBuffer[Int]
-  require(id != DELETED_MARKER,
-    "ID " + DELETED_MARKER + " is not allowed.")
+
+  import SynchronizedDynamicNode.DELETED_MARKER
+  
+  require(id != DELETED_MARKER, "ID " + DELETED_MARKER + " is not allowed.")
 
   /**
    * Override functions of base class.
