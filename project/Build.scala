@@ -153,7 +153,7 @@ object Cassovary extends Build {
           case x if x startsWith "2.10" => "2.10"
           case x => x
         },
-        "com.twitter" % "twitter-server" % "1.9.0"
+        "com.twitter" % "twitter-server_2.10" % "1.9.0"
       )
   ).dependsOn(cassovaryCore)
 
