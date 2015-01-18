@@ -41,7 +41,8 @@ object Cassovary extends Build {
               case x if x startsWith "2.10" => "2.10"
               case x => x
       },
-      "junit" % "junit" % "4.10" % "test"
+      "junit" % "junit" % "4.10" % "test",
+      "com.twitter.common" % "metrics" % "0.0.29"
     ),
     resolvers += "twitter repo" at "http://maven.twttr.com",
 
@@ -151,7 +152,8 @@ object Cassovary extends Build {
           case "2.9.3" => "2.9.2"
           case x if x startsWith "2.10" => "2.10"
           case x => x
-        }
+        },
+        "com.twitter" % "twitter-server" % "1.9.0"
       )
   ).dependsOn(cassovaryCore)
 
