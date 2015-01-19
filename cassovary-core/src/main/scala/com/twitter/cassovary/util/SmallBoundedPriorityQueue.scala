@@ -13,13 +13,13 @@
  */
 package com.twitter.cassovary.util
 
-import scala.reflect.ClassManifest
+import scala.reflect.ClassTag
 
 /**
  * Represents a priority queue that is bounded by a small maximum (e.g., < 10 elements).
  * The items are simply sorted when needed to be in priority order.
  */
-class SmallBoundedPriorityQueue[A](maxSize: Int)(implicit m: ClassManifest[A], ord: Ordering[A]) {
+class SmallBoundedPriorityQueue[A](maxSize: Int)(implicit m: ClassTag[A], ord: Ordering[A]) {
 import ord._
 
   private val items = new Array[A](maxSize)

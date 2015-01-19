@@ -87,7 +87,7 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   val getNodeFlag = flags("gn", 0, "run getNodeById benchmark with a given number of steps")
   val reps = flags("reps", DEFAULT_REPS, "number of times to run benchmark")
   val adjacencyList = flags("a", false, "graph in adjacency list format")
-  flags.parse(args)
+  flags.parseArgs(args)
   if (localFileFlag.isDefined) files += ((SMALL_FILES_DIRECTORY, localFileFlag()))
   if (remoteFileFlag.isDefined) files += cacheRemoteFile(remoteFileFlag())
   if (files.isEmpty) {
