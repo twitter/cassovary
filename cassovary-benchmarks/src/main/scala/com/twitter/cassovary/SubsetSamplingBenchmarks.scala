@@ -27,7 +27,7 @@ object SubsetSamplingBenchmarks extends App {
   val subsetSizeFlag = flags("s", 100, "Sampling subset size")
   val repsFlag = flags("reps", DEFAULT_REPS, "Number of times to run benchmark")
   val helpFlag = flags("h", false, "Print usage")
-  flags.parse(args)
+  flags.parseArgs(args)
 
   if (helpFlag()) {
     println(flags.usage)

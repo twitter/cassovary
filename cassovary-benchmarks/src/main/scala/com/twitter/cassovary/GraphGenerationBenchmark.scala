@@ -33,7 +33,7 @@ object GraphGenerationBenchmarks extends App {
   val probEdgeFlag = flags("p", 0.001, "Probability of edge existance")
   val repsFlag = flags("reps", DEFAULT_REPS, "Number of times to run benchmark")
   val helpFlag = flags("h", false, "Print usage")
-  flags.parse(args)
+  flags.parseArgs(args)
 
   if (helpFlag()) {
     println(flags.usage)

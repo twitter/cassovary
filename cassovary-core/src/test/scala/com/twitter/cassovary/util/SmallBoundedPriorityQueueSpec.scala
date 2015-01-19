@@ -16,14 +16,14 @@ package com.twitter.cassovary.util
 import org.scalatest.WordSpec
 import org.scalatest.matchers.ShouldMatchers
 
-import scala.reflect.ClassManifest
+import scala.reflect.ClassTag
 
 class SmallBoundedPriorityQueueSpec extends WordSpec with ShouldMatchers {
-  def emptyQueue[A](maxSize: Int)(implicit m: ClassManifest[A], ord: Ordering[A]) = {
+  def emptyQueue[A](maxSize: Int)(implicit m: ClassTag[A], ord: Ordering[A]) = {
     new SmallBoundedPriorityQueue[A](maxSize)
   }
 
-  def fullQueue[A](content: List[A])(implicit m: ClassManifest[A], ord: Ordering[A]) = {
+  def fullQueue[A](content: List[A])(implicit m: ClassTag[A], ord: Ordering[A]) = {
     val q = new SmallBoundedPriorityQueue[A](content.length)
     content.foreach(q += _)
     q
