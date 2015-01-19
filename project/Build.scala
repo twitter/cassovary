@@ -11,37 +11,22 @@ object Cassovary extends Build {
   val sharedSettings = Seq(
     version := "3.4.0",
     organization := "com.twitter",
-    scalaVersion := "2.9.3",
+    scalaVersion := "2.10.3",
     retrieveManaged := true,
-    crossScalaVersions := Seq("2.9.3","2.10.3"),
     libraryDependencies ++= Seq(
       "com.google.guava" % "guava" % "11.0.2",
       fastUtilsDependency % "provided",
       "org.mockito" % "mockito-all" % "1.8.5" % "test",
-      "com.twitter" %% "util-core" % "6.16.0" cross CrossVersion.binaryMapped {
-        case "2.9.3" => "2.9.2"
-        case x if x startsWith "2.10" => "2.10"
-        case x => x
-      } excludeAll (
-          ExclusionRule(organization = "junit"),
-          ExclusionRule(organization = "org.scala-tools.testing"),
-          ExclusionRule(organization = "org.mockito")),
-      "com.twitter" %% "ostrich" % "9.1.0" cross CrossVersion.binaryMapped {
-        case "2.9.3" => "2.9.2"
-        case x if x startsWith "2.10" => "2.10"
-        case x => x
-      },
-      "com.twitter" %% "util-logging" % "6.12.1" cross CrossVersion.binaryMapped {
-        case "2.9.3" => "2.9.2"
-        case x if x startsWith "2.10" => "2.10"
-        case x => x
-      },
-      "org.scalatest" %% "scalatest" % "1.9.2" % "test" cross CrossVersion.binaryMapped {
-              case "2.9.3" => "2.9.2"
-              case x if x startsWith "2.10" => "2.10"
-              case x => x
-      },
-      "junit" % "junit" % "4.10" % "test"
+      "com.twitter" %% "util-core" % "6.16.0"
+        excludeAll (
+        ExclusionRule(organization = "junit"),
+        ExclusionRule(organization = "org.scala-tools.testing"),
+        ExclusionRule(organization = "org.mockito")),
+      "com.twitter" %% "ostrich" % "9.1.0",
+      "com.twitter" %% "util-logging" % "6.12.1",
+      "org.scalatest" %% "scalatest" % "1.9.2" % "test",
+      "junit" % "junit" % "4.10" % "test",
+      "com.twitter.common" % "metrics" % "0.0.29"
     ),
     resolvers += "twitter repo" at "http://maven.twttr.com",
 
@@ -126,11 +111,7 @@ object Cassovary extends Build {
       name := "cassovary-benchmarks",
       libraryDependencies ++= Seq(
         fastUtilsDependency,
-        "com.twitter" %% "util-app" % "6.12.1" cross CrossVersion.binaryMapped {
-          case "2.9.3" => "2.9.2"
-          case x if x startsWith "2.10" => "2.10"
-          case x => x
-        }
+        "com.twitter" %% "util-app" % "6.12.1"
       )
   ).dependsOn(cassovaryCore)
 
@@ -142,16 +123,9 @@ object Cassovary extends Build {
       name := "cassovary-server",
       libraryDependencies ++= Seq(
         fastUtilsDependency,
-        "com.twitter" %% "finagle-http" % "6.20.0" cross CrossVersion.binaryMapped {
-          case "2.9.3" => "2.9.2"
-          case x if x startsWith "2.10" => "2.10"
-          case x => x
-        },
-        "com.twitter" %% "finagle-ostrich4" % "6.20.0"  cross CrossVersion.binaryMapped {
-          case "2.9.3" => "2.9.2"
-          case x if x startsWith "2.10" => "2.10"
-          case x => x
-        }
+        "com.twitter" %% "finagle-http" % "6.20.0",
+        "com.twitter" %% "finagle-ostrich4" % "6.20.0",
+        "com.twitter" %% "twitter-server" % "1.9.0"
       )
   ).dependsOn(cassovaryCore)
 
