@@ -14,14 +14,11 @@
 
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.twitter.cassovary.graph.{TestGraphs, DirectedGraph, GraphUtils}
-import com.twitter.finagle.builder.ServerBuilder
-import com.twitter.finagle.{http, Service}
-import com.twitter.finagle.stats.OstrichStatsReceiver
+import com.twitter.finagle.{Http, Service}
 import com.twitter.io.Charsets.Utf8
 import com.twitter.logging.Logger
-import com.twitter.ostrich.admin.{RuntimeEnvironment, AdminHttpService}
-import com.twitter.util.Future
-import java.net.InetSocketAddress
+import com.twitter.util.{Await, Future}
+import com.twitter.server.TwitterServer
 import org.jboss.netty.buffer.ChannelBuffers.copiedBuffer
 import org.jboss.netty.handler.codec.http._
 
@@ -31,9 +28,9 @@ import org.jboss.netty.handler.codec.http._
  * service on localhost:8888 that responds every Http request by
  * a walk on a generated graph.
  */
-object CassovaryServer {
+object CassovaryServer extends TwitterServer {
 
-  val log = Logger.get("CassovaryServer")
+  lazy override val log = Logger.get("CassovaryServer")
 
   def walkOn(graph: DirectedGraph) {
     val numSteps = 100L * 100L
@@ -45,7 +42,7 @@ object CassovaryServer {
     log.info("Done\n")
   }
 
-  def main(args: Array[String]) {
+  def main() {
 
     val service = new Service[HttpRequest, HttpResponse] {
       def apply(req: HttpRequest): Future[HttpResponse] = Future {
@@ -60,19 +57,11 @@ object CassovaryServer {
       }
     }
 
-    // start ostrich and admin server
-    val admin = new AdminHttpService(
-      9999 /*port*/,
-      123 /*backlog*/,
-      RuntimeEnvironment(this, args))
-    admin.start()
-
-    // start finagle server
-    val server = ServerBuilder()
-          .codec(http.Http())
-          .bindTo(new InetSocketAddress(8888))
-          .name("CassovaryServer")
-          .reportTo(new OstrichStatsReceiver)
-          .build(service)
+    // start Twitter Server
+    val server = Http.serve(":8888", service)
+    onExit{
+      server.close()
+    }
+    Await.ready(server)
   }
 }

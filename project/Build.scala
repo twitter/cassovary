@@ -27,7 +27,8 @@ object Cassovary extends Build {
       "com.twitter" %% "ostrich" % "9.1.0",
       util("logging"),
       "org.scalatest" %% "scalatest" % "1.9.2" % "test",
-      "junit" % "junit" % "4.10" % "test"
+      "junit" % "junit" % "4.10" % "test",
+      "com.twitter" %% "twitter-server" % "1.9.0"
     ),
     resolvers += "twitter repo" at "http://maven.twttr.com",
 
