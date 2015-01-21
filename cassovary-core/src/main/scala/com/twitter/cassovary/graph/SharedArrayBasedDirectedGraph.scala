@@ -19,7 +19,7 @@ import com.twitter.cassovary.graph.node._
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.ExecutorUtils
 import com.twitter.logging.Logger
-import com.twitter.ostrich.stats.Stats
+import com.twitter.finagle.stats.DefaultStatsReceiver
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import java.util.concurrent.{ExecutorService, Future}
 
@@ -28,6 +28,7 @@ import java.util.concurrent.{ExecutorService, Future}
  */
 object SharedArrayBasedDirectedGraph {
   private lazy val log = Logger.get
+  private val statsReceiver = DefaultStatsReceiver
   val emptyArray = Array.empty[Int]
 
   /**
@@ -64,9 +65,9 @@ object SharedArrayBasedDirectedGraph {
      * An edge fall in a shard when the source node id is hashed to the index of the shard.
      */
     log.info("read out num of edges and max id from files in parallel")
-    val futures = Stats.time("graph_dump_read_out_num_of_edge_and_max_id_parallel") {
+    val futures = statsReceiver.time("graph_dump_read_out_num_of_edge_and_max_id_parallel") {
       def readNumOfEdgesAndMaxId(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) =
-          Stats.time("graph_load_read_out_edge_sizes_dump_files") {
+          statsReceiver.time("graph_load_read_out_edge_sizes_dump_files") {
         var id, newMaxId, varNodeWithOutEdgesMaxId, numOfEdges, edgesLength, nodeCount = 0
         val iteratorForEdgeSizes = iteratorFunc()
         iteratorForEdgeSizes foreach { item =>
@@ -108,11 +109,11 @@ object SharedArrayBasedDirectedGraph {
     // read everything second time
     log.info("loading nodes and out edges from file in parallel " +
       "and mark the ids of all stored nodes in nodeIdSet")
-    Stats.time("graph_dump_load_partial_nodes_and_out_edges_parallel") {
+    statsReceiver.time("graph_dump_load_partial_nodes_and_out_edges_parallel") {
       var loadingCounter = new AtomicLong()
       val outputMode = 10000
       def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) =
-          Stats.time("graph_load_read_out_edge_from_dump_files") {
+          statsReceiver.time("graph_load_read_out_edge_from_dump_files") {
         var id, edgesLength, shardIdx, offset = 0
 
         val iterator = iteratorFunc()
@@ -139,7 +140,7 @@ object SharedArrayBasedDirectedGraph {
     }
 
     log.info("Count total number of nodes")
-    Stats.time("graph_load_count_total_num_of_nodes") {
+    statsReceiver.time("graph_load_count_total_num_of_nodes") {
       for ( id <- 0 to maxNodeId )
         if (nodeIdSet(id) == 1)
           numNodes += 1
@@ -148,7 +149,7 @@ object SharedArrayBasedDirectedGraph {
     // the work below is needed for BothInOut directions only
     val reverseDirEdgeArray = if (storedGraphDir == StoredGraphDir.BothInOut) {
       log.info("calculating in edges sizes")
-      val inEdgesSizes = Stats.time("graph_load_find_in_edge_sizes") {
+      val inEdgesSizes = statsReceiver.time("graph_load_find_in_edge_sizes") {
         val atomicIntArray = new Array[AtomicInteger](maxNodeId + 1)
         for (id <- 0 to maxNodeId) {
           if (nodeIdSet(id) == 1) atomicIntArray(id) = new AtomicInteger()
@@ -177,7 +178,7 @@ object SharedArrayBasedDirectedGraph {
       log.info("instantiating in edge arrays")
       val reverseEdges = new Array[Array[Int]](maxNodeId + 1)
 
-      Stats.time("graph_load_instantiate_in_edge_arrays") {
+      statsReceiver.time("graph_load_instantiate_in_edge_arrays") {
         def instantiateInEdgesTask = {
           (shard: Int) => {
             var id, edgeSize = 0
@@ -199,7 +200,7 @@ object SharedArrayBasedDirectedGraph {
       }
 
       log.info("populate in edges")
-      Stats.time("graph_load_read_in_edge_from_dump_files") {
+      statsReceiver.time("graph_load_read_in_edge_from_dump_files") {
         def readInEdges = {
           (shard: Int) => {
             var id, offset, length, edgeIndex, index = 0

@@ -16,7 +16,7 @@ package com.twitter.cassovary.graph.bipartite
 import com.twitter.cassovary.util.SmallBoundedPriorityQueue
 import com.twitter.cassovary.graph.{GraphUtils, Node}
 import com.twitter.logging.Logger
-import com.twitter.ostrich.stats.Stats
+import com.twitter.finagle.stats.DefaultStatsReceiver
 import scala.collection.mutable
 
 /**
@@ -29,8 +29,8 @@ case class SuppliedNodeInfo(val node: Node, val initialIterationWeight: Double)
 /**
  * Iteratively analyze links in a bipartite graph.
  * @param graphUtils GraphUtils encapsulating the underlying graph
- * @param resetProbLeft reset probability when iterating from left to right
- * @param resetProbRight reset probability when iterating from right to left
+ * @param resetProbOnLeft reset probability when iterating from left to right
+ * @param resetProbOnRight reset probability when iterating from right to left
  * @param numTopContributors The number of contributors (reasons) to be kept for each score
  */
 class IterativeLinkAnalyzer(graphUtils: GraphUtils, resetProbOnLeft: Double,
@@ -38,6 +38,7 @@ class IterativeLinkAnalyzer(graphUtils: GraphUtils, resetProbOnLeft: Double,
 
   private val graph = graphUtils.graph
   private val log = Logger.get
+  private val statsReceier = DefaultStatsReceiver
 
   // keep track of associated info for every node while doing iterations
   case class NodeInfo(val node: Node, val initialIterationWeight: Double, var weight: Double,
@@ -170,9 +171,9 @@ class IterativeLinkAnalyzer(graphUtils: GraphUtils, resetProbOnLeft: Double,
 
     if (sortOutputByScore) {
       //sort output
-      val sortedLeft = Stats.time("bila_sort_left") { sortedListFrom(nodeInfos(0)) }
+      val sortedLeft = statsReceier.time("bila_sort_left") { sortedListFrom(nodeInfos(0)) }
       log.ifDebug { "Finished sorting left" }
-      val sortedRight = Stats.time("bila_sort_right") { sortedListFrom(nodeInfos(1)) }
+      val sortedRight = statsReceier.time("bila_sort_right") { sortedListFrom(nodeInfos(1)) }
       log.ifDebug { "Finished sorting right" }
       (sortedLeft, sortedRight)
     } else {
