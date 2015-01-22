@@ -17,8 +17,8 @@ import com.twitter.cassovary.graph.{TestGraphs, DirectedGraph, GraphUtils}
 import com.twitter.finagle.{Http, Service}
 import com.twitter.io.Charsets.Utf8
 import com.twitter.logging.Logger
-import com.twitter.util.{Await, Future}
 import com.twitter.server.TwitterServer
+import com.twitter.util.{Await, Future}
 import org.jboss.netty.buffer.ChannelBuffers.copiedBuffer
 import org.jboss.netty.handler.codec.http._
 
@@ -59,7 +59,7 @@ object CassovaryServer extends TwitterServer {
 
     // start Twitter Server
     val server = Http.serve(":8888", service)
-    onExit{
+    onExit {
       server.close()
     }
     Await.ready(server)
