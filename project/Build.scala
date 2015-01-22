@@ -15,7 +15,7 @@ object Cassovary extends Build {
         ExclusionRule(organization = "org.mockito"))
 
   val sharedSettings = Seq(
-    version := "3.4.0",
+    version := "4.0.0",
     organization := "com.twitter",
     scalaVersion := "2.10.3",
     retrieveManaged := true,
