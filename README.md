@@ -35,14 +35,19 @@ Cassovary is built using [sbt](https://github.com/sbt/sbt) and was tested last u
 
 ## Using maven published version of library
 
-Cassovary is published to maven central with crosspath scala versions 2.9.3 and 2.10.x. To use with sbt, use:
+Cassovary is published to maven central with crosspath scala versions 2.10.x.
 
-```libraryDependencies += "com.twitter" %% "cassovary" % "3.2.0"```
+To use with sbt, use:
 
-The only dependency that Cassovary uses which is not bundled with it because of its size is ```it.unimi.dsi.fastutil```.
-You can add that dependency in your sbt project as follows:
+```libraryDependencies += "com.twitter" %% "cassovary" % "4.0.0"```
 
-```libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.4.4"```
+The last Cassovary version to support scala 2.9 is 3.4.0, and
+support for scala version 2.9.x has been discontinued since.
+
+The only dependency that Cassovary uses which is not bundled with it (because of its size)
+is ```it.unimi.dsi.fastutil```. You can add that dependency in your sbt project as follows:
+
+```libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.23.0"```
 
 ## Comparison to Other Graph Libraries
 There are many excellent graph mining libraries already in existence. Most of
@@ -87,7 +92,7 @@ Thanks to all the [contributors](https://github.com/twitter/cassovary/graphs/con
 We use the [Yourkit](http://yourkit.com) Java Profiler for profiling and tuning Cassovary. [![Yourkit logo](http://projects.collide.info/attachments/download/1289/yklogo.png)](http://yourkit.com)
 
 ## License
-Copyright 2014 Twitter, Inc.
+Copyright 2015 Twitter, Inc.
 
 Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
 
