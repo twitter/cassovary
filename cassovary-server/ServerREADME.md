@@ -13,7 +13,5 @@ by trying 'curl localhost:9990/admin/metrics.json'.
 By passing a comma-separated list of regexes to exclude from stats using `-com.twitter.finagle.stats.statsFilter` flag,
 one can single out the stats that will not be shown when queried with `filtered=true`. 
 For example, to filter out all stats starting with jvm and also any p90 stats, one can pass the following to 
-Cassovary Server: 
-```-com.twitter.finagle.stats.statsFilter="jvm.*,.*\.p90"```
-To query the reduced list: 
-```curl localhost:9990/admin/metrics.json?filtered=true```
+Cassovary Server: `-com.twitter.finagle.stats.statsFilter="jvm.*,.*\.p90"`
+To query the reduced list: `curl localhost:9990/admin/metrics.json?filtered=true`
