@@ -17,7 +17,7 @@ object Cassovary extends Build {
   val sharedSettings = Seq(
     version := "4.0.0",
     organization := "com.twitter",
-    scalaVersion := "2.10.3",
+    scalaVersion := "2.11.4",
     retrieveManaged := true,
     libraryDependencies ++= Seq(
       "com.google.guava" % "guava" % "16.0.1",
@@ -25,9 +25,10 @@ object Cassovary extends Build {
       "org.mockito" % "mockito-all" % "1.8.5" % "test",
       util("core"),
       util("logging"),
-      "org.scalatest" %% "scalatest" % "1.9.2" % "test",
+      "org.scalatest" %% "scalatest" % "2.2.3" % "test",
       "junit" % "junit" % "4.10" % "test",
-      "com.twitter" %% "finagle-stats" % "6.24.0"
+      "com.twitter" %% "finagle-stats" % "6.24.0",
+      "com.twitter" %% "twitter-server" % "1.9.0"
     ),
     resolvers += "twitter repo" at "http://maven.twttr.com",
 
