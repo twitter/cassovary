@@ -15,8 +15,8 @@ package com.twitter.cassovary.util
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.twitter.concurrent.AsyncSemaphore
-import com.twitter.ostrich.stats.Stats
 import com.twitter.util.{Future, FuturePool, Duration}
+import com.twitter.finagle.stats.DefaultStatsReceiver
 import java.util.ArrayList
 import java.util.concurrent.{Future => JFuture, _}
 import java.util.{List => JList}
@@ -25,6 +25,8 @@ import java.util.{List => JList}
  * Utility class for unbounded and bounded parallel execution
  */
 object ExecutorUtils {
+
+  private val statsReceiver = DefaultStatsReceiver
 
   private def rejectedExecutionHandlerFactory(name: String,
       handler: => Unit): RejectedExecutionHandler = {
@@ -84,7 +86,7 @@ object ExecutorUtils {
         taskQueue,
         createThreadFactory(name),
         rejectedExecutionHandlerFactory(name, rejectedExecutionHandler))
-    Stats.addGauge(name + "_queue_depth") { taskQueue.size }
+    statsReceiver.addGauge(name + "_queue_depth") { taskQueue.size }
     createPoolStats(name, threadPoolExecutor)
 
     threadPoolExecutor
@@ -95,8 +97,8 @@ object ExecutorUtils {
   }
 
   private def createPoolStats(name: String, threadPoolExecutor: ThreadPoolExecutor): Unit = {
-    Stats.addGauge(name + "_threads_active") { threadPoolExecutor.getActiveCount }
-    Stats.addGauge(name + "_max_threads_active") { threadPoolExecutor.getLargestPoolSize }
+    statsReceiver.addGauge(name + "_threads_active") { threadPoolExecutor.getActiveCount }
+    statsReceiver.addGauge(name + "_max_threads_active") { threadPoolExecutor.getLargestPoolSize }
   }
 
   /**

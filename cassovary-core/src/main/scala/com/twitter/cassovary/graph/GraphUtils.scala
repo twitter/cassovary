@@ -15,7 +15,7 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.tourist._
-import com.twitter.ostrich.stats.Stats
+import com.twitter.finagle.stats.DefaultStatsReceiver
 import it.unimi.dsi.fastutil.ints.Int2IntMap
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 import scala.util.Random
@@ -25,6 +25,8 @@ import scala.util.Random
  * This class contains some common graph utilities and convenience functions.
  */
 class GraphUtils(val graph: Graph) {
+
+  private val statsReceiver = DefaultStatsReceiver
 
   import GraphUtils._
 
@@ -52,8 +54,8 @@ class GraphUtils(val graph: Graph) {
       val traversedNodes = new BreadthFirstTraverser(graph, dir, Seq(startNodeId),
         walkLimits, Some(prevNbrCounter))
 
-      Stats.incr("bfs_walk_request", 1)
-      Stats.time ("bfs_walk_traverse") {
+      statsReceiver.counter("bfs_walk_request").incr()
+      statsReceiver.time ("bfs_walk_traverse") {
         traversedNodes.foreach { node =>
           // prevNbrCounter is mutated within BreadthFirstTraverser
           visitsCounter.visit(node)
@@ -80,8 +82,8 @@ class GraphUtils(val graph: Graph) {
       val traversedNodes = new BreadthFirstTraverser(graph, dir, Seq(startNodeId),
         walkLimits, Some(prevNbrCounter))
 
-      Stats.incr("bfs_walk_request", 1)
-      Stats.time ("bfs_walk_traverse") {
+      statsReceiver.counter("bfs_walk_request").incr()
+      statsReceiver.time ("bfs_walk_traverse") {
         traversedNodes.map { node =>
           (node.id, traversedNodes.depth(node.id).get)
         }.toSeq
@@ -115,7 +117,7 @@ class GraphUtils(val graph: Graph) {
       val traversedNodes = new RandomBoundedTraverser(graph, dir, startNodeIds,
         walkParams.numSteps, walkParams)
 
-      Stats.time("random_walk_traverse") {
+      statsReceiver.time("random_walk_traverse") {
         traversedNodes.foreach { node =>
           visitsCounter.visit(node)
           if (pathsCounterOption.isDefined) {
@@ -139,7 +141,7 @@ class GraphUtils(val graph: Graph) {
    */
   def calculatePersonalizedReputation(startNodeIds: Seq[Int], walkParams: RandomWalkParams):
       (collection.Map[Int, Int], Option[collection.Map[Int, Object2IntMap[DirectedPath]]]) = {
-    Stats.time ("%s_total".format("PTC")) {
+    statsReceiver.time ("%s_total".format("PTC")) {
       val (visitsCounter, pathsCounterOption) = randomWalk(walkParams.dir, startNodeIds, walkParams)
       val topPathsOption = pathsCounterOption flatMap { counter => Some(counter.infoAllNodes) }
       (visitsCounter.infoAllNodes, topPathsOption)
@@ -162,7 +164,7 @@ class GraphUtils(val graph: Graph) {
   def calculateAllPathsWalk(startNodeId: Int, dir: GraphDir, numTopPathsPerNode: Int,
                             walkLimits: Walk.Limits):
       (collection.Map[Int, Int], collection.Map[Int, Int2IntMap]) = {
-    Stats.time("%s_total".format("AllPathsWalk")) {
+    statsReceiver.time("%s_total".format("AllPathsWalk")) {
       val (visitsCounter, prevNbrCounter) = allPathsWalk(dir, startNodeId,
         numTopPathsPerNode, walkLimits)
       (visitsCounter.infoAllNodes, prevNbrCounter.infoAllNodes)

@@ -18,7 +18,7 @@ import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.graph.node._
 import com.twitter.cassovary.util.BoundedFuturePool
 import com.twitter.logging.Logger
-import com.twitter.ostrich.stats.Stats
+import com.twitter.finagle.stats.DefaultStatsReceiver
 import com.twitter.util.{Await, FuturePool, Future}
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable
@@ -70,6 +70,7 @@ object ArrayBasedDirectedGraph {
     storedGraphDir: StoredGraphDir
   ) {
     private lazy val log = Logger.get()
+    private val statsReceiver = DefaultStatsReceiver
 
     private val futurePool = new BoundedFuturePool(FuturePool.unboundedPool, parallelismLimit)
 
@@ -115,7 +116,7 @@ object ArrayBasedDirectedGraph {
       var maxNodeId = 0
       var nodeWithOutEdgesMaxId = 0
 
-      val outEdges: Future[Seq[NodesMaxIds]] = Stats.timeFutureMillis(
+      val outEdges: Future[Seq[NodesMaxIds]] = statsReceiver.time(
         "graph_dump_load_partial_nodes_and_out_edges_parallel") {
         Future.collect(iteratorSeq.map(i => readOutEdges(i, storedGraphDir)))
       }
@@ -136,7 +137,7 @@ object ArrayBasedDirectedGraph {
      */
     private def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId], storedGraphDir: StoredGraphDir):
     Future[NodesMaxIds] = futurePool {
-      Stats.time("graph_load_read_out_edge_from_dump_files") {
+      statsReceiver.time("graph_load_read_out_edge_from_dump_files") {
         val nodes = new mutable.ArrayBuffer[Node]
         var newMaxId = 0
         var varNodeWithOutEdgesMaxId = 0
@@ -168,7 +169,7 @@ object ArrayBasedDirectedGraph {
       val table = new Array[Node](maxNodeId + 1)
       val nodeIdSet = new Array[Byte](maxNodeId + 1)
       log.debug("mark the ids of all stored nodes in nodeIdSet")
-      Stats.timeFutureMillis("graph_load_mark_ids_of_stored_nodes") {
+      statsReceiver.time("graph_load_mark_ids_of_stored_nodes") {
         Future.join(
           nodesOutEdges.map(n =>
             futurePool {
@@ -219,7 +220,7 @@ object ArrayBasedDirectedGraph {
       var numEdges = 0L
       var numNodes = 0
       log.debug("creating nodes that have only in-coming edges")
-      Stats.time("graph_load_creating_nodes_without_out_edges") {
+      statsReceiver.time("graph_load_creating_nodes_without_out_edges") {
         for (id <- 0 to maxNodeId) {
           if (nodeIdSet(id) == 1) {
             numNodes += 1
@@ -255,7 +256,7 @@ object ArrayBasedDirectedGraph {
 
       def instantiateInEdges(inEdgesSizes: Array[AtomicInteger]): Future[Unit] = {
         log.debug("instantiate in edges")
-        Stats.timeFutureMillis("graph_load_instantiate_in_edge_arrays") {
+        statsReceiver.time("graph_load_instantiate_in_edge_arrays") {
           val futures = (nodesOutEdges.iterator ++ Iterator(nodesWithNoOutEdges)).map {
             (nodes: Seq[Node]) => futurePool {
               nodes foreach { node =>
@@ -276,7 +277,7 @@ object ArrayBasedDirectedGraph {
 
       def populateInEdges(inEdgesSizes: Array[AtomicInteger]): Future[Unit] = {
         log.debug("populate in edges")
-        Stats.timeFutureMillis("graph_load_read_in_edge_from_dump_files") {
+        statsReceiver.time("graph_load_read_in_edge_from_dump_files") {
           val futures = nodesOutEdges.map {
             (nodes: Seq[Node]) => futurePool {
               nodes foreach { node =>
@@ -306,7 +307,7 @@ object ArrayBasedDirectedGraph {
      */
     private def findInEdgesSizes(nodesOutEdges: Seq[Seq[Node]],
                                  nodeIdSet: Array[Byte], maxNodeId: Int): Future[Array[AtomicInteger]] = {
-      Stats.time("graph_load_find_in_edge_sizes") {
+      statsReceiver.time("graph_load_find_in_edge_sizes") {
         val atomicIntArray = Array.tabulate[AtomicInteger](maxNodeId + 1) {
           i => if (nodeIdSet(i) == 1) new AtomicInteger() else null
         }

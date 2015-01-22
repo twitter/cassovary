@@ -24,10 +24,11 @@ object Cassovary extends Build {
       fastUtilsDependency % "provided",
       "org.mockito" % "mockito-all" % "1.8.5" % "test",
       util("core"),
-      "com.twitter" %% "ostrich" % "9.1.0",
       util("logging"),
       "org.scalatest" %% "scalatest" % "1.9.2" % "test",
-      "junit" % "junit" % "4.10" % "test"
+      "junit" % "junit" % "4.10" % "test",
+      "com.twitter" %% "finagle-stats" % "6.20.0",
+      "com.twitter" %% "twitter-server" % "1.9.0"
     ),
     resolvers += "twitter repo" at "http://maven.twttr.com",
 
@@ -124,8 +125,7 @@ object Cassovary extends Build {
       name := "cassovary-server",
       libraryDependencies ++= Seq(
         fastUtilsDependency,
-        "com.twitter" %% "finagle-http" % "6.20.0",
-        "com.twitter" %% "finagle-ostrich4" % "6.20.0"
+        "com.twitter" %% "finagle-http" % "6.20.0"
       )
   ).dependsOn(cassovaryCore)
 
