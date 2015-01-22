@@ -17,8 +17,8 @@ import com.google.common.annotations.VisibleForTesting
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.graph.node._
 import com.twitter.cassovary.util.BoundedFuturePool
-import com.twitter.logging.Logger
 import com.twitter.finagle.stats.DefaultStatsReceiver
+import com.twitter.logging.Logger
 import com.twitter.util.{Await, FuturePool, Future}
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable

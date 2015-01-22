@@ -18,8 +18,8 @@ import com.google.common.util.concurrent.MoreExecutors
 import com.twitter.cassovary.graph.node._
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.ExecutorUtils
-import com.twitter.logging.Logger
 import com.twitter.finagle.stats.DefaultStatsReceiver
+import com.twitter.logging.Logger
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import java.util.concurrent.{ExecutorService, Future}
 

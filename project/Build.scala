@@ -27,8 +27,7 @@ object Cassovary extends Build {
       util("logging"),
       "org.scalatest" %% "scalatest" % "1.9.2" % "test",
       "junit" % "junit" % "4.10" % "test",
-      "com.twitter" %% "finagle-stats" % "6.20.0",
-      "com.twitter" %% "twitter-server" % "1.9.0"
+      "com.twitter" %% "finagle-stats" % "6.24.0"
     ),
     resolvers += "twitter repo" at "http://maven.twttr.com",
 
@@ -125,7 +124,8 @@ object Cassovary extends Build {
       name := "cassovary-server",
       libraryDependencies ++= Seq(
         fastUtilsDependency,
-        "com.twitter" %% "finagle-http" % "6.20.0"
+        "com.twitter" %% "finagle-http" % "6.24.0",
+        "com.twitter" %% "twitter-server" % "1.9.0"
       )
   ).dependsOn(cassovaryCore)
 

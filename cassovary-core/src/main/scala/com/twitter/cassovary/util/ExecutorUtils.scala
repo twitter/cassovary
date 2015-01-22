@@ -15,8 +15,8 @@ package com.twitter.cassovary.util
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.twitter.concurrent.AsyncSemaphore
-import com.twitter.util.{Future, FuturePool, Duration}
 import com.twitter.finagle.stats.DefaultStatsReceiver
+import com.twitter.util.{Future, FuturePool, Duration}
 import java.util.ArrayList
 import java.util.concurrent.{Future => JFuture, _}
 import java.util.{List => JList}
