@@ -16,11 +16,11 @@ package com.twitter.cassovary.util
 import org.junit.runner.RunWith
 import org.scalatest.WordSpec
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.matchers.{ClassicMatchers, ShouldMatchers}
+import org.scalatest.matchers.{ShouldMatchers}
 
 
 @RunWith(classOf[JUnitRunner])
-class SequentialNodeNumbererSpec extends WordSpec with ShouldMatchers with ClassicMatchers {
+class SequentialNodeNumbererSpec extends WordSpec with ShouldMatchers {
   "SequentialNodeNumberer" when {
     "numbering Longs" should {
       "use consecutive numbers" in {

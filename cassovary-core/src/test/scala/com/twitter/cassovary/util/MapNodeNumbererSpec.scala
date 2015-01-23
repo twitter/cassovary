@@ -17,10 +17,10 @@ package com.twitter.cassovary.util
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.WordSpec
-import org.scalatest.matchers.{ClassicMatchers, ShouldMatchers}
+import org.scalatest.matchers.{ShouldMatchers}
 
 @RunWith(classOf[JUnitRunner])
-class MapNodeNumbererSpec extends WordSpec with ShouldMatchers with ClassicMatchers {
+class MapNodeNumbererSpec extends WordSpec with ShouldMatchers {
   val directory = "cassovary-core/src/test/resources/nodeNumberers/"
 
   "Map node numberer" should {

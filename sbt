@@ -6,7 +6,7 @@ root=$(
 )
 
 sbtjar=sbt-launch.jar
-sbtver=0.13.1
+sbtver=0.13.7
 
 if [ ! -f $sbtjar ]; then
   echo "downloading $sbtjar" 1>&2
@@ -15,7 +15,7 @@ fi
 
 test -f $sbtjar || exit 1
 sbtjar_md5=$(openssl md5 < $sbtjar|cut -f2 -d'='|awk '{print $1}')
-if [ "${sbtjar_md5}" != 79e367c11fc2294f865c6ecc47b8886c ]; then
+if [ "${sbtjar_md5}" != 7341059aa30c953021d6af41c89d2cac ]; then
   echo 'bad sbtjar!' 1>&2
   exit 1
 fi
@@ -32,7 +32,6 @@ java -ea                          \
   -XX:+UseConcMarkSweepGC         \
   -XX:+CMSParallelRemarkEnabled   \
   -XX:+CMSClassUnloadingEnabled   \
-  -XX:MaxPermSize=1024m           \
   -XX:SurvivorRatio=128           \
   -XX:MaxTenuringThreshold=0      \
   -XX:ReservedCodeCacheSize=128m  \
