@@ -66,7 +66,7 @@ object TestGraphs {
     NodeIdEdgesMaxId(10, Array(11, 12)),
     NodeIdEdgesMaxId(11, Array(12)),
     NodeIdEdgesMaxId(12, Array(11))
-    ), StoredGraphDir.BothInOut)
+    ), StoredGraphDir.BothInOut, NeighborsSortingStrategy.LeaveUnsorted)
 
   def g5 = ArrayBasedDirectedGraph(Seq(
     NodeIdEdgesMaxId(10, Array(11, 12, 13)),
@@ -74,7 +74,7 @@ object TestGraphs {
     NodeIdEdgesMaxId(12, Array(11)),
     NodeIdEdgesMaxId(13, Array(14)),
     NodeIdEdgesMaxId(14, Array())
-    ), StoredGraphDir.BothInOut)
+    ), StoredGraphDir.BothInOut, NeighborsSortingStrategy.LeaveUnsorted)
 
   val nodeSeqIterator = Seq(
       NodeIdEdgesMaxId(10, Array(11, 12, 13)),
@@ -91,11 +91,15 @@ object TestGraphs {
   ) ++ nodeSeqIterator
 
   // using testGraph becomes onerous for non-trivial graphs
-  def g6 = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.BothInOut)
+  def g6 = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.BothInOut,
+    NeighborsSortingStrategy.LeaveUnsorted)
 
-  def g6_onlyout = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.OnlyOut)
-  def g6_onlyin = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.OnlyIn)
-  def g6WithEmptyNodes = ArrayBasedDirectedGraph(nodeSeqIteratorWithEmpty, StoredGraphDir.BothInOut)
+  def g6_onlyout = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.OnlyOut,
+    NeighborsSortingStrategy.LeaveUnsorted)
+  def g6_onlyin = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.OnlyIn,
+    NeighborsSortingStrategy.LeaveUnsorted)
+  def g6WithEmptyNodes = ArrayBasedDirectedGraph(nodeSeqIteratorWithEmpty, StoredGraphDir.BothInOut,
+    NeighborsSortingStrategy.LeaveUnsorted)
 
   val nodeSeqIterator2 = Seq(
       NodeIdEdgesMaxId(10, Array(11, 12, 13)),
@@ -106,8 +110,10 @@ object TestGraphs {
       NodeIdEdgesMaxId(15, Array(10, 11, 16)),
       NodeIdEdgesMaxId(16, Array(15))
       )
-  def g7_onlyout = ArrayBasedDirectedGraph(nodeSeqIterator2, StoredGraphDir.OnlyOut)
-  def g7_onlyin = ArrayBasedDirectedGraph(nodeSeqIterator2, StoredGraphDir.OnlyIn)
+  def g7_onlyout = ArrayBasedDirectedGraph(nodeSeqIterator2, StoredGraphDir.OnlyOut,
+    NeighborsSortingStrategy.LeaveUnsorted)
+  def g7_onlyin = ArrayBasedDirectedGraph(nodeSeqIterator2, StoredGraphDir.OnlyIn,
+    NeighborsSortingStrategy.LeaveUnsorted)
 
   // a complete graph is where each node follows every other node
   def generateCompleteGraph(numNodes: Int) = {
@@ -151,7 +157,8 @@ object TestGraphs {
       val edgesFromSource = positiveBits map (x => if (x < source) x else x + 1)
       nodes(source) = NodeIdEdgesMaxId(source, edgesFromSource)
     }
-    ArrayBasedDirectedGraph(nodes, graphDir)
+    ArrayBasedDirectedGraph(nodes, graphDir,
+      NeighborsSortingStrategy.LeaveUnsorted)
   }
 
   /**
@@ -185,6 +192,7 @@ object TestGraphs {
     val nodesEdges = nodes.indices map { i =>
       NodeIdEdgesMaxId(i, nodes(i).asScala.toArray)
     }
-    ArrayBasedDirectedGraph(nodesEdges, graphDir)
+    ArrayBasedDirectedGraph(nodesEdges, graphDir,
+      NeighborsSortingStrategy.LeaveUnsorted)
   }
 }

@@ -13,36 +13,65 @@
  */
 package com.twitter.cassovary.graph.node
 
-import com.twitter.cassovary.graph.Node
+import com.twitter.cassovary.graph.{Node, SeqBasedNode, SortedNeighborsNodeOps}
 import com.twitter.cassovary.util.SharedArraySeq
+import scala.collection.mutable
 
 /**
  * Nodes in the graph that store both directions and
  * whose inEdges (and only inEdges) can be mutated after initialization
  */
-abstract class BiDirectionalNode private[graph] (val id: Int) extends Node {
-  var inEdges: Array[Int] = BiDirectionalNode.noNodes
-  def inboundNodes = inEdges
+trait BiDirectionalNode extends Node
+
+case class FillingInEdgesBiDirectionalNode(id: Int, inEdgeSize: Int,
+                                           outboundNodes: Seq[Int])
+  extends BiDirectionalNode {
+
+  def this(node: Node, inEdgesSize: Int) =
+    this(node.id, inEdgesSize, node.outboundNodes())
+
+  val inEdges: mutable.Seq[Int] = new Array[Int](inEdgeSize)
+
+  override def inboundNodes(): Seq[Int] = inEdges
+
+  /**
+   * Finishes filling incoming edges of this node.
+   *
+   * Sorts them if `sortNeighbors` is true.
+   */
+  def finishingFilling(sortNeighbors: Boolean): BiDirectionalNode = {
+    if (sortNeighbors) {
+      BiDirectionalNode(id, inEdges.sorted, outboundNodes, true)
+    } else {
+      BiDirectionalNode(id, inEdges, outboundNodes)
+    }
+  }
 }
 
 object BiDirectionalNode {
-  val noNodes = Array.empty[Int]
+  val noEdges = Array[Int]()
 
-  def apply(nodeId: Int, neighbors: Array[Int]) = {
-    new BiDirectionalNode(nodeId) {
-      def outboundNodes = neighbors
+  def apply(nodeId: Int, out: Seq[Int], sortedNeighbors: Boolean): BiDirectionalNode = {
+    BiDirectionalNode(nodeId, noEdges, out, sortedNeighbors)
+  }
+
+  def apply(nodeId: Int, in: Seq[Int], out: Seq[Int], sortedNeighbors: Boolean = false): BiDirectionalNode = {
+    if (sortedNeighbors) {
+      new SeqBasedNode(nodeId, in, out) with BiDirectionalNode with SortedNeighborsNodeOps
+    } else {
+      new SeqBasedNode(nodeId, in, out) with BiDirectionalNode
     }
   }
 }
 
 object SharedArrayBasedBiDirectionalNode {
-
   def apply(nodeId: Int, edgeArrOffset: Int, edgeArrLen: Int, sharedArray: Array[Array[Int]],
       reverseDirEdgeArray: Array[Int]) = {
     new Node {
       val id = nodeId
-      def outboundNodes = new SharedArraySeq(nodeId, sharedArray, edgeArrOffset, edgeArrLen)
-      def inboundNodes = reverseDirEdgeArray
+      def outboundNodes() = new SharedArraySeq(nodeId, sharedArray, edgeArrOffset, edgeArrLen)
+      def inboundNodes() = reverseDirEdgeArray
     }
   }
 }
+

@@ -19,7 +19,7 @@ import scala.util.Random
  *   Represents a node in a directed graph.
  */
 trait Node {
-  import GraphDir._
+  import com.twitter.cassovary.graph.GraphDir._
 
   /**
    * The unique id of this node.
@@ -215,6 +215,17 @@ trait Node {
   }
 
   /**
+   * @return Intersection of `dir` neighbors with `nodeIds`.
+   */
+  def intersect(dir: GraphDir, nodeIds: Seq[Int]): Seq[Int] = {
+    intersect(neighborIds(dir), nodeIds)
+  }
+
+  protected def intersect(neighbors: Seq[Int], nodeIds: Seq[Int]): Seq[Int] = {
+    neighbors.intersect(nodeIds)
+  }
+
+  /**
    * the neighbor count in the allowing direction `dir`
    * @param dir the direction (inbound or outbound) that the method is applied to.
    * @return the number of neighbors in the direction of `dir`.
@@ -273,9 +284,18 @@ trait Node {
 
 object Node {
   private lazy val randGen: Random = new Random
-  def apply(nodeId: Int, out: Seq[Int], in: Seq[Int]) = new Node {
-    val id = nodeId
-    def inboundNodes() = in
-    def outboundNodes() = out
+
+  def apply(nodeId: Int, in: Seq[Int], out: Seq[Int]): Node = {
+    new SeqBasedNode(nodeId, in, out)
+  }
+
+  def withSortedNeighbors(nodeId: Int, in: Array[Int], out: Array[Int]) = {
+    new SeqBasedNode(nodeId, in, out) with SortedNeighborsNodeOps
   }
 }
+
+/**
+ * Constructor for a default node with neighbors stored as Seqs.
+ */
+class SeqBasedNode private[graph] (val id: Int, val inboundNodes: Seq[Int], val outboundNodes: Seq[Int])
+  extends Node
