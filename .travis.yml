@@ -1,4 +1,14 @@
 language: scala
 sudo: false
+
 scala:
-  - 2.11.4
+  - 2.10.4
+  - 2.11.5
+
+jdk:
+  - openjdk7
+  - oraclejdk7
+  - oraclejdk8
+
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION test

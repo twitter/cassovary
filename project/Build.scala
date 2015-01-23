@@ -17,7 +17,8 @@ object Cassovary extends Build {
   val sharedSettings = Seq(
     version := "4.0.0",
     organization := "com.twitter",
-    scalaVersion := "2.11.4",
+    scalaVersion := "2.11.5",
+    crossScalaVersions := Seq("2.10.4", "2.11.5"),
     retrieveManaged := true,
     libraryDependencies ++= Seq(
       "com.google.guava" % "guava" % "16.0.1",
@@ -34,9 +35,6 @@ object Cassovary extends Build {
 
     scalacOptions ++= Seq("-encoding", "utf8"),
     scalacOptions += "-deprecation",
-
-    javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
-    javacOptions in doc := Seq("-source", "1.6"),
 
     fork in run := true,
     javaOptions in run ++= Seq("-server"),
