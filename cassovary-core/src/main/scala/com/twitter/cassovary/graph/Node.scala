@@ -32,35 +32,35 @@ trait Node {
   def inboundNodes(): Seq[Int]
 
   /**
-   * Returns up to {@code max} nodes that this node points to.
+   * Returns up to `max` nodes that this node points to.
    * @param max the max number of nodes it needs
    * @return a sequence of inboundNode ids
    */
   def inboundNodes(max: Int): Seq[Int] = inboundNodes.take(max)
 
   /**
-   * Returns a random node from the set of nodes that points to this node or else {@code None} if
+   * Returns a random node from the set of nodes that points to this node or else `None` if
    * this node has no inbound edges.
    *
-   * <p>The default implementation picks a random node from {@link #inboundNodes} so subclasses
-   * should consider overriding this method if the {@link Seq sequence} they produce is not
-   * a lazy {@link RandomAccessSeq}.
+   * The default implementation picks a random node from [[inboundNodes]] so subclasses
+   * should consider overriding this method if the [[Seq]] sequence they produce is not
+   * a [[IndexedSeq]].
    *
    * @return a sequence of random node ids
    */
   def randomInboundNode: Option[Int] = randomInboundNode(Node.randGen)
 
   /**
-   * Returns a random node from the set of nodes that points to this node or else {@code None} if
-   * this node has no inbound edges, using the supplied random number generator {@code rnd}.
+   * Returns a random node from the set of nodes that points to this node or else `None` if
+   * this node has no inbound edges, using the supplied random number generator `rnd`.
    * @param rnd user defined random number generator
    * @return a random node id
    */
   def randomInboundNode(rnd: Random) = randomNode(inboundNodes, rnd)
 
   /**
-   * Returns a random sample of size at most {@code numResults} from the set of nodes
-   * that point to this node using the supplied random number generator {@code rnd}.
+   * Returns a random sample of size at most `numResults` from the set of nodes
+   * that point to this node using the supplied random number generator `rnd`.
    * @param numResults max number of random nodes needed
    * @param rnd user defined random number generator
    * @return a set of random node id
@@ -69,7 +69,7 @@ trait Node {
     randomNodeSet(inboundNodes, numResults, rnd)
 
   /**
-   * Returns {@code true} if the given {@code nodeId} points to this node.
+   * Returns `true` if the given `nodeId` points to this node.
    * @param nodeId host node id
    * @return a set of random node id
    */
@@ -87,33 +87,33 @@ trait Node {
 
   /**
    * @param max the maximum number of outBound nodes needed.
-   * @return up to {@code max} nodes that this node points to.
+   * @return up to `max` nodes that this node points to.
    */
   def outboundNodes(max: Int): Seq[Int] = outboundNodes.take(max)
 
   /**
-   * Returns a random node from the set of nodes that this node points to or else {@code None} if
+   * Returns a random node from the set of nodes that this node points to or else `None` if
    * this node has no outbound edges.
    *
-   * <p>The default implementation picks a random node from {@link #outboundNodes} so subclasses
-   * should consider overriding this method if the {@link Seq sequence} they produce is not
-   * a lazy {@link RandomAccessSeq}.
+   * The default implementation picks a random node from [[outboundNodes]] so subclasses
+   * should consider overriding this method if the [[Seq]] sequence they produce is not
+   * a lazy [[IndexedSeq]].
    *
    * @return a random node that this node points to.
    */
   def randomOutboundNode: Option[Int] = randomOutboundNode(Node.randGen)
 
   /**
-   * Returns a random node from the set of nodes that this node points to or else {@code None} if
-   * this node has no outbound edges, using the supplied random number generator {@code rnd}.
+   * Returns a random node from the set of nodes that this node points to or else `None` if
+   * this node has no outbound edges, using the supplied random number generator `rnd`.
    * @param rnd a user defined random number generator.
    * @return a random node that this node points to.
    */
   def randomOutboundNode(rnd: Random) = randomNode(outboundNodes, rnd)
 
   /**
-   * Returns a random sample of size at most {@code numResults} from the set of nodes
-   * that this node points to using the supplied random number generator {@code rnd}.
+   * Returns a random sample of size at most `numResults` from the set of nodes
+   * that this node points to using the supplied random number generator `rnd`.
    * @param rnd a user defined random number generator.
    * @return a set of random nodes that this node points to.
    */
@@ -121,9 +121,9 @@ trait Node {
       randomNodeSet(outboundNodes, numResults, rnd)
 
   /**
-   * Returns {@code true} if the this node point to the given {@code node}.
+   * Returns `true` if the this node point to the given `node`.
    * @param nodeId home node id
-   * @return a boolean indicating whether outbound nodes contains {@code nodeId}.
+   * @return a boolean indicating whether outbound nodes contains `nodeId`.
    */
   def isOutboundNode(nodeId: Int): Boolean = containsNode(outboundNodes, nodeId)
 
@@ -133,9 +133,9 @@ trait Node {
   def outboundCount: Int = outboundNodes.size
 
   /**
-   * A method that return seither inbound or outbound allowing direction {@code dir}.
+   * A method that return either inbound or outbound allowing direction `dir`.
    * @param dir the direction (inbound or outbound) that the method is applied to.
-   * @return a sequence of inbound or outbound neighors.
+   * @return a sequence of inbound or outbound neighbors.
    */
   def neighborIds(dir: GraphDir): Seq[Int] = {
     dir match {
@@ -145,27 +145,27 @@ trait Node {
   }
 
   /**
-   * A method that returns {@code max} nodes of either inbound or outbound
-   * allowing direction {@code dir}.
+   * A method that returns `max` nodes of either inbound or outbound
+   * allowing direction `dir`.
    * @param dir the direction (inbound or outbound) that the method is applied to.
    * @param max the maximum number of neighbors needed.
-   * @return a sequence of inbound or outbound neighors.
+   * @return a sequence of inbound or outbound neighbors.
    */
   def neighborIds(dir: GraphDir, max: Int): Seq[Int] = neighborIds(dir).take(max)
 
   /**
-   * A method that returns a random node in the allowing direction {@code dir}.
+   * A method that returns a random node in the allowing direction `dir`.
    * @param dir the direction (inbound or outbound) that the method is applied to.
-   * @return a random neighbor or {@code None} if no neighbor is in the direction {@code dir}.
+   * @return a random neighbor or `None` if no neighbor is in the direction `dir`.
    */
   def randomNeighbor(dir: GraphDir): Option[Int] = randomNeighbor(dir, Node.randGen)
 
   /**
-   * A method that returns a random node in the allowing direction {@code dir},
-   * using the supplied random number generator {@code rnd}.
+   * A method that returns a random node in the allowing direction `dir`,
+   * using the supplied random number generator `rnd`.
    * @param dir the direction (inbound or outbound) that the method is applied to.
    * @param rnd a user defined random number generator.
-   * @return a random neighbor or {@code None} if no neighbor is in the direction {@code dir}.
+   * @return a random neighbor or `None` if no neighbor is in the direction `dir`.
    */
   def randomNeighbor(dir: GraphDir, rnd: Random): Option[Int] = {
     dir match {
@@ -175,8 +175,8 @@ trait Node {
   }
 
   /**
-   * A method that returns a random node of size {@code numResults} in the allowing direction {@code dir},
-   * using the supplied random number generator {@code rnd}.
+   * A method that returns a random node of size `numResults` in the allowing direction `dir`,
+   * using the supplied random number generator `rnd`.
    * @param numResults maximum number of neighbors needed.
    * @param dir the direction (inbound or outbound) that the method is applied to.
    * @return a set of random neighbors.
@@ -186,9 +186,9 @@ trait Node {
 
 
   /**
-   * A method that returns a set of either inbound or outbound nodes of size {@code numResults},
-   * in the allowing direction {@code dir}, using the supplied random number
-   * generator {@code rnd}.
+   * A method that returns a set of either inbound or outbound nodes of size `numResults`,
+   * in the allowing direction `dir`, using the supplied random number
+   * generator `rnd`.
    * @param numResults maximum number of neighbors needed.
    * @param dir the direction (inbound or outbound) that the method is applied to.
    * @param rnd a user defined random number generator.
@@ -202,10 +202,10 @@ trait Node {
   }
 
   /**
-   * whether {@code nodeId} is a neighbor in the allowing direction {@code dir}
+   * whether `nodeId` is a neighbor in the allowing direction `dir`
    * @param dir the direction (inbound or outbound) that the method is applied to.
    * @param nodeId the target node id.
-   * @return a boolean indicating whether {@code nodeId} is in the home node's neighbors.
+   * @return a boolean indicating whether `nodeId` is in the home node's neighbors.
    */
   def isNeighbor(dir: GraphDir, nodeId: Int): Boolean = {
     dir match {
@@ -215,9 +215,9 @@ trait Node {
   }
 
   /**
-   * the neighbor count in the allowing direction {@code dir}
+   * the neighbor count in the allowing direction `dir`
    * @param dir the direction (inbound or outbound) that the method is applied to.
-   * @return the number of neighbors in the direction of {@code dir}.
+   * @return the number of neighbors in the direction of `dir`.
    */
   def neighborCount(dir: GraphDir): Int = {
     dir match {
@@ -229,7 +229,7 @@ trait Node {
   /**
    * The default implementation just walks the array but users likely want to override to provide a
    * more optimized implementation.
-   * @return a boolean indicating Whether {@code nodeIds} contains {@code queryNodeId}.
+   * @return a boolean indicating Whether `nodeIds` contains `queryNodeId`.
    */
   protected def containsNode(nodeIds: Seq[Int], queryNodeId: Int): Boolean = {
     nodeIds.contains(queryNodeId)
@@ -237,7 +237,7 @@ trait Node {
 
   /**
    * @param rnd a user defined random number generator.
-   * @return a random node from {@code nodeIds} using a supplied random number generator {@code rnd}.
+   * @return a random node from `nodeIds` using a supplied random number generator `rnd`.
    */
   protected def randomNode(nodeIds: Seq[Int], rnd: Random): Option[Int] = {
     if (nodeIds.isEmpty) {
@@ -248,11 +248,11 @@ trait Node {
   }
 
   /**
-   * Random sampling with replacement.  Choose a set of random nodes of size {@code numresults}
-   * from {@code nodeIds} using a supplied random number generator {@code rnd}.
+   * Random sampling with replacement.  Choose a set of random nodes of size `numResults`
+   * from `nodeIds` using a supplied random number generator `rnd`.
    * @param numResults maximum number of nodes needed.
    * @param rnd a user defined random number generator.
-   * @return a random node from {@code nodeIds} using a supplied random number generator {@code rnd}.
+   * @return a random node from `nodeIds` using a supplied random number generator `rnd`.
    */
   protected def randomNodeSet(nodeIds: Seq[Int], numResults: Int, rnd: Random) = {
     val arraySize = if (nodeIds.isEmpty) {0} else {numResults}
