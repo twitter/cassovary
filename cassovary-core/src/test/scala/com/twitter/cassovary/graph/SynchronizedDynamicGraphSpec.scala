@@ -14,13 +14,12 @@
 package com.twitter.cassovary.graph
 
 import java.util.concurrent.Executors
-import org.scalatest.WordSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{Matchers, WordSpec}
 import StoredGraphDir._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 
-class SynchronizedDynamicGraphSpec extends WordSpec with ShouldMatchers {
+class SynchronizedDynamicGraphSpec extends WordSpec with Matchers {
   implicit val ecctxt = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(4))
 
   "Add new nodes" in {

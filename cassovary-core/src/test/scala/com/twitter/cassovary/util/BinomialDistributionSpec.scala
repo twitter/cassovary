@@ -15,12 +15,11 @@ package com.twitter.cassovary.util
 
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.{PrivateMethodTester, WordSpec}
+import org.scalatest.{Matchers, PrivateMethodTester, WordSpec}
 import scala.util.Random
 
 @RunWith(classOf[JUnitRunner])
-class BinomialDistributionSpec extends WordSpec with ShouldMatchers with PrivateMethodTester {
+class BinomialDistributionSpec extends WordSpec with Matchers with PrivateMethodTester {
   val twoPoint = new BinomialDistribution(1, 0.3)
 
   val twoTrials = new BinomialDistribution(2, 0.8)
@@ -45,12 +44,12 @@ class BinomialDistributionSpec extends WordSpec with ShouldMatchers with Private
   "binomial distribution with 2 trials" should {
     val expected = Array(0.2 * 0.2, 2 * 0.2 * 0.8, 0.8 * 0.8)
     "have correct pdf" in {
-      (twoTrials invokePrivate pdf()).zip(expected).foreach{case (x, y) => x should be (y plusOrMinus 0.001)}
+      (twoTrials invokePrivate pdf()).zip(expected).foreach{case (x, y) => x should be (y +- 0.001)}
     }
 
     "have correct cdf" in {
       val expected = Array(0.2 * 0.2, 0.2 * 0.2 + 2 * 0.2 * 0.8)
-      (twoTrials invokePrivate cdf()).zip(expected).foreach{case (x, y) => x should be (y plusOrMinus 0.001)}
+      (twoTrials invokePrivate cdf()).zip(expected).foreach{case (x, y) => x should be (y +- 0.001)}
     }
   }
 
@@ -80,7 +79,7 @@ class BinomialDistributionSpec extends WordSpec with ShouldMatchers with Private
     }
 
     "have pdf that sums up to 1" in {
-      (distribution10 invokePrivate pdf()).sum should be (1.0 plusOrMinus 0.005)
+      (distribution10 invokePrivate pdf()).sum should be (1.0 +- 0.005)
     }
 
     "have increasing cdf" in {
@@ -100,7 +99,7 @@ class BinomialDistributionSpec extends WordSpec with ShouldMatchers with Private
         val error = (distribution10 invokePrivate pdf())(i) - histogram.getOrElse(i, 0.0)
         mse += error * error
       }
-      mse should be (0.0 plusOrMinus 0.01) // checked experimentally to be true with high probability
+      mse should be (0.0 +- 0.01) // checked experimentally to be true with high probability
     }
   }
 }

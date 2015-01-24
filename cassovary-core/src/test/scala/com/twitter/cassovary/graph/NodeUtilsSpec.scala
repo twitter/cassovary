@@ -14,10 +14,9 @@
 package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.GraphDir._
-import org.scalatest.WordSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{Matchers, WordSpec}
 
-class NodeUtilsSpec extends WordSpec with ShouldMatchers  {
+class NodeUtilsSpec extends WordSpec with Matchers  {
 
   def fixture = TestNode(100, List(1,2,3), List(60, 70))
 

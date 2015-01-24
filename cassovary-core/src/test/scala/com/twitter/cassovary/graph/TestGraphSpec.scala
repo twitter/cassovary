@@ -13,12 +13,11 @@
 
 package com.twitter.cassovary.graph
 import org.junit.runner.RunWith
-import org.scalatest.WordSpec
+import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.matchers.ShouldMatchers
 
 @RunWith(classOf[JUnitRunner])
-class TestGraphSpec extends WordSpec with ShouldMatchers with GraphBehaviours {
+class TestGraphSpec extends WordSpec with Matchers with GraphBehaviours {
 
   "three node graph g3 stored in both directions" should {
     val graph = TestGraphs.g3

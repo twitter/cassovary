@@ -14,10 +14,10 @@
 package com.twitter.cassovary.algorithms
 
 import com.twitter.cassovary.graph.TestGraphs
-import org.scalatest.matchers._
-import org.scalatest.WordSpec
+import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.{Matcher, MatchResult}
 
-class PageRankSpec extends WordSpec with ShouldMatchers {
+class PageRankSpec extends WordSpec with Matchers {
 
   val EPSILON = 1e-6
 

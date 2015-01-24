@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.graph.node
 
-import com.twitter.cassovary.graph.{Node, StoredGraphDir}
+import com.twitter.cassovary.graph.StoredGraphDir
 
 class SharedArrayBasedDirectedNodeSpec extends NodeBehaviors {
   val sharedArray = Array[Array[Int]](neighbors)

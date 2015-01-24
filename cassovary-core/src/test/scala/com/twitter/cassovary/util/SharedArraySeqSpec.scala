@@ -13,10 +13,9 @@
  */
 package com.twitter.cassovary.util
 
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.WordSpec
+import org.scalatest.{Matchers, WordSpec}
 
-class SharedArraySeqSpec extends WordSpec with ShouldMatchers {
+class SharedArraySeqSpec extends WordSpec with Matchers {
   val arr1 = Array(1,2,3)
   val arr2 = Array(4,5)
 
@@ -27,15 +26,15 @@ class SharedArraySeqSpec extends WordSpec with ShouldMatchers {
       "construct seqs correctly" in {
         val seq1 = new SharedArraySeq(0, sharedArray, 0, 3)
         seq1.toList shouldEqual arr1.toList
-        (new SharedArraySeq(0, sharedArray, 1, 2)).toList shouldEqual List(2, 3)
+        new SharedArraySeq(0, sharedArray, 1, 2).toList shouldEqual List(2, 3)
         seq1(0) shouldEqual 1
         seq1(1) shouldEqual 2
         seq1(2) shouldEqual 3
-        evaluating { seq1(3) } should produce [IndexOutOfBoundsException]
+        an [IndexOutOfBoundsException] should be thrownBy { seq1(3) }
       }
 
       "implement foreach correctly" in {
-        ((new SharedArraySeq(0, sharedArray, 0, 3)) map { _ + 1 }) shouldEqual List(2, 3, 4)
+        (new SharedArraySeq(0, sharedArray, 0, 3) map { _ + 1 }) shouldEqual List(2, 3, 4)
       }
     }
 
@@ -55,15 +54,15 @@ class SharedArraySeqSpec extends WordSpec with ShouldMatchers {
         seq1(0) shouldEqual 1
         seq1(1) shouldEqual 2
         seq1(2) shouldEqual 3
-        evaluating { seq1(3) } should produce [IndexOutOfBoundsException]
+        an [IndexOutOfBoundsException] should be thrownBy { seq1(3) }
 
         seq2(0) shouldEqual 4
         seq2(1) shouldEqual 5
-        evaluating { seq2(2) } should produce [IndexOutOfBoundsException]
+        an [IndexOutOfBoundsException] should be thrownBy { seq2(2) }
       }
 
       "implement foreach correctly" in {
-        ((new SharedArraySeq(111, sharedArray, 0, 2)) map { _ + 1 }) shouldEqual List(5, 6)
+        (new SharedArraySeq(111, sharedArray, 0, 2) map { _ + 1 }) shouldEqual List(5, 6)
       }
     }
   }

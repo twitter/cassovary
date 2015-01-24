@@ -14,8 +14,7 @@
 
 package com.twitter.cassovary.graph.node
 
-import com.twitter.cassovary.graph.StoredGraphDir._
-import com.twitter.cassovary.graph.{Node, StoredGraphDir}
+import com.twitter.cassovary.graph.Node
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 object NodeTestUtils {

@@ -14,12 +14,11 @@
 package com.twitter.cassovary.graph
 
 import org.junit.runner.RunWith
-import org.scalatest.WordSpec
+import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.matchers.ShouldMatchers
 
 @RunWith(classOf[JUnitRunner])
-class DirectedGraphUtilsSpec extends WordSpec with ShouldMatchers {
+class DirectedGraphUtilsSpec extends WordSpec with Matchers {
 
   private def utils(graph: DirectedGraph) = {
     (graph, new DirectedGraphUtils(graph))

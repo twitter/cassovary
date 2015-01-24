@@ -14,13 +14,12 @@
 package com.twitter.cassovary.graph
 
 import org.mockito.Mockito._
-import org.scalatest.WordSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.mock.MockitoSugar
 
 import scala.util.Random
 
-class TraverserSpec extends WordSpec with MockitoSugar with ShouldMatchers {
+class TraverserSpec extends WordSpec with MockitoSugar with Matchers {
 
   class TestIter extends Iterator[Int] {
     var i = 0

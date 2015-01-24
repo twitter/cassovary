@@ -14,12 +14,11 @@
 package com.twitter.cassovary.graph
 
 import org.junit.runner.RunWith
-import org.scalatest.WordSpec
+import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.matchers.ShouldMatchers
 
 @RunWith(classOf[JUnitRunner])
-class DirectedGraphSpec extends WordSpec with ShouldMatchers {
+class DirectedGraphSpec extends WordSpec with Matchers {
 
   val twoNodeGraph = TestGraphs.g2_mutual
   val sixNodeGraph = TestGraphs.g6

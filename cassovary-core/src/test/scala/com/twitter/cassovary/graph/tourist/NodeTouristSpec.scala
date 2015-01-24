@@ -17,10 +17,9 @@ import com.twitter.cassovary.graph.{DirectedPath, TestNode}
 import com.twitter.cassovary.util.FastUtilUtils
 import it.unimi.dsi.fastutil.ints.Int2IntMap
 import it.unimi.dsi.fastutil.objects.Object2IntMap
-import org.scalatest.WordSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{Matchers, WordSpec}
 
-class NodeTouristSpec extends WordSpec with ShouldMatchers {
+class NodeTouristSpec extends WordSpec with Matchers {
 
   def testNode(id: Int) = TestNode(id, Nil, Nil)
 
