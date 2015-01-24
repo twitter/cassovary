@@ -35,7 +35,7 @@ Cassovary is built using [sbt](https://github.com/sbt/sbt) and was tested last u
 
 ## Using maven published version of library
 
-Cassovary is published to maven central with crosspath scala versions 2.10.x.
+Cassovary is published to maven central with crosspath scala versions 2.10.4 and 2.11.5.
 
 To use with sbt, use:
 
