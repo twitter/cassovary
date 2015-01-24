@@ -47,7 +47,7 @@ support for scala version 2.9.x has been discontinued since.
 The only dependency that Cassovary uses which is not bundled with it (because of its size)
 is ```it.unimi.dsi.fastutil```. You can add that dependency in your sbt project as follows:
 
-```libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.23.0"```
+```libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.6.0"```
 
 ## Comparison to Other Graph Libraries
 There are many excellent graph mining libraries already in existence. Most of
