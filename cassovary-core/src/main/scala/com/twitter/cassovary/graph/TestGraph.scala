@@ -15,15 +15,16 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.{Sampling, BinomialDistribution}
-import scala.collection.mutable
+import java.util.concurrent.ConcurrentLinkedQueue
+import scala.collection.mutable.HashMap
+import scala.collection.JavaConverters._
 import scala.util.Random
-import scala.collection.mutable.ArrayBuffer
 
 /**
  * A simple implementation of a DirectedGraph
  */
 case class TestGraph(nodes: Node*) extends DirectedGraph {
-  val nodeTable = new mutable.HashMap[Int, Node]
+  val nodeTable = new HashMap[Int, Node]
   nodes foreach { addNode }
 
   def nodeCount = nodeTable.size
@@ -155,8 +156,8 @@ object TestGraphs {
    */
   def generateRandomUndirectedGraph(numNodes: Int, probEdge: Double,
                                     graphDir: StoredGraphDir = StoredGraphDir.BothInOut) = {
-    val nodes = Array.fill[mutable.Buffer[Int]](numNodes){new ArrayBuffer[Int]() with mutable.SynchronizedBuffer[Int]}
-    def addMutualEdge(i: Int)(j: Int) {nodes(i) += j; nodes(j) += i}
+    val nodes = Array.fill(numNodes){new ConcurrentLinkedQueue[Int]()}
+    def addMutualEdge(i: Int)(j: Int) {nodes(i).add(j); nodes(j).add(i)}
     val rand = new Random
     val binomialDistribution = new BinomialDistribution(numNodes - 1, probEdge)
     // Sampling edges only from nodes with lower id to higher id. In order to
@@ -176,7 +177,7 @@ object TestGraphs {
           higherNodeNeighbors map (higherNode + _ + 1) foreach addMutualEdge(higherNode)
     }
     val nodesEdges = nodes.indices map { i =>
-      NodeIdEdgesMaxId(i, nodes(i).toArray)
+      NodeIdEdgesMaxId(i, nodes(i).asScala.toArray)
     }
     ArrayBasedDirectedGraph( () => nodesEdges.iterator, graphDir)
   }
