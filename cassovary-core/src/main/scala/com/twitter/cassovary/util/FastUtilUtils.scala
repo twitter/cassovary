@@ -16,7 +16,7 @@ package com.twitter.cassovary.util
 
 import java.{util => jutil}
 
-import it.unimi.dsi.fastutil.ints.{Int2BooleanOpenHashMap, Int2IntMap, Int2IntOpenHashMap}
+import it.unimi.dsi.fastutil.ints.{IntArrayList, Int2BooleanOpenHashMap, Int2IntMap, Int2IntOpenHashMap}
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 
 import scala.collection.JavaConversions._
@@ -61,4 +61,6 @@ object FastUtilUtils {
 
   def newInt2IntOpenHashMap(): mutable.Map[Int, Int] =
     new Int2IntOpenHashMap().asInstanceOf[jutil.Map[Int, Int]]
+
+  def intArrayListToSeq(list: IntArrayList): Seq[Int] = list map { _.toInt }
 }
