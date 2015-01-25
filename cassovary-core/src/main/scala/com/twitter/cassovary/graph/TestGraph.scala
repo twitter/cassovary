@@ -16,7 +16,7 @@ package com.twitter.cassovary.graph
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.{Sampling, BinomialDistribution}
 import java.util.concurrent.ConcurrentLinkedQueue
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 import scala.collection.JavaConverters._
 import scala.util.Random
 
@@ -24,7 +24,7 @@ import scala.util.Random
  * A simple implementation of a DirectedGraph
  */
 case class TestGraph(nodes: Node*) extends DirectedGraph {
-  val nodeTable = new HashMap[Int, Node]
+  val nodeTable = new mutable.HashMap[Int, Node]
   nodes foreach { addNode }
 
   def nodeCount = nodeTable.size
