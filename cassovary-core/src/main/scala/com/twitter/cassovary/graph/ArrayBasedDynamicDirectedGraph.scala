@@ -26,6 +26,8 @@ class ArrayBasedDynamicDirectedGraph(override val storedGraphDir: StoredGraphDir
   // (See above note on outboundLists)
   private val inboundLists = new ArrayBuffer[IntArrayList]
 
+  private var nodeCount_ = 0
+
   def this(dataIterator: Iterator[NodeIdEdgesMaxId],
             storedGraphDir: StoredGraphDir) {
     this(storedGraphDir)
@@ -127,7 +129,8 @@ class ArrayBasedDynamicDirectedGraph(override val storedGraphDir: StoredGraphDir
   /**
    * Returns the number of nodes in the graph.
    */
-  override def nodeCount: Int = (0 until maxIdBound) count nodeExists
+  override def nodeCount: Int = nodeCount_
+  // Or this can be computed as (0 until maxIdBound) count nodeExists
 
   /**
    * Remove an edge from a {@code srdId} to {@code destId}.
@@ -177,10 +180,11 @@ class ArrayBasedDynamicDirectedGraph(override val storedGraphDir: StoredGraphDir
       if (list.size <= id) {
         list.appendAll(Array.fill(id - list.size + 1 )(null))
       }
-      list(id) = new IntArrayList(ArrayBasedDynamicDirectedGraph.INITIAL_NEIGHBOR_CAPACITY)
+      list(id) = new IntArrayList(initialNeighborListCapacity)
     }
 
     if (!nodeExists(id)) {
+      nodeCount_ += 1
       if (StoredGraphDir.isOutDirStored(storedGraphDir)) {
         addIdToList(outboundLists)
       }
@@ -194,9 +198,9 @@ class ArrayBasedDynamicDirectedGraph(override val storedGraphDir: StoredGraphDir
   
   
   private def maxIdBound: Int = math.max(outboundLists.size,
-                                            inboundLists.size)
-}
+                                         inboundLists.size)
 
-object ArrayBasedDynamicDirectedGraph {
-  val INITIAL_NEIGHBOR_CAPACITY = 4 // The initial capacity of out or in neighbor lists
+  // This can be overridden if a user knows there will be many nodes with no
+  // neighbors, or if most nodes will have many more than 4 neighbors
+  protected def initialNeighborListCapacity: Int = 4
 }
