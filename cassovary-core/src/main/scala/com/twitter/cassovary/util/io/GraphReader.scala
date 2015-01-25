@@ -74,4 +74,10 @@ trait GraphReader[T] {
     SharedArrayBasedDirectedGraph(iteratorSeq, executorService, storedGraphDir, numShards)
   }
 
+  /**
+   * Create an `ArrayBasedDynamicDirectedGraph`
+   */
+  def toArrayBasedDynamicDirectedGraph() = {
+    new ArrayBasedDynamicDirectedGraph(iteratorSeq, storedGraphDir)
+  }
 }

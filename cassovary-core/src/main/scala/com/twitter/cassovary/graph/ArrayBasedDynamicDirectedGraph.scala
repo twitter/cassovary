@@ -26,10 +26,10 @@ class ArrayBasedDynamicDirectedGraph(override val storedGraphDir: StoredGraphDir
   // (See above note on outboundLists)
   private val inboundLists = new ArrayBuffer[IntArrayList]
 
-  def this(iteratorFunc: () => Iterator[NodeIdEdgesMaxId],
+  def this(dataIterator: Iterator[NodeIdEdgesMaxId],
             storedGraphDir: StoredGraphDir) {
     this(storedGraphDir)
-    for (nodeData <- iteratorFunc()) {
+    for (nodeData <- dataIterator) {
       val id = nodeData.id
       getOrCreateNode(id)
       nodeData.edges map getOrCreateNode
@@ -39,6 +39,11 @@ class ArrayBasedDynamicDirectedGraph(override val storedGraphDir: StoredGraphDir
         case BothInOut => nodeData.edges map { addEdgeAllowingDuplicates(id, _) } // Duplicates shouldn't exist, but allow them for efficiency.
       }
     }
+  }
+
+  def this(iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]],
+           storedGraphDir: StoredGraphDir) {
+    this((iteratorSeq map { _()} ).iterator.flatten, storedGraphDir)
   }
 
   /* Returns an option which is non-empty if outbound list for id  is non-null. */

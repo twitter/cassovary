@@ -7,7 +7,7 @@ import org.scalatest.matchers.ShouldMatchers
 class ArrayBasedDynamicDirectedGraphSpec extends WordSpec with ShouldMatchers with GraphBehaviours {
   def builder(iteratorFunc: () => Iterator[NodeIdEdgesMaxId],
               storedGraphDir: StoredGraphDir) =
-    new ArrayBasedDynamicDirectedGraph(iteratorFunc, storedGraphDir)
+    new ArrayBasedDynamicDirectedGraph(iteratorFunc(), storedGraphDir)
   verifyGraphBuilding(builder, sampleGraphEdges)
 
   "Add new nodes" in {
