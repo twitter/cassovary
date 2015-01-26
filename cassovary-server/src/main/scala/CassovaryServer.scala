@@ -23,8 +23,8 @@ import org.jboss.netty.buffer.ChannelBuffers.copiedBuffer
 import org.jboss.netty.handler.codec.http._
 
 /*
- * A simple Http server demonstrating the use of Ostrich stats library.
- * The server runs an admin service on localhost:9999 and another
+ * A simple Http server demonstrating the use of Finagle-Stats library.
+ * The server runs an admin service on localhost:9990 and another
  * service on localhost:8888 that responds every Http request by
  * a walk on a generated graph.
  */
