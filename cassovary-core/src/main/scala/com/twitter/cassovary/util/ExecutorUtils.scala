@@ -38,7 +38,7 @@ object ExecutorUtils {
   }
 
   /**
-   * Creates an {@link java.util.concurrent.ExecutorService} with bounded work queue and fixed lower
+   * Creates an `java.util.concurrent.ExecutorService` with bounded work queue and fixed lower
    * and upper bounds on the thread pool size used to service the work queue.  The returned executor
    * service will export stats monitoring queue depth, active thread count and rejections due to
    * queue full conditions.
@@ -64,7 +64,7 @@ object ExecutorUtils {
   }
 
   /**
-   * Creates an {@link java.util.concurrent.ExecutorService} with bounded work queue and fixed lower
+   * Creates an `java.util.concurrent.ExecutorService` with bounded work queue and fixed lower
    * and upper bounds on the thread pool size used to service the work queue.  The returned executor
    * service will export stats monitoring queue depth, active thread count and rejections due to
    * queue full conditions.

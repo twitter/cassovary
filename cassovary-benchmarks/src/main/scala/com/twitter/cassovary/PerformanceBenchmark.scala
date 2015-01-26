@@ -43,7 +43,7 @@ import scala.collection.mutable.ListBuffer
  *
  * By default runs every test 10 times and reports average time taken.
  *
- * See: {@link http://snap.stanford.edu/data/}
+ * See: [[http://snap.stanford.edu/data/]]
  */
 
 object PerformanceBenchmark extends App with GzipGraphDownloader {
