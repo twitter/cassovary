@@ -13,10 +13,9 @@
  */
 package com.twitter.cassovary.graph
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{Matchers, WordSpec}
 
-class NodeSpec extends WordSpec with ShouldMatchers {
+class NodeSpec extends WordSpec with Matchers {
 
   def noInboundOrOutboundEdges = TestNode(1, Nil, Nil)
   def onlyInboundEdges = TestNode(1, List(2), Nil)

@@ -15,10 +15,9 @@ package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.TestGraphs
 import java.io.StringWriter
-import org.scalatest.WordSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{Matchers, WordSpec}
 
-class GraphWriterSpec extends WordSpec with ShouldMatchers {
+class GraphWriterSpec extends WordSpec with Matchers {
   "Graph writer" should {
     "write graph to single file" in {
       val graph = TestGraphs.g6

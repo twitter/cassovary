@@ -13,10 +13,9 @@
  */
 package com.twitter.cassovary.graph
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{Matchers, WordSpec}
 
-class DirectedPathSpec extends WordSpec with ShouldMatchers  {
+class DirectedPathSpec extends WordSpec with Matchers  {
 
   "path of many nodes" should {
     "length, append, exists, equals" in {

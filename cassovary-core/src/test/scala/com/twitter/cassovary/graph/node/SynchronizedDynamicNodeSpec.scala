@@ -13,10 +13,9 @@
  */
 package com.twitter.cassovary.graph.node
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{Matchers, WordSpec}
 
-class SynchronizedDynamicNodeSpec extends WordSpec with ShouldMatchers {
+class SynchronizedDynamicNodeSpec extends WordSpec with Matchers {
 
   def fixture(id: Int) = new SynchronizedDynamicNode(id)
 
@@ -27,7 +26,7 @@ class SynchronizedDynamicNodeSpec extends WordSpec with ShouldMatchers {
       node1.addInBoundNode(2)
       val node3 = fixture(2)
       node1 shouldEqual node2
-      node1 should not equal (node3)
+      node1 should not equal node3
     }
 
     "perform add/delete functions correctly" in {

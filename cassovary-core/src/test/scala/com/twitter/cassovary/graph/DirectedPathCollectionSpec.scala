@@ -16,12 +16,11 @@ package com.twitter.cassovary.graph
 import com.twitter.cassovary.util.FastUtilUtils
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 import org.junit.runner.RunWith
-import org.scalatest.WordSpec
+import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.matchers.ShouldMatchers
 
 @RunWith(classOf[JUnitRunner])
-class DirectedPathCollectionSpec extends WordSpec with ShouldMatchers {
+class DirectedPathCollectionSpec extends WordSpec with Matchers {
 
 
   "DirectedPathCollection" when {

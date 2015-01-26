@@ -16,11 +16,10 @@ package com.twitter.cassovary.util
 
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.WordSpec
-import org.scalatest.matchers.{ShouldMatchers}
+import org.scalatest.{Matchers, WordSpec}
 
 @RunWith(classOf[JUnitRunner])
-class MapNodeNumbererSpec extends WordSpec with ShouldMatchers {
+class MapNodeNumbererSpec extends WordSpec with Matchers {
   val directory = "cassovary-core/src/test/resources/nodeNumberers/"
 
   "Map node numberer" should {
@@ -36,19 +35,17 @@ class MapNodeNumbererSpec extends WordSpec with ShouldMatchers {
       numberer.internalToExternal(29) should be ("spoon")
       numberer.internalToExternal(12) should be ("bike")
 
-      evaluating (numberer.externalToInternal("apple")) should produce [NoSuchElementException]
+      an [NoSuchElementException] should be thrownBy numberer.externalToInternal("apple")
 
-      evaluating (numberer.internalToExternal(3)) should produce [NoSuchElementException]
+      an [NoSuchElementException] should be thrownBy numberer.internalToExternal(3)
     }
 
     "find duplicated names" in {
-      evaluating (MapNodeNumberer.forStringsFromFile(directory + "numbering-duplicatedId.txt")) should
-        produce [Exception]
+      an [Exception] should be thrownBy MapNodeNumberer.forStringsFromFile(directory + "numbering-duplicatedId.txt")
     }
 
     "find duplicated ids" in {
-      evaluating (MapNodeNumberer.forStringsFromFile(directory + "numbering-duplicatedName.txt")) should
-        produce [Exception]
+      an [Exception] should be thrownBy MapNodeNumberer.forStringsFromFile(directory + "numbering-duplicatedName.txt")
     }
   }
 }

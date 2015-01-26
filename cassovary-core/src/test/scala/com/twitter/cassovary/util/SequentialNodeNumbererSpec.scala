@@ -14,13 +14,12 @@
 package com.twitter.cassovary.util
 
 import org.junit.runner.RunWith
-import org.scalatest.WordSpec
+import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.matchers.{ShouldMatchers}
 
 
 @RunWith(classOf[JUnitRunner])
-class SequentialNodeNumbererSpec extends WordSpec with ShouldMatchers {
+class SequentialNodeNumbererSpec extends WordSpec with Matchers {
   "SequentialNodeNumberer" when {
     "numbering Longs" should {
       "use consecutive numbers" in {
@@ -39,7 +38,7 @@ class SequentialNodeNumbererSpec extends WordSpec with ShouldMatchers {
       }
       "raise exception when using internal id not defined so far" in {
         val numberer = new SequentialNodeNumberer[Long]
-        evaluating (numberer.internalToExternal(4)) should produce [IndexOutOfBoundsException]
+        an [IndexOutOfBoundsException] should be thrownBy numberer.internalToExternal(4)
       }
     }
     "numbering Strings" should {
@@ -59,7 +58,7 @@ class SequentialNodeNumbererSpec extends WordSpec with ShouldMatchers {
       }
       "raise exception when using internal id not defined so far" in {
         val numberer = new SequentialNodeNumberer[String]
-        evaluating (numberer.internalToExternal(4)) should produce [IndexOutOfBoundsException]
+        an [IndexOutOfBoundsException] should be thrownBy numberer.internalToExternal(4)
       }
     }
   }

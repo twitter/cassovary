@@ -14,11 +14,10 @@
 package com.twitter.cassovary.graph.bipartite
 
 import com.twitter.cassovary.graph.GraphDir
-import org.scalatest.WordSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{Matchers, WordSpec}
 import scala.collection.mutable
 
-class BipartiteGraphSpec extends WordSpec with ShouldMatchers {
+class BipartiteGraphSpec extends WordSpec with Matchers {
 
   def bipartiteExampleSingleSide() = {
    /*

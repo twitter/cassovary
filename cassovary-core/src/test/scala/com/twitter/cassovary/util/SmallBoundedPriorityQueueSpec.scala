@@ -13,12 +13,10 @@
  */
 package com.twitter.cassovary.util
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.ShouldMatchers
-
+import org.scalatest.{Matchers, WordSpec}
 import scala.reflect.ClassTag
 
-class SmallBoundedPriorityQueueSpec extends WordSpec with ShouldMatchers {
+class SmallBoundedPriorityQueueSpec extends WordSpec with Matchers {
   def emptyQueue[A](maxSize: Int)(implicit m: ClassTag[A], ord: Ordering[A]) = {
     new SmallBoundedPriorityQueue[A](maxSize)
   }

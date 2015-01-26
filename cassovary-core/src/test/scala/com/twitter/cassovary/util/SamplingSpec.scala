@@ -15,12 +15,11 @@ package com.twitter.cassovary.util
 
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.WordSpec
+import org.scalatest.{Matchers, WordSpec}
 import scala.util.Random
 
 @RunWith(classOf[JUnitRunner])
-class SamplingSpec extends WordSpec with ShouldMatchers {
+class SamplingSpec extends WordSpec with Matchers {
   val array = (1 to 100).toArray
   val range =  1 to 100
 

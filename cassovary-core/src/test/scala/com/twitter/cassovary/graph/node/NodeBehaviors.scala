@@ -14,10 +14,9 @@ package com.twitter.cassovary.graph.node
 
 import NodeTestUtils._
 import com.twitter.cassovary.graph.Node
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.WordSpec
+import org.scalatest.{Matchers, WordSpec}
 
-trait NodeBehaviors extends WordSpec with ShouldMatchers {
+trait NodeBehaviors extends WordSpec with Matchers {
   val nodeId = 100
   val neighbors = Array(1,2,3)
   val inEdges = Array(4,5)

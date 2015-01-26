@@ -19,11 +19,10 @@ import com.twitter.util.Duration
 import com.twitter.util.Stopwatch
 import it.unimi.dsi.fastutil.ints.Int2IntMap
 import it.unimi.dsi.fastutil.objects.Object2IntMap
-import org.scalatest.WordSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{Matchers, WordSpec}
 
 // TODO add a fake random so that the random walk tests can be controlled
-class GraphUtilsSpec extends WordSpec with ShouldMatchers {
+class GraphUtilsSpec extends WordSpec with Matchers {
 
   def utils(graph: DirectedGraph) = {
     (graph, new GraphUtils(graph))
@@ -185,7 +184,7 @@ class GraphUtilsSpec extends WordSpec with ShouldMatchers {
         val walk = graphUtils.randomWalk(OutDir, Seq(startNodeId), walkParams)
         val duration: Duration = elapsed()
         val (visitsCounter, _) = walk
-        visitsCounter.infoAllNodes.size should be > (graph.getNodeById(startNodeId).get.outboundCount)
+        visitsCounter.infoAllNodes.size should be > graph.getNodeById(startNodeId).get.outboundCount
         if (times > ignoreFirstNum) {
           sumDuration += duration.inMilliseconds
         }

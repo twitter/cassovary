@@ -14,10 +14,9 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.NodeNumberer
-import org.scalatest.WordSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{Matchers, WordSpec}
 
-trait GraphBehaviours extends ShouldMatchers {
+trait GraphBehaviours extends Matchers {
   this: WordSpec =>
 
   private def correctNumberOfNodesAndEdges(graph: DirectedGraph, numNodes: Int) {
