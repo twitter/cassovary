@@ -1,10 +1,10 @@
 package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.node.DynamicNode
+import com.twitter.cassovary.graph.StoredGraphDir._
+import com.twitter.cassovary.util.FastUtilUtils
 import it.unimi.dsi.fastutil.ints.IntArrayList
 import scala.collection.mutable.ArrayBuffer
-import StoredGraphDir._
-import com.twitter.cassovary.util.FastUtilUtils
 
 /**
  * A dynamic directed graph, implemented using an ArrayBuffer of IntArrayList
@@ -15,9 +15,10 @@ import com.twitter.cassovary.util.FastUtilUtils
  * an internal array is stored which is longer than the maximum id seen.
  *
  * This class is not threadsafe.  If multiple thread access it simultaneously
- * and at least one mutates it, synchronization should be used.
+ * and at least one mutates it, synchronization should be used.  Currently
+ * no new threads are created by this class (all operations execute on a single thread).
  */
-class ArrayBasedDynamicDirectedGraph(override val storedGraphDir: StoredGraphDir)
+class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
     extends DynamicDirectedGraph {
   // outboundLists(id) contains the outbound neighbors of the given id,
   // or null if the id is not in this graph.
@@ -26,7 +27,7 @@ class ArrayBasedDynamicDirectedGraph(override val storedGraphDir: StoredGraphDir
   // (See above note on outboundLists)
   private val inboundLists = new ArrayBuffer[IntArrayList]
 
-  private var nodeCount_ = 0
+  private var _nodeCount = 0
 
   def this(dataIterator: Iterator[NodeIdEdgesMaxId],
             storedGraphDir: StoredGraphDir) {
@@ -129,7 +130,7 @@ class ArrayBasedDynamicDirectedGraph(override val storedGraphDir: StoredGraphDir
   /**
    * Returns the number of nodes in the graph.
    */
-  override def nodeCount: Int = nodeCount_
+  override def nodeCount: Int = _nodeCount
   // Or this can be computed as (0 until maxIdBound) count nodeExists
 
   /**
@@ -184,7 +185,7 @@ class ArrayBasedDynamicDirectedGraph(override val storedGraphDir: StoredGraphDir
     }
 
     if (!nodeExists(id)) {
-      nodeCount_ += 1
+      _nodeCount += 1
       if (StoredGraphDir.isOutDirStored(storedGraphDir)) {
         addIdToList(outboundLists)
       }
