@@ -62,5 +62,8 @@ object FastUtilUtils {
   def newInt2IntOpenHashMap(): mutable.Map[Int, Int] =
     new Int2IntOpenHashMap().asInstanceOf[jutil.Map[Int, Int]]
 
-  def intArrayListToSeq(list: IntArrayList): Seq[Int] = list map { _.toInt }
+  def intArrayListToSeq(list: IntArrayList): Seq[Int] = new IndexedSeq[Int] {
+    override def apply(idx: Int): Int = list.getInt(idx)
+    override def length: Int = list.size
+  }
 }
