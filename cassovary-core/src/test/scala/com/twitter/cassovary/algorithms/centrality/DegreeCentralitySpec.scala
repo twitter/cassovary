@@ -14,12 +14,16 @@ class DegreeCentralitySpec extends WordSpec with Matchers {
 
     "Return a zero indegree centrality for graphs with only out edges" in {
       val centrality = InDegreeCentrality.apply(graph)
-      centrality shouldEqual Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 1.0)
+      val unnormalizedCentrality = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 1.0)
+
+      centrality shouldEqual unnormalizedCentrality.map(c => c / (graph.maxNodeId - 1))
     }
 
     "Return a non-zero outdegree centrality for graphs with only out edges" in {
       val centrality = OutDegreeCentrality.apply(graph)
-      centrality shouldEqual Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.0, 2.0, 1.0, 2.0, 1.0, 2.0)
+      val unnormalizedCentrality = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.0, 2.0, 1.0, 2.0, 1.0, 2.0)
+
+      centrality shouldEqual unnormalizedCentrality.map(c => c / (graph.maxNodeId - 1))
     }
   }
 }
