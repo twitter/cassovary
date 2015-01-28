@@ -1,16 +1,15 @@
 package com.twitter.cassovary.graph
 
-import org.scalatest.WordSpec
+import org.scalatest.{Matchers, WordSpec}
 import com.twitter.cassovary.graph.StoredGraphDir._
-import org.scalatest.matchers.ShouldMatchers
 
-class ArrayBasedDynamicDirectedGraphSpec extends WordSpec with ShouldMatchers with GraphBehaviours {
+class ArrayBasedDynamicDirectedGraphSpec extends WordSpec with Matchers with GraphBehaviours {
   val graphDirections = List(StoredGraphDir.OnlyIn, StoredGraphDir.OnlyOut, StoredGraphDir.BothInOut,
                              StoredGraphDir.Mutual) // Bipartitie is not supported
 
-  def builder(iteratorFunc: () => Iterator[NodeIdEdgesMaxId],
+  def builder(iteratable: Iterable[NodeIdEdgesMaxId],
               storedGraphDir: StoredGraphDir) =
-    new ArrayBasedDynamicDirectedGraph(iteratorFunc(), storedGraphDir)
+    new ArrayBasedDynamicDirectedGraph(iteratable, storedGraphDir)
   verifyGraphBuilding(builder, sampleGraphEdges)
 
   "An ArrayBasedDynamicDirectedGraph" should {

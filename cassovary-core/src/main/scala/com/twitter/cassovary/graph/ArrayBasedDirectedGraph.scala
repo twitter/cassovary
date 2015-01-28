@@ -26,8 +26,8 @@ import scala.collection.mutable
 /**
  * Construct an array based directed graph based on a set of edges. The graph can be constructed in
  * the following ways based on the stored direction:
- * 1. If OnlyIn or OnlyOut edges need to be kept, supply only those edges in the edges iteratorSeq
- * 2. If BothInOut edges need to be kept, supply only the outgoing edges in the edges iteratorSeq
+ * 1. If OnlyIn or OnlyOut edges need to be kept, supply only those edges in the edges iterableSeq
+ * 2. If BothInOut edges need to be kept, supply only the outgoing edges in the edges iterableSeq
  */
 
 /**
@@ -50,22 +50,22 @@ private case class NodesMaxIds(nodesInOnePart: Seq[Node],
                                maxIdInPart: Int, nodeWithOutEdgesMaxIdInPart: Int)
 
 object ArrayBasedDirectedGraph {
-  def apply(iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]], parallelismLimit: Int,
+  def apply(iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]], parallelismLimit: Int,
             storedGraphDir: StoredGraphDir):
   ArrayBasedDirectedGraph = {
-    val constructor = new ArrayBasedDirectedGraphConstructor(iteratorSeq, parallelismLimit, storedGraphDir)
+    val constructor = new ArrayBasedDirectedGraphConstructor(iterableSeq, parallelismLimit, storedGraphDir)
     constructor()
   }
 
   @VisibleForTesting
-  def apply(iteratorFunc: () => Iterator[NodeIdEdgesMaxId],
-            storedGraphDir: StoredGraphDir): ArrayBasedDirectedGraph = apply(Seq(iteratorFunc), 1, storedGraphDir)
+  def apply(iterable: Iterable[NodeIdEdgesMaxId],
+            storedGraphDir: StoredGraphDir): ArrayBasedDirectedGraph = apply(Seq(iterable), 1, storedGraphDir)
 
   /**
    * Constructs array based directed graph
    */
   private class ArrayBasedDirectedGraphConstructor(
-    iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]],
+    iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]],
     parallelismLimit: Int,
     storedGraphDir: StoredGraphDir
   ) {
@@ -75,7 +75,7 @@ object ArrayBasedDirectedGraph {
     private val futurePool = new BoundedFuturePool(FuturePool.unboundedPool, parallelismLimit)
 
     /**
-     * Construct an array-based graph from an sequence of iterators over NodeIdEdgesMaxId
+     * Construct an array-based graph from an sequence of `NodeIdEdgesMaxId` iterables
      * This function builds the array-based graph from a seq of nodes with out edges
      * using the following steps:
      * 0. read from file and construct a sequence of Nodes
@@ -90,7 +90,7 @@ object ArrayBasedDirectedGraph {
     def apply(): ArrayBasedDirectedGraph = {
 
       val result: Future[ArrayBasedDirectedGraph] = for {
-        (nodesOutEdges, maxNodeId, nodeWithOutEdgesMaxId) <- fillOutEdges(iteratorSeq, storedGraphDir)
+        (nodesOutEdges, maxNodeId, nodeWithOutEdgesMaxId) <- fillOutEdges(iterableSeq, storedGraphDir)
         (table, nodeIdSet) <- markStoredNodes(nodesOutEdges, maxNodeId, storedGraphDir)
         NodesWithNoOutEdgesAndGraphStats(nodesWithNoOutEdges, nodeWithOutEdgesCount, numEdges, numNodes) =
         createNodesWithNoOutEdges(table, nodeIdSet, maxNodeId, storedGraphDir)
@@ -105,11 +105,11 @@ object ArrayBasedDirectedGraph {
     }
 
     /**
-     * Reads `iteratorSeq`'s edges, creates nodes and puts them in an `ArrayBuffer[Seq[Node]]`.
+     * Reads `iterableSeq`'s edges, creates nodes and puts them in an `ArrayBuffer[Seq[Node]]`.
      * In every node only edges directly read from input are set.
      * @return Future with read edges of type `Buffer[Seq[Node]]`, max node id and nodeWithOutEdgesMaxId
      */
-    private def fillOutEdges(iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]], storedGraphDir: StoredGraphDir):
+    private def fillOutEdges(iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]], storedGraphDir: StoredGraphDir):
     Future[(mutable.Buffer[Seq[Node]], Int, Int)] = {
       log.debug("loading nodes and out edges from file in parallel")
       val nodesOutEdges = new mutable.ArrayBuffer[Seq[Node]]
@@ -118,7 +118,7 @@ object ArrayBasedDirectedGraph {
 
       val outEdges: Future[Seq[NodesMaxIds]] = statsReceiver.time(
         "graph_dump_load_partial_nodes_and_out_edges_parallel") {
-        Future.collect(iteratorSeq.map(i => readOutEdges(i, storedGraphDir)))
+        Future.collect(iterableSeq.map(i => readOutEdges(i.iterator, storedGraphDir)))
       }
 
       outEdges.map {
@@ -133,9 +133,9 @@ object ArrayBasedDirectedGraph {
     }
 
     /**
-     * Reads out edges from iteratorFunc and returns `NodesMaxIds` object.
+     * Reads out edges from iterator and returns `NodesMaxIds` object.
      */
-    private def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId], storedGraphDir: StoredGraphDir):
+    private def readOutEdges(iterator: Iterator[NodeIdEdgesMaxId], storedGraphDir: StoredGraphDir):
     Future[NodesMaxIds] = futurePool {
       statsReceiver.time("graph_load_read_out_edge_from_dump_files") {
         val nodes = new mutable.ArrayBuffer[Node]
@@ -144,7 +144,6 @@ object ArrayBasedDirectedGraph {
         var id = 0
         var edgesLength = 0
 
-        val iterator = iteratorFunc()
         iterator foreach { item =>
           id = item.id
           newMaxId = newMaxId max item.maxId
