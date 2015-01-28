@@ -18,5 +18,9 @@ import com.twitter.cassovary.graph.DirectedGraph
 abstract class AbstractCentrality(graph: DirectedGraph) extends Centrality {
   val centrality = new Array[Double](graph.maxNodeId + 1)
 
+  /**
+   * Normalize the values
+   * @return
+   */
   def normalize: Array[Double] = centrality.map(c => c / (graph.maxNodeId - 1))
 }
