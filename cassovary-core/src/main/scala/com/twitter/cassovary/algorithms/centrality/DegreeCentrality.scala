@@ -32,7 +32,7 @@ private class InDegreeCentrality(graph: DirectedGraph) extends AbstractCentralit
   }
 }
 
-private class OutDegreeCentrality(graph: DirectedGraph) extends DegreeCentrality(graph) {
+private class OutDegreeCentrality(graph: DirectedGraph) extends AbstractCentrality(graph) {
   def run: Array[Double] = {
     graph.foreach { node =>
       centrality(node.id) = node.outboundCount
