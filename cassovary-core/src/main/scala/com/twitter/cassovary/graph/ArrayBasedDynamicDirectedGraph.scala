@@ -46,7 +46,7 @@ class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
 
   def this(iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]],
            storedGraphDir: StoredGraphDir) {
-    this((iteratorSeq map { _()} ).iterator.flatten, storedGraphDir)
+    this((iteratorSeq.view flatMap { _()}).iterator, storedGraphDir)
   }
 
   /* Returns an option which is non-empty if outbound list for id  is non-null. */
