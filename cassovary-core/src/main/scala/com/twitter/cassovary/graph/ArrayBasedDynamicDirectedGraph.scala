@@ -37,7 +37,7 @@ class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
       getOrCreateNode(id)
       nodeData.edges map getOrCreateNode
       storedGraphDir match {
-        case OnlyOut => outboundLists(id).addAll(IntArrayList.wrap(nodeData.edges))
+        case OnlyOut | Mutual => outboundLists(id).addAll(IntArrayList.wrap(nodeData.edges))
         case OnlyIn => inboundLists(id).addAll(IntArrayList.wrap(nodeData.edges))
         case BothInOut => nodeData.edges map { addEdgeAllowingDuplicates(id, _) } // Duplicates shouldn't exist, but allow them for efficiency.
       }
@@ -69,18 +69,15 @@ class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
     * For efficiency, we don't store Nodes, but create them on the fly as needed.
     */
   class IntListNode(override val id: Int,
-                    val outboundList: Option[IntArrayList],
-                    val inboundList: Option[IntArrayList])
+                    val outboundList: Option[Seq[Int]],
+                    val inboundList: Option[Seq[Int]])
       extends DynamicNode {
-    override def outboundNodes(): Seq[Int] = outboundList match {
-      case Some(list) => FastUtilUtils.intArrayListToSeq(list)
-      case None => Seq.empty[Int]
-    }
+    override def outboundNodes(): Seq[Int] = outboundList.getOrElse(Seq.empty)
 
-    override def inboundNodes(): Seq[Int] = inboundList match {
-      case Some(list) => FastUtilUtils.intArrayListToSeq(list)
-      case None => Seq.empty[Int]
-    }
+    override def inboundNodes(): Seq[Int] = storedGraphDir match {
+      case Mutual => outboundNodes()
+      case _ => inboundList.getOrElse(Seq.empty)
+      }
 
     def addOutBoundNodes(nodeIds: Seq[Int]): Unit = {
       //For future optimization, we could check if we are only storing outbound
@@ -110,7 +107,9 @@ class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
    */
   override def getNodeById(id: Int): Option[DynamicNode] =
     if (nodeExists(id)) {
-      Some(new IntListNode(id, outboundListOption(id), inboundListOption(id)))
+      Some(new IntListNode(id,
+        outboundListOption(id) map FastUtilUtils.intArrayListToSeq,
+        inboundListOption(id) map FastUtilUtils.intArrayListToSeq))
     } else {
       None
     }
@@ -140,6 +139,9 @@ class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
   override def removeEdge(srcId: Int, destId: Int): (Option[Node], Option[Node]) = {
     outboundListOption(srcId) map {list => list.rem(destId)}
     inboundListOption(destId) map {list => list.rem(srcId)}
+    if (storedGraphDir == Mutual) {
+      outboundListOption(destId) map {list => list.rem(srcId)}
+    }
     (getNodeById(srcId), getNodeById(destId))
   }
 
@@ -156,6 +158,10 @@ class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
         list.add(k)
     outboundListOption(srcId) map { addIfMissing(_, destId) }
     inboundListOption(destId) map { addIfMissing(_, srcId) }
+    if (storedGraphDir == StoredGraphDir.Mutual) {
+      // Add mutual edge also
+      outboundListOption(destId) map { addIfMissing(_, srcId) }
+    }
   }
 
   /**
@@ -166,11 +172,13 @@ class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
   def addEdgeAllowingDuplicates(srcId: Int, destId: Int): Unit = {
     getOrCreateNode(srcId)
     getOrCreateNode(destId)
-    def addIfMissing(list: IntArrayList, id: Int): Unit =
-      if (!list.contains(destId))
-        list.add(destId)
+
     outboundListOption(srcId) map { _.add(destId) }
     inboundListOption(destId) map { _.add(srcId) }
+    if (storedGraphDir == StoredGraphDir.Mutual) {
+      // Add mutual edge also
+      outboundListOption(destId) map { _.add(srcId) }
+    }
   }
 
   /**
@@ -189,7 +197,8 @@ class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
       if (StoredGraphDir.isOutDirStored(storedGraphDir)) {
         addIdToList(outboundLists)
       }
-      if (StoredGraphDir.isInDirStored(storedGraphDir)) {
+      if (StoredGraphDir.isInDirStored(storedGraphDir) &&
+        storedGraphDir != StoredGraphDir.Mutual) {
         addIdToList(inboundLists)
       }
     }
