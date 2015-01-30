@@ -23,7 +23,7 @@ sealed abstract class DegreeCentrality(graph: DirectedGraph) extends AbstractCen
    */
   def normalize(normalize: Boolean = true): Array[Double] = {
     if (normalize)
-      centrality map { c => c / (graph.maxNodeId - 1) }
+      centrality map { c => c / (graph.nodeCount - 1) }
     else
       centrality
   }
@@ -40,7 +40,6 @@ object InDegreeCentrality {
    */
   def apply(graph: DirectedGraph, normalize: Boolean = true): Array[Double] = {
     val idc = new InDegreeCentrality(graph)
-    idc.centrality
     idc.normalize(normalize)
   }
 }
@@ -56,7 +55,6 @@ object OutDegreeCentrality {
    */
   def apply(graph: DirectedGraph, normalize: Boolean = true): Array[Double] = {
     val odc = new OutDegreeCentrality(graph)
-    odc.centrality
     odc.normalize(normalize)
   }
 }
