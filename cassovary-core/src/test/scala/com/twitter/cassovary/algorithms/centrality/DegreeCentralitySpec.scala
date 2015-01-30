@@ -10,18 +10,7 @@ class DegreeCentralitySpec extends WordSpec with Matchers {
 
   "Degree Centrality" should {
 
-    val nodeSeqIterator = () => Seq(
-      NodeIdEdgesMaxId(0, Array.empty[Int]),
-      NodeIdEdgesMaxId(1, Array.empty[Int]),
-      NodeIdEdgesMaxId(10, Array(11, 12, 13)),
-      NodeIdEdgesMaxId(11, Array(12, 14)),
-      NodeIdEdgesMaxId(12, Array(14)),
-      NodeIdEdgesMaxId(13, Array(12, 14)),
-      NodeIdEdgesMaxId(14, Array(15)),
-      NodeIdEdgesMaxId(15, Array(10, 11))
-    ).iterator
-
-    lazy val graph  = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.BothInOut)
+    lazy val graph  = TestGraphs.g6WithEmptyNodes
 
     lazy val unnormalizedInDegreeCentrality = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 1.0)
     lazy val unnormalizedOutDegreeCentrality = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.0, 2.0, 1.0, 2.0, 1.0, 2.0)

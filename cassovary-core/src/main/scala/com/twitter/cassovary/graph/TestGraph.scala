@@ -76,20 +76,30 @@ object TestGraphs {
     NodeIdEdgesMaxId(14, Array())
     ).iterator, StoredGraphDir.BothInOut)
 
-  val nodeSeqIterator = () => Seq(
-      NodeIdEdgesMaxId(10, Array(11, 12, 13)),
-      NodeIdEdgesMaxId(11, Array(12, 14)),
-      NodeIdEdgesMaxId(12, Array(14)),
-      NodeIdEdgesMaxId(13, Array(12, 14)),
-      NodeIdEdgesMaxId(14, Array(15)),
-      NodeIdEdgesMaxId(15, Array(10, 11))
-      ).iterator
+  val nodeSeq =  Seq(
+    NodeIdEdgesMaxId(10, Array(11, 12, 13)),
+    NodeIdEdgesMaxId(11, Array(12, 14)),
+    NodeIdEdgesMaxId(12, Array(14)),
+    NodeIdEdgesMaxId(13, Array(12, 14)),
+    NodeIdEdgesMaxId(14, Array(15)),
+    NodeIdEdgesMaxId(15, Array(10, 11)))
+
+  val nodeSeqWithEmpty = Seq(
+    NodeIdEdgesMaxId(0, Array.empty[Int]),
+    NodeIdEdgesMaxId(1, Array.empty[Int])
+  ) ++ nodeSeq
+
+
+  val nodeSeqIterator = () => nodeSeq.iterator
+  val nodeSeqIteratorWithEmpty = () => nodeSeqWithEmpty.iterator
 
   // using testGraph becomes onerous for non-trivial graphs
   def g6 = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.BothInOut)
 
   def g6_onlyout = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.OnlyOut)
   def g6_onlyin = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.OnlyIn)
+
+  def g6WithEmptyNodes = ArrayBasedDirectedGraph(nodeSeqIteratorWithEmpty, StoredGraphDir.BothInOut)
 
   val nodeSeqIterator2 = () => Seq(
       NodeIdEdgesMaxId(10, Array(11, 12, 13)),
