@@ -21,33 +21,46 @@ import com.twitter.cassovary.util.SharedArraySeq
  * Nodes in the graph that store edges in only one direction (or in the case Mutual Dir graph,
  * both directions have the same edges). Also the edges stored can not be mutated
  */
-abstract class UniDirectionalNode private[graph] (val id: Int) extends Node
+trait UniDirectionalNode extends Node
+
 
 /**
  * Factory object for creating uni-directional nodes that uses array as underlying storage
  * for node's edges
  */
 object UniDirectionalNode {
+  def apply(id: Int, inbound: Seq[Int], outbound: Seq[Int]) =
+    new UniDirectionalNode {
+      override val id: Int = id
+      override def inboundNodes(): Seq[Int] = inbound
+      override def outboundNodes(): Seq[Int] = outbound
+    }
 
-  def apply(nodeId: Int, neighbors: Array[Int], dir: StoredGraphDir) = {
+  def apply(nodeId: Int, neighbors: Seq[Int], dir: StoredGraphDir) = {
     dir match {
       case StoredGraphDir.OnlyIn =>
-        new UniDirectionalNode(nodeId) {
-          def inboundNodes = neighbors
-          def outboundNodes = Nil
-        }
+        UniDirectionalNode(id=nodeId, inbound=neighbors, outbound=Nil)
       case StoredGraphDir.OnlyOut =>
-        new UniDirectionalNode(nodeId) {
-          def inboundNodes = Nil
-          def outboundNodes = neighbors
-        }
+        UniDirectionalNode(id=nodeId, inbound=Nil, outbound=neighbors)
       case StoredGraphDir.Mutual =>
-        new UniDirectionalNode(nodeId) {
-          def inboundNodes = neighbors
-          def outboundNodes = neighbors
-        }
+        UndirectedNode(id=nodeId, outbound=neighbors)
     }
   }
+}
+
+/**
+ * A node where both directions have the same edges
+ */
+trait UndirectedNode extends UniDirectionalNode {
+  def inboundNodes() = outboundNodes()
+}
+
+object UndirectedNode {
+  def apply(id: Int, outbound: Seq[Int]) =
+    new UndirectedNode {
+      override val id: Int = id
+      override def outboundNodes(): Seq[Int] = outbound
+    }
 }
 
 /**
@@ -56,25 +69,7 @@ object UniDirectionalNode {
  * object to hold its edges
  */
 object SharedArrayBasedUniDirectionalNode {
-
   def apply(nodeId: Int, edgeArrOffset: Int, edgeArrLen: Int, sharedArray: Array[Array[Int]],
-      dir: StoredGraphDir) = {
-    dir match {
-      case StoredGraphDir.OnlyIn =>
-        new UniDirectionalNode(nodeId) {
-          def inboundNodes = new SharedArraySeq(nodeId, sharedArray, edgeArrOffset, edgeArrLen)
-          def outboundNodes = Nil
-        }
-      case StoredGraphDir.OnlyOut =>
-        new UniDirectionalNode(nodeId) {
-          def inboundNodes = Nil
-          def outboundNodes = new SharedArraySeq(nodeId, sharedArray, edgeArrOffset, edgeArrLen)
-        }
-      case StoredGraphDir.Mutual =>
-        new UniDirectionalNode(nodeId) {
-          def inboundNodes = new SharedArraySeq(nodeId, sharedArray, edgeArrOffset, edgeArrLen)
-          def outboundNodes = new SharedArraySeq(nodeId, sharedArray, edgeArrOffset, edgeArrLen)
-        }
-    }
-  }
+      dir: StoredGraphDir) =
+    UniDirectionalNode(nodeId, new SharedArraySeq(nodeId, sharedArray, edgeArrOffset, edgeArrLen), dir)
 }
