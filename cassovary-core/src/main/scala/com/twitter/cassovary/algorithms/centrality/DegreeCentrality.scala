@@ -15,7 +15,7 @@ package com.twitter.cassovary.algorithms.centrality
 
 import com.twitter.cassovary.graph.DirectedGraph
 
-sealed abstract class DegreeCentrality(graph: DirectedGraph) extends AbstractCentrality(graph)
+sealed abstract class DegreeCentrality(graph: DirectedGraph) extends AbstractCentrality(graph) {}
 
 object InDegreeCentrality {
 

@@ -13,14 +13,16 @@
  */
 package com.twitter.cassovary.algorithms.centrality
 
-import com.twitter.cassovary.graph.DirectedGraph
+import com.twitter.cassovary.graph.{Node, DirectedGraph}
 
 abstract class AbstractCentrality(graph: DirectedGraph) extends Centrality {
-  val centrality = new Array[Double](graph.maxNodeId + 1)
+  def centrality: Array[Double]
 
   /**
    * Normalize the values
    * @return
    */
   def normalize: Array[Double] = centrality.map(c => c / (graph.nodeCount - 1))
+
+  def apply(n: Node): Double = centrality(n.id)
 }
