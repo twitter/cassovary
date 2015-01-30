@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Twitter, Inc.
+ * Copyright 2015 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at
@@ -16,13 +16,15 @@ package com.twitter.cassovary.algorithms.centrality
 import com.twitter.cassovary.graph.{Node, DirectedGraph}
 
 abstract class AbstractCentrality(graph: DirectedGraph) extends Centrality {
-  def centrality: Array[Double]
+
+  val centralityValues = new Array[Double](graph.maxNodeId + 1)
 
   /**
-   * Normalize the values
+   * Get the specified node's centrality value
+   * @param n Node
    * @return
    */
-  def normalize: Array[Double] = centrality.map(c => c / (graph.nodeCount - 1))
-
   def apply(n: Node): Double = centrality(n.id)
+
+  def centrality: Array[Double]
 }

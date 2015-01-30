@@ -11,19 +11,28 @@ class DegreeCentralitySpec extends WordSpec with Matchers {
   "Degree Centrality" should {
 
     lazy val graph  = TestGraphs.g6
+    lazy val unnormalizedInDegreeCentrality = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 1.0)
+    lazy val unnormalizedOutDegreeCentrality = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.0, 2.0, 1.0, 2.0, 1.0, 2.0)
 
-    "Return a zero indegree centrality for graphs with only out edges" in {
-      val centrality = InDegreeCentrality.apply(graph)
-      val unnormalizedCentrality = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 1.0)
+    "return in-degree centrality values that are less than one for each node" in {
+      val centrality = InDegreeCentrality(graph)
+      centrality shouldEqual unnormalizedInDegreeCentrality.map(c => c / (graph.maxNodeId - 1))
 
-      centrality shouldEqual unnormalizedCentrality.map(c => c / (graph.maxNodeId - 1))
     }
 
-    "Return a non-zero outdegree centrality for graphs with only out edges" in {
-      val centrality = OutDegreeCentrality.apply(graph)
-      val unnormalizedCentrality = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.0, 2.0, 1.0, 2.0, 1.0, 2.0)
+    "return out-degree centrality values that are less than one for each node" in {
+      val centrality = OutDegreeCentrality(graph)
+      centrality shouldEqual unnormalizedOutDegreeCentrality.map(c => c / (graph.maxNodeId - 1))
+    }
 
-      centrality shouldEqual unnormalizedCentrality.map(c => c / (graph.maxNodeId - 1))
+    "return in-degree centrality values that are greater than or equal to zero with integer values" in {
+      val centrality = InDegreeCentrality(graph, false)
+      centrality shouldEqual unnormalizedInDegreeCentrality
+    }
+
+    "return out-degree centrality values that are greater than or equal to zero with integer values" in {
+      val centrality = OutDegreeCentrality(graph, false)
+      centrality shouldEqual unnormalizedOutDegreeCentrality
     }
   }
 }
