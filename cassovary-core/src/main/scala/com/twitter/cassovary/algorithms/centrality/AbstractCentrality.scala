@@ -22,5 +22,5 @@ abstract class AbstractCentrality(graph: DirectedGraph) extends Centrality {
    * Normalize the values
    * @return
    */
-  def normalize: Array[Double] = centrality.map(c => c / (graph.maxNodeId - 1))
+  def normalize: Array[Double] = centrality.map(c => c / (graph.nodeCount - 1))
 }

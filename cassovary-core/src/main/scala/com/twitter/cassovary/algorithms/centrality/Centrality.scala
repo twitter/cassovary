@@ -13,7 +13,6 @@
  */
 package com.twitter.cassovary.algorithms.centrality
 
-trait Centrality {
+import com.twitter.cassovary.graph.Node
 
-  def run: Array[Double]
-}
+trait Centrality extends (Node => Double) {}

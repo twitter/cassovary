@@ -15,9 +15,7 @@ package com.twitter.cassovary.algorithms.centrality
 
 import com.twitter.cassovary.graph.DirectedGraph
 
-
 sealed abstract class DegreeCentrality(graph: DirectedGraph) extends AbstractCentrality(graph)
-
 
 object InDegreeCentrality {
 
@@ -30,7 +28,7 @@ object InDegreeCentrality {
    */
   def apply(graph: DirectedGraph, normalize: Boolean = true): Array[Double] = {
     val idc = new InDegreeCentrality(graph)
-    val centrality = idc.run
+    val centrality = idc.apply
 
     if (normalize)
       idc.normalize
@@ -50,7 +48,7 @@ object OutDegreeCentrality {
    */
   def apply(graph: DirectedGraph, normalize: Boolean = true): Array[Double] = {
     val odc = new OutDegreeCentrality(graph)
-    val centrality = odc.run
+    val centrality = odc.apply
 
     if (normalize)
       odc.normalize
@@ -65,7 +63,7 @@ private class InDegreeCentrality(graph: DirectedGraph) extends DegreeCentrality(
    * Run the indegree centrality calculation for the graph.
    * @return
    */
-  def run: Array[Double] = {
+  def apply: Array[Double] = {
     graph.foreach { node =>
       centrality(node.id) = node.inboundCount
     }
@@ -79,7 +77,7 @@ private class OutDegreeCentrality(graph: DirectedGraph) extends DegreeCentrality
    * Run the outdegree centrality calculation for the graph.
    * @return
    */
-  def run: Array[Double] = {
+  def apply: Array[Double] = {
     graph.foreach { node =>
       centrality(node.id) = node.outboundCount
     }
