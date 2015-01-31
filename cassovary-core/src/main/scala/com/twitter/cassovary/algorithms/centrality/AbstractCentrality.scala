@@ -13,17 +13,17 @@
  */
 package com.twitter.cassovary.algorithms.centrality
 
+import collection.immutable
 import com.twitter.cassovary.graph.{Node, DirectedGraph}
-import collection.immutable.IndexedSeq
 
 /**
  * Centrality algorithm abstraction that requires a directed graph {@code graph} be passed upon
  * instantiation.
- * @param graph A directed graph
+ * {@note The centrality values are stored in an internal array indexed by node's id. Hence, do not use for graphs with very large ids.}
  */
 abstract class AbstractCentrality(graph: DirectedGraph) extends Centrality {
 
-  val centralityValues = new Array[Double](graph.maxNodeId + 1)
+  protected val centralityValues = new Array[Double](graph.maxNodeId + 1)
 
   /**
    * Get the specified node's centrality value
@@ -36,5 +36,5 @@ abstract class AbstractCentrality(graph: DirectedGraph) extends Centrality {
    * Run the centrality calculation and update {@code centralityValues}
    * @return The centrality values of the graph
    */
-  def recalculate: IndexedSeq[Double]
+  def recalculate(): immutable.IndexedSeq[Double]
 }
