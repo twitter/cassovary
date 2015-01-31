@@ -23,20 +23,19 @@ import com.twitter.cassovary.util.SharedArraySeq
  */
 trait UniDirectionalNode extends Node
 
-
 /**
  * Factory object for creating uni-directional nodes that uses array as underlying storage
  * for node's edges
  */
 object UniDirectionalNode {
-  def apply(id: Int, inbound: Seq[Int], outbound: Seq[Int]) =
+  def apply(id: Int, inbound: Seq[Int], outbound: Seq[Int]): UniDirectionalNode =
     new UniDirectionalNode {
       override val id: Int = id
       override def inboundNodes(): Seq[Int] = inbound
       override def outboundNodes(): Seq[Int] = outbound
     }
 
-  def apply(nodeId: Int, neighbors: Seq[Int], dir: StoredGraphDir) = {
+  def apply(nodeId: Int, neighbors: Seq[Int], dir: StoredGraphDir): UniDirectionalNode = {
     dir match {
       case StoredGraphDir.OnlyIn =>
         UniDirectionalNode(id=nodeId, inbound=neighbors, outbound=Nil)
