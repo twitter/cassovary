@@ -17,6 +17,14 @@ import com.twitter.cassovary.graph.DirectedGraph
 import com.twitter.cassovary.graph.GraphDir.GraphDir
 import collection.immutable.IndexedSeq
 
+/**
+ * Calculate the degree centrality for a specific graph and direction.  If normalization
+ * is {@code true} then divide each node's degree centrality by the maximum number
+ * of possible connections within the graph.
+ * @param graph The graph object on which calculate the degree centrality
+ * @param dir The direction of the edges to include in the degree centrality calculation.
+ * @param normalize Pass true to normalize the values by the maximum number of possible connections.
+ */
 class DegreeCentrality(graph: DirectedGraph, dir: GraphDir, normalize: Boolean = true) extends AbstractCentrality(graph) {
 
   recalculate

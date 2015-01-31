@@ -15,4 +15,7 @@ package com.twitter.cassovary.algorithms.centrality
 
 import com.twitter.cassovary.graph.Node
 
+/**
+ * Starting point for all centrality algorithms.
+ */
 trait Centrality extends (Node => Double)
