@@ -16,37 +16,32 @@ package com.twitter.cassovary.algorithms.centrality
 import com.twitter.cassovary.graph._
 import org.scalatest.{Matchers, WordSpec}
 
-/**
- * Created by bmckown on 1/28/15.
- */
 class DegreeCentralitySpec extends WordSpec with Matchers {
+
+  lazy val graph = TestGraphs.g6WithEmptyNodes
 
   "Degree Centrality" should {
 
-    lazy val graph = TestGraphs.g6WithEmptyNodes
-
     "return in-degree centrality values that are less than one for each node" in {
       val idc = new DegreeCentrality(graph, GraphDir.InDir, true)
-      val centrality = idc.centralityValues
-      centrality(0)  shouldEqual 0.0
-      centrality(1)  shouldEqual 0.0
-      centrality(11) shouldEqual 0.2857142857142857
-      centrality(12) shouldEqual 0.42857142857142855
-      centrality(13) shouldEqual 0.14285714285714285
-      centrality(14) shouldEqual 0.42857142857142855
-      centrality(15) shouldEqual 0.14285714285714285
+      idc(graph.getNodeById(0).get) shouldEqual 0.0
+      idc(graph.getNodeById(1).get) shouldEqual 0.0
+      idc(graph.getNodeById(11).get) should be (0.285 +- .001)
+      idc(graph.getNodeById(12).get) should be (0.428 +- .001)
+      idc(graph.getNodeById(13).get) should be (0.142 +- .001)
+      idc(graph.getNodeById(14).get) should be (0.428 +- .001)
+      idc(graph.getNodeById(15).get) should be (0.142 +- .001)
     }
 
     "return out-degree centrality values that are integer valued" in {
       val odc = new DegreeCentrality(graph, GraphDir.OutDir, false)
-      val centrality = odc.centralityValues
-      centrality(0)  shouldEqual 0.0
-      centrality(1)  shouldEqual 0.0
-      centrality(11) shouldEqual 2.0
-      centrality(12) shouldEqual 1.0
-      centrality(13) shouldEqual 2.0
-      centrality(14) shouldEqual 1.0
-      centrality(15) shouldEqual 2.0
+      odc(graph.getNodeById(0).get)  shouldEqual 0.0
+      odc(graph.getNodeById(1).get)  shouldEqual 0.0
+      odc(graph.getNodeById(11).get) shouldEqual 2.0
+      odc(graph.getNodeById(12).get) shouldEqual 1.0
+      odc(graph.getNodeById(13).get) shouldEqual 2.0
+      odc(graph.getNodeById(14).get) shouldEqual 1.0
+      odc(graph.getNodeById(15).get) shouldEqual 2.0
     }
   }
 }
