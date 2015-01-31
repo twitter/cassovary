@@ -51,7 +51,6 @@ class TriangleCountSpec extends WordSpec with Matchers {
       triangles should be(0.0 +- 20.0)
     }
 
-
     "Return correct results for Erdos-Renly mutual graphs" in {
       val edgeProbability = 0.3
       val numberOfNodes = 200

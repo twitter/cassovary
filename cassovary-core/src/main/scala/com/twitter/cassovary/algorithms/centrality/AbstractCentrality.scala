@@ -14,6 +14,7 @@
 package com.twitter.cassovary.algorithms.centrality
 
 import com.twitter.cassovary.graph.{Node, DirectedGraph}
+import collection.immutable.IndexedSeq
 
 abstract class AbstractCentrality(graph: DirectedGraph) extends Centrality {
 
@@ -24,7 +25,7 @@ abstract class AbstractCentrality(graph: DirectedGraph) extends Centrality {
    * @param n Node
    * @return
    */
-  def apply(n: Node): Double = centrality(n.id)
+  def apply(n: Node): Double = centralityValues(n.id)
 
-  def centrality: Array[Double]
+  def recalculate: IndexedSeq[Double]
 }

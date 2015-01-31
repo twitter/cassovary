@@ -14,71 +14,16 @@
 package com.twitter.cassovary.algorithms.centrality
 
 import com.twitter.cassovary.graph.DirectedGraph
+import com.twitter.cassovary.graph.GraphDir.GraphDir
+import collection.immutable.IndexedSeq
 
-sealed abstract class DegreeCentrality(graph: DirectedGraph) extends AbstractCentrality(graph) {
+class DegreeCentrality(graph: DirectedGraph, dir: GraphDir, normalize: Boolean = true) extends AbstractCentrality(graph) {
 
-  /**
-   * Normalize the values
-   * @return
-   */
-  def normalize(normalize: Boolean = true): Array[Double] = {
-    if (normalize)
-      centrality map { c => c / (graph.nodeCount - 1) }
-    else
-      centrality
-  }
-}
+  recalculate
 
-object InDegreeCentrality {
-
-  /**
-   * Determines the in-degree centrality of each node in the graph.  Currently, we only support
-   * calculating the IDC for each member of the graph and not for the graph on the whole.  Although this
-   * functionality would not be terribly difficult to add.
-   * @param graph A DirectedGraph instance
-   * @return
-   */
-  def apply(graph: DirectedGraph, normalize: Boolean = true): Array[Double] = {
-    val idc = new InDegreeCentrality(graph)
-    idc.normalize(normalize)
-  }
-}
-
-object OutDegreeCentrality {
-
-  /**
-   * Determines the out-degree centrality of each node in the graph.  Currently, we only support
-   * calculating the ODC for each member of the graph and not for the graph on the whole.  Although this
-   * functionality would not be terribly difficult to add.
-   * @param graph A DirectedGraph instance
-   * @return
-   */
-  def apply(graph: DirectedGraph, normalize: Boolean = true): Array[Double] = {
-    val odc = new OutDegreeCentrality(graph)
-    odc.normalize(normalize)
-  }
-}
-
-private class InDegreeCentrality(graph: DirectedGraph) extends DegreeCentrality(graph) {
-
-  /**
-   * Run the indegree centrality calculation for the graph.
-   * @return
-   */
-  def centrality: Array[Double] = {
-    graph foreach { n => centralityValues(n.id) = n.inboundCount }
-    centralityValues
-  }
-}
-
-private class OutDegreeCentrality(graph: DirectedGraph) extends DegreeCentrality(graph) {
-
-  /**
-   * Run the outdegree centrality calculation for the graph.
-   * @return
-   */
-  def centrality: Array[Double] = {
-    graph foreach { n => centralityValues(n.id) = n.outboundCount }
-    centralityValues
+  override def recalculate: IndexedSeq[Double] = {
+    val denom = if (normalize) graph.nodeCount - 1 else 1.0
+    graph foreach { node => centralityValues(node.id) = node.neighborCount(dir) / denom }
+    centralityValues.toIndexedSeq
   }
 }
