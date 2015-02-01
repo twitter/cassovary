@@ -24,6 +24,7 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import scala.Tuple2;
 import scala.collection.JavaConverters$;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -89,6 +90,11 @@ public class RandomWalkJava {
 
   @SuppressWarnings("unchecked")
   private static Map<Integer, Integer> scalaIntsMapToJavaMap(scala.collection.Map<Object, Object> map) {
-    return (Map<Integer, Integer>) JavaConverters$.MODULE$.mapAsJavaMapConverter(map);
+    Map<Object, Object> javaMap = JavaConverters$.MODULE$.mapAsJavaMapConverter(map).asJava();
+    HashMap<Integer, Integer> javaIntsMap = new HashMap<>();
+    for(Object key: javaMap.keySet()){
+        javaIntsMap.put((Integer)key, (Integer)javaMap.get(key));
+    }
+    return javaIntsMap;
   }
 }

@@ -32,7 +32,7 @@ class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
   def this(dataIterable: Iterable[NodeIdEdgesMaxId],
             storedGraphDir: StoredGraphDir) {
     this(storedGraphDir)
-    for (nodeData <- dataIterable) {
+    for (nodeData <- dataIterable.iterator) {
       val id = nodeData.id
       getOrCreateNode(id)
       nodeData.edges map getOrCreateNode
