@@ -37,9 +37,9 @@ import java.util.concurrent.ExecutorService
  */
 trait GraphReader[T] {
   /**
-   * Should return a sequence of iterators over `NodeIdEdgesMaxId` objects
+   * Should return a sequence of `NodeIdEdgesMaxId` iterables
    */
-  def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]]
+  def iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]]
 
   /**
    * Define node numberer
@@ -62,7 +62,7 @@ trait GraphReader[T] {
    * Create an `ArrayBasedDirectedGraph`
    */
   def toArrayBasedDirectedGraph() = {
-    ArrayBasedDirectedGraph(iteratorSeq, parallelismLimit, storedGraphDir)
+    ArrayBasedDirectedGraph(iterableSeq, parallelismLimit, storedGraphDir)
   }
 
   /**
@@ -71,13 +71,13 @@ trait GraphReader[T] {
    *                  128 is an arbitrary default
    */
   def toSharedArrayBasedDirectedGraph(numShards: Int = 128) = {
-    SharedArrayBasedDirectedGraph(iteratorSeq, executorService, storedGraphDir, numShards)
+    SharedArrayBasedDirectedGraph(iterableSeq, executorService, storedGraphDir, numShards)
   }
 
   /**
    * Create an `ArrayBasedDynamicDirectedGraph`
    */
   def toArrayBasedDynamicDirectedGraph() = {
-    new ArrayBasedDynamicDirectedGraph(iteratorSeq, storedGraphDir)
+    new ArrayBasedDynamicDirectedGraph(iterableSeq, storedGraphDir)
   }
 }

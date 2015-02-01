@@ -35,12 +35,12 @@ trait GraphReaderFromDirectory[T] extends GraphReader[T] {
   /**
    * Returns a reader for a given file (shard).
    */
-  def oneShardReader(filename : String) : Iterator[NodeIdEdgesMaxId]
+  def oneShardReader(filename : String) : Iterable[NodeIdEdgesMaxId]
 
   /**
-   * Should return a sequence of iterators over NodeIdEdgesMaxId objects
+   * Should return a sequence of `NodeIdEdgesMaxId` iterables
    */
-  def iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]] = {
+  def iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]] = {
     val dir = new File(directory)
     val filesInDir = dir.list()
     if (filesInDir == null) {
@@ -55,8 +55,8 @@ trait GraphReaderFromDirectory[T] extends GraphReader[T] {
         None
       }
     })
-    validFiles.map({ filename =>
-    {() => oneShardReader(directory + "/" + filename)}
-    }).toSeq
+    validFiles.map { filename =>
+      oneShardReader(directory + "/" + filename)
+    }
   }
 }

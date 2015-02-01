@@ -32,7 +32,7 @@ object SharedArrayBasedDirectedGraph {
   val emptyArray = Array.empty[Int]
 
   /**
-   * Construct a shared array-based graph from a sequence of iterators over NodeIdEdgesMaxId.
+   * Construct a shared array-based graph from a sequence of NodeIdEdgesMaxId iterables.
    * Eg each NodeIdEdgesMaxId could correspond to one graph dump file.
    *
    * This function builds the graph using similar steps as in ArrayBasedDirectedGraph.
@@ -41,12 +41,12 @@ object SharedArrayBasedDirectedGraph {
    * an offset into this shared array. The avoid huge arrays, this edge array
    * is also sharded based on node's id.
    *
-   * @param iteratorSeq the sequence of nodes each with its own edges
+   * @param iterableSeq the sequence of nodes each with its own edges
    * @param executorService the executor for parallel execution
    * @param storedGraphDir the direction of the graph to be built
    * @param numOfShards specifies the number of shards to use in creating shared array
    */
-  def apply(iteratorSeq: Seq[ () => Iterator[NodeIdEdgesMaxId] ], executorService: ExecutorService,
+  def apply(iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]], executorService: ExecutorService,
       storedGraphDir: StoredGraphDir, numOfShards: Int) = {
 
     assert(numOfShards > 0)
@@ -66,10 +66,10 @@ object SharedArrayBasedDirectedGraph {
      */
     log.info("read out num of edges and max id from files in parallel")
     val futures = statsReceiver.time("graph_dump_read_out_num_of_edge_and_max_id_parallel") {
-      def readNumOfEdgesAndMaxId(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) =
+      def readNumOfEdgesAndMaxId(edgesIterable: Iterable[NodeIdEdgesMaxId]) =
           statsReceiver.time("graph_load_read_out_edge_sizes_dump_files") {
         var id, newMaxId, varNodeWithOutEdgesMaxId, numOfEdges, edgesLength, nodeCount = 0
-        val iteratorForEdgeSizes = iteratorFunc()
+        val iteratorForEdgeSizes = edgesIterable.iterator
         iteratorForEdgeSizes foreach { item =>
           id = item.id
           newMaxId = newMaxId max item.maxId
@@ -82,8 +82,8 @@ object SharedArrayBasedDirectedGraph {
         (newMaxId, varNodeWithOutEdgesMaxId, numOfEdges, nodeCount)
       }
 
-      ExecutorUtils.parallelWork[() => Iterator[NodeIdEdgesMaxId], (Int, Int, Int, Int)](
-          executorService, iteratorSeq, readNumOfEdgesAndMaxId)
+      ExecutorUtils.parallelWork[Iterable[NodeIdEdgesMaxId], (Int, Int, Int, Int)](
+          executorService, iterableSeq, readNumOfEdgesAndMaxId)
     }
     futures.toArray map { future =>
       val f = future.asInstanceOf[Future[(Int, Int, Int, Int)]]
@@ -112,12 +112,10 @@ object SharedArrayBasedDirectedGraph {
     statsReceiver.time("graph_dump_load_partial_nodes_and_out_edges_parallel") {
       var loadingCounter = new AtomicLong()
       val outputMode = 10000
-      def readOutEdges(iteratorFunc: () => Iterator[NodeIdEdgesMaxId]) =
+      def readOutEdges(edgesIterable: Iterable[NodeIdEdgesMaxId]) =
           statsReceiver.time("graph_load_read_out_edge_from_dump_files") {
         var id, edgesLength, shardIdx, offset = 0
-
-        val iterator = iteratorFunc()
-
+        val iterator = edgesIterable.iterator
         iterator foreach { item =>
           id = item.id
           nodeIdSet(id) = 1
@@ -135,8 +133,8 @@ object SharedArrayBasedDirectedGraph {
         }
       }
 
-      ExecutorUtils.parallelForEach[() => Iterator[NodeIdEdgesMaxId], Unit](
-          executorService, iteratorSeq, readOutEdges)
+      ExecutorUtils.parallelForEach[Iterable[NodeIdEdgesMaxId], Unit](
+          executorService, iterableSeq, readOutEdges)
     }
 
     log.info("Count total number of nodes")
@@ -229,8 +227,8 @@ object SharedArrayBasedDirectedGraph {
   }
 
   @VisibleForTesting
-  def apply( iteratorFunc: () => Iterator[NodeIdEdgesMaxId], storedGraphDir: StoredGraphDir):
-    SharedArrayBasedDirectedGraph = apply(Seq(iteratorFunc), MoreExecutors.sameThreadExecutor(),
+  def apply(iterable: Iterable[NodeIdEdgesMaxId], storedGraphDir: StoredGraphDir):
+    SharedArrayBasedDirectedGraph = apply(Seq(iterable), MoreExecutors.sameThreadExecutor(),
       storedGraphDir, 1)
 }
 

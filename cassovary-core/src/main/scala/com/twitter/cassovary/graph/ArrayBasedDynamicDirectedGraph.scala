@@ -29,10 +29,10 @@ class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
 
   private var _nodeCount = 0
 
-  def this(dataIterator: Iterator[NodeIdEdgesMaxId],
+  def this(dataIterable: Iterable[NodeIdEdgesMaxId],
             storedGraphDir: StoredGraphDir) {
     this(storedGraphDir)
-    for (nodeData <- dataIterator) {
+    for (nodeData <- dataIterable.iterator) {
       val id = nodeData.id
       getOrCreateNode(id)
       nodeData.edges map getOrCreateNode
@@ -44,9 +44,9 @@ class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
     }
   }
 
-  def this(iteratorSeq: Seq[() => Iterator[NodeIdEdgesMaxId]],
+  def this(iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]],
            storedGraphDir: StoredGraphDir) {
-    this((iteratorSeq.view flatMap { _()}).iterator, storedGraphDir)
+    this(iterableSeq.flatten , storedGraphDir)
   }
 
   /* Returns an option which is non-empty if outbound list for id  is non-null. */

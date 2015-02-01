@@ -73,26 +73,36 @@ class AdjacencyListGraphReader[T] (
    * @param filename Name of file to read from
    */
   private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[T])
-    extends Iterator[NodeIdEdgesMaxId] {
+    extends Iterable[NodeIdEdgesMaxId] {
 
     private val outEdgePattern = ("""^(\w+)""" + separator + """(\d+)""").r
-    var lastLineParsed = 0
-    private val lines = Source.fromFile(filename).getLines()
-      .map{x => {lastLineParsed += 1; x}}
-    private val holder = NodeIdEdgesMaxId(-1, null, -1)
 
-    override def hasNext: Boolean = lines.hasNext
+    override def iterator = new Iterator[NodeIdEdgesMaxId] {
 
-    override def next(): NodeIdEdgesMaxId = {
-      var i = 0
-      try {
-        val outEdgePattern(id, outEdgeCount) = lines.next().trim
-        val outEdgeCountInt = outEdgeCount.toInt
-        val externalNodeId = idReader(id)
-        val internalNodeId = nodeNumberer.externalToInternal(externalNodeId)
+      var lastLineParsed = 0
+      private val src = Source.fromFile(filename)
+      private val lines = src.getLines()
+        .map{x => {lastLineParsed += 1; x}}
+      private val holder = NodeIdEdgesMaxId(-1, null, -1)
 
-        var newMaxId = internalNodeId
-        val outEdgesArr = new Array[Int](outEdgeCountInt)
+      override def hasNext: Boolean = {
+        val isNotLastLine = lines.hasNext
+        if (!isNotLastLine) {
+          src.close()
+        }
+        isNotLastLine
+      }
+
+      override def next(): NodeIdEdgesMaxId = {
+        var i = 0
+        try {
+          val outEdgePattern(id, outEdgeCount) = lines.next().trim
+          val outEdgeCountInt = outEdgeCount.toInt
+          val externalNodeId = idReader(id)
+          val internalNodeId = nodeNumberer.externalToInternal(externalNodeId)
+
+          var newMaxId = internalNodeId
+          val outEdgesArr = new Array[Int](outEdgeCountInt)
           while (i < outEdgeCountInt) {
             val externalNghId = idReader(lines.next().trim)
             val internalNghId = nodeNumberer.externalToInternal(externalNghId)
@@ -105,15 +115,16 @@ class AdjacencyListGraphReader[T] (
           holder.edges = outEdgesArr
           holder.maxId = newMaxId
           holder
-      } catch {
-        case NonFatal(exc) =>
-          throw new IOException("Parsing failed near line: %d in %s"
-            .format(lastLineParsed, filename), exc)
+        } catch {
+          case NonFatal(exc) =>
+            throw new IOException("Parsing failed near line: %d in %s"
+              .format(lastLineParsed, filename), exc)
+        }
       }
     }
   }
 
-  def oneShardReader(filename : String) : Iterator[NodeIdEdgesMaxId] = {
+  def oneShardReader(filename : String) : Iterable[NodeIdEdgesMaxId] = {
     new OneShardReader(filename, nodeNumberer)
   }
 }

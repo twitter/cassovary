@@ -67,71 +67,74 @@ class ListOfEdgesGraphReader[T](
 
 
   private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[T])
-    extends Iterator[NodeIdEdgesMaxId] {
+    extends Iterable[NodeIdEdgesMaxId] {
 
-    var lastLineParsed = 0
+    override def iterator = new Iterator[NodeIdEdgesMaxId] {
 
-    private val holder = NodeIdEdgesMaxId(-1, null, -1)
+      private val holder = NodeIdEdgesMaxId(-1, null, -1)
+      var lastLineParsed = 0
 
-    def readEdgesBySource(): (Int2ObjectMap[ArrayBuffer[Int]], Int2IntArrayMap) = {
-      log.info("Starting reading from file %s...\n", filename)
-      val directedEdgePattern = ("""^(\w+)""" + separator + """(\w+)""").r
-      val commentPattern = """(^#.*)""".r
-      val lines = Source.fromFile(filename).getLines()
-        .map{x => {lastLineParsed += 1; x}}
+      def readEdgesBySource(): (Int2ObjectMap[ArrayBuffer[Int]], Int2IntArrayMap) = {
+        log.info("Starting reading from file %s...\n", filename)
+        val directedEdgePattern = ("""^(\w+)""" + separator + """(\w+)""").r
+        val commentPattern = """(^#.*)""".r
+        val lines = Source.fromFile(filename).getLines()
+          .map{x => {lastLineParsed += 1; x}}
 
-      val edgesBySource = new Int2ObjectLinkedOpenHashMap[ArrayBuffer[Int]]()
-      val nodeMaxOutEdgeId = new Int2IntArrayMap()
+        val edgesBySource = new Int2ObjectLinkedOpenHashMap[ArrayBuffer[Int]]()
+        val nodeMaxOutEdgeId = new Int2IntArrayMap()
 
-      def updateNodeMaxOutEdgeId(node: Int, out: Int) {
-        if (nodeMaxOutEdgeId.containsKey(node)) {
-          nodeMaxOutEdgeId.put(node, nodeMaxOutEdgeId.get(node) max out)
-        } else {
-          nodeMaxOutEdgeId.put(node, node max out)
-        }
-      }
-
-      lines.foreach {
-        line =>
-          line.trim match {
-            case commentPattern(s) => ()
-            case directedEdgePattern(from, to) =>
-              val internalFromId = nodeNumberer.externalToInternal(idReader(from))
-              val internalToId = nodeNumberer.externalToInternal(idReader(to))
-              if (edgesBySource.containsKey(internalFromId)) {
-                edgesBySource.get(internalFromId) += internalToId
-              } else {
-                edgesBySource.put(internalFromId, ArrayBuffer(internalToId))
-              }
-              updateNodeMaxOutEdgeId(internalFromId, internalToId)
+        def updateNodeMaxOutEdgeId(node: Int, out: Int) {
+          if (nodeMaxOutEdgeId.containsKey(node)) {
+            nodeMaxOutEdgeId.put(node, nodeMaxOutEdgeId.get(node) max out)
+          } else {
+            nodeMaxOutEdgeId.put(node, node max out)
           }
+        }
+
+        lines.foreach {
+          line =>
+            line.trim match {
+              case commentPattern(s) => ()
+              case directedEdgePattern(from, to) =>
+                val internalFromId = nodeNumberer.externalToInternal(idReader(from))
+                val internalToId = nodeNumberer.externalToInternal(idReader(to))
+                if (edgesBySource.containsKey(internalFromId)) {
+                  edgesBySource.get(internalFromId) += internalToId
+                } else {
+                  edgesBySource.put(internalFromId, ArrayBuffer(internalToId))
+                }
+                updateNodeMaxOutEdgeId(internalFromId, internalToId)
+            }
+        }
+        log.info("Finished reading from file %s...\n", filename)
+        Source.fromFile(filename).close()
+        (edgesBySource, nodeMaxOutEdgeId)
       }
-      log.info("Finished reading from file %s...\n", filename)
-      (edgesBySource, nodeMaxOutEdgeId)
-    }
 
-    val (edgesBySource, nodeMaxOutEdgeId) = readEdgesBySource()
+      val (edgesBySource, nodeMaxOutEdgeId) = readEdgesBySource()
 
-    lazy val edgesIterator = edgesBySource.entrySet().iterator()
+      lazy val edgesIterator = edgesBySource.entrySet().iterator()
 
-    override def hasNext: Boolean = edgesIterator.hasNext
+      override def hasNext: Boolean = edgesIterator.hasNext
 
-    override def next(): NodeIdEdgesMaxId = {
-      try {
-        val elem = edgesIterator.next()
-        holder.id = elem.getKey
-        holder.edges = elem.getValue.toArray
-        holder.maxId = nodeMaxOutEdgeId.get(elem.getKey)
-        holder
-      } catch {
-        case NonFatal(exc) =>
-          throw new IOException("Parsing failed near line: %d in %s"
-            .format(lastLineParsed, filename), exc)
+      override def next(): NodeIdEdgesMaxId = {
+        try {
+          val elem = edgesIterator.next()
+          holder.id = elem.getKey
+          holder.edges = elem.getValue.toArray
+          holder.maxId = nodeMaxOutEdgeId.get(elem.getKey)
+          holder
+        } catch {
+          case NonFatal(exc) =>
+            throw new IOException("Parsing failed near line: %d in %s"
+              .format(lastLineParsed, filename), exc)
+        }
       }
     }
   }
 
-  def oneShardReader(filename: String): Iterator[NodeIdEdgesMaxId] = {
+  def oneShardReader(filename: String): Iterable[NodeIdEdgesMaxId] = {
     new OneShardReader(filename, nodeNumberer)
   }
 }
