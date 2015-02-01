@@ -62,36 +62,34 @@ object TestGraphs {
     TestNode(2, Nil, List(1))
     )
 
-  def g3 = ArrayBasedDirectedGraph( () => Seq(
+  def g3 = ArrayBasedDirectedGraph(Seq(
     NodeIdEdgesMaxId(10, Array(11, 12)),
     NodeIdEdgesMaxId(11, Array(12)),
     NodeIdEdgesMaxId(12, Array(11))
-    ).iterator, StoredGraphDir.BothInOut)
+    ), StoredGraphDir.BothInOut)
 
-  def g5 = ArrayBasedDirectedGraph( ()  => Seq(
+  def g5 = ArrayBasedDirectedGraph(Seq(
     NodeIdEdgesMaxId(10, Array(11, 12, 13)),
     NodeIdEdgesMaxId(11, Array(12)),
     NodeIdEdgesMaxId(12, Array(11)),
     NodeIdEdgesMaxId(13, Array(14)),
     NodeIdEdgesMaxId(14, Array())
-    ).iterator, StoredGraphDir.BothInOut)
+    ), StoredGraphDir.BothInOut)
 
-  val nodeSeq =  Seq(
-    NodeIdEdgesMaxId(10, Array(11, 12, 13)),
-    NodeIdEdgesMaxId(11, Array(12, 14)),
-    NodeIdEdgesMaxId(12, Array(14)),
-    NodeIdEdgesMaxId(13, Array(12, 14)),
-    NodeIdEdgesMaxId(14, Array(15)),
-    NodeIdEdgesMaxId(15, Array(10, 11)))
+  val nodeSeqIterator = Seq(
+      NodeIdEdgesMaxId(10, Array(11, 12, 13)),
+      NodeIdEdgesMaxId(11, Array(12, 14)),
+      NodeIdEdgesMaxId(12, Array(14)),
+      NodeIdEdgesMaxId(13, Array(12, 14)),
+      NodeIdEdgesMaxId(14, Array(15)),
+      NodeIdEdgesMaxId(15, Array(10, 11))
+      )
 
-  val nodeSeqWithEmpty = Seq(
+
+  val nodeSeqIteratorWithEmpty = Seq(
     NodeIdEdgesMaxId(0, Array.empty[Int]),
     NodeIdEdgesMaxId(1, Array.empty[Int])
-  ) ++ nodeSeq
-
-
-  val nodeSeqIterator = () => nodeSeq.iterator
-  val nodeSeqIteratorWithEmpty = () => nodeSeqWithEmpty.iterator
+  ) ++ nodeSeqIterator
 
   // using testGraph becomes onerous for non-trivial graphs
   def g6 = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.BothInOut)
@@ -101,7 +99,7 @@ object TestGraphs {
 
   def g6WithEmptyNodes = ArrayBasedDirectedGraph(nodeSeqIteratorWithEmpty, StoredGraphDir.BothInOut)
 
-  val nodeSeqIterator2 = () => Seq(
+  val nodeSeqIterator2 = Seq(
       NodeIdEdgesMaxId(10, Array(11, 12, 13)),
       NodeIdEdgesMaxId(11, Array(10, 13, 14)),
       NodeIdEdgesMaxId(12, Array(13, 14)),
@@ -109,7 +107,7 @@ object TestGraphs {
       NodeIdEdgesMaxId(14, Array(10, 11, 15)),
       NodeIdEdgesMaxId(15, Array(10, 11, 16)),
       NodeIdEdgesMaxId(16, Array(15))
-      ).iterator
+      )
   def g7_onlyout = ArrayBasedDirectedGraph(nodeSeqIterator2, StoredGraphDir.OnlyOut)
   def g7_onlyin = ArrayBasedDirectedGraph(nodeSeqIterator2, StoredGraphDir.OnlyIn)
 
@@ -155,7 +153,7 @@ object TestGraphs {
       val edgesFromSource = positiveBits map (x => if (x < source) x else x + 1)
       nodes(source) = NodeIdEdgesMaxId(source, edgesFromSource)
     }
-    ArrayBasedDirectedGraph( () => nodes.iterator, graphDir)
+    ArrayBasedDirectedGraph(nodes, graphDir)
   }
 
   /**
@@ -189,6 +187,6 @@ object TestGraphs {
     val nodesEdges = nodes.indices map { i =>
       NodeIdEdgesMaxId(i, nodes(i).asScala.toArray)
     }
-    ArrayBasedDirectedGraph( () => nodesEdges.iterator, graphDir)
+    ArrayBasedDirectedGraph(nodesEdges, graphDir)
   }
 }
