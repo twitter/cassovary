@@ -85,11 +85,17 @@ object TestGraphs {
       NodeIdEdgesMaxId(15, Array(10, 11))
       )
 
+  val nodeSeqIteratorWithEmpty = Seq(
+    NodeIdEdgesMaxId(0, Array.empty[Int]),
+    NodeIdEdgesMaxId(1, Array.empty[Int])
+  ) ++ nodeSeqIterator
+
   // using testGraph becomes onerous for non-trivial graphs
   def g6 = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.BothInOut)
 
   def g6_onlyout = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.OnlyOut)
   def g6_onlyin = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.OnlyIn)
+  def g6WithEmptyNodes = ArrayBasedDirectedGraph(nodeSeqIteratorWithEmpty, StoredGraphDir.BothInOut)
 
   val nodeSeqIterator2 = Seq(
       NodeIdEdgesMaxId(10, Array(11, 12, 13)),
