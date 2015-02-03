@@ -30,7 +30,7 @@ case class FillingInEdgesBiDirectionalNode(id: Int, inEdgeSize: Int,
   def this(node: Node, inEdgesSize: Int) =
     this(node.id, inEdgesSize, node.outboundNodes())
 
-  val inEdges: mutable.Seq[Int] = new Array[Int](inEdgeSize)
+  val inEdges = new Array[Int](inEdgeSize)
 
   override def inboundNodes(): Seq[Int] = inEdges
 
