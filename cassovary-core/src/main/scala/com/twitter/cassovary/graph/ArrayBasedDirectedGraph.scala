@@ -13,15 +13,17 @@
  */
 package com.twitter.cassovary.graph
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import com.google.common.annotations.VisibleForTesting
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.graph.node._
-import com.twitter.cassovary.util.{SortedArrayOps, BoundedFuturePool}
+import com.twitter.cassovary.util.BoundedFuturePool
 import com.twitter.finagle.stats.DefaultStatsReceiver
 import com.twitter.logging.Logger
 import com.twitter.util.Future.when
-import com.twitter.util.{Await, FuturePool, Future}
-import java.util.concurrent.atomic.AtomicInteger
+import com.twitter.util.{Await, Future, FuturePool}
+
 import scala.collection.mutable
 
 /**
@@ -67,7 +69,7 @@ object NeighborsSortingStrategy extends Enumeration {
 }
 
 object ArrayBasedDirectedGraph {
-  import NeighborsSortingStrategy._
+  import com.twitter.cassovary.graph.NeighborsSortingStrategy._
 
   def apply(iteratorSeq: Seq[Iterable[NodeIdEdgesMaxId]],
             parallelismLimit: Int,
@@ -291,10 +293,10 @@ object ArrayBasedDirectedGraph {
           val futures = (nodesOutEdges.iterator ++ Iterator(nodesWithNoOutEdges)).map {
             (nodes: Seq[Node]) => futurePool {
               nodes foreach { node =>
+                val fillingInEdgesNode = node.asInstanceOf[FillingInEdgesBiDirectionalNode]
                 val edgeSize = inEdgesSizes(node.id).intValue()
+                fillingInEdgesNode.inEdges = new Array[Int](edgeSize)
                 if (edgeSize > 0) {
-                  val fillingEdgesNode = new FillingInEdgesBiDirectionalNode(node, edgeSize)
-                  table(node.id) = fillingEdgesNode
                   // reset inEdgesSizes, and use it as index pointer of
                   // the current insertion place when adding in edges
                   inEdgesSizes(node.id).set(0)
@@ -330,11 +332,7 @@ object ArrayBasedDirectedGraph {
             nodes => futurePool {
               nodes.foreach {
                 node =>
-                  table(node.id) match {
-                    case fillingInEdgesNode: FillingInEdgesBiDirectionalNode =>
-                      table(node.id) = fillingInEdgesNode.finishingFilling(neighborsSortingStrategy != LeaveUnsorted)
-                    case _ => // no need to finish filling
-                  }
+                  node.asInstanceOf[FillingInEdgesBiDirectionalNode].sortInNeighbors()
               }
             }
           }
