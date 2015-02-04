@@ -21,7 +21,7 @@ import com.twitter.cassovary.graph.{Node, DirectedGraph}
  * instantiation.
  * {@note The centrality values are stored in an internal array indexed by node's id. Hence, do not use for graphs with very large ids.}
  */
-abstract class AbstractCentrality(graph: DirectedGraph) extends Centrality {
+abstract class AbstractCentrality(graph: DirectedGraph[Node]) extends Centrality {
 
   protected val centralityValues = new Array[Double](graph.maxNodeId + 1)
 

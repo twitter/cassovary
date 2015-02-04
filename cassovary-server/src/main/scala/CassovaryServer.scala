@@ -13,7 +13,7 @@
 */
 
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
-import com.twitter.cassovary.graph.{TestGraphs, DirectedGraph, GraphUtils}
+import com.twitter.cassovary.graph.{TestGraphs, DirectedGraph, GraphUtils, Node}
 import com.twitter.finagle.{Http, Service}
 import com.twitter.io.Charsets.Utf8
 import com.twitter.logging.Logger
@@ -32,7 +32,7 @@ object CassovaryServer extends TwitterServer {
 
   lazy override val log = Logger.get("CassovaryServer")
 
-  def walkOn(graph: DirectedGraph) {
+  def walkOn[V <: Node](graph: DirectedGraph[V]) {
     val numSteps = 100L * 100L
     val walkParams = RandomWalkParams(numSteps, 0.1, None, Some(2))
     val graphUtils = new GraphUtils(graph)

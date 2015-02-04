@@ -13,12 +13,12 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.GraphBehaviours
+import com.twitter.cassovary.graph.{GraphBehaviours, Node}
 import com.twitter.cassovary.util.SequentialNodeNumberer
 import java.util.concurrent.Executors
 import org.scalatest.{Matchers, WordSpec}
 
-class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours with Matchers {
+class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours[Node] with Matchers {
 
   val intGraphMap = Map(1 -> List(2, 3), 2 -> List(3), 3 -> List(4), 4 -> List(1))
 

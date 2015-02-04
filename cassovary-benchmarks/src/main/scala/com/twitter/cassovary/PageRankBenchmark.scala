@@ -14,10 +14,10 @@
 package com.twitter.cassovary
 
 import com.twitter.cassovary.algorithms.{PageRank, PageRankParams}
-import com.twitter.cassovary.graph.DirectedGraph
+import com.twitter.cassovary.graph.{DirectedGraph, Node}
 
 
-class PageRankBenchmark(graph: DirectedGraph,
+class PageRankBenchmark(graph: DirectedGraph[Node],
                         pageRankParams : PageRankParams = PageRankParams())
   extends OperationBenchmark {
 

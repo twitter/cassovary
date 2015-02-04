@@ -24,7 +24,7 @@ import org.scalatest.{Matchers, WordSpec}
 // TODO add a fake random so that the random walk tests can be controlled
 class GraphUtilsSpec extends WordSpec with Matchers {
 
-  def utils(graph: DirectedGraph) = {
+  def utils[V <: Node](graph: DirectedGraph[V]) = {
     (graph, new GraphUtils(graph))
   }
 

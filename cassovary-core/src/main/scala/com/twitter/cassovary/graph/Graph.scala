@@ -17,12 +17,12 @@ package com.twitter.cassovary.graph
  * The entry point into a model of a directed graph.  Users typically query a known starting node
  * and then traverse the graph using methods on that {@code Node}.
  */
-trait Graph {
+trait Graph[+V <: Node] {
   /**
    * Returns the node with the given {@code id} or else {@code None} if the given node does not
    * exist in this graph.
    */
-  def getNodeById(id: Int): Option[Node]
+  def getNodeById(id: Int): Option[V]
 
   def existsNodeId(id: Int) = getNodeById(id).isDefined
 }

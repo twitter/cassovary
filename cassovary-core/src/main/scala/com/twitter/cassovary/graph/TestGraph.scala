@@ -13,12 +13,11 @@
  */
 package com.twitter.cassovary.graph
 
-import java.util.concurrent.ConcurrentLinkedQueue
-
+import com.twitter.cassovary.graph.bipartite._
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.{BinomialDistribution, BoundedFuturePool, Sampling}
 import com.twitter.util.{Await, Future, FuturePool}
-
+import java.util.concurrent.ConcurrentLinkedQueue
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.Random
@@ -26,7 +25,7 @@ import scala.util.Random
 /**
  * A simple implementation of a DirectedGraph
  */
-case class TestGraph(nodes: Node*) extends DirectedGraph {
+case class TestGraph(nodes: Node*) extends DirectedGraph[Node] {
   val nodeTable = new mutable.HashMap[Int, Node]
   nodes foreach { addNode }
 
@@ -117,6 +116,136 @@ object TestGraphs {
     NeighborsSortingStrategy.LeaveUnsorted)
   def g7_onlyin = ArrayBasedDirectedGraph(nodeSeqIterator2, StoredGraphDir.OnlyIn,
     NeighborsSortingStrategy.LeaveUnsorted)
+
+  // Bipartite Graph
+  def bipartiteGraphSingleSide = {
+    /*
+   lN -> 1 to 5
+   rN -> 4,8,5,10,123,0
+   1 --> i:(), o:()
+   2 --> i: (), o: (5,10)
+   3 --> i: (), o: ()
+   4 --> i: (), o: (14)
+   5 --> i: (), o: (5,10,8)
+   */
+
+    val leftNodes = new Array[BipartiteNode](6)
+    var inBounds: Array[Int] = Array()
+    var outBounds: Array[Int] = Array()
+    leftNodes(1) = new LeftNode(1, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array(5, 10)
+    leftNodes(2) = new LeftNode(2, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array()
+    leftNodes(3) = new LeftNode(3, inBounds, outBounds)
+
+
+    inBounds = Array()
+    outBounds = Array(14)
+    leftNodes(4) = new LeftNode(4, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array(5, 10, 8)
+    leftNodes(5) = new LeftNode(5, inBounds, outBounds)
+
+    val rightNodes = new Array[BipartiteNode](124)
+    inBounds = Array(4)
+    outBounds = Array()
+    rightNodes(14) = new RightNode(14, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array()
+    rightNodes(4) = new RightNode(4, inBounds, outBounds)
+
+    inBounds = Array(2, 5)
+    outBounds = Array()
+    rightNodes(5) = new RightNode(5, inBounds, outBounds)
+
+    inBounds = Array(5)
+    outBounds = Array()
+    rightNodes(8) = new RightNode(8, inBounds, outBounds)
+
+    inBounds = Array(2, 5)
+    outBounds = Array()
+    rightNodes(10) = new RightNode(10, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array()
+    rightNodes(123) = new RightNode(123, inBounds, outBounds)
+
+    val leftSide = BipartiteSide(leftNodes, 5, 6)
+    val rightSide = BipartiteSide(rightNodes, 6, 0)
+
+    new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.LeftToRight)
+  }
+
+  def bipartiteGraphDoubleSide = {
+    /*
+   lN -> 1 to 5
+   rN -> 4,8,5,10,123,0
+   1 --> i:(4,5,123,10), o:()
+   2 --> i: (), o: (5,10)
+   3 --> i: (), o: ()
+   4 --> i: (14), o: (14)
+   5 --> i: (4,10), o: (5,10,8)
+   */
+
+    val leftNodes = new Array[BipartiteNode](6)
+
+    var inBounds: Array[Int] = Array(4, 5, 123, 10)
+    var outBounds: Array[Int] = Array()
+    leftNodes(1) = new LeftNode(1, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array(5, 10)
+    leftNodes(2) = new LeftNode(2, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array()
+    leftNodes(3) = new LeftNode(3, inBounds, outBounds)
+
+
+    inBounds = Array(14)
+    outBounds = Array(14)
+    leftNodes(4) = new LeftNode(4, inBounds, outBounds)
+
+    inBounds = Array(4, 10)
+    outBounds = Array(5, 10, 8)
+    leftNodes(5) = new LeftNode(5, inBounds, outBounds)
+
+    val rightNodes = new Array[BipartiteNode](124)
+    inBounds = Array(4)
+    outBounds = Array(4)
+    rightNodes(14) = new RightNode(14, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array(1, 5)
+    rightNodes(4) = new RightNode(4, inBounds, outBounds)
+
+    inBounds = Array(2, 5)
+    outBounds = Array(1)
+    rightNodes(5) = new RightNode(5, inBounds, outBounds)
+
+    inBounds = Array(5)
+    outBounds = Array()
+    rightNodes(8) = new RightNode(8, inBounds, outBounds)
+
+    inBounds = Array(2, 5)
+    outBounds = Array(1, 5)
+    rightNodes(10) = new RightNode(10, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array(1)
+    rightNodes(123) = new RightNode(123, inBounds, outBounds)
+
+    val leftSide = BipartiteSide(leftNodes, 5, 6)
+    val rightSide = BipartiteSide(rightNodes, 6, 7)
+
+    new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.Both)
+  }
 
   // a complete graph is where each node follows every other node
   def generateCompleteGraph(numNodes: Int) = {

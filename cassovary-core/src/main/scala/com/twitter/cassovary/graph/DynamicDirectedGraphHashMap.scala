@@ -22,7 +22,7 @@ import StoredGraphDir._
  * existing nodes. It currently doesn't support deletion of nodes.
  */
 abstract class DynamicDirectedGraphHashMap(val storedGraphDir: StoredGraphDir)
-    extends DynamicDirectedGraph {
+    extends DynamicDirectedGraph[DynamicNode] {
 
   protected def nodeFactory(id: Int): DynamicNode
 
@@ -30,9 +30,9 @@ abstract class DynamicDirectedGraphHashMap(val storedGraphDir: StoredGraphDir)
 
   def iterator = {
     val elements = nodes.elements
-    new Iterator[Node] {
+    new Iterator[DynamicNode] {
        def hasNext = elements.hasMoreElements
-       def next = elements.nextElement.asInstanceOf[Node]
+       def next = elements.nextElement
        def remove = throw new UnsupportedOperationException()
     }
   }

@@ -33,7 +33,7 @@ case class SuppliedNodeInfo(val node: Node, val initialIterationWeight: Double)
  * @param resetProbOnRight reset probability when iterating from right to left
  * @param numTopContributors The number of contributors (reasons) to be kept for each score
  */
-class IterativeLinkAnalyzer(graphUtils: GraphUtils, resetProbOnLeft: Double,
+class IterativeLinkAnalyzer(graphUtils: GraphUtils[Node], resetProbOnLeft: Double,
     resetProbOnRight: Double, numTopContributors: Int) {
 
   private val graph = graphUtils.graph

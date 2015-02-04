@@ -15,7 +15,6 @@ package com.twitter.cassovary
 
 import com.twitter.cassovary.graph._
 import com.twitter.cassovary.util.io.{AdjacencyListGraphReader, ListOfEdgesGraphReader}
-import com.twitter.cassovary.util.SequentialNodeNumberer
 import com.twitter.app.Flags
 import com.twitter.util.Stopwatch
 import java.util.concurrent.Executors
@@ -67,7 +66,7 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   /**
    * Builders of algorithms to be benchmarked.
    */
-  val benchmarks = ListBuffer[(DirectedGraph => OperationBenchmark)]()
+  val benchmarks = ListBuffer[(DirectedGraph[Node] => OperationBenchmark)]()
 
   /**
    * Number of repeats of every benchmark.
@@ -106,7 +105,7 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
      */
     val graphReadingThreadPool = Executors.newFixedThreadPool(4)
 
-    def readGraph(path : String, filename : String, adjacencyList: Boolean) : DirectedGraph = {
+    def readGraph(path : String, filename : String, adjacencyList: Boolean) : DirectedGraph[Node] = {
       if (adjacencyList) {
         AdjacencyListGraphReader.forIntIds(path, filename, graphReadingThreadPool).toArrayBasedDirectedGraph()
       } else

@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.algorithms.centrality
 
-import com.twitter.cassovary.graph.DirectedGraph
+import com.twitter.cassovary.graph.{Node, DirectedGraph}
 import com.twitter.cassovary.graph.GraphDir.GraphDir
 
 /**
@@ -24,7 +24,7 @@ import com.twitter.cassovary.graph.GraphDir.GraphDir
  * @param dir The direction of the edges to include in the degree centrality calculation.
  * @param normalize Pass true to normalize the values by the maximum number of possible connections.
  */
-class DegreeCentrality(graph: DirectedGraph, dir: GraphDir, normalize: Boolean = true) extends AbstractCentrality(graph) {
+class DegreeCentrality(graph: DirectedGraph[Node], dir: GraphDir, normalize: Boolean = true) extends AbstractCentrality(graph) {
 
   def _recalc(): Unit = {
     val denom = if (normalize) graph.nodeCount - 1 else 1.0
