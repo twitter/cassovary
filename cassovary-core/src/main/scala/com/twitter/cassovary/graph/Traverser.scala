@@ -38,7 +38,7 @@ trait Traverser extends Iterator[Node] { self =>
 trait BoundedIterator[T] extends Iterator[T] {
   /**
    * @return If option is defined, it is the maximal number of elements the iterator returns.
-   *         If is `None`, the iteratator is not bounded.
+   *         If is `None`, the iterator is not bounded.
    */
   def maxSteps: Option[Long]
 

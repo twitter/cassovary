@@ -13,13 +13,12 @@
  */
 package com.twitter.cassovary.algorithms.centrality
 
-import collection.immutable
 import com.twitter.cassovary.graph.DirectedGraph
 import com.twitter.cassovary.graph.GraphDir.GraphDir
 
 /**
  * Calculate the degree centrality for a specific graph and direction.  If normalization
- * is {@code true} then divide each node's degree centrality by the maximum number
+ * is ``true`` then divide each node's degree centrality by the maximum number
  * of possible connections within the graph.
  * @param graph The graph object on which calculate the degree centrality
  * @param dir The direction of the edges to include in the degree centrality calculation.
@@ -27,11 +26,8 @@ import com.twitter.cassovary.graph.GraphDir.GraphDir
  */
 class DegreeCentrality(graph: DirectedGraph, dir: GraphDir, normalize: Boolean = true) extends AbstractCentrality(graph) {
 
-  recalculate()
-
-  def recalculate(): immutable.IndexedSeq[Double] = {
+  def _recalc(): Unit = {
     val denom = if (normalize) graph.nodeCount - 1 else 1.0
     graph foreach { node => centralityValues(node.id) = node.neighborCount(dir) / denom }
-    centralityValues.toIndexedSeq
   }
 }
