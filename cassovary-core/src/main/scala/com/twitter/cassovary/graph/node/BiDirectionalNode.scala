@@ -15,7 +15,7 @@ package com.twitter.cassovary.graph.node
 
 import java.{util => jutil}
 
-import com.twitter.cassovary.graph.{SortedNeighborsNodeOps, Node, SeqBasedNode}
+import com.twitter.cassovary.graph.{Node, SeqBasedNode, SortedNeighborsNodeOps}
 import com.twitter.cassovary.util.SharedArraySeq
 
 /**
@@ -24,12 +24,19 @@ import com.twitter.cassovary.util.SharedArraySeq
  */
 trait BiDirectionalNode extends Node
 
-case class FillingInEdgesBiDirectionalNode(id: Int, outboundNodes: Seq[Int])
+class FillingInEdgesBiDirectionalNode(val id: Int, val outboundNodes: Seq[Int])
   extends BiDirectionalNode {
 
-  var inEdges: Array[Int] = null
+  var inEdges: Array[Int] = BiDirectionalNode.noEdges
 
   override def inboundNodes(): Seq[Int] = inEdges
+
+  /**
+   * Creates array of a given size to store incoming edges.
+   */
+  def createInEdges(size: Int): Unit = {
+    inEdges = new Array[Int](size)
+  }
 
   /**
    * Sorts incoming edges.
@@ -39,16 +46,18 @@ case class FillingInEdgesBiDirectionalNode(id: Int, outboundNodes: Seq[Int])
   }
 }
 
-object BiDirectionalNode {
-  val noEdges = Array[Int]()
-
-  def apply(nodeId: Int, out: Seq[Int], sortedNeighbors: Boolean): BiDirectionalNode = {
+object FillingInEdgesBiDirectionalNode {
+  def apply(nodeId: Int, out: Seq[Int], sortedNeighbors: Boolean): FillingInEdgesBiDirectionalNode = {
     if (sortedNeighbors) {
       new FillingInEdgesBiDirectionalNode(nodeId, out) with SortedNeighborsNodeOps
     } else {
       new FillingInEdgesBiDirectionalNode(nodeId, out)
     }
   }
+}
+
+object BiDirectionalNode {
+  val noEdges = Array[Int]()
 
   def apply(nodeId: Int, in: Seq[Int], out: Seq[Int], sortedNeighbors: Boolean = false): BiDirectionalNode = {
     if (sortedNeighbors) {

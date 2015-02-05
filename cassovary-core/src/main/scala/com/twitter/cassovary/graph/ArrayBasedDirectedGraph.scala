@@ -69,7 +69,7 @@ object NeighborsSortingStrategy extends Enumeration {
 }
 
 object ArrayBasedDirectedGraph {
-  import com.twitter.cassovary.graph.NeighborsSortingStrategy._
+  import NeighborsSortingStrategy._
 
   def apply(iteratorSeq: Seq[Iterable[NodeIdEdgesMaxId]],
             parallelismLimit: Int,
@@ -295,8 +295,8 @@ object ArrayBasedDirectedGraph {
               nodes foreach { node =>
                 val fillingInEdgesNode = node.asInstanceOf[FillingInEdgesBiDirectionalNode]
                 val edgeSize = inEdgesSizes(node.id).intValue()
-                fillingInEdgesNode.inEdges = new Array[Int](edgeSize)
                 if (edgeSize > 0) {
+                  fillingInEdgesNode.createInEdges(edgeSize)
                   // reset inEdgesSizes, and use it as index pointer of
                   // the current insertion place when adding in edges
                   inEdgesSizes(node.id).set(0)

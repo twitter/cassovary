@@ -32,7 +32,7 @@ object ArrayBasedDirectedNode {
       case StoredGraphDir.OnlyIn | StoredGraphDir.OnlyOut | StoredGraphDir.Mutual =>
         UniDirectionalNode(nodeId, neighbors, dir, sortedNeighbors)
       case StoredGraphDir.BothInOut =>
-        BiDirectionalNode(nodeId, neighbors, sortedNeighbors)
+        FillingInEdgesBiDirectionalNode(nodeId, neighbors, sortedNeighbors)
     }
   }
 }
