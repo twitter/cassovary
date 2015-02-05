@@ -293,10 +293,9 @@ object ArrayBasedDirectedGraph {
           val futures = (nodesOutEdges.iterator ++ Iterator(nodesWithNoOutEdges)).map {
             (nodes: Seq[Node]) => futurePool {
               nodes foreach { node =>
-                val fillingInEdgesNode = node.asInstanceOf[FillingInEdgesBiDirectionalNode]
                 val edgeSize = inEdgesSizes(node.id).intValue()
                 if (edgeSize > 0) {
-                  fillingInEdgesNode.createInEdges(edgeSize)
+                  node.asInstanceOf[FillingInEdgesBiDirectionalNode].createInEdges(edgeSize)
                   // reset inEdgesSizes, and use it as index pointer of
                   // the current insertion place when adding in edges
                   inEdgesSizes(node.id).set(0)
