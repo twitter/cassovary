@@ -20,6 +20,6 @@ class ArrayBasedDirectedNodeSpec extends NodeBehaviors {
   val actualOut = ArrayBasedDirectedNode(nodeId, neighbors, StoredGraphDir.OnlyOut)
   val actualMutual = ArrayBasedDirectedNode(nodeId, neighbors, StoredGraphDir.Mutual)
   val actualBoth = ArrayBasedDirectedNode(nodeId, neighbors, StoredGraphDir.BothInOut)
-  actualBoth.asInstanceOf[BiDirectionalNode].inEdges = inEdges
+  actualBoth.asInstanceOf[FillingInEdgesBiDirectionalNode].inEdges = inEdges
   correctlyConstructNodes(actualIn, actualOut, actualMutual, actualBoth)
 }

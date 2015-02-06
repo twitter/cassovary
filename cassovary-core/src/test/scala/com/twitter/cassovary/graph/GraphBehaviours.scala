@@ -77,13 +77,14 @@ trait GraphBehaviours extends Matchers {
     }
   }
 
-  val sampleGraphEdges = Map(1 -> Array(2,3,4), 2 -> Array(1), 3 -> Array(4), 5 -> Array(1, 10))
+  val sampleGraphEdges = Map(1 -> Seq(2,3,4), 2 -> Seq(1), 3 -> Seq(4), 5 -> Seq(1, 10))
 
   def verifyInOutEdges(graph: DirectedGraph, numNodes: Int,
-                       outEdges: Map[Int, Array[Int]],
-                       inEdges: Map[Int, Array[Int]]): Unit = {
+                       outEdges: Map[Int, Seq[Int]],
+                       inEdges: Map[Int, Seq[Int]],
+                       checkOrdering: Boolean = false): Unit = {
 
-    def check(id: Int, a: Seq[Int], b: Option[Array[Int]]) {
+    def check(id: Int, a: Seq[Int], b: Option[Seq[Int]]) {
       if (a.isEmpty) {
         withClue("graph's nodeid " + id + " is empty but supplied edges is not: " + b) {
           b should (be ('empty) or be(Some(Array.empty[Int])))
@@ -92,34 +93,44 @@ trait GraphBehaviours extends Matchers {
         withClue("graph's nodeid " + id + " is not empty but supplied edges is") {
           b should not be 'empty
         }
-        withClue("graph's nodeid " + id + "'s edges do not match: in graph = " +
-          a.toSet + " edges = " + b.get.toSet) {
-          a.toSet shouldEqual b.get.toSet
+        if (checkOrdering) {
+          withClue("graph's nodeid " + id + "'s edges do not match: in graph = " +
+            a + " edges = " + b.get) {
+            a shouldEqual b.get
+          }
+        } else {
+          withClue("graph's nodeid " + id + "'s edges do not match: in graph = " +
+            a.toSet + " edges = " + b.get.toSet) {
+            a.toSet shouldEqual b.get.toSet
+          }
         }
       }
     }
 
     correctNumberOfNodesAndEdges(graph, numNodes)
-    for (node <- graph) {
-      check(node.id, node.outboundNodes(), outEdges.get(node.id))
-      check(node.id, node.inboundNodes(), inEdges.get(node.id))
+
+    "have correct in and out edges" + (if (checkOrdering) " in correct order" else "") in {
+      for (node <- graph) {
+        check(node.id, node.outboundNodes(), outEdges.get(node.id))
+        check(node.id, node.inboundNodes(), inEdges.get(node.id))
+      }
     }
   }
 
   // verify a graph constructed from a supplied map of node id -> array of edges (outedges unless
   // OnlyIn direction is to be stored in which case the supplied edges are incoming edges)
   def verifyGraphBuilding(builder: (Iterable[NodeIdEdgesMaxId], StoredGraphDir) => DirectedGraph,
-                  givenEdges: Map[Int, Array[Int]]): Unit =
+                  givenEdges: Map[Int, Seq[Int]]): Unit =
   {
-    def cross(k: Int, s: Array[Int]) = for (e <- s) yield (e, k)
+    def cross(k: Int, s: Seq[Int]) = for (e <- s) yield (e, k)
 
-    val allIds: Set[Int] = givenEdges.keys.toSet ++ givenEdges.values.toSet.flatMap { x: Array[Int] => x }
-    val noEdges = Map.empty[Int, Array[Int]]
-    def iterableSeq = givenEdges map { case (k, s) => NodeIdEdgesMaxId(k, s) }
+    val allIds: Set[Int] = givenEdges.keys.toSet ++ givenEdges.values.toSet.flatMap { x: Seq[Int] => x }
+    val noEdges = Map.empty[Int, Seq[Int]]
+    def iterableSeq = givenEdges map { case (k, s) => NodeIdEdgesMaxId(k, s.toArray) }
     for (dir <- List(StoredGraphDir.BothInOut, StoredGraphDir.OnlyOut, StoredGraphDir.OnlyIn)) {
       val graph = builder(iterableSeq, dir)
       "Graph constructed in direction " + dir should {
-        val inEdges: Map[Int, Array[Int]] = dir match {
+        val inEdges: Map[Int, Seq[Int]] = dir match {
           case StoredGraphDir.OnlyIn => givenEdges
           case StoredGraphDir.OnlyOut => noEdges
           case StoredGraphDir.BothInOut =>

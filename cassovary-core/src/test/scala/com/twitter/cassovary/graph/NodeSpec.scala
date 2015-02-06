@@ -126,4 +126,26 @@ class NodeSpec extends WordSpec with Matchers {
       node.randomNeighborSet(4, GraphDir.OutDir)(0) shouldEqual 3
     }
   }
+
+  "A node with sorted neighbors" should {
+    "allow linear intersection of neighbors with other node" in {
+      val node1 = new SeqBasedNode(0, Array(1, 2), Array(4, 6))
+        with SortedNeighborsNodeOps
+
+      val node2 = new SeqBasedNode(0, Array(3), Array(4, 6))
+        with SortedNeighborsNodeOps
+
+      node1.intersect(GraphDir.InDir, node2.inboundNodes) should be (Seq())
+      node1.intersect(GraphDir.OutDir, node2.outboundNodes) should be (Seq(4, 6))
+    }
+
+    "allow logarithmic membership checking" in {
+      val node = new SeqBasedNode(0, Array(1, 2, 3), Array(4, 5, 6)) with SortedNeighborsNodeOps
+      node.isNeighbor(GraphDir.InDir, 1) should be (true)
+      node.isNeighbor(GraphDir.InDir, 4) should be (false)
+
+      node.isNeighbor(GraphDir.OutDir, 1) should be (false)
+      node.isNeighbor(GraphDir.OutDir, 4) should be (true)
+    }
+  }
 }

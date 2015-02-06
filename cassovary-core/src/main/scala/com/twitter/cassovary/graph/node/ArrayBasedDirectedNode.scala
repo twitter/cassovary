@@ -23,15 +23,16 @@ object ArrayBasedDirectedNode {
    * @param nodeId an id of the node
    * @param neighbors a seq of ids of the neighbors read from file
    * @param dir the stored graph direction (OnlyIn, OnlyOut, BothInOut or Mutual)
+   * @param sortedNeighbors true if the neighbors of the node will be sorted
    *
    * @return a node
    */
-  def apply(nodeId: Int, neighbors: Array[Int], dir: StoredGraphDir) = {
+  def apply(nodeId: Int, neighbors: Seq[Int], dir: StoredGraphDir, sortedNeighbors: Boolean = false) = {
     dir match {
       case StoredGraphDir.OnlyIn | StoredGraphDir.OnlyOut | StoredGraphDir.Mutual =>
-        UniDirectionalNode(nodeId, neighbors, dir)
+        UniDirectionalNode(nodeId, neighbors, dir, sortedNeighbors)
       case StoredGraphDir.BothInOut =>
-        BiDirectionalNode(nodeId, neighbors)
+        FillingInEdgesBiDirectionalNode(nodeId, neighbors, sortedNeighbors)
     }
   }
 }

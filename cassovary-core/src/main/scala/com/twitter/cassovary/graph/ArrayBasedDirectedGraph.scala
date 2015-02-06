@@ -13,14 +13,17 @@
  */
 package com.twitter.cassovary.graph
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import com.google.common.annotations.VisibleForTesting
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.graph.node._
 import com.twitter.cassovary.util.BoundedFuturePool
 import com.twitter.finagle.stats.DefaultStatsReceiver
 import com.twitter.logging.Logger
-import com.twitter.util.{Await, FuturePool, Future}
-import java.util.concurrent.atomic.AtomicInteger
+import com.twitter.util.Future.when
+import com.twitter.util.{Await, Future, FuturePool}
+
 import scala.collection.mutable
 
 /**
@@ -49,17 +52,43 @@ object NodeIdEdgesMaxId {
 private case class NodesMaxIds(nodesInOnePart: Seq[Node],
                                maxIdInPart: Int, nodeWithOutEdgesMaxIdInPart: Int)
 
+/**
+ * ArrayBasedDirectedGraph can be stored with neighbors sorted or not. Therefore there
+ * are 3 strategies of loading a graph from input:
+ *   `AlreadySorted` - creates a graph with sorted neighbors from sorted input
+ *   `SortWhileReading` - creates a graph with sorted neighbors sorting them
+ *                        while reading
+ *   `LeaveUnsorted` - creates graph with unsorted neighbors (default)
+ */
+object NeighborsSortingStrategy extends Enumeration {
+  type NeighborsSortingStrategy = Value
+
+  val AlreadySorted = Value
+  val SortWhileReading = Value
+  val LeaveUnsorted = Value
+}
+
 object ArrayBasedDirectedGraph {
-  def apply(iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]], parallelismLimit: Int,
-            storedGraphDir: StoredGraphDir):
+  import NeighborsSortingStrategy._
+
+  def apply(iteratorSeq: Seq[Iterable[NodeIdEdgesMaxId]],
+            parallelismLimit: Int,
+            storedGraphDir: StoredGraphDir,
+            neighborsSortingStrategy: NeighborsSortingStrategy = LeaveUnsorted):
   ArrayBasedDirectedGraph = {
-    val constructor = new ArrayBasedDirectedGraphConstructor(iterableSeq, parallelismLimit, storedGraphDir)
+    val constructor = new ArrayBasedDirectedGraphConstructor(iteratorSeq,
+                                                             parallelismLimit,
+                                                             storedGraphDir,
+                                                             neighborsSortingStrategy)
     constructor()
   }
 
   @VisibleForTesting
   def apply(iterable: Iterable[NodeIdEdgesMaxId],
-            storedGraphDir: StoredGraphDir): ArrayBasedDirectedGraph = apply(Seq(iterable), 1, storedGraphDir)
+            storedGraphDir: StoredGraphDir,
+            neighborsSortingStrategy: NeighborsSortingStrategy): ArrayBasedDirectedGraph = {
+    apply(Seq(iterable), 1, storedGraphDir, neighborsSortingStrategy)
+  }
 
   /**
    * Constructs array based directed graph
@@ -67,10 +96,13 @@ object ArrayBasedDirectedGraph {
   private class ArrayBasedDirectedGraphConstructor(
     iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]],
     parallelismLimit: Int,
-    storedGraphDir: StoredGraphDir
+    storedGraphDir: StoredGraphDir,
+    neighborsSortingStrategy: NeighborsSortingStrategy
   ) {
     private lazy val log = Logger.get()
     private val statsReceiver = DefaultStatsReceiver
+
+    private val emptyArray = Array[Int]()
 
     private val futurePool = new BoundedFuturePool(FuturePool.unboundedPool, parallelismLimit)
 
@@ -94,7 +126,7 @@ object ArrayBasedDirectedGraph {
         (table, nodeIdSet) <- markStoredNodes(nodesOutEdges, maxNodeId, storedGraphDir)
         NodesWithNoOutEdgesAndGraphStats(nodesWithNoOutEdges, nodeWithOutEdgesCount, numEdges, numNodes) =
         createNodesWithNoOutEdges(table, nodeIdSet, maxNodeId, storedGraphDir)
-        _ <- Future.when(storedGraphDir == StoredGraphDir.BothInOut) {
+        _ <- when(storedGraphDir == StoredGraphDir.BothInOut) {
           fillMissingInEdges(table, nodesOutEdges, nodesWithNoOutEdges, nodeIdSet, maxNodeId)
         }
       } yield
@@ -148,9 +180,10 @@ object ArrayBasedDirectedGraph {
           id = item.id
           newMaxId = newMaxId max item.maxId
           varNodeWithOutEdgesMaxId = varNodeWithOutEdgesMaxId max item.id
-          val edges = item.edges
-          edgesLength = edges.length
-          val newNode = ArrayBasedDirectedNode(id, edges, storedGraphDir)
+          edgesLength = item.edges.length
+          val edges = if (neighborsSortingStrategy == SortWhileReading) item.edges.sorted else item.edges
+          val newNode = ArrayBasedDirectedNode(id, edges, storedGraphDir,
+            neighborsSortingStrategy != LeaveUnsorted)
           nodes += newNode
         }
         NodesMaxIds(nodes, newMaxId, varNodeWithOutEdgesMaxId)
@@ -224,7 +257,8 @@ object ArrayBasedDirectedGraph {
           if (nodeIdSet(id) == 1) {
             numNodes += 1
             if (table(id) == null) {
-              val node = ArrayBasedDirectedNode(id, ArrayBasedDirectedNode.noNodes, storedGraphDir)
+              val node = ArrayBasedDirectedNode(id, emptyArray, storedGraphDir,
+                neighborsSortingStrategy != LeaveUnsorted)
               table(id) = node
               if (storedGraphDir == StoredGraphDir.BothInOut)
                 nodesWithNoOutEdges += node
@@ -259,14 +293,13 @@ object ArrayBasedDirectedGraph {
           val futures = (nodesOutEdges.iterator ++ Iterator(nodesWithNoOutEdges)).map {
             (nodes: Seq[Node]) => futurePool {
               nodes foreach { node =>
-                val biDirNode = node.asInstanceOf[BiDirectionalNode]
-                val nodeId = biDirNode.id
-                val edgeSize = inEdgesSizes(nodeId).intValue()
-                if (edgeSize > 0)
-                  biDirNode.inEdges = new Array[Int](edgeSize)
-                // reset inEdgesSizes, and use it as index pointer of
-                // the current insertion place when adding in edges
-                inEdgesSizes(nodeId).set(0)
+                val edgeSize = inEdgesSizes(node.id).intValue()
+                if (edgeSize > 0) {
+                  node.asInstanceOf[FillingInEdgesBiDirectionalNode].createInEdges(edgeSize)
+                  // reset inEdgesSizes, and use it as index pointer of
+                  // the current insertion place when adding in edges
+                  inEdgesSizes(node.id).set(0)
+                }
               }
             }
           }.toSeq
@@ -282,8 +315,23 @@ object ArrayBasedDirectedGraph {
               nodes foreach { node =>
                 node.outboundNodes foreach { outEdge =>
                   val index = inEdgesSizes(outEdge).getAndIncrement
-                  table(outEdge).asInstanceOf[BiDirectionalNode].inEdges(index) = node.id
+                  table(outEdge).asInstanceOf[FillingInEdgesBiDirectionalNode].inEdges(index) = node.id
                 }
+              }
+            }
+          }
+          Future.join(futures)
+        }
+      }
+
+      def finishInEdgesFilling(): Future[Unit] = {
+        log.debug("finishing filling")
+        statsReceiver.time("finishing_filling_in_edges") {
+          val futures = nodesOutEdges.map {
+            nodes => futurePool {
+              nodes.foreach {
+                node =>
+                  node.asInstanceOf[FillingInEdgesBiDirectionalNode].sortInNeighbors()
               }
             }
           }
@@ -295,6 +343,7 @@ object ArrayBasedDirectedGraph {
         inEdgesSizes <- findInEdgesSizes(nodesOutEdges, nodeIdSet, numNodes)
         _ <- instantiateInEdges(inEdgesSizes)
         _ <- populateInEdges(inEdgesSizes)
+        _ <- when(neighborsSortingStrategy != LeaveUnsorted) (finishInEdgesFilling())
       } yield ()
     }
 
