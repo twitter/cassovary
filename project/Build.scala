@@ -28,6 +28,7 @@ object Cassovary extends Build {
       util("logging"),
       "org.scalatest" %% "scalatest" % "2.2.3" % "test",
       "junit" % "junit" % "4.10" % "test",
+      "com.twitter.common" % "metrics" % "0.0.29",
       "com.twitter" %% "finagle-stats" % "6.24.0"
     ),
     resolvers += "twitter repo" at "http://maven.twttr.com",

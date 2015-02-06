@@ -39,7 +39,7 @@ Cassovary is published to maven central with crosspath scala versions 2.10.4 and
 
 To use with sbt, use:
 
-```libraryDependencies += "com.twitter" %% "cassovary-core" % "4.0.0"```
+```libraryDependencies += "com.twitter" %% "cassovary-core" % "5.0.0"```
 
 The last Cassovary version to support scala 2.9 is 3.4.0, and
 support for scala version 2.9.x has been discontinued since.
