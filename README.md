@@ -41,6 +41,10 @@ To use with sbt, use:
 
 ```libraryDependencies += "com.twitter" %% "cassovary-core" % "5.0.0"```
 
+and
+
+```resolvers += "twitter" at "http://maven.twttr.com"```
+
 The last Cassovary version to support scala 2.9 is 3.4.0, and
 support for scala version 2.9.x has been discontinued since.
 
