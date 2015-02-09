@@ -1,5 +1,5 @@
 /*
-* Copyright 2014 Twitter, Inc.
+* Copyright 2015 Twitter, Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 * file except in compliance with the License. You may obtain a copy of the License at
@@ -13,29 +13,14 @@
 */
 package com.twitter.cassovary.graph
 
-import com.twitter.cassovary.graph.StoredGraphDir.StoredGraphDir
+import com.twitter.cassovary.graph.node.UndirectedNode
 
-/*
+/**
  * A graph where the outbound neighbors of each node equal the inbound neighbors.
- * Given a DirectedGraph which stores the neighbors of each node (as outbound edges),
- * this class wraps that graph in an undirected view.
+ *
  */
-class UndirectedGraph(outboundGraph: DirectedGraph) extends DirectedGraph {
-  override def getNodeById(id: Int): Option[Node] = outboundGraph.getNodeById(id) map { new UndirectedNode(_)}
-
-  override def iterator: Iterator[Node] = outboundGraph.iterator map { new UndirectedNode(_)}
-
-  override def edgeCount: Long = outboundGraph.edgeCount
-
-  override val storedGraphDir: StoredGraphDir = StoredGraphDir.Mutual
-
-  override def nodeCount: Int = outboundGraph.nodeCount
-}
-
-class UndirectedNode(outboundNode: Node) extends Node {
-  override def outboundNodes(): Seq[Int] = outboundNode.outboundNodes()
-
-  override def inboundNodes(): Seq[Int] = outboundNode.outboundNodes()
-
-  override val id: Int = outboundNode.id
+trait UndirectedGraph extends DirectedGraph {
+  val storedGraphDir = StoredGraphDir.Mutual
+  def getNodeById(id: Int): Option[UndirectedNode]
+  def iterator: Iterator[UndirectedNode]
 }

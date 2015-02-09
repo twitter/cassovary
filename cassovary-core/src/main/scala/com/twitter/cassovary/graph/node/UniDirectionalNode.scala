@@ -28,37 +28,39 @@ trait UniDirectionalNode extends Node
  * for node's edges
  */
 object UniDirectionalNode {
-  def apply(id: Int, inbound: Seq[Int], outbound: Seq[Int]): UniDirectionalNode =
-    new UniDirectionalNode {
-      override val id: Int = id
-      override def inboundNodes(): Seq[Int] = inbound
-      override def outboundNodes(): Seq[Int] = outbound
-    }
 
-  def apply(nodeId: Int, neighbors: Seq[Int], dir: StoredGraphDir): UniDirectionalNode = {
+  def apply(nodeId: Int, neighbors: Seq[Int], dir: StoredGraphDir) = {
     dir match {
       case StoredGraphDir.OnlyIn =>
-        UniDirectionalNode(id=nodeId, inbound=neighbors, outbound=Nil)
+        new UniDirectionalNode() {
+          override val id = nodeId
+          override def inboundNodes = neighbors
+          override def outboundNodes = Nil
+        }
       case StoredGraphDir.OnlyOut =>
-        UniDirectionalNode(id=nodeId, inbound=Nil, outbound=neighbors)
+        new UniDirectionalNode() {
+          override val id = nodeId
+          override def inboundNodes = Nil
+          override def outboundNodes = neighbors
+        }
       case StoredGraphDir.Mutual =>
-        UndirectedNode(id=nodeId, outbound=neighbors)
+        UndirectedNode(nodeId, neighbors)
     }
   }
 }
 
 /**
- * A node where both directions have the same edges
+ * A node where both directions have the same edges.
  */
 trait UndirectedNode extends UniDirectionalNode {
-  def inboundNodes() = outboundNodes()
+  final def inboundNodes() = outboundNodes()
 }
 
 object UndirectedNode {
-  def apply(id: Int, outbound: Seq[Int]) =
+  def apply(nodeId: Int, outbound: Seq[Int]) =
     new UndirectedNode {
-      override val id: Int = id
-      override def outboundNodes(): Seq[Int] = outbound
+      override val id = nodeId
+      override def outboundNodes() = outbound
     }
 }
 
