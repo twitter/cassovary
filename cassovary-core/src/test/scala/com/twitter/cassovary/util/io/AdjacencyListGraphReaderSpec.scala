@@ -42,6 +42,11 @@ class AdjacencyListGraphReaderSpec extends WordSpec with Matchers with GraphBeha
     val graph = reader.toSharedArrayBasedDirectedGraph()
   }
 
+  trait ArrayBasedDynamicGraphWithoutRenumberer {
+    val graph = AdjacencyListGraphReader.forIntIds(directory, "toy_6nodes_adj",
+      Executors.newFixedThreadPool(2)).toArrayBasedDynamicDirectedGraph()
+  }
+
   trait GraphWithRenumberer {
     val seqRenumberer = new SequentialNodeNumberer[Int]()
     val graph = AdjacencyListGraphReader.forIntIds(directory, "toy_6nodes_adj",
@@ -83,6 +88,22 @@ class AdjacencyListGraphReaderSpec extends WordSpec with Matchers with GraphBeha
       }
     }
 
+  }
+
+  "AdjacencyListReader producing ArrayBasedDynamicDirectedGraph" should {
+    "provide the correct graph properties" in {
+      new ArrayBasedDynamicGraphWithoutRenumberer {
+        graph.nodeCount should be(6)
+        graph.edgeCount should be(11L)
+        graph.maxNodeId should be(15)
+      }
+    }
+
+    "contain the right nodes and edges" in {
+      new ArrayBasedDynamicGraphWithoutRenumberer {
+        behave like graphEquivalentToMap(graph, toy6nodeMap)
+      }
+    }
   }
 
   "AdjacencyListReader renumbered" when {
