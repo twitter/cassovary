@@ -14,7 +14,6 @@
 package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
-import java.io.File
 
 
 /**
@@ -41,22 +40,7 @@ trait GraphReaderFromDirectory[T] extends GraphReader[T] {
    * Should return a sequence of `NodeIdEdgesMaxId` iterables
    */
   def iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]] = {
-    val dir = new File(directory)
-    val filesInDir = dir.list()
-    if (filesInDir == null) {
-      throw new Exception("Current directory is " + System.getProperty("user.dir") +
-        " and nothing was found in dir " + dir)
-    }
-    val validFiles = filesInDir.flatMap({ filename =>
-      if (filename.startsWith(prefixFileNames)) {
-        Some(filename)
-      }
-      else {
-        None
-      }
-    })
-    validFiles.map { filename =>
-      oneShardReader(directory + "/" + filename)
-    }
+    val validFiles = IoUtils.readFiles(directory, prefixFileNames)
+    validFiles map oneShardReader
   }
 }

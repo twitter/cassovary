@@ -13,8 +13,10 @@
  */
 package com.twitter.cassovary.graph
 
+import com.twitter.cassovary.graph.labels.Labels
+
 /**
- * The entry point into a model of a directed graph.  Users typically query a known starting node
+ * The entry point into a model of a graph.  Users typically query a known starting node
  * and then traverse the graph using methods on that {@code Node}.
  */
 trait Graph {
@@ -25,4 +27,6 @@ trait Graph {
   def getNodeById(id: Int): Option[Node]
 
   def existsNodeId(id: Int) = getNodeById(id).isDefined
+
+  val nodeLabels = new Labels[Int] //empty to start with
 }
