@@ -15,6 +15,7 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
+import com.twitter.cassovary.graph.Walk.NodeColor.Color
 import com.twitter.cassovary.graph.tourist.{BoolInfoKeeper, IntInfoKeeper, PrevNbrCounter}
 import com.twitter.logging.Logger
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue
@@ -248,7 +249,7 @@ trait QueueBasedTraverser extends Traverser {
   def nodePriority: GraphTraverserNodePriority
 
   /**
-   * Action performed when visiting node `node` (before iteratur retuns `node`).
+   * Action performed when visiting node `node` (before iterator returns `node`).
    * Should be implemented in subclass.
    */
   def visitNode(node: Node): Unit = {}

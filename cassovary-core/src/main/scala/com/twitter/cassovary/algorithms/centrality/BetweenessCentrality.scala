@@ -12,28 +12,48 @@
  * specific language governing permissions and limitations under the License.
  */
 package com.twitter.cassovary.algorithms.centrality
-
-import com.twitter.cassovary.graph.{Node, DirectedGraph}
-import scala.collection.mutable
+import com.twitter.cassovary.graph._
+import com.twitter.cassovary.graph.tourist.PrevNbrCounter
 
 class BetweenessCentrality(graph: DirectedGraph, normalize: Boolean = true) extends AbstractCentrality(graph) {
-def _recalc(): Unit = {}
-//
-//
-//  private case class ShortestPath()
-//  private def singleSourceShortestPath(g: DirectedGraph, s: Node): ShortestPath = {
-//    val S = mutable.ListBuffer.empty[Node]
-//    val paths = mutable.Map.empty[Node, mutable.Seq[Int]]
-//    val sigma = mutable.Map.empty[Node, Double]
-//    val D = mutable.Map.empty[Node, Double]
-//
-//    sigma(s) = 1.0
-//    D(s) = 0
-//    val Q = List(s)
-//    while (Q.nonEmpty) {
-//      val v = Q.head
-//      S.append(v)
-//      val Dv = D(v)
-//      val sigmav = sigma(v)
-//    }}
+
+  private def combineMap [A, @specialized(Int, Double, Float, Long) B]
+  (a: Map[A,B], b: Map[A,B])(implicit ev: B => Double) : Map[A,B] = {
+    (a.toList ++ b.toList).groupBy(l => l._1).map{ t => t._1 -> t._2
+      .foldLeft(0.0) { (x,y) => x + y._2 }.asInstanceOf[B] }
+  }
+
+  def _recalc(): Unit = {
+    val tempCentralityValues = graph.foldLeft(new Array[Double](graph.maxNodeId + 1)) {
+      (partialCentralityValues, node) =>
+      val bfs = new BreadthFirstTraverser(graph, GraphDir.OutDir, Seq(node.id), Walk.Limits(), Some(new PrevNbrCounter))
+      val (nodes, depths) = bfs.foldLeft((List.empty[Node], Map.empty[Node, Int])) {
+        case ((ns, d), n) =>
+          (ns ++ List(n), d ++ Map(n -> bfs.depth(n.id).get))
+      }
+      val previous = nodes.map { n =>
+        n -> n.inboundNodes().filter { in => depths(graph.getNodeById(in).get) == depths(n) - 1}
+      }.toMap
+      val sigma = Map(node -> 1) ++ nodes.foldLeft(Map.empty[Node, Int]) { (partialSigma, n) =>
+        val nearestOut = n.outboundNodes filter { ou => depths(graph.getNodeById(ou).get) == depths(n) + 1}
+        val currentSigma = nearestOut.map { o => graph.getNodeById(o).get -> partialSigma.getOrElse(n, 1)}.toMap
+        val totalSigma = combineMap(partialSigma, currentSigma)
+        totalSigma
+      }
+      val (currentCentrality, _) = nodes.reverse.foldLeft (
+        (new Array[Double](graph.maxNodeId + 1), Map.empty[Int, Double])) {
+        case ((partialCent, partialDelta), n) =>
+          val coef = (1.0 + partialDelta.getOrElse(n.id, 0.0)) / sigma(n)
+          val currentDelta = previous(n).map { prev => prev -> sigma(graph.getNodeById(prev).get) * coef}.toMap
+          val totalDelta = combineMap(partialDelta, currentDelta)
+          if (n.id != node.id)
+            partialCent(n.id) += totalDelta.getOrElse(n.id, 0.0)
+          (partialCent, totalDelta)
+      }
+      partialCentralityValues.zipWithIndex.map { case (v, i) => currentCentrality(i) + v}
+    }
+    val nc = graph.nodeCount
+    val scale = if (normalize && nc >= 2) 1.0 / ((nc - 1) * (nc - 2)) else 1.0
+    tempCentralityValues.zipWithIndex.foreach { case (v, i) => centralityValues(i) = v * scale }
+  }
 }
