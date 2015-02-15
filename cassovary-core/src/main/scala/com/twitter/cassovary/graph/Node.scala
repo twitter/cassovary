@@ -27,11 +27,6 @@ trait Node {
   val id: Int
 
   /**
-   * The label of a node accessed by name. Label can be anything.
-   */
-  def label(name: String): Option[_] = None
-
-  /**
    * Returns ids of all nodes pointing to this node.
    */
   def inboundNodes(): Seq[Int]

@@ -19,7 +19,8 @@ import scala.reflect.runtime.universe.TypeTag
 
 /**
  * A trait to support adding labels to nodes and edges.
- * A label is of any type, has a name and maps an 'id' (such as node-id or edge-id) to a value.
+ * A label is of any type, has a name and optionally maps an 'id' (such as node-id or edge-id)
+ * to a value. Labels need not be defined for all ids.
  *
  * @tparam ID the id-type of the node or edges (e.g., Int)
  * @tparam L  the type of the label value
@@ -33,7 +34,8 @@ trait Label[ID, L] extends mutable.Map[ID, L] {
 class MapBasedLabel[ID, L](val name: String)(implicit val tag: TypeTag[L])
     extends mutable.HashMap[ID, L] with Label[ID, L]
 
-// mix in this trait to make a label that is defined only for some ids
+// A way to implement a partially-defined label is to keep ids for which the
+// labels are defined in a set.
 trait PartialLabel[ID, L] extends Label[ID, L] {
   def underlying: mutable.Set[ID]
   private def isThere(id: ID): Boolean = underlying.contains(id)
@@ -59,6 +61,8 @@ trait PartialLabel[ID, L] extends Label[ID, L] {
   }
 }
 
+// A Boolean label that always returns true. To be mixed in with PartialLabel to create
+// a flag label.
 abstract class TrueLabel[ID] extends Label[ID, Boolean] { self: PartialLabel[ID, Boolean] =>
   def get(id: ID): Option[Boolean] = Some(true)
   def iterator = underlying.iterator.map { case x => (x, true) }

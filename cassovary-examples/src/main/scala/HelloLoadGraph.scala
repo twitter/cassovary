@@ -21,18 +21,21 @@
  * src/test/resources/graphs/
  */
 
-import com.twitter.cassovary.util.io.AdjacencyListGraphReader
-import com.twitter.cassovary.util.NodeNumberer
+import com.twitter.cassovary.util.io.{AdjacencyListGraphReader, LabelsReader}
 import java.util.concurrent.Executors
 
 object HelloLoadGraph {
   def main(args: Array[String]) {
     val threadPool = Executors.newFixedThreadPool(2)
-    val graph = AdjacencyListGraphReader.forIntIds("../cassovary-core/src/test/resources/graphs/", "toy_6nodes_adj",
+    val dir = "../cassovary-core/src/test/resources/graphs"
+    val graph = AdjacencyListGraphReader.forIntIds(dir, "toy_6nodes_adj",
       threadPool).toArrayBasedDirectedGraph()
+    graph.nodeLabels = new LabelsReader(dir, "toy_6nodelabels").read(graph.maxNodeId)
 
-    printf("\nHello Graph!\n\tA graph loaded from two adjacency list files with %s nodes has %s directed edges.\n",
-      graph.nodeCount, graph.edgeCount)
+    printf("\nHello Graph!\n\tA graph loaded from two adjacency list files " +
+        "with %s nodes has %s directed edges.\n", graph.nodeCount, graph.edgeCount)
+    printf("\tLabels of node 10 are label1(%d) and label2(%d)\n",
+      graph.labelOfNode[Int](10, "label1").get, graph.labelOfNode[Int](10, "label2").get)
     threadPool.shutdown()
   }
 }

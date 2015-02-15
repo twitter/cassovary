@@ -40,7 +40,7 @@ trait GraphReaderFromDirectory[T] extends GraphReader[T] {
    * Should return a sequence of `NodeIdEdgesMaxId` iterables
    */
   def iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]] = {
-    val validFiles = IoUtils.readFiles(directory, prefixFileNames)
+    val validFiles = IoUtils.readFileNames(directory, prefixFileNames)
     validFiles map oneShardReader
   }
 }

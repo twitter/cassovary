@@ -30,8 +30,8 @@ trait HasMaxId {
  * @param maxId maximum value of the id
  * @tparam L    type of the label value
  */
-class ArrayBasedLabel[L : ClassTag](val name: String, val maxId: Int)(implicit val tag: TypeTag[L])
-    extends Label[Int, L] with HasMaxId {
+class ArrayBasedLabel[L : ClassTag](val name: String,
+    val maxId: Int)(implicit val tag: TypeTag[L]) extends Label[Int, L] with HasMaxId {
   private val array = new Array[L](maxId + 1)
 
   def get(id: Int): Option[L] = Some(array(id))

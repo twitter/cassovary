@@ -54,7 +54,7 @@ class LabelsReader(val directory: String, val collPrefix: String) {
   }
 
   def read(maxId: Int): Labels[Int] = {
-    val labelFiles = IoUtils.readFiles(directory, collPrefix)
+    val labelFiles = IoUtils.readFileNames(directory, collPrefix)
     val labels = new Labels[Int]
     labelFiles foreach { fileName =>
       labels += new IntLabelReaderMaxId(fileName, maxId).readOneLabel()

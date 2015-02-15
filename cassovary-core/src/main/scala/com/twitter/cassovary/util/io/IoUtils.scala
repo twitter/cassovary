@@ -17,7 +17,7 @@ import java.io.File
 
 object IoUtils {
 
-  def readFiles(directory: String, prefixFileNames: String): Array[String] = {
+  def readFileNames(directory: String, prefixFileNames: String): Array[String] = {
     val dir = new File(directory)
     val filesInDir = dir.list()
     if (filesInDir == null) {
