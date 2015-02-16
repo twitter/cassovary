@@ -15,13 +15,15 @@ package com.twitter.cassovary.algorithms.centrality
 
 import com.twitter.cassovary.graph._
 import org.scalatest.{Matchers, WordSpec}
+import scala.collection.mutable
 
 class BetweennessCentralitySpec extends WordSpec with Matchers {
   lazy val graph = TestGraphs.g6
 
+
   "Betweenness centrality" should {
     "return correctly normalized values when requesting normalization" in {
-      val bc = new BetweenessCentrality(graph)
+      val bc = new BetweennessCentrality(graph)
 
       bc(graph.getNodeById(10).get) should be (.250 +- .005)
       bc(graph.getNodeById(11).get) should be (.133 +- .005)
@@ -32,7 +34,7 @@ class BetweennessCentralitySpec extends WordSpec with Matchers {
     }
 
     "return somewhat large values when requesting no normalization" in {
-      val bc = new BetweenessCentrality(graph, false)
+      val bc = new BetweennessCentrality(graph, false)
 
       bc(graph.getNodeById(10).get) should be (5.000  +- .005)
       bc(graph.getNodeById(11).get) should be (2.666  +- .005)

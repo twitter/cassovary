@@ -116,7 +116,7 @@ case class BipartiteSide(nodes: Array[BipartiteNode], numOfNodes: Int, numOfOutE
 class BipartiteGraph(val leftNodes: Array[BipartiteNode], val leftNodeCount: Int,
                      val leftOutEdgeCount: Long, val rightNodes: Array[BipartiteNode],
                      val rightNodeCount: Int, val rightOutEdgeCount: Long,
-                     val bipartiteGraphDir: BipartiteGraphDir.BipartiteGraphDir) extends Graph {
+                     val bipartiteGraphDir: BipartiteGraphDir.BipartiteGraphDir) extends Graph[BipartiteNode] {
 
   def this(leftSide: BipartiteSide, rightSide: BipartiteSide,
       bipartiteGraphDir: BipartiteGraphDir.BipartiteGraphDir) =
@@ -146,11 +146,10 @@ class BipartiteGraph(val leftNodes: Array[BipartiteNode], val leftNodeCount: Int
     }
   }
 
-  def getNodeById(id: Int): Option[Node] = getBipartiteNodeById(id)
   /**
    * Get the Bipartite node in the graph by a given internal (unique) id
    */
-  def getBipartiteNodeById(id: Int): Option[BipartiteNode] = {
+  def getNodeById(id: Int): Option[BipartiteNode] = {
     def isLeftNodeId: Boolean = id < 0
 
     if (id == 0) {

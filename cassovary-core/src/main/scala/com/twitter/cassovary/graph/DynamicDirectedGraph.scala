@@ -19,11 +19,11 @@ import com.twitter.cassovary.graph.node.DynamicNode
  * A class support dynamically adds new nodes and dynamically add/delete edges in existing nodes.
  * It currently doesn't support delete nodes
  */
-trait DynamicDirectedGraph extends DirectedGraph {
+trait DynamicDirectedGraph[+V <: DynamicNode] extends DirectedGraph[V] {
   /**
    * Add a node {@code id} into the graph.
    */
-  def getOrCreateNode(id: Int): DynamicNode
+  def getOrCreateNode(id: Int): V
 
   /**
    * Add an edge from {@code srcId} to {@code destId}.

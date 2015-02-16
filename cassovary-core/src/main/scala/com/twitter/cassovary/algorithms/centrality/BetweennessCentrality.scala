@@ -16,7 +16,7 @@ package com.twitter.cassovary.algorithms.centrality
 import com.twitter.cassovary.algorithms.shortestpath.SingleSourceShortestPath
 import com.twitter.cassovary.graph._
 
-class BetweenessCentrality(graph: DirectedGraph, normalize: Boolean = true) extends AbstractCentrality(graph) {
+class BetweennessCentrality(graph: DirectedGraph[Node], normalize: Boolean = true) extends AbstractCentrality(graph) {
 
   private def combineMap(a: Map[Int, Double], b: Map[Int, Double]): Map[Int, Double] = {
     (a.keys ++ b.keys).map { k => k -> (a.getOrElse(k, 0.0) + b.getOrElse(k, 0.0)) }.toMap

@@ -16,12 +16,16 @@ package com.twitter.cassovary.algorithms
 import com.twitter.cassovary.graph.TestGraphs
 import org.scalatest.{Matchers, WordSpec}
 
+import scala.util.Random
+
 class TriangleCountSpec extends WordSpec with Matchers {
 
   def averageOfPairs(f: => (Double, Double), repetitions: Int): (Double, Double) = {
     val sums = (0 until repetitions).map(_ => f).reduce((p1, p2) => (p1._1 + p2._1, p1._2 + p2._2))
     (sums._1 / repetitions, sums._2 / repetitions)
   }
+
+  def rng(): Random = new Random(1)
 
   "Triangle count" should {
 
@@ -30,7 +34,7 @@ class TriangleCountSpec extends WordSpec with Matchers {
       edgeReservoir.set(0, Seq(0, 1))
       edgeReservoir.set(1, Seq(1, 2))
       edgeReservoir.set(2, Seq(2, 3))
-      val tc = new TriangleCount(TestGraphs.generateCompleteGraph(4), TriangleCountParameters(10, 10))
+      val tc = new TriangleCount(TestGraphs.generateCompleteGraph(4), TriangleCountParameters(10, 10), rng())
       tc.computeWedgesInEdgeReservoir(edgeReservoir) should equal(2)
 
       edgeReservoir.set(3, Seq(1, 2))
@@ -43,9 +47,10 @@ class TriangleCountSpec extends WordSpec with Matchers {
 
     "Return correct results for a graph with no triangles" in {
       val numberOfNodes = 1000
-      val graph = TestGraphs.generateRandomUndirectedGraph(numberOfNodes, 2.0 / numberOfNodes)
+      val graph = TestGraphs.generateRandomUndirectedGraph(numberOfNodes, 2.0 / numberOfNodes, rand = rng(),
+        parallelismLimit = 1)
       val pars = TriangleCountParameters(200, 200)
-      val (transitivity, triangles) = TriangleCount(graph, pars)
+      val (transitivity, triangles) = TriangleCount(graph, pars, rng())
       transitivity should be(0.0 +- 0.05)
 
       triangles should be(0.0 +- 20.0)
@@ -55,9 +60,10 @@ class TriangleCountSpec extends WordSpec with Matchers {
     "Return correct results for Erdos-Renly mutual graphs" in {
       val edgeProbability = 0.3
       val numberOfNodes = 200
-      val erGraph = TestGraphs.generateRandomUndirectedGraph(numberOfNodes, edgeProbability)
+      val erGraph = TestGraphs.generateRandomUndirectedGraph(numberOfNodes, edgeProbability, rand = rng(),
+        parallelismLimit = 1)
       val pars = TriangleCountParameters(500, 500)
-      val (transitivity, triangles) = averageOfPairs(TriangleCount(erGraph, pars), 10)
+      val (transitivity, triangles) = averageOfPairs(TriangleCount(erGraph, pars, rng()), 10)
       transitivity should be(edgeProbability +- (0.15 * edgeProbability))
 
       def averageTrianglesInERGraph(nodes: Int, p: Double) = {
@@ -71,7 +77,7 @@ class TriangleCountSpec extends WordSpec with Matchers {
       val nodes = 100
       val graph = TestGraphs.generateCompleteGraph(nodes)
       val pars = TriangleCountParameters(1000, 1000)
-      val (transitivity, triangles) = averageOfPairs(TriangleCount(graph, pars), 5)
+      val (transitivity, triangles) = averageOfPairs(TriangleCount(graph, pars, rng()), 5)
       transitivity should be(1.0 +- 0.1)
 
       def trianglesInCompleteGraph(nodes: Int): Double = {

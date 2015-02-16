@@ -16,10 +16,10 @@ import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.NodeNumberer
 import org.scalatest.{Matchers, WordSpec}
 
-trait GraphBehaviours extends Matchers {
+trait GraphBehaviours[V <: Node] extends Matchers {
   this: WordSpec =>
 
-  private def correctNumberOfNodesAndEdges(graph: DirectedGraph, numNodes: Int) {
+  private def correctNumberOfNodesAndEdges(graph: DirectedGraph[V], numNodes: Int) {
     "have correct number of nodes" in {
       graph.nodeCount shouldEqual numNodes
     }
@@ -28,7 +28,7 @@ trait GraphBehaviours extends Matchers {
     }
   }
 
-  def completeGraph(graph: => DirectedGraph, numNodes: Int) {
+  def completeGraph(graph: => DirectedGraph[V], numNodes: Int) {
     "have correct number of nodes" in {
       graph.nodeCount shouldEqual numNodes
     }
@@ -44,7 +44,7 @@ trait GraphBehaviours extends Matchers {
     }
   }
 
-  def correctDirectedGraph(graph: => DirectedGraph, numNodes: Int) {
+  def correctDirectedGraph(graph: => DirectedGraph[V], numNodes: Int) {
     correctNumberOfNodesAndEdges(graph, numNodes)
 
     "be consistent among all nodes" in {
@@ -79,7 +79,7 @@ trait GraphBehaviours extends Matchers {
 
   val sampleGraphEdges = Map(1 -> Seq(2,3,4), 2 -> Seq(1), 3 -> Seq(4), 5 -> Seq(1, 10))
 
-  def verifyInOutEdges(graph: DirectedGraph, numNodes: Int,
+  def verifyInOutEdges(graph: DirectedGraph[V], numNodes: Int,
                        outEdges: Map[Int, Seq[Int]],
                        inEdges: Map[Int, Seq[Int]],
                        checkOrdering: Boolean = false): Unit = {
@@ -119,7 +119,7 @@ trait GraphBehaviours extends Matchers {
 
   // verify a graph constructed from a supplied map of node id -> array of edges (outedges unless
   // OnlyIn direction is to be stored in which case the supplied edges are incoming edges)
-  def verifyGraphBuilding(builder: (Iterable[NodeIdEdgesMaxId], StoredGraphDir) => DirectedGraph,
+  def verifyGraphBuilding(builder: (Iterable[NodeIdEdgesMaxId], StoredGraphDir) => DirectedGraph[V],
                   givenEdges: Map[Int, Seq[Int]]): Unit =
   {
     def cross(k: Int, s: Seq[Int]) = for (e <- s) yield (e, k)
@@ -142,7 +142,7 @@ trait GraphBehaviours extends Matchers {
     }
   }
 
-  def correctUndirectedGraph(graph: => DirectedGraph, numNodes: Int) {
+  def correctUndirectedGraph(graph: => DirectedGraph[V], numNodes: Int) {
     correctNumberOfNodesAndEdges(graph, numNodes)
 
     "be consistent among all nodes" in {
@@ -169,7 +169,7 @@ trait GraphBehaviours extends Matchers {
     }
   }
 
-  def graphEquivalentToMap(g: DirectedGraph, nodeMap: Map[Int, List[Int]]) = {
+  def graphEquivalentToMap(g: DirectedGraph[V], nodeMap: Map[Int, List[Int]]) = {
     g.foreach {
       node =>
         withClue("unexpected node: " + node.id) {
@@ -193,7 +193,7 @@ trait GraphBehaviours extends Matchers {
    * @param nodeMap Map of node ids to ids of its neighbors
    * @param nodeNumberer a node renumberer
    */
-  def renumberedGraphEquivalentToMap[T](g: DirectedGraph, nodeMap: Map[T, List[T]], nodeNumberer: NodeNumberer[T]) = {
+  def renumberedGraphEquivalentToMap[T](g: DirectedGraph[V], nodeMap: Map[T, List[T]], nodeNumberer: NodeNumberer[T]) = {
     g.foreach { node =>
       withClue("unexpected node in a graph: " + nodeNumberer.internalToExternal(node.id)) {
         nodeMap.contains(nodeNumberer.internalToExternal(node.id)) shouldEqual true

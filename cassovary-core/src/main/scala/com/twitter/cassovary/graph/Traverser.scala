@@ -25,18 +25,18 @@ import scala.util.Random
 /**
  * A Traverser traverses the graph in a certain order of nodes.
  */
-trait Traverser extends Iterator[Node] { self =>
+trait Traverser[+V <: Node] extends Iterator[V] { self =>
   /**
    * Traverser only visits node Ids listed in some node's edges, and thus
    * we know that node must exist, safe to assume graph.getNodeById return non-None value
    */
-  protected def getExistingNodeById(graph: Graph, id: Int) = graph.getNodeById(id).get
+  protected def getExistingNodeById[W >: V <: Node](graph: Graph[W], id: Int): W = graph.getNodeById(id).get
 }
 
 /**
  * Bounds an iterator to go no more than a specified maximum number of steps
  */
-trait BoundedIterator[T] extends Iterator[T] {
+trait BoundedIterator[+T] extends Iterator[T] {
   /**
    * @return If option is defined, it is the maximal number of elements the iterator returns.
    *         If is `None`, the iterator is not bounded.
@@ -72,12 +72,12 @@ trait BoundedIterator[T] extends Iterator[T] {
  * @param maxDepth if set, max depth of path
  * @param filterHomeNodeByNumEdges filter home node by number of edges
  */
-class RandomTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
+class RandomTraverser[+V <: Node](graph: Graph[V], dir: GraphDir, homeNodeIds: Seq[Int],
                       resetProbability: Double, maxNumEdgesThresh: Option[Int], onlyOnce: Boolean,
                       randNumGen: Random, maxDepth: Option[Int], filterHomeNodeByNumEdges: Boolean)
-  extends Traverser {  self =>
+  extends Traverser[V] {  self =>
 
-  private var currNode: Node = null
+  private[this] var currNode: V = _
   private val homeNodeIdSet = Set(homeNodeIds: _*)
 
   private val seenNodesTracker = new BoolInfoKeeper(self.onlyOnce)
@@ -127,11 +127,11 @@ class RandomTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int],
 /**
  * Same as RandomTraverser except that the number of steps taken is bounded by `maxSteps`
  */
-class RandomBoundedTraverser(graph: Graph, dir: GraphDir, homeNodeIds: Seq[Int], maxStepss: Long,
+class RandomBoundedTraverser[+V <: Node](graph: Graph[V], dir: GraphDir, homeNodeIds: Seq[Int], maxStepss: Long,
     walkParams: RandomWalkParams) extends RandomTraverser(graph, dir, homeNodeIds,
     walkParams.resetProbability, walkParams.maxNumEdgesThresh, walkParams.visitSameNodeOnce,
     walkParams.randNumGen, walkParams.maxDepth,
-    walkParams.filterHomeNodeByNumEdges) with BoundedIterator[Node] {
+    walkParams.filterHomeNodeByNumEdges) with BoundedIterator[V] {
   val maxSteps: Option[Long] = Some(maxStepss)
 }
 
@@ -212,13 +212,13 @@ object Walk {
  * It iteratively visits nodes from the front of the queue in order based on the type of traversal
  * and optionally adds new nodes to the queue.
  */
-trait QueueBasedTraverser extends Traverser {
+trait QueueBasedTraverser[+V <: Node] extends Traverser[V] {
   import Walk._
 
   /**
    * Graph to be traversed.
    */
-  def graph: Graph
+  def graph: Graph[V]
 
   /**
    * Nodes to start the traversal from.
@@ -364,11 +364,10 @@ trait QueueBasedTraverser extends Traverser {
   /**
    * Performs action needed when visiting a node.
    */
-  protected def processNode(node : Node): Node = {
+  protected def processNode(node : Node): Unit = {
     visitNode(node)
     coloring += (node.id, NodeColor.Visited)
     enqueue(chooseNodesToEnqueue(node), Some(node.id))
-    node
   }
 
   /**
@@ -385,7 +384,9 @@ trait QueueBasedTraverser extends Traverser {
     findNextNodeToVisit() match {
       case Some(nextId) =>
         if (shouldBeDequeuedBeforeProcessing) queue.dequeueInt()
-        processNode(getExistingNodeById(graph, nextId))
+        val node = getExistingNodeById(graph, nextId)
+        processNode(node)
+        node
       case None =>
         Iterator.empty.next()
     }
@@ -397,7 +398,7 @@ trait QueueBasedTraverser extends Traverser {
 /**
  * A traverser that keeps track of first depth of visiting a given node.
  */
-trait DepthTracker extends QueueBasedTraverser {
+trait DepthTracker extends QueueBasedTraverser[Node] {
 
   private lazy val depthTracker = new IntInfoKeeper(true)
 
@@ -423,11 +424,11 @@ trait DepthTracker extends QueueBasedTraverser {
  * @param walkLimits limiting parameters
  * @param bfsPrevNbrCounter if set, tracks previous neighbors by occurrence
  */
-class BreadthFirstTraverser(val graph: Graph, val dir: GraphDir, val homeNodeIds: Seq[Int],
+class BreadthFirstTraverser[+V <: Node](val graph: Graph[V], val dir: GraphDir, val homeNodeIds: Seq[Int],
                             walkLimits: Walk.Limits = Walk.Limits(),
                             bfsPrevNbrCounter: Option[PrevNbrCounter] = None)
   extends DepthTracker
-  with BoundedIterator[Node]
+  with BoundedIterator[V]
 {
   private val log = Logger.get()
 
@@ -460,11 +461,11 @@ class BreadthFirstTraverser(val graph: Graph, val dir: GraphDir, val homeNodeIds
  * @param walkLimits limiting parameters
  * @param apwPrevNbrCounter if set, tracks previous neighbors by occurrence
  */
-class AllPathsWalk(val graph: Graph, val dir: GraphDir, val homeNodeIds: Seq[Int],
+class AllPathsWalk[+V <: Node](val graph: Graph[V], val dir: GraphDir, val homeNodeIds: Seq[Int],
                    walkLimits: Walk.Limits = Walk.Limits(),
                    apwPrevNbrCounter: Option[PrevNbrCounter] = None)
   extends DepthTracker
-  with BoundedIterator[Node]
+  with BoundedIterator[V]
 {
   val onlyOnce = false
 
@@ -484,10 +485,10 @@ class AllPathsWalk(val graph: Graph, val dir: GraphDir, val homeNodeIds: Seq[Int
  * @param homeNodeIds the ids of nodes that the walk starts from
  * @param walkLimits limiting parameters
  */
-class DepthFirstTraverser(val graph: Graph, val dir: GraphDir, val homeNodeIds: Seq[Int],
+class DepthFirstTraverser[+V <: Node](val graph: Graph[V], val dir: GraphDir, val homeNodeIds: Seq[Int],
                                 walkLimits: Walk.Limits = Walk.Limits())
     extends DepthTracker
-    with BoundedIterator[Node]
+    with BoundedIterator[V]
 {
   private val log = Logger.get()
 
@@ -545,7 +546,7 @@ class DepthFirstTraverser(val graph: Graph, val dir: GraphDir, val homeNodeIds: 
  * Note that DepthTracker for the DFS case returns the depth of first seeing a particular
  * node. It does not have to be the same as the depth at which the node is visited.
  */
-trait PathLengthTracker extends DepthFirstTraverser {
+trait PathLengthTracker extends DepthFirstTraverser[Node] {
   private lazy val nextVisitDistanceTracker = new IntInfoKeeper(false)
   private lazy val visitDistanceTracker = new IntInfoKeeper(true)
 
@@ -574,7 +575,7 @@ trait PathLengthTracker extends DepthFirstTraverser {
  * Finishing time of a node is time just after all `dir` neighbors of the node became finished
  * (or when it is visited if it has no `dir` neighbors that should be processed later).
  */
-trait DiscoveryAndFinishTimeTracker extends DepthFirstTraverser {
+trait DiscoveryAndFinishTimeTracker extends DepthFirstTraverser[Node] {
   private[this] var time: Int = _ // automatically initialized to 0 before first enqueue
 
   private lazy val discoveryTime = new IntInfoKeeper(false)

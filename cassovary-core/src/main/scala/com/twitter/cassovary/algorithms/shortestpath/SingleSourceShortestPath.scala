@@ -1,10 +1,10 @@
 package com.twitter.cassovary.algorithms.shortestpath
 
-import com.twitter.cassovary.graph.{GraphDir, BreadthFirstTraverser, Node, DirectedGraph}
+import com.twitter.cassovary.graph.{Node, GraphDir, BreadthFirstTraverser, DirectedGraph}
 
-case class SingleSourceShortestPath(graph: DirectedGraph, source: Int) extends ShortestPath {
+case class SingleSourceShortestPath(graph: DirectedGraph[Node], source: Int) extends ShortestPath {
 
-  val bfs: BreadthFirstTraverser = new BreadthFirstTraverser(graph, GraphDir.OutDir, Seq(source))
+  val bfs = new BreadthFirstTraverser(graph, GraphDir.OutDir, Seq(source))
   private val (nodes, depths)  = (bfs.toList, bfs.allDepths)
   private val previous = nodes.map { n =>
     n.id -> n.inboundNodes().filter { in => depths(in) == depths(n.id) - 1}

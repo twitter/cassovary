@@ -389,7 +389,7 @@ object ArrayBasedDirectedGraph {
 class ArrayBasedDirectedGraph private (nodes: Array[Node], maxId: Int,
                               val nodeWithOutEdgesMaxId: Int,
                               val nodeWithOutEdgesCount: Int, val nodeCount: Int, val edgeCount: Long,
-                              val storedGraphDir: StoredGraphDir) extends DirectedGraph {
+                              val storedGraphDir: StoredGraphDir) extends DirectedGraph[Node] {
 
   override lazy val maxNodeId = maxId
 

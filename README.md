@@ -47,6 +47,7 @@ and
 
 The last Cassovary version to support scala 2.9 is 3.4.0, and
 support for scala version 2.9.x has been discontinued since.
+Also, Cassovary requires Java 7+ and the last Cassovary version to support Java 6 was 3.4.0.
 
 The only dependency that Cassovary uses which is not bundled with it (because of its size)
 is ```it.unimi.dsi.fastutil```. You can add that dependency in your sbt project as follows:

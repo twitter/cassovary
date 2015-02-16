@@ -13,17 +13,19 @@
  */
 package com.twitter.cassovary.graph
 
+import com.twitter.cassovary.graph.bipartite._
 import com.twitter.cassovary.graph.StoredGraphDir._
-import com.twitter.cassovary.util.{Sampling, BinomialDistribution}
+import com.twitter.cassovary.util.{BinomialDistribution, BoundedFuturePool, Sampling}
+import com.twitter.util.{Await, Future, FuturePool}
 import java.util.concurrent.ConcurrentLinkedQueue
-import scala.collection.mutable
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.util.Random
 
 /**
  * A simple implementation of a DirectedGraph
  */
-case class TestGraph(nodes: Node*) extends DirectedGraph {
+case class TestGraph(nodes: Node*) extends DirectedGraph[Node] {
   val nodeTable = new mutable.HashMap[Int, Node]
   nodes foreach { addNode }
 
@@ -55,18 +57,18 @@ object TestGraphs {
   val g2_mutual = TestGraph(
     TestNode(1, List(2), List(2)),
     TestNode(2, List(1), List(1))
-    )
+  )
 
   val g2_nonmutual = TestGraph(
     TestNode(1, List(2), Nil),
     TestNode(2, Nil, List(1))
-    )
+  )
 
   def g3 = ArrayBasedDirectedGraph(Seq(
     NodeIdEdgesMaxId(10, Array(11, 12)),
     NodeIdEdgesMaxId(11, Array(12)),
     NodeIdEdgesMaxId(12, Array(11))
-    ), StoredGraphDir.BothInOut, NeighborsSortingStrategy.LeaveUnsorted)
+  ), StoredGraphDir.BothInOut, NeighborsSortingStrategy.LeaveUnsorted)
 
   def g5 = ArrayBasedDirectedGraph(Seq(
     NodeIdEdgesMaxId(10, Array(11, 12, 13)),
@@ -74,16 +76,16 @@ object TestGraphs {
     NodeIdEdgesMaxId(12, Array(11)),
     NodeIdEdgesMaxId(13, Array(14)),
     NodeIdEdgesMaxId(14, Array())
-    ), StoredGraphDir.BothInOut, NeighborsSortingStrategy.LeaveUnsorted)
+  ), StoredGraphDir.BothInOut, NeighborsSortingStrategy.LeaveUnsorted)
 
   val nodeSeqIterator = Seq(
-      NodeIdEdgesMaxId(10, Array(11, 12, 13)),
-      NodeIdEdgesMaxId(11, Array(12, 14)),
-      NodeIdEdgesMaxId(12, Array(14)),
-      NodeIdEdgesMaxId(13, Array(12, 14)),
-      NodeIdEdgesMaxId(14, Array(15)),
-      NodeIdEdgesMaxId(15, Array(10, 11))
-      )
+    NodeIdEdgesMaxId(10, Array(11, 12, 13)),
+    NodeIdEdgesMaxId(11, Array(12, 14)),
+    NodeIdEdgesMaxId(12, Array(14)),
+    NodeIdEdgesMaxId(13, Array(12, 14)),
+    NodeIdEdgesMaxId(14, Array(15)),
+    NodeIdEdgesMaxId(15, Array(10, 11))
+  )
 
   val nodeSeqIteratorWithEmpty = Seq(
     NodeIdEdgesMaxId(0, Array.empty[Int]),
@@ -102,18 +104,148 @@ object TestGraphs {
     NeighborsSortingStrategy.LeaveUnsorted)
 
   val nodeSeqIterator2 = Seq(
-      NodeIdEdgesMaxId(10, Array(11, 12, 13)),
-      NodeIdEdgesMaxId(11, Array(10, 13, 14)),
-      NodeIdEdgesMaxId(12, Array(13, 14)),
-      NodeIdEdgesMaxId(13, Array(12, 14)),
-      NodeIdEdgesMaxId(14, Array(10, 11, 15)),
-      NodeIdEdgesMaxId(15, Array(10, 11, 16)),
-      NodeIdEdgesMaxId(16, Array(15))
-      )
+    NodeIdEdgesMaxId(10, Array(11, 12, 13)),
+    NodeIdEdgesMaxId(11, Array(10, 13, 14)),
+    NodeIdEdgesMaxId(12, Array(13, 14)),
+    NodeIdEdgesMaxId(13, Array(12, 14)),
+    NodeIdEdgesMaxId(14, Array(10, 11, 15)),
+    NodeIdEdgesMaxId(15, Array(10, 11, 16)),
+    NodeIdEdgesMaxId(16, Array(15))
+  )
   def g7_onlyout = ArrayBasedDirectedGraph(nodeSeqIterator2, StoredGraphDir.OnlyOut,
     NeighborsSortingStrategy.LeaveUnsorted)
   def g7_onlyin = ArrayBasedDirectedGraph(nodeSeqIterator2, StoredGraphDir.OnlyIn,
     NeighborsSortingStrategy.LeaveUnsorted)
+
+  // Bipartite Graph
+  def bipartiteGraphSingleSide = {
+    /*
+   lN -> 1 to 5
+   rN -> 4,8,5,10,123,0
+   1 --> i:(), o:()
+   2 --> i: (), o: (5,10)
+   3 --> i: (), o: ()
+   4 --> i: (), o: (14)
+   5 --> i: (), o: (5,10,8)
+   */
+
+    val leftNodes = new Array[BipartiteNode](6)
+    var inBounds: Array[Int] = Array()
+    var outBounds: Array[Int] = Array()
+    leftNodes(1) = new LeftNode(1, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array(5, 10)
+    leftNodes(2) = new LeftNode(2, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array()
+    leftNodes(3) = new LeftNode(3, inBounds, outBounds)
+
+
+    inBounds = Array()
+    outBounds = Array(14)
+    leftNodes(4) = new LeftNode(4, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array(5, 10, 8)
+    leftNodes(5) = new LeftNode(5, inBounds, outBounds)
+
+    val rightNodes = new Array[BipartiteNode](124)
+    inBounds = Array(4)
+    outBounds = Array()
+    rightNodes(14) = new RightNode(14, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array()
+    rightNodes(4) = new RightNode(4, inBounds, outBounds)
+
+    inBounds = Array(2, 5)
+    outBounds = Array()
+    rightNodes(5) = new RightNode(5, inBounds, outBounds)
+
+    inBounds = Array(5)
+    outBounds = Array()
+    rightNodes(8) = new RightNode(8, inBounds, outBounds)
+
+    inBounds = Array(2, 5)
+    outBounds = Array()
+    rightNodes(10) = new RightNode(10, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array()
+    rightNodes(123) = new RightNode(123, inBounds, outBounds)
+
+    val leftSide = BipartiteSide(leftNodes, 5, 6)
+    val rightSide = BipartiteSide(rightNodes, 6, 0)
+
+    new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.LeftToRight)
+  }
+
+  def bipartiteGraphDoubleSide = {
+    /*
+   lN -> 1 to 5
+   rN -> 4,8,5,10,123,0
+   1 --> i:(4,5,123,10), o:()
+   2 --> i: (), o: (5,10)
+   3 --> i: (), o: ()
+   4 --> i: (14), o: (14)
+   5 --> i: (4,10), o: (5,10,8)
+   */
+
+    val leftNodes = new Array[BipartiteNode](6)
+
+    var inBounds: Array[Int] = Array(4, 5, 123, 10)
+    var outBounds: Array[Int] = Array()
+    leftNodes(1) = new LeftNode(1, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array(5, 10)
+    leftNodes(2) = new LeftNode(2, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array()
+    leftNodes(3) = new LeftNode(3, inBounds, outBounds)
+
+
+    inBounds = Array(14)
+    outBounds = Array(14)
+    leftNodes(4) = new LeftNode(4, inBounds, outBounds)
+
+    inBounds = Array(4, 10)
+    outBounds = Array(5, 10, 8)
+    leftNodes(5) = new LeftNode(5, inBounds, outBounds)
+
+    val rightNodes = new Array[BipartiteNode](124)
+    inBounds = Array(4)
+    outBounds = Array(4)
+    rightNodes(14) = new RightNode(14, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array(1, 5)
+    rightNodes(4) = new RightNode(4, inBounds, outBounds)
+
+    inBounds = Array(2, 5)
+    outBounds = Array(1)
+    rightNodes(5) = new RightNode(5, inBounds, outBounds)
+
+    inBounds = Array(5)
+    outBounds = Array()
+    rightNodes(8) = new RightNode(8, inBounds, outBounds)
+
+    inBounds = Array(2, 5)
+    outBounds = Array(1, 5)
+    rightNodes(10) = new RightNode(10, inBounds, outBounds)
+
+    inBounds = Array()
+    outBounds = Array(1)
+    rightNodes(123) = new RightNode(123, inBounds, outBounds)
+
+    val leftSide = BipartiteSide(leftNodes, 5, 6)
+    val rightSide = BipartiteSide(rightNodes, 6, 7)
+
+    new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.Both)
+  }
 
   // a complete graph is where each node follows every other node
   def generateCompleteGraph(numNodes: Int) = {
@@ -148,9 +280,9 @@ object TestGraphs {
    * @param graphDir store both directions or only one direction
    * @return a random Erdos-Renyi Directed graph
    */
-  def generateRandomGraph(numNodes: Int, probEdge: Double, graphDir: StoredGraphDir = StoredGraphDir.BothInOut) = {
+  def generateRandomGraph(numNodes: Int, probEdge: Double, graphDir: StoredGraphDir = StoredGraphDir.BothInOut,
+                          rand: Random = new Random) = {
     val nodes = new Array[NodeIdEdgesMaxId](numNodes)
-    val rand = new Random
     val binomialDistribution = new BinomialDistribution(numNodes - 1, probEdge)
     (0 until numNodes).par foreach { source =>
       val positiveBits = randomSubset(binomialDistribution, 0 until numNodes - 1, rand)
@@ -168,10 +300,14 @@ object TestGraphs {
    * @return a random Erdos-Renyi undirected graph (a graph which only has mutual edges)
    */
   def generateRandomUndirectedGraph(numNodes: Int, probEdge: Double,
-                                    graphDir: StoredGraphDir = StoredGraphDir.BothInOut) = {
+                                    graphDir: StoredGraphDir = StoredGraphDir.BothInOut,
+                                    rand: Random = new Random,
+                                    parallelismLimit: Int = 2) = {
+
+    val futurePool = new BoundedFuturePool(FuturePool.unboundedPool, parallelismLimit)
+
     val nodes = Array.fill(numNodes){new ConcurrentLinkedQueue[Int]()}
     def addMutualEdge(i: Int)(j: Int) {nodes(i).add(j); nodes(j).add(i)}
-    val rand = new Random
     val binomialDistribution = new BinomialDistribution(numNodes - 1, probEdge)
     // Sampling edges only from nodes with lower id to higher id. In order to
     // reuse the same binomial distribution we match nodes in pairs, so that
@@ -180,15 +316,18 @@ object TestGraphs {
     // connect from lower id node to higher. Thus for each pair we need to sample a vector
     // of Bernoulli variables of size (n - 1), from which we interprete first (lowerNode - 1)
     // bits as edges from higherNode and the rest from the node with lower id.
-    (0 to (numNodes - 1) / 2).par foreach {
-      lowerNode =>
+    val futures = (0 to (numNodes - 1) / 2) map {
+      lowerNode => futurePool {
         val higherNode = numNodes - 1 - lowerNode
         val (higherNodeNeighbors, lowerNodeNeighbors) = randomSubset(binomialDistribution,
           0 until numNodes - 1, rand) partition (_ < lowerNode)
         lowerNodeNeighbors.map(_ + 1) foreach addMutualEdge(lowerNode)
         if (lowerNode != higherNode)
           higherNodeNeighbors map (higherNode + _ + 1) foreach addMutualEdge(higherNode)
+      }
     }
+    Await.ready(Future.join(futures))
+
     val nodesEdges = nodes.indices map { i =>
       NodeIdEdgesMaxId(i, nodes(i).asScala.toArray)
     }

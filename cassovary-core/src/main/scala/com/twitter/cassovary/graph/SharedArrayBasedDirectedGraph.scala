@@ -255,7 +255,7 @@ class SharedArrayBasedDirectedGraph private (nodeIdSet: Array[Byte], offsetTable
     lengthTable: Array[Int], sharedEdgeArray: Array[Array[Int]],
     reverseDirEdgeArray: Option[Array[Array[Int]]], maxId: Int, val nodeWithOutEdgesMaxId: Int,
     val nodeWithOutEdgesCount: Int, val nodeCount: Int, val edgeCount: Long,
-    val storedGraphDir: StoredGraphDir) extends DirectedGraph {
+    val storedGraphDir: StoredGraphDir) extends DirectedGraph[Node] {
 
   override lazy val maxNodeId = maxId
 

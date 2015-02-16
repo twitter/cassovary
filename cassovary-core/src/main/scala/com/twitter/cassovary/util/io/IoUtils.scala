@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Twitter, Inc.
+ * Copyright 2015 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at
@@ -11,10 +11,19 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.graph
+package com.twitter.cassovary.util.io
 
-import org.scalatest.WordSpec
+import java.io.File
 
-class SharedArrayBasedDirectedGraphSpec extends WordSpec with GraphBehaviours[Node] {
-    verifyGraphBuilding(SharedArrayBasedDirectedGraph.apply, sampleGraphEdges)
+object IoUtils {
+
+  def readFileNames(directory: String, prefixFileNames: String): Array[String] = {
+    val dir = new File(directory)
+    val filesInDir = dir.list()
+    if (filesInDir == null) {
+      throw new Exception("Current directory is " + System.getProperty("user.dir") +
+        " and nothing was found in dir " + dir)
+    }
+    filesInDir.filter(_.startsWith(prefixFileNames)).map(directory + "/" + _)
+  }
 }

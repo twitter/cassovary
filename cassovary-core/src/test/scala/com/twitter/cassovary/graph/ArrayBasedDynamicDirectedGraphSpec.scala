@@ -1,9 +1,10 @@
 package com.twitter.cassovary.graph
 
-import org.scalatest.{Matchers, WordSpec}
+import com.twitter.cassovary.graph.node.DynamicNode
 import com.twitter.cassovary.graph.StoredGraphDir._
+import org.scalatest.{Matchers, WordSpec}
 
-class ArrayBasedDynamicDirectedGraphSpec extends WordSpec with Matchers with GraphBehaviours {
+class ArrayBasedDynamicDirectedGraphSpec extends WordSpec with Matchers with GraphBehaviours[DynamicNode] {
   val graphDirections = List(StoredGraphDir.OnlyIn, StoredGraphDir.OnlyOut, StoredGraphDir.BothInOut,
                              StoredGraphDir.Mutual) // Bipartitie is not supported
 

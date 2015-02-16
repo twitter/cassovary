@@ -15,7 +15,7 @@ package com.twitter.cassovary.graph
 
 import org.scalatest.WordSpec
 
-class ArrayBasedDirectedGraphSpec extends WordSpec with GraphBehaviours {
+class ArrayBasedDirectedGraphSpec extends WordSpec with GraphBehaviours[Node] {
   verifyGraphBuilding(ArrayBasedDirectedGraph.apply(_, _, NeighborsSortingStrategy.LeaveUnsorted),
     sampleGraphEdges)
 

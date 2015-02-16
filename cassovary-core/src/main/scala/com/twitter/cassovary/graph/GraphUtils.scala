@@ -24,7 +24,7 @@ import scala.util.Random
 /**
  * This class contains some common graph utilities and convenience functions.
  */
-class GraphUtils(val graph: Graph) {
+class GraphUtils[+V <: Node](val graph: Graph[V]) {
 
   private val statsReceiver = DefaultStatsReceiver
 
