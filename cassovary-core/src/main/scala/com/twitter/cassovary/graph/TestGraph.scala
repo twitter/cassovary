@@ -14,8 +14,10 @@
 package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.StoredGraphDir._
-import com.twitter.cassovary.util.{Sampling, BinomialDistribution}
+import com.twitter.cassovary.util.{BoundedFuturePool, Sampling, BinomialDistribution}
 import java.util.concurrent.ConcurrentLinkedQueue
+import com.twitter.util.{Await, Future, FuturePool}
+
 import scala.collection.mutable
 import scala.collection.JavaConverters._
 import scala.util.Random
@@ -148,9 +150,9 @@ object TestGraphs {
    * @param graphDir store both directions or only one direction
    * @return a random Erdos-Renyi Directed graph
    */
-  def generateRandomGraph(numNodes: Int, probEdge: Double, graphDir: StoredGraphDir = StoredGraphDir.BothInOut) = {
+  def generateRandomGraph(numNodes: Int, probEdge: Double, graphDir: StoredGraphDir = StoredGraphDir.BothInOut,
+                          rand: Random = new Random) = {
     val nodes = new Array[NodeIdEdgesMaxId](numNodes)
-    val rand = new Random
     val binomialDistribution = new BinomialDistribution(numNodes - 1, probEdge)
     (0 until numNodes).par foreach { source =>
       val positiveBits = randomSubset(binomialDistribution, 0 until numNodes - 1, rand)
@@ -168,10 +170,14 @@ object TestGraphs {
    * @return a random Erdos-Renyi undirected graph (a graph which only has mutual edges)
    */
   def generateRandomUndirectedGraph(numNodes: Int, probEdge: Double,
-                                    graphDir: StoredGraphDir = StoredGraphDir.BothInOut) = {
+                                    graphDir: StoredGraphDir = StoredGraphDir.BothInOut,
+                                    rand: Random = new Random,
+                                    parallelismLimit: Int = 2) = {
+
+    val futurePool = new BoundedFuturePool(FuturePool.unboundedPool, parallelismLimit)
+
     val nodes = Array.fill(numNodes){new ConcurrentLinkedQueue[Int]()}
     def addMutualEdge(i: Int)(j: Int) {nodes(i).add(j); nodes(j).add(i)}
-    val rand = new Random
     val binomialDistribution = new BinomialDistribution(numNodes - 1, probEdge)
     // Sampling edges only from nodes with lower id to higher id. In order to
     // reuse the same binomial distribution we match nodes in pairs, so that
@@ -180,15 +186,18 @@ object TestGraphs {
     // connect from lower id node to higher. Thus for each pair we need to sample a vector
     // of Bernoulli variables of size (n - 1), from which we interprete first (lowerNode - 1)
     // bits as edges from higherNode and the rest from the node with lower id.
-    (0 to (numNodes - 1) / 2).par foreach {
-      lowerNode =>
+    val futures = (0 to (numNodes - 1) / 2) map {
+      lowerNode => futurePool {
         val higherNode = numNodes - 1 - lowerNode
         val (higherNodeNeighbors, lowerNodeNeighbors) = randomSubset(binomialDistribution,
           0 until numNodes - 1, rand) partition (_ < lowerNode)
         lowerNodeNeighbors.map(_ + 1) foreach addMutualEdge(lowerNode)
         if (lowerNode != higherNode)
           higherNodeNeighbors map (higherNode + _ + 1) foreach addMutualEdge(higherNode)
+      }
     }
+    Await.ready(Future.join(futures))
+
     val nodesEdges = nodes.indices map { i =>
       NodeIdEdgesMaxId(i, nodes(i).asScala.toArray)
     }
