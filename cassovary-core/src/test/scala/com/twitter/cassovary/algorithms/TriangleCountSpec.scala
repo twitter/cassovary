@@ -25,9 +25,7 @@ class TriangleCountSpec extends WordSpec with Matchers {
     (sums._1 / repetitions, sums._2 / repetitions)
   }
 
-  val random = new Random()
-
-  def rng(): Random = {random.setSeed(1); random}
+  def rng(): Random = new Random(1)
 
   "Triangle count" should {
 

@@ -13,13 +13,14 @@
  */
 package com.twitter.cassovary.graph
 
-import com.twitter.cassovary.graph.StoredGraphDir._
-import com.twitter.cassovary.util.{BoundedFuturePool, Sampling, BinomialDistribution}
 import java.util.concurrent.ConcurrentLinkedQueue
+
+import com.twitter.cassovary.graph.StoredGraphDir._
+import com.twitter.cassovary.util.{BinomialDistribution, BoundedFuturePool, Sampling}
 import com.twitter.util.{Await, Future, FuturePool}
 
-import scala.collection.mutable
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.util.Random
 
 /**
