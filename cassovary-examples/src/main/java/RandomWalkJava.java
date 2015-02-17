@@ -91,7 +91,7 @@ public class RandomWalkJava {
   @SuppressWarnings("unchecked")
   private static Map<Integer, Integer> scalaIntsMapToJavaMap(scala.collection.Map<Object, Object> map) {
     Map<Object, Object> javaMap = JavaConverters$.MODULE$.mapAsJavaMapConverter(map).asJava();
-    HashMap<Integer, Integer> javaIntsMap = new HashMap<>();
+    HashMap<Integer, Integer> javaIntsMap = new HashMap<Integer, Integer>();
     for(Object key: javaMap.keySet()){
         javaIntsMap.put((Integer)key, (Integer)javaMap.get(key));
     }
