@@ -47,7 +47,8 @@ class TriangleCountSpec extends WordSpec with Matchers {
 
     "Return correct results for a graph with no triangles" in {
       val numberOfNodes = 1000
-      val graph = TestGraphs.generateRandomUndirectedGraph(numberOfNodes, 2.0 / numberOfNodes, rand = rng())
+      val graph = TestGraphs.generateRandomUndirectedGraph(numberOfNodes, 2.0 / numberOfNodes, rand = rng(),
+        parallelismLimit = 1)
       val pars = TriangleCountParameters(200, 200)
       val (transitivity, triangles) = TriangleCount(graph, pars, rng())
       transitivity should be(0.0 +- 0.05)
