@@ -28,8 +28,8 @@ case class TriangleCountParameters(edgeReservoirSize : Int, wedgeReservoirSize :
  * `graph` than (b, a) is also.
  */
 object TriangleCount {
-  def apply(graph: DirectedGraph, parameters: TriangleCountParameters): (Double, Double) = {
-    new TriangleCount(graph, parameters).apply()
+  def apply(graph: DirectedGraph, parameters: TriangleCountParameters, rng: Random = new Random): (Double, Double) = {
+    new TriangleCount(graph, parameters, rng).apply()
   }
 }
 
@@ -76,9 +76,7 @@ class IntTuplesArray(noOfTuples : Int, tupleSize : Int) extends Iterable[Seq[Int
   }
 }
 
-class TriangleCount(graph : DirectedGraph, parameters : TriangleCountParameters) {
-
-  val rng = new Random
+class TriangleCount(graph : DirectedGraph, parameters : TriangleCountParameters, rng: Random) {
 
   /**
    * We store an undirected edge as a list of ints `List(a, b)`, where `a < b`.

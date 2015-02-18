@@ -23,6 +23,7 @@ import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import scala.Tuple2;
 import scala.collection.JavaConverters$;
+import scala.util.Random;
 
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +37,7 @@ public class RandomWalkJava {
     System.out.printf("Generating a random graph with %d nodes...\n", numNodes);
     DirectedGraph graph = TestGraphs.generateRandomGraph(numNodes,
             TestGraphs.getProbEdgeRandomDirected(numNodes, Math.min(10, numNodes)),
-            StoredGraphDir.BothInOut());
+            StoredGraphDir.BothInOut(), new Random());
     System.out.printf("Generated a random directed graph with %s nodes and %s edges.\n", graph.nodeCount(),
             graph.edgeCount());
 
