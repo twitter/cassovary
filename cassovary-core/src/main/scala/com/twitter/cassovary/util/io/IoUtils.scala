@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Twitter, Inc.
+ * Copyright 2015 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at
@@ -11,18 +11,19 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.twitter.cassovary.graph
+package com.twitter.cassovary.util.io
 
-/**
- * The entry point into a model of a graph.  Users typically query a known starting node
- * and then traverse the graph using methods on that {@code Node}.
- */
-trait Graph[+V <: Node] {
-  /**
-   * Returns the node with the given {@code id} or else {@code None} if the given node does not
-   * exist in this graph.
-   */
-  def getNodeById(id: Int): Option[V]
+import java.io.File
 
-  def existsNodeId(id: Int) = getNodeById(id).isDefined
+object IoUtils {
+
+  def readFileNames(directory: String, prefixFileNames: String): Array[String] = {
+    val dir = new File(directory)
+    val filesInDir = dir.list()
+    if (filesInDir == null) {
+      throw new Exception("Current directory is " + System.getProperty("user.dir") +
+        " and nothing was found in dir " + dir)
+    }
+    filesInDir.filter(_.startsWith(prefixFileNames)).map(directory + "/" + _)
+  }
 }

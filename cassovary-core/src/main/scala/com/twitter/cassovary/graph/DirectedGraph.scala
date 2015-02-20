@@ -14,6 +14,8 @@
 package com.twitter.cassovary.graph
 
 import GraphDir._
+import com.twitter.cassovary.graph.labels.{Label, Labels}
+import scala.reflect.runtime.universe.TypeTag
 
 object StoredGraphDir extends Enumeration {
   type StoredGraphDir = Value
@@ -58,6 +60,19 @@ trait DirectedGraph[+V <: Node] extends Graph[V] with Iterable[V] {
    * counts as 2 edges in this total.
    */
   def edgeCount: Long
+
+  /**
+   * Labels on nodes of this graph.
+   */
+  var nodeLabels: Labels[Int] = _
+
+  /**
+   * The label of a node accessed by name. Label can be anything.
+   */
+  def labelOfNode[L : TypeTag](nodeId: Int, labelName: String): Option[L] = {
+    val label: Option[Label[Int, L]] = nodeLabels.get[L](labelName)
+    label flatMap (_.get(nodeId))
+  }
 
   /**
    * the max node id
