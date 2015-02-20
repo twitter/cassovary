@@ -13,14 +13,14 @@
  */
 package com.twitter.cassovary.algorithms.centrality
 
-import com.twitter.cassovary.graph.{GraphDir, BreadthFirstTraverser, Walk, DirectedGraph}
+import com.twitter.cassovary.graph._
 
 /**
  * Calculate the closeness centrality of ``graph``
  * @param normalize Normalize by the ratio of number of connections to other nodes
  *                  and the number of nodes in the graph
  */
-class ClosenessCentrality(graph: DirectedGraph, normalize: Boolean = true) extends AbstractCentrality(graph) {
+class ClosenessCentrality(graph: DirectedGraph[Node], normalize: Boolean = true) extends AbstractCentrality(graph) {
 
   def _recalc(): Unit = {
     graph foreach { node =>

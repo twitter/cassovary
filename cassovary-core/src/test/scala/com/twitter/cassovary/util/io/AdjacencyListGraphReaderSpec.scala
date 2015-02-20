@@ -13,12 +13,12 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.GraphBehaviours
+import com.twitter.cassovary.graph.{GraphBehaviours, Node}
 import com.twitter.cassovary.util.SequentialNodeNumberer
 import java.util.concurrent.Executors
 import org.scalatest.{Matchers, WordSpec}
 
-class AdjacencyListGraphReaderSpec extends WordSpec with Matchers with GraphBehaviours {
+class AdjacencyListGraphReaderSpec extends WordSpec with Matchers with GraphBehaviours[Node] {
   val directory = "cassovary-core/src/test/resources/graphs/"
 
   val toy6nodeMap = Map( 10 -> List(11, 12, 13), 11 -> List(12, 14), 12 -> List(14),

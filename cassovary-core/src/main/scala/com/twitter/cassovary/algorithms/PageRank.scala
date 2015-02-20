@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.algorithms
 
-import com.twitter.cassovary.graph.{DirectedGraph, GraphDir}
+import com.twitter.cassovary.graph.{DirectedGraph, GraphDir, Node}
 import com.twitter.cassovary.util.Progress
 import com.twitter.logging.Logger
 
@@ -42,7 +42,7 @@ object PageRank {
    * @param params PageRankParams from above
    * @return An array of doubles, with indices corresponding to node ids
    */
-  def apply(graph: DirectedGraph, params: PageRankParams): Array[Double] = {
+  def apply(graph: DirectedGraph[Node], params: PageRankParams): Array[Double] = {
     val pr = new PageRank(graph, params)
     pr.run
   }
@@ -54,13 +54,13 @@ object PageRank {
    * @param prArray An array of doubles, with indices corresponding to node ids
    * @return The updated array
    */
-  def iterate(graph: DirectedGraph, params: PageRankParams, prArray: Array[Double]) = {
+  def iterate(graph: DirectedGraph[Node], params: PageRankParams, prArray: Array[Double]) = {
     val pr = new PageRank(graph, params)
     pr.iterate(prArray: Array[Double])
   }
 }
 
-private class PageRank(graph: DirectedGraph, params: PageRankParams) {
+private class PageRank(graph: DirectedGraph[Node], params: PageRankParams) {
 
   private val log = Logger.get("PageRank")
 

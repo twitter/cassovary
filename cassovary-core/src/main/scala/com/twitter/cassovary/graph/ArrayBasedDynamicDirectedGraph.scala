@@ -19,7 +19,7 @@ import scala.collection.mutable.ArrayBuffer
  * no new threads are created by this class (all operations execute on a single thread).
  */
 class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
-    extends DynamicDirectedGraph {
+    extends DynamicDirectedGraph[DynamicNode] {
   // outboundLists(id) contains the outbound neighbors of the given id,
   // or null if the id is not in this graph.
   // If we aren't storing outbound neighbors, outboundLists will always remain size 0.
@@ -114,7 +114,7 @@ class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
       None
     }
 
-  override def iterator: Iterator[Node] = (0 until maxIdBound).iterator flatMap getNodeById
+  override def iterator: Iterator[DynamicNode] = (0 until maxIdBound).iterator flatMap getNodeById
 
   /**
    * Returns the total number of directed edges in the graph.  A mutual edge, eg: A -> B and B -> A,

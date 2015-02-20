@@ -25,7 +25,7 @@ import scala.util.Random
  *
  * Performs approximately `maxSteps` `getNodeById` and `randomNeighbor` operations.
  */
-class GetNodeByIdBenchmark(graph: DirectedGraph, maxSteps: Int,
+class GetNodeByIdBenchmark(graph: DirectedGraph[Node], maxSteps: Int,
                           direction: GraphDir)
   extends OperationBenchmark {
 

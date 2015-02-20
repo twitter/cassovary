@@ -33,7 +33,7 @@ object StoredGraphDir extends Enumeration {
  * The entry point into a model of a directed graph.  Users typically query a known starting node
  * and then traverse the graph using methods on that {@code Node}.
  */
-trait DirectedGraph extends Graph with Iterable[Node] {
+trait DirectedGraph[+V <: Node] extends Graph[V] with Iterable[V] {
   /**
    * Returns the number of nodes in the graph.
    */

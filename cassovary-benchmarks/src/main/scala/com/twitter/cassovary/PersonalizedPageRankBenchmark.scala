@@ -13,10 +13,10 @@
  */
 package com.twitter.cassovary
 
-import com.twitter.cassovary.graph.{GraphUtils, DirectedGraph}
+import com.twitter.cassovary.graph.{GraphUtils, DirectedGraph, Node}
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 
-class PersonalizedPageRankBenchmark(graph : DirectedGraph,
+class PersonalizedPageRankBenchmark(graph : DirectedGraph[Node],
                                     randomWalkParams : RandomWalkParams =
                                     RandomWalkParams(numSteps = 10000, resetProbability = 0.3,
                                       maxDepth = Some(4)))

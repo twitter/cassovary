@@ -20,7 +20,7 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class DirectedGraphUtilsSpec extends WordSpec with Matchers {
 
-  private def utils(graph: DirectedGraph) = {
+  private def utils[V <: Node](graph: DirectedGraph[V]) = {
     (graph, new DirectedGraphUtils(graph))
   }
 

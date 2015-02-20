@@ -22,7 +22,7 @@ import scala.collection.mutable
  * It differs from {@code GraphUtils} because it works on a directed graph (which provides
  * some other things, such as an iterator on top of the underlying {@code Graph})
  */
-class DirectedGraphUtils(val directedGraph: DirectedGraph) extends GraphUtils(directedGraph) {
+class DirectedGraphUtils[+V <: Node](val directedGraph: DirectedGraph[V]) extends GraphUtils(directedGraph) {
 
   /** *
     * Returns the number of mutual edges in the graph (i.e., edges of type a->b and b->a both exist)

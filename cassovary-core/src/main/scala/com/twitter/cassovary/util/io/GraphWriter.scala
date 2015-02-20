@@ -34,13 +34,13 @@ object GraphWriter {
   /**
    * Writes given graph to given writer by iterating over all nodes and outbound edges.
    */
-  def writeDirectedGraph(graph: DirectedGraph, writer: Writer): Unit = writeDirectedGraph(graph, Seq(writer))
+  def writeDirectedGraph[V <: Node](graph: DirectedGraph[V], writer: Writer): Unit = writeDirectedGraph(graph, Seq(writer))
 
   /**
    * Writes given graph to given writers dividing the graph into chunks
    * of equal sizes of nodes.
    */
-  def writeDirectedGraph(graph: DirectedGraph, writers: Seq[Writer]): Unit = {
+  def writeDirectedGraph[V <: Node](graph: DirectedGraph[V], writers: Seq[Writer]): Unit = {
     val chunks = writers.size
     val nodesForChunk = ((graph.nodeCount - 1) / chunks) + 1
     graph.grouped(nodesForChunk).zip(writers.iterator).foreach {

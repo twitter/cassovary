@@ -17,7 +17,7 @@ import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class TestGraphSpec extends WordSpec with Matchers with GraphBehaviours {
+class TestGraphSpec extends WordSpec with Matchers with GraphBehaviours[Node] {
 
   "three node graph g3 stored in both directions" should {
     val graph = TestGraphs.g3
