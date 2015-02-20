@@ -13,6 +13,7 @@
  */
 package com.twitter.cassovary.graph
 
+import com.twitter.cassovary.graph.bipartite.BipartiteNode
 import org.mockito.Mockito._
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.mock.MockitoSugar
@@ -273,6 +274,27 @@ class TraverserSpec extends WordSpec with MockitoSugar with Matchers {
       trav.discoveryTime(13) shouldEqual Some(5)
       trav.discoveryTime(14) shouldEqual Some(2)
       trav.discoveryTime(15) shouldEqual Some(1)
+    }
+
+    "yield all nodes of Bipartite Graph Single Side in expected DFS order" in {
+      val dir = GraphDir.OutDir
+      val graph = TestGraphs.bipartiteGraphSingleSide
+
+      var dfs = new DepthFirstTraverser(graph, dir, Seq(-2, -5))
+      var ids = dfs.toSeq.map { _.id }.toList
+      ids shouldEqual List(-2, 5, 10, -5, 8)
+
+      dfs = new DepthFirstTraverser(graph, dir, Seq(5))
+      ids = dfs.toSeq.map { _.id }.toList
+      ids shouldEqual List(5)
+    }
+
+    "yield all nodes of Bipartite Graph Double Side in expected DFS order" in {
+      val dir = GraphDir.InDir
+      val graph = TestGraphs.bipartiteGraphDoubleSide
+      val dfs = new DepthFirstTraverser(graph, dir, Seq(-1))
+      val ids = dfs.toSeq.map { _.id }.toList
+      ids shouldEqual List(-1, 4, 5, -2, -5, 10, 123)
     }
   }
 
