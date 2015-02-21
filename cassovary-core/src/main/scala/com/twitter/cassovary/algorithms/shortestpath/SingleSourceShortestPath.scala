@@ -2,9 +2,6 @@ package com.twitter.cassovary.algorithms.shortestpath
 
 import com.twitter.cassovary.graph.{GraphDir, BreadthFirstTraverser, Node, DirectedGraph}
 
-/**
- * Created by bmckown on 2/20/15
- */
 case class SingleSourceShortestPath(graph: DirectedGraph, source: Int) extends ShortestPath {
 
   val bfs: BreadthFirstTraverser = new BreadthFirstTraverser(graph, GraphDir.OutDir, Seq(source))

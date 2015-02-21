@@ -15,11 +15,9 @@ package com.twitter.cassovary.algorithms.centrality
 
 import com.twitter.cassovary.graph._
 import org.scalatest.{Matchers, WordSpec}
-import scala.collection.mutable
 
 class BetweennessCentralitySpec extends WordSpec with Matchers {
   lazy val graph = TestGraphs.g6
-
 
   "Betweenness centrality" should {
     "return correctly normalized values when requesting normalization" in {
