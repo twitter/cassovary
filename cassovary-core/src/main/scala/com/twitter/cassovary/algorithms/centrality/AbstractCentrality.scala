@@ -23,6 +23,10 @@ import com.twitter.cassovary.graph.{Node, DirectedGraph}
  */
 abstract class AbstractCentrality(graph: DirectedGraph) extends Centrality {
 
+  graph.foldLeft(Seq.empty[Node]){ (partialSeq, n) =>
+    partialSeq ++ (if (n.id != 0) Seq(n) else Seq.empty[Node])
+  }
+
   protected val centralityValues = new Array[Double](graph.maxNodeId + 1)
 
   _recalc()
