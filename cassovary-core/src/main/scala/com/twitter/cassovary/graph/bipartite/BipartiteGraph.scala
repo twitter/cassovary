@@ -15,7 +15,6 @@ package com.twitter.cassovary.graph.bipartite
 
 import com.twitter.cassovary.graph.{Graph, GraphDir, StoredGraphDir, Node}
 import com.twitter.cassovary.graph.GraphDir._
-import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.logging.Logger
 
 case class BipartiteGraphException(e: String) extends Exception(e)
@@ -54,7 +53,7 @@ trait BipartiteNode extends Node {
 class LeftNode(nodeId: Int, val inboundNodes: Seq[Int],
     val outboundNodes: Seq[Int]) extends BipartiteNode {
   def isLeftNode = true
-  val id = nodeId
+  val id = - nodeId
 }
 
 /**
@@ -62,8 +61,8 @@ class LeftNode(nodeId: Int, val inboundNodes: Seq[Int],
  * all of its in and out edges point to nodes in the LHS, and thus all edge ids have values
  * of the real id * -1
  * @param id the id of the node (unique on the RHS)
- * @param in original (positive) ids of the nodes on the LHS pointed by in-coming edges
- * @param out original (positive) ids of the nodes on the LHS pointed by out-going edges
+ * @param in original (negative) ids of the nodes on the LHS pointed by in-coming edges
+ * @param out original (negative) ids of the nodes on the LHS pointed by out-going edges
  */
 class RightNode(val id: Int, in: Array[Int], out: Array[Int]) extends BipartiteNode {
   def isLeftNode = false
