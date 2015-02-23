@@ -409,6 +409,8 @@ trait DepthTracker extends QueueBasedTraverser[Node] {
     super.enqueue(nodes, from)
   }
 
+  def allDepths: collection.Map[Int, Int] = depthTracker.infoAllNodes
+
   def depth(id: Int) = depthTracker.infoOfNode(id)
 }
 
