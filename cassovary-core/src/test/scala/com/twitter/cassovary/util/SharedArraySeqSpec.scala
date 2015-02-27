@@ -24,9 +24,9 @@ class SharedArraySeqSpec extends WordSpec with Matchers {
       val sharedArray = Array[Array[Int]](arr1)
 
       "construct seqs correctly" in {
-        val seq1 = new SharedArraySeq(0, sharedArray, 0, 3)
+        val seq1 = new ArraySlice(sharedArray(0), 0, 3)
         seq1.toList shouldEqual arr1.toList
-        new SharedArraySeq(0, sharedArray, 1, 2).toList shouldEqual List(2, 3)
+        new ArraySlice(sharedArray(0), 1, 2).toList shouldEqual List(2, 3)
         seq1(0) shouldEqual 1
         seq1(1) shouldEqual 2
         seq1(2) shouldEqual 3
@@ -34,7 +34,7 @@ class SharedArraySeqSpec extends WordSpec with Matchers {
       }
 
       "implement foreach correctly" in {
-        (new SharedArraySeq(0, sharedArray, 0, 3) map { _ + 1 }) shouldEqual List(2, 3, 4)
+        (new ArraySlice(sharedArray(0), 0, 3) map { _ + 1 }) shouldEqual List(2, 3, 4)
       }
     }
 
@@ -42,13 +42,13 @@ class SharedArraySeqSpec extends WordSpec with Matchers {
       val sharedArray = Array[Array[Int]](arr1, arr2)
 
       "construct seqs correctly" in {
-        val seq1 = new SharedArraySeq(0, sharedArray, 0, 3)
+        val seq1 = new ArraySlice(sharedArray(0), 0, 3)
         seq1.toList shouldEqual arr1.toList
-        val seq2 = new SharedArraySeq(1, sharedArray, 0, 2)
+        val seq2 = new ArraySlice(sharedArray(1), 0, 2)
         seq2.toList shouldEqual arr2.toList
-        val seq3 = new SharedArraySeq(20, sharedArray, 0, 3)
+        val seq3 = new ArraySlice(sharedArray(20 % 2), 0, 3)
         seq3.toList shouldEqual arr1.toList
-        val seq4 = new SharedArraySeq(111, sharedArray, 0, 2)
+        val seq4 = new ArraySlice(sharedArray(111 %2), 0, 2)
         seq4.toList shouldEqual arr2.toList
 
         seq1(0) shouldEqual 1
@@ -62,7 +62,7 @@ class SharedArraySeqSpec extends WordSpec with Matchers {
       }
 
       "implement foreach correctly" in {
-        (new SharedArraySeq(111, sharedArray, 0, 2) map { _ + 1 }) shouldEqual List(5, 6)
+        (new ArraySlice(sharedArray(111 % 2), 0, 2) map { _ + 1 }) shouldEqual List(5, 6)
       }
     }
   }

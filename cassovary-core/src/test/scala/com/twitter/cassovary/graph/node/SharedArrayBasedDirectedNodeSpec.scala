@@ -14,16 +14,26 @@
 package com.twitter.cassovary.graph.node
 
 import com.twitter.cassovary.graph.StoredGraphDir
+import com.twitter.cassovary.util.Sharded2dArray
 
 class SharedArrayBasedDirectedNodeSpec extends NodeBehaviors {
-  val sharedArray = Array[Array[Int]](neighbors)
-  val actualIn = SharedArrayBasedDirectedNode(nodeId, 0, 3, sharedArray,
+  val nodesIndicator: Int => Boolean = {case `nodeId` => true; case _ => false}
+  val offsets: Int => Int = {case `nodeId` => 0; case _ => -1}
+  val lengthsOut: Int => Int = {case `nodeId` => 3; case _ => -1}
+  val lengthsIn: Int => Int = {case `nodeId` => 2; case _ => -1}
+
+  val sharedOutEdgesArray = new Sharded2dArray(Array[Array[Int]](neighbors), nodesIndicator, offsets,
+    lengthsOut, (x: Int) => 0)
+  val sharedInEdgesArray = new Sharded2dArray(Array[Array[Int]](inEdges), nodesIndicator, offsets,
+    lengthsIn, (x: Int) => 0)
+
+  val actualIn = SharedArrayBasedDirectedNode(nodeId, sharedOutEdgesArray,
           StoredGraphDir.OnlyIn)
-  val actualOut = SharedArrayBasedDirectedNode(nodeId, 0, 3, sharedArray,
+  val actualOut = SharedArrayBasedDirectedNode(nodeId, sharedOutEdgesArray,
           StoredGraphDir.OnlyOut)
-  val actualMutual = SharedArrayBasedDirectedNode(nodeId, 0, 3, sharedArray,
+  val actualMutual = SharedArrayBasedDirectedNode(nodeId, sharedOutEdgesArray,
           StoredGraphDir.Mutual)
-  val actualBoth = SharedArrayBasedDirectedNode(nodeId, 0, 3, sharedArray,
-          StoredGraphDir.BothInOut, Some(inEdges))
+  val actualBoth = SharedArrayBasedDirectedNode(nodeId, sharedOutEdgesArray,
+          StoredGraphDir.BothInOut, Some(sharedInEdgesArray))
   correctlyConstructNodes(actualIn, actualOut, actualMutual, actualBoth)
 }

@@ -15,7 +15,7 @@ package com.twitter.cassovary.graph.node
 
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.graph.{SortedNeighborsNodeOps, Node, SeqBasedNode}
-import com.twitter.cassovary.util.{SortedArrayOps, SharedArraySeq}
+import com.twitter.cassovary.util.{SortedArrayOps, ArraySlice}
 
 /**
  * Nodes in the graph that store edges in only one direction (or in the case Mutual Dir graph,
@@ -47,7 +47,7 @@ object UniDirectionalNode {
 object SharedArrayBasedUniDirectionalNode {
   def apply(nodeId: Int, edgeArrOffset: Int, edgeArrLen: Int, sharedArray: Array[Array[Int]],
             dir: StoredGraphDir) = {
-    val neighbors = new SharedArraySeq(nodeId, sharedArray, edgeArrOffset, edgeArrLen)
+    val neighbors = new ArraySlice(sharedArray(nodeId % sharedArray.length), edgeArrOffset, edgeArrLen)
     new SeqBasedNode(nodeId,
       if (dir == OnlyOut) Nil else neighbors,
       if (dir == OnlyIn) Nil else neighbors) with UniDirectionalNode
