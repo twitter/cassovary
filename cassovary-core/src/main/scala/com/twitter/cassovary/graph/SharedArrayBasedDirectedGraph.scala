@@ -71,8 +71,8 @@ object SharedArrayBasedDirectedGraph {
      *
      * @return shared graph meta-information object with filled all information but node count
      */
-    private def readMetaInfoFillEdgeSizes(sharedEdgeArraySizeCount: Array[AtomicInteger]):
-    Future[Seq[SharedGraphMetaInformation]] = {
+    private def readMetaInfoPerShard(sharedEdgeArraySizeCount: Array[AtomicInteger]):
+    Future[Seq[SharedGraphMetaInfo]] = {
       log.info("read out num of edges and max id from files in parallel")
       statsReceiver.timeFuture("graph_load_read_out_edge_sizes_dump_files") {
         val futures = iterableSeq.map {
@@ -88,7 +88,7 @@ object SharedArrayBasedDirectedGraph {
               numOfEdges += edgesLength
               nodeCount += 1
             }
-            SharedGraphMetaInformation(newMaxId, varNodeWithOutEdgesMaxId, nodeCount, -1, numOfEdges)
+            SharedGraphMetaInfo(newMaxId, varNodeWithOutEdgesMaxId, nodeCount, -1, numOfEdges)
           }
         }
         Future.collect(futures)
@@ -96,30 +96,25 @@ object SharedArrayBasedDirectedGraph {
     }
 
     /**
-     * Combines meta-information from parts of graph
+     * Aggregate meta-information from parts of graph
      */
-    private def combineMetaInfoFromParts(partsMetaInfo: Seq[SharedGraphMetaInformation]):
-    SharedGraphMetaInformation = {
-      var maxNodeId = 0
-      var nodeWithOutEdgesMaxId = 0
-      var nodeWithOutEdgesCount = 0
-      var numEdges = 0L
+    private def aggregateMetaInfoFromParts(partsMetaInfo: Seq[SharedGraphMetaInfo]):
+      SharedGraphMetaInfo = {
 
-      partsMetaInfo.map {
-        part =>
-          maxNodeId = maxNodeId max part.maxId
-          nodeWithOutEdgesMaxId = nodeWithOutEdgesMaxId max part.nodeWithOutEdgesMaxId
-          numEdges += part.edgeCount
-          nodeWithOutEdgesCount += part.nodeWithOutEdgesCount
+      def aggregate(meta1: SharedGraphMetaInfo, meta2: SharedGraphMetaInfo) = {
+        SharedGraphMetaInfo(meta1.maxId max meta2.maxId,
+          meta1.nodeWithOutEdgesMaxId max meta2.nodeWithOutEdgesMaxId,
+          meta1.nodeWithOutEdgesCount + meta2.nodeWithOutEdgesCount, -1,
+          meta1.edgeCount + meta2.edgeCount)
       }
-      SharedGraphMetaInformation(maxNodeId, nodeWithOutEdgesMaxId,
-        nodeWithOutEdgesCount, -1, numEdges)
+
+      partsMetaInfo.reduce(aggregate)
     }
 
     /**
      * Instantiates shared array. Resets `sharedEdgeArraySizeCount`.
      */
-    def instantiateSharedArray(maxNodeId: Int, sharedEdgeArraySizeCount: Array[AtomicInteger]):
+    private def instantiateSharedArray(sharedEdgeArraySizeCount: Array[AtomicInteger]):
     Array[Array[Int]] = {
       // instantiate shared array (2-dimensional)
       val sharedEdgeArray = new Array[Array[Int]](numOfShards)
@@ -131,7 +126,7 @@ object SharedArrayBasedDirectedGraph {
       sharedEdgeArray
     }
 
-    def fillEdgesMarkNodes(iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]],
+    private def fillEdgesMarkNodes(iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]],
                            sharedEdgeArray: Array[Array[Int]], nodeIdSet: Array[Byte],
                            offsetTable: Array[Int], lengthTable: Array[Int],
                            nextFreeCellInSharedTable: Array[AtomicInteger]): Future[Unit] = {
@@ -148,7 +143,7 @@ object SharedArrayBasedDirectedGraph {
                   id = item.id
                   nodeIdSet(id) = 1
                   edgesLength = item.edges.length
-                  shardIdx = id % sharedEdgeArray.length
+                  shardIdx = id % numOfShards
                   offset = nextFreeCellInSharedTable(shardIdx).getAndAdd(edgesLength)
                   Array.copy(item.edges, 0, sharedEdgeArray(shardIdx), offset, edgesLength)
                   offsetTable(id) = offset
@@ -166,13 +161,9 @@ object SharedArrayBasedDirectedGraph {
       }
     }
 
-    def countNodes(nodeIdSet: Array[Byte], maxNodeId: Int): Int = {
-      // doing this by hand instead sum or fold to avoid boxing
-      var sum = 0
-      (0 to maxNodeId).foreach {
-        i => sum += nodeIdSet(i)
-      }
-      sum
+    private def countNodes(nodeIdSet: Array[Byte], maxNodeId: Int): Int = {
+      // maybe more optimal to do this by hand to avoid boxing
+      nodeIdSet.sum
     }
 
 
@@ -181,12 +172,11 @@ object SharedArrayBasedDirectedGraph {
       val sharedEdgeArraySizeCount = new Array[AtomicInteger](numOfShards)
       for (i <- 0 until numOfShards) sharedEdgeArraySizeCount(i) = new AtomicInteger()
 
-
       val future = for {
-        partsMetaInfo <- readMetaInfoFillEdgeSizes(sharedEdgeArraySizeCount)
-        metaInfo = combineMetaInfoFromParts(partsMetaInfo)
+        partsMetaInfo <- readMetaInfoPerShard(sharedEdgeArraySizeCount)
+        metaInfo = aggregateMetaInfoFromParts(partsMetaInfo)
         maxId = metaInfo.maxId
-        sharedEdgeArray = instantiateSharedArray(maxId, sharedEdgeArraySizeCount)
+        sharedEdgeArray = instantiateSharedArray(sharedEdgeArraySizeCount)
         nodeIdSet = new Array[Byte](maxId + 1)
         offsetTable = new Array[Int](maxId + 1)
         lengthTable = new Array[Int](maxId + 1)
@@ -194,11 +184,12 @@ object SharedArrayBasedDirectedGraph {
           sharedEdgeArraySizeCount)
         edges = Sharded2dArray.fromArrays(sharedEdgeArray, nodeIdSet, offsetTable, lengthTable)
         _ = metaInfo.nodeCount = countNodes(nodeIdSet, maxId)
-        reverseDirEdgeArray <- if (storedGraphDir == BothInOut)
-          createReverseDirEdgeArray(iterableSeq, sharedEdgeArray, sharedEdgeArraySizeCount,
-            nodeIdSet, offsetTable, lengthTable, maxId).map(x => Some(x))
-        else
-          Future.value(None)
+        reverseDirEdgeArray <-
+          if (storedGraphDir == BothInOut)
+            createReverseDirEdgeArray(iterableSeq, sharedEdgeArray, sharedEdgeArraySizeCount,
+              nodeIdSet, offsetTable, lengthTable, maxId).map(x => Some(x))
+          else
+            Future.value(None)
       } yield new SharedArrayBasedDirectedGraph(nodeIdSet, edges,
           reverseDirEdgeArray, metaInfo, storedGraphDir)
 
@@ -210,7 +201,7 @@ object SharedArrayBasedDirectedGraph {
      *
      * Needed only if storing both directions.
      */
-    def createReverseDirEdgeArray(iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]],
+    private def createReverseDirEdgeArray(iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]],
                                   sharedEdgeArray: Array[Array[Int]], shardsLengths: Array[AtomicInteger],
                                   nodeIdSet: Array[Byte],
                                   offsetTable: Array[Int], lengthTable: Array[Int], maxNodeId: Int):
@@ -295,7 +286,7 @@ object SharedArrayBasedDirectedGraph {
 
       for {
         (inEdgesSizes, inEdgesShardsSizes) <- findInEdgesAndShardsSizes(sharedEdgeArray, shardsLengths, nodeIdSet)
-        sharedInEdges = instantiateSharedArray(maxNodeId, inEdgesShardsSizes)
+        sharedInEdges = instantiateSharedArray(inEdgesShardsSizes)
         offsetInEdgesTable = new Array[Int](maxNodeId + 1)
         lengthInEdgesTable = new Array[Int](maxNodeId + 1)
         _ <- fillInEdgesLengthsAndOffsets(lengthInEdgesTable, offsetInEdgesTable, inEdgesSizes, inEdgesShardsSizes)
@@ -320,8 +311,8 @@ object SharedArrayBasedDirectedGraph {
  * @param nodeCount the number of nodes in the graph
  * @param edgeCount the number of edges in the graph
  */
-case class SharedGraphMetaInformation(maxId: Int, nodeWithOutEdgesMaxId: Int,
-                                nodeWithOutEdgesCount: Int, var nodeCount: Int, edgeCount: Long)
+case class SharedGraphMetaInfo(maxId: Int, nodeWithOutEdgesMaxId: Int,
+                               nodeWithOutEdgesCount: Int, var nodeCount: Int, edgeCount: Long)
 
 /**
  * This class is an implementation of the directed graph trait that is backed
@@ -338,7 +329,7 @@ class SharedArrayBasedDirectedGraph private (
   nodeIdSet: Array[Byte],
   edges: Sharded2dArray[Int],
   reverseDirEdges: Option[Sharded2dArray[Int]],
-  metaInformation: SharedGraphMetaInformation,
+  metaInformation: SharedGraphMetaInfo,
   val storedGraphDir: StoredGraphDir
 ) extends DirectedGraph[Node] {
 
@@ -353,7 +344,7 @@ class SharedArrayBasedDirectedGraph private (
   def getNodeById(id: Int) = {
     if ((id < 0) || (id >= nodeIdSet.size) || (nodeIdSet(id) == 0)) {
       None
-    } else {  
+    } else {
       Some(SharedArrayBasedDirectedNode(id,
         edges, storedGraphDir, reverseDirEdges))
     }

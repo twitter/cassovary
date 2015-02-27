@@ -15,11 +15,11 @@ package com.twitter.cassovary.util
 
 import org.scalatest.{Matchers, WordSpec}
 
-class SharedArraySeqSpec extends WordSpec with Matchers {
+class ArraySliceSpec extends WordSpec with Matchers {
   val arr1 = Array(1,2,3)
   val arr2 = Array(4,5)
 
-  "SharedArraySeq" when {
+  "ArraySlice" when {
     "single shard" should {
       val sharedArray = Array[Array[Int]](arr1)
 

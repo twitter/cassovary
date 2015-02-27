@@ -73,8 +73,8 @@ object SharedArrayBasedBiDirectionalNode {
       reverseDirEdgeArray: Sharded2dArray[Int]) = {
     new Node {
       val id = nodeId
-      def outboundNodes() = sharedOutEdgesArray(nodeId)
-      def inboundNodes() = reverseDirEdgeArray(nodeId)
+      def outboundNodes() = Option(sharedOutEdgesArray(nodeId)).getOrElse(BiDirectionalNode.noEdges)
+      def inboundNodes() = Option(reverseDirEdgeArray(nodeId)).getOrElse(BiDirectionalNode.noEdges)
     }
   }
 }

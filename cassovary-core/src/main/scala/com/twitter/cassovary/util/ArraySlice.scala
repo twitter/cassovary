@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Twitter, Inc.
+ * Copyright 2015 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at
@@ -20,8 +20,9 @@ import scala.collection.mutable
  *
  * The concept of shared array is that a number of Seqs share an array
  * as the internal storage. Each of the arrays is defined by its offset from the beginning
- * of the array and length.
- * @param offset the offset in the second dimension
+ * of the shared array and length.
+ * @param array wrapped array
+ * @param offset the offset in the `array`
  * @param length length of the Seq
  */
 class ArraySlice[@specialized(Int, Long) T](array: Array[T],
@@ -30,7 +31,7 @@ class ArraySlice[@specialized(Int, Long) T](array: Array[T],
 
   def apply(idx: Int): T = {
     if (idx >= length) {
-      throw new IndexOutOfBoundsException()
+      throw new IndexOutOfBoundsException(idx.toString)
     } else {
       array(offset + idx)
     }
