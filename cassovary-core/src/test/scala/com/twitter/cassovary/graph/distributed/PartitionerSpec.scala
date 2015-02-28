@@ -112,5 +112,4 @@ class PartitionerSpec extends WordSpec with Matchers with GraphBehaviours[Node] 
       verifyInOutEdges(instances(1), whole.nodeCount, outEdges1, Map(), true)
     }
   }
-
 }

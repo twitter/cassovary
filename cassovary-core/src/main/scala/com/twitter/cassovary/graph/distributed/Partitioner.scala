@@ -24,21 +24,22 @@ import scala.util.Random
  * @todo should allow node to be specified containing only inedges
  */
 trait Partitioner {
-  // number of instances
+  // instances are numbered 0..(numInstances-1)
   def numInstances: Int
 
-  // the function that maps a single node to potentially multiple instances
+  // a single `orig` node can be mapped to potentially multiple instances
+  // @return a Map that maps instance number to a NodeIdEdgesMaxId in that instance
   def map(orig: NodeIdEdgesMaxId): immutable.Map[Int, NodeIdEdgesMaxId]
 }
 
 // Assigns nodes randomly to an instance
 class RandomNodeMapper(val numInstances: Int, rand: Random = new Random()) extends Partitioner {
-  def map(n: NodeIdEdgesMaxId) = Map(rand.nextInt(numInstances) -> n)
+  def map(orig: NodeIdEdgesMaxId) = Map(rand.nextInt(numInstances) -> orig)
 }
 
 // Assigns nodes by a hash function of the source node's id
 class HashSourceMapper(val numInstances: Int, hashNodeFn: Int => Int) extends Partitioner {
-  def map(n: NodeIdEdgesMaxId) = Map(hashNodeFn(n.id) % numInstances -> n)
+  def map(orig: NodeIdEdgesMaxId) = Map(hashNodeFn(orig.id) % numInstances -> orig)
 }
 
 // Assigns nodes by a hash function of the destination node's id. So,
@@ -51,18 +52,19 @@ class HashDestMapper(val numInstances: Int, hashNodeFn: Int => Int) extends Part
   }
 }
 
-// Uses both by source and by dest partitioning
-class HashSourceAndDestMapper(override val numInstances: Int, hashNodeFn: Int => Int)
-    extends HashDestMapper(numInstances, hashNodeFn) {
-  override def map(orig: NodeIdEdgesMaxId) = {
-    // first do by dest, then overwrite the map value for that instance number
-    // to which the source node would be mapped to
-    super.map(orig) ++ Map(hashNodeFn(orig.id) % numInstances -> orig)
+class HashSourceAndDestMapper(val numInstances: Int, hashNodeFn: Int => Int) extends Partitioner {
+  val byDest = new HashDestMapper(numInstances, hashNodeFn)
+  val bySource = new HashSourceMapper(numInstances, hashNodeFn)
+
+  // Assume orig has u -> {v0, v1} and instance numbered i gets v_i when mapped by dest.
+  // If instance#0 gets 'u' by source, then it will get the full original node u -> {v0, v1, v2},
+  // while instance#1 will get u -> {v1}. So we first map by dest and then overwrite for some nodes.
+  def map(orig: NodeIdEdgesMaxId) = {
+    byDest.map(orig) ++ bySource.map(orig)
   }
 }
 
 object Partitioner {
-
   /**
    * @return a map of instance number to the arraybaseddirectedgraph stored in that instance
    *         after partitioning `origGraph` based on `partitioner`
