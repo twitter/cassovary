@@ -24,7 +24,7 @@ class BetweennessCentrality(graph: DirectedGraph[Node], normalize: Boolean = tru
 
   def _recalc(): Unit = {
     val values = graph.foldLeft(Map.empty[Int, Double]){ (partialValues, n) =>
-      val allPaths = SingleSourceShortestPath(graph, n.id).allShortestPaths
+      val allPaths = new SingleSourceShortestPath(graph, n.id).allShortestPaths
       val currentValues = allPaths.values.foldLeft(Map.empty[Int, Double]){ (acc, pc) =>
         val middleNodes = pc.flatMap { p => p.slice(1, p.size - 1) }
           .groupBy(k => k)

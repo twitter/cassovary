@@ -19,7 +19,6 @@ import org.scalatest.{Matchers, WordSpec}
 class BetweennessCentralitySpec extends WordSpec with Matchers {
   lazy val graph = TestGraphs.g6
 
-
   "Betweenness centrality" should {
     "return correctly normalized values when requesting normalization" in {
       val bc = new BetweennessCentrality(graph)
