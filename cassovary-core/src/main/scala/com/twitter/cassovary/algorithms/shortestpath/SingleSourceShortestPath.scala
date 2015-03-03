@@ -21,7 +21,7 @@ import com.twitter.cassovary.graph._
  * a single shortest path.
  * @param source The source node with which all shortest paths start.
  */
-class SingleSourceShortestPath(val graph: DirectedGraph[Node], source: Int) extends ShortestPath {
+class SingleSourceShortestPath(val graph: DirectedGraph[Node], val source: Int) extends ShortestPath {
 
   val bfs = new BreadthFirstTraverser(graph, GraphDir.OutDir, Seq(source))
   private val (nodes, depths)  = (bfs.toList, bfs.allDepths)
@@ -65,7 +65,7 @@ class SingleSourceShortestPath(val graph: DirectedGraph[Node], source: Int) exte
     (stack, top, path)
   }
 
-  def shortestPaths(target: Int): Paths = {
+  def shortestPaths(target: Int): Seq[Path] = {
     lazy val stream: Stream[(Stack, Int, Path)] =
       (List(Seq(target, 0)), 0, Seq.empty[Int]) #:: stream.map { case (s, t, p) => walkOnGraph(s,t) }
 
