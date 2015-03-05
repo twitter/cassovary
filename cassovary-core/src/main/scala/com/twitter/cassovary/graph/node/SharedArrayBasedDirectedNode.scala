@@ -15,30 +15,30 @@ package com.twitter.cassovary.graph.node
 
 import com.twitter.cassovary.graph.StoredGraphDir
 import com.twitter.cassovary.graph.StoredGraphDir._
+import com.twitter.cassovary.util.Sharded2dArray
 
 object SharedArrayBasedDirectedNode {
+  val emptyArray = new Array[Int](0)
   /**
    * Creates a shared array based directed node (uni-directional or bi-directional) for
    * outgoing edges. Reverse edge arrays are not shared.
    *
    * @param nodeId an id of the node
-   * @param edgeArrOffset an offset into the shared array for outgoing edges
-   * @param edgeArrLen the number of outgoing edges
-   * @param sharedEdgeArray a two-dimensional array that holds the underlying data for
+   * @param edges a two-dimensional array that holds the underlying data for
    *                        the shared array based graph
    * @param dir the stored graph direction(s) (OnlyIn, OnlyOut, BothInOut or Mutual)
-   * @param reverseDirEdges a reverse edge array, one per node
+   * @param reverseDirEdges a shared reverse direction edge array
    *
    * @return a node
    */
-  def apply(nodeId: Int, edgeArrOffset: Int, edgeArrLen: Int, sharedEdgeArray: Array[Array[Int]],
-      dir: StoredGraphDir, reverseDirEdges: Option[Array[Int]] = None) = {
+  def apply(nodeId: Int, edges: Sharded2dArray[Int],
+      dir: StoredGraphDir, reverseDirEdges: Option[Sharded2dArray[Int]] = None) = {
     dir match {
       case StoredGraphDir.OnlyIn | StoredGraphDir.OnlyOut | StoredGraphDir.Mutual =>
-        SharedArrayBasedUniDirectionalNode(nodeId, edgeArrOffset, edgeArrLen, sharedEdgeArray, dir)
+        val outEdges: Seq[Int] = Option(edges(nodeId)).getOrElse(emptyArray)
+        UniDirectionalNode(nodeId, outEdges, dir)
       case StoredGraphDir.BothInOut =>
-        SharedArrayBasedBiDirectionalNode(nodeId, edgeArrOffset, edgeArrLen,
-            sharedEdgeArray, reverseDirEdges.get)
+        SharedArrayBasedBiDirectionalNode(nodeId, edges, reverseDirEdges.get)
     }
   }
 }

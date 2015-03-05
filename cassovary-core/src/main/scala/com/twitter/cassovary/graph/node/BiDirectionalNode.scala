@@ -16,7 +16,7 @@ package com.twitter.cassovary.graph.node
 import java.{util => jutil}
 
 import com.twitter.cassovary.graph.{Node, SeqBasedNode, SortedNeighborsNodeOps}
-import com.twitter.cassovary.util.SharedArraySeq
+import com.twitter.cassovary.util.{Sharded2dArray, ArraySlice}
 
 /**
  * Nodes in the graph that store both directions and
@@ -69,12 +69,12 @@ object BiDirectionalNode {
 }
 
 object SharedArrayBasedBiDirectionalNode {
-  def apply(nodeId: Int, edgeArrOffset: Int, edgeArrLen: Int, sharedArray: Array[Array[Int]],
-      reverseDirEdgeArray: Array[Int]) = {
+  def apply(nodeId: Int, sharedOutEdgesArray: Sharded2dArray[Int],
+      reverseDirEdgeArray: Sharded2dArray[Int]) = {
     new Node {
       val id = nodeId
-      def outboundNodes() = new SharedArraySeq(nodeId, sharedArray, edgeArrOffset, edgeArrLen)
-      def inboundNodes() = reverseDirEdgeArray
+      def outboundNodes() = Option(sharedOutEdgesArray(nodeId)).getOrElse(BiDirectionalNode.noEdges)
+      def inboundNodes() = Option(reverseDirEdgeArray(nodeId)).getOrElse(BiDirectionalNode.noEdges)
     }
   }
 }
