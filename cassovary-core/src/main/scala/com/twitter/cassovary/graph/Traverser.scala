@@ -13,12 +13,16 @@
  */
 package com.twitter.cassovary.graph
 
+import com.twitter.cassovary.algorithms.shortestpath.ShortestPath
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
+import com.twitter.cassovary.graph.Walk.NodeColor.Color
+import com.twitter.cassovary.graph.labels.Label
 import com.twitter.cassovary.graph.tourist.{BoolInfoKeeper, IntInfoKeeper, PrevNbrCounter}
 import com.twitter.logging.Logger
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue
 import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.util.Random
 
 /**
@@ -248,7 +252,7 @@ trait QueueBasedTraverser[+V <: Node] extends Traverser[V] {
   def nodePriority: GraphTraverserNodePriority
 
   /**
-   * Action performed when visiting node `node` (before iteratur retuns `node`).
+   * Action performed when visiting node `node` (before iterator returns `node`).
    * Should be implemented in subclass.
    */
   def visitNode(node: Node): Unit = {}
@@ -285,7 +289,7 @@ trait QueueBasedTraverser[+V <: Node] extends Traverser[V] {
   /**
    * Checks if the node of a given color should be enqueued.
    */
-  def shouldBeEnqueued(color: Walk.NodeColor.Color): Boolean
+  def shouldBeEnqueued(color: Color): Boolean
 
   /**
    * Set to true to deque a node from the queue before processing.
@@ -324,6 +328,10 @@ trait QueueBasedTraverser[+V <: Node] extends Traverser[V] {
     }
   }
 
+  protected def chooseNodes(node: Node): Seq[Int] = {
+    limitAddedToQueue(node.neighborIds(dir).filter(n => shouldBeEnqueued(coloring.get(n))))
+  }
+
   /**
    * Returns nodes ids that should be added to the queue after visiting `node`.
    */
@@ -333,9 +341,7 @@ trait QueueBasedTraverser[+V <: Node] extends Traverser[V] {
     if (depthLimit.isLimitReached(currDepth) ||
       degreeLimit.isLimitReached(node.neighborCount(dir))) {
       Seq()
-    } else {
-      limitAddedToQueue(node.neighborIds(dir).filter(n => shouldBeEnqueued(coloring.get(n))))
-    }
+    } else chooseNodes(node)
   }
 
   /**
@@ -403,9 +409,7 @@ trait DepthTracker extends QueueBasedTraverser[Node] {
 
   abstract override protected def enqueue(nodes: Seq[Int], from: Option[Int]): Unit = {
     val fromDepth = from.flatMap(depthTracker.infoOfNode).getOrElse(-1)
-    nodes foreach { id =>
-      depthTracker.recordInfo(id, fromDepth + 1)
-    }
+    nodes foreach { id => depthTracker.recordInfo(id, fromDepth + 1) }
     super.enqueue(nodes, from)
   }
 
@@ -444,9 +448,67 @@ class BreadthFirstTraverser[+V <: Node](val graph: Graph[V], val dir: GraphDir, 
     super.visitNode(node)
   }
 
-  def shouldBeEnqueued(color: Walk.NodeColor.Color): Boolean = {
-    color == Walk.NodeColor.Unenqueued
+  def shouldBeEnqueued(color: Color): Boolean = color == Walk.NodeColor.Unenqueued
+}
+
+/**
+ * Traverses in BFS order and keeps track of all shortest paths from any node in `homeNodeIds` to
+ * all target paths.  The traversal happens along all outbound nodes, it is suggested that `graph`
+ * storage direction is `GraphDir.OutDir`
+ * @param graph The graph to traverse on.  This graph need not necessarily be directed, but the
+ *              traversal will happen along all outbound nodes.
+ * @param homeNodeIds The sequence of source nodes to find all shortest paths.  Each shortest path must
+ *                    start with one of the home nodes.
+ * @param dir The direction of the graph traversal
+ * @param walkLimits  How the graph traversal will be limited
+ * @tparam V A subtype of `Node`
+ */
+class ShortestPathsTraverser[+V <: Node](val graph: Graph[V], val homeNodeIds: Seq[Int],
+                                        val dir: GraphDir = GraphDir.OutDir,
+                                        walkLimits: Walk.Limits = Walk.Limits())
+  extends DepthTracker with BoundedIterator[V] {
+
+  // Queueing parameters
+  override def nodePriority = GraphTraverserNodePriority.FIFO
+  override lazy val limits = walkLimits
+
+  // Accounting parameters
+  val numPaths = mutable.Map.empty[Int, Int]
+  val paths    = mutable.Map.empty[Int, Seq[Seq[Int]]]
+  homeNodeIds foreach { h => paths(h) = Seq(Seq()) }
+
+  /**
+   * To find all shortest paths, the chosen enqueued nodes must be selected carefully.
+   * In the filtering process, the shortest paths will be updated simultaneously.
+   * @return The next set of nodes to be enqueued
+   */
+  override protected def chooseNodes(node: Node): Seq[Int] = {
+    numPaths(node.id) = if (numPaths.contains(node.id)) numPaths(node.id) + 1 else 1
+
+    val currDepth = depth(node.id).get
+    val nextDepth = currDepth + 1
+
+    val index = numPaths(node.id) - 1
+
+    node.neighborIds(dir) filter { out =>
+      val shortestPathLength = depth(out)
+      val update = paths(node.id)(index) ++ mutable.Seq(node.id)
+
+      if (shortestPathLength.isDefined) {
+        if (nextDepth <= shortestPathLength.get) {
+          paths(out) = paths(out) :+ update
+          true
+        } else false
+      }
+      else {
+        paths(out) = mutable.Seq(update)
+        true
+      }
+    }
   }
+
+  //Always enqueue node independent of color
+  override def shouldBeEnqueued(color: Color): Boolean = true
 }
 
 /**
@@ -474,7 +536,7 @@ class AllPathsWalk[+V <: Node](val graph: Graph[V], val dir: GraphDir, val homeN
 
   override def nodePriority = GraphTraverserNodePriority.FIFO
 
-  override def shouldBeEnqueued(color: Walk.NodeColor.Color): Boolean = true
+  override def shouldBeEnqueued(color: Color): Boolean = true
 }
 
 /**

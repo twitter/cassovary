@@ -23,28 +23,28 @@ class SingleSourceShortestPathSpec extends WordSpec with Matchers {
 
     "return 0 paths when the source node is the same as the target node" in {
       val sp = new SingleSourceShortestPath(graph, 10)
-      sp.shortestPaths(10).length shouldEqual 0
+      sp.shortestPaths(10).length shouldEqual 1
     }
 
     "return 3 paths when source node is 10 and target node is 14" in {
       val sp = new SingleSourceShortestPath(graph, 10)
       val paths = sp.shortestPaths(14)
       paths.length shouldEqual 3
-      paths(0) shouldEqual Seq(10,11,14)
-      paths(1) shouldEqual Seq(10,12,14)
-      paths(2) shouldEqual Seq(10,13,14)
+      paths(0) shouldEqual Seq(10,11)
+      paths(1) shouldEqual Seq(10,12)
+      paths(2) shouldEqual Seq(10,13)
     }
 
     "return all paths from a given source node to all target nodes" in {
       val sp = new SingleSourceShortestPath(graph, 10)
       val allPaths = sp.allShortestPaths
       allPaths.size shouldEqual 6
-      allPaths(10).length shouldEqual 0
+      allPaths(10).length shouldEqual 1
       allPaths(14).length shouldEqual 3
       allPaths(15).length shouldEqual 3
-      allPaths(14)(0) shouldEqual Seq(10,11,14)
-      allPaths(14)(1) shouldEqual Seq(10,12,14)
-      allPaths(14)(2) shouldEqual Seq(10,13,14)
+      allPaths(14)(0) shouldEqual Seq(10,11)
+      allPaths(14)(1) shouldEqual Seq(10,12)
+      allPaths(14)(2) shouldEqual Seq(10,13)
     }
   }
 }

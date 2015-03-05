@@ -20,7 +20,6 @@ import com.twitter.cassovary.graph.{Node, DirectedGraph}
  */
 trait ShortestPath {
   type Path  = Seq[Int]
-  type Stack = List[Path]
 
   val graph: DirectedGraph[Node]
 
