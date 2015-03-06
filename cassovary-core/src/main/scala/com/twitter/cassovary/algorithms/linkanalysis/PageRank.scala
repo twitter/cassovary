@@ -48,7 +48,7 @@ case class PageRank(graph: DirectedGraph[Node], params: PageRankParams)
 
     log.debug("Calculating new PageRank values based on previous iteration...")
     val prog = Progress("pagerank_calc", 65536, Some(graph.nodeCount))
-    graph.foreach { node =>
+    graph foreach { node =>
       val givenPageRank = beforePR(node.id) / node.neighborCount(GraphDir.OutDir)
       node.neighborIds(GraphDir.OutDir).foreach { neighborId =>
         afterPR(neighborId) += givenPageRank
@@ -59,7 +59,7 @@ case class PageRank(graph: DirectedGraph[Node], params: PageRankParams)
     log.debug("Damping...")
     val progress_damp = Progress("pagerank_damp", 65536, Some(graph.nodeCount))
     if (dampingAmount > 0) {
-      graph.foreach { node =>
+      graph foreach { node =>
         afterPR(node.id) = dampingAmount + dampingFactor * afterPR(node.id)
         progress_damp.inc
       }

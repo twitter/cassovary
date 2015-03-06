@@ -4,6 +4,8 @@ import com.twitter.cassovary.graph.{Node, DirectedGraph}
 import com.twitter.cassovary.util.Progress
 import com.twitter.logging.Logger
 
+import scala.annotation.tailrec
+
 /**
  * Base trait for link analysis algorithms.  The goal of these is to iteratively determine the importance
  * of the nodes in the graph by analyzing how each of those nodes is connected to its neighbors.
@@ -100,7 +102,7 @@ abstract class AbstractLinkAnalysis[T <: Iteration](graph: DirectedGraph[Node],
   val iterations = result.iteration
 
   def run(init: T = start): T = {
-    lazy val stream: Stream[T] = init #:: stream map { h => iterate(h)}
+    def stream: Stream[T] = init #:: stream map { h => iterate(h)}
 
     // Let the user know if they can save memory!
     if (graph.maxNodeId.toDouble / graph.nodeCount > 1.1 && graph.maxNodeId - graph.nodeCount > 1000000)
