@@ -17,11 +17,11 @@ import com.twitter.util.Duration
 import com.twitter.util.Stopwatch
 
 trait OperationBenchmark {
-  def operation() : Unit
+  def operation(): Unit
 
-  def name : String = this.getClass.getName
+  def name: String = this.getClass.getName
 
-  def run(repetitions : Int = 1) : Duration = {
+  def run(repetitions : Int = 1): Duration = {
     val watch = Stopwatch.start()
     (1 to repetitions) foreach { i =>
       operation()
