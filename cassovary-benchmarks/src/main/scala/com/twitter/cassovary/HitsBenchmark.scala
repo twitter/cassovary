@@ -18,10 +18,8 @@ import com.twitter.cassovary.graph.{DirectedGraph, Node}
 
 
 class HitsBenchmark(graph: DirectedGraph[Node],
-                        hitsParams : HitsParams = HitsParams())
+                    hitsParams: HitsParams = HitsParams())
   extends OperationBenchmark {
 
-  def operation() {
-    Hits(graph, hitsParams)
-  }
+  def operation() { new Hits(graph, hitsParams).run() }
 }

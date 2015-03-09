@@ -18,10 +18,8 @@ import com.twitter.cassovary.graph.{DirectedGraph, Node}
 
 
 class PageRankBenchmark(graph: DirectedGraph[Node],
-                        pageRankParams : PageRankParams = PageRankParams())
+                        pageRankParams: PageRankParams = PageRankParams())
   extends OperationBenchmark {
 
-  def operation() {
-    PageRank(graph, pageRankParams)
-  }
+  def operation() { new PageRank(graph, pageRankParams).run() }
 }

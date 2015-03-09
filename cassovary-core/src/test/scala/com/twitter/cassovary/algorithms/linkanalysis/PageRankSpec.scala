@@ -38,24 +38,30 @@ class PageRankSpec extends WordSpec with Matchers {
 
     "Return a uniform array with 0 iterations" in {
       val params = PageRankParams(0.1, Some(0))
-      val pr = PageRank(graphG6, params)
-      pr.iterations shouldEqual 0
-      pr.pageRank should almostEqualMap(Map(10 -> 1.0/6, 11 -> 1.0/6, 12 -> 1.0/6, 13 -> 1.0/6, 14 -> 1.0/6, 15 -> 1.0/6))
+      val pr = new PageRank(graphG6, params)
+      val finalIter = pr.run()
+
+      finalIter.iteration shouldEqual 0
+      finalIter.pageRank should almostEqualMap(Map(10 -> 1.0/6, 11 -> 1.0/6, 12 -> 1.0/6, 13 -> 1.0/6, 14 -> 1.0/6, 15 -> 1.0/6))
     }
 
     "Return the correct values with 1 iteration" in {
       val params = PageRankParams(0.9, Some(1))
-      val pr = PageRank(graphG6, params)
-      pr.iterations shouldEqual 1
-      pr.pageRank should almostEqualMap(Map(10 -> (.1/6 + .9/12), 11 -> (.1/6 + .9*(1.0/18+1.0/12)),
+      val pr = new PageRank(graphG6, params)
+      val finalIter = pr.run()
+
+      finalIter.iteration shouldEqual 1
+      finalIter.pageRank should almostEqualMap(Map(10 -> (.1/6 + .9/12), 11 -> (.1/6 + .9*(1.0/18+1.0/12)),
         12 -> (.1/6 + .9*(1.0/6+1.0/18)), 13 -> (.1/6 + .1/2), 14 -> (.1/6 + .9/3), 15 -> 1.0/6))
     }
 
     "At 2 iterations still sum to 1" in {
       val params = PageRankParams(0.9, Some(2))
-      val pr = PageRank(graphG6, params)
-      pr.iterations shouldEqual 2
-      pr.pageRank.sum should be (1.0 +- 1.0E-8)
+      val pr = new PageRank(graphG6, params)
+      val finalIter = pr.run()
+
+      finalIter.iteration shouldEqual 2
+      finalIter.pageRank.sum should be (1.0 +- 1.0E-8)
     }
 
     "converge when no max iterations is given" in {
@@ -64,14 +70,18 @@ class PageRankSpec extends WordSpec with Matchers {
 
       val params = new PageRankParams(.85, None)
       val pr = new PageRank(graphG6, params)
-      (pr.pageRank zip target).foreach{ case (calculated, goal) => calculated should be (goal +- 0.00005)}
+      val finalIter = pr.run()
+
+      (finalIter.pageRank zip target).foreach{ case (calculated, goal) => calculated should be (goal +- 0.00005)}
     }
 
     "For a complete graph, 100 iterations still maintains the same values" in {
       val graphComplete = TestGraphs.generateCompleteGraph(10)
       val params = new PageRankParams(0.9, Some(100))
-      val pr = new PageRank(graphComplete, params).pageRank
-      graphComplete.foreach { n => pr(n.id) shouldEqual 0.1 }
+      val pr = new PageRank(graphComplete, params)
+
+      val pagerank = pr.run().pageRank
+      graphComplete.foreach { n => pagerank(n.id) shouldEqual 0.1 }
     }
   }
 }
