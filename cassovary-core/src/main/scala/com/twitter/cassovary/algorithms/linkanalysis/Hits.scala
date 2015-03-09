@@ -55,10 +55,10 @@ class Hits(graph: DirectedGraph[Node], params: HitsParams)
 
     val partialAuth, partialHubs = new Array[Double](graph.maxNodeId + 1)
     graph foreach { node =>
-      storedNeighbors(node) foreach { nbr => partialAuth(nbr) += beforeHubs(node.id) }
+      node.outboundNodes() foreach { nbr => partialAuth(nbr) += beforeHubs(node.id) }
     }
     graph foreach { node =>
-      partialHubs(node.id) = storedNeighbors(node).foldLeft(0.0) { (partialSum, nbr) => partialSum + partialAuth(nbr) }
+      partialHubs(node.id) = node.outboundNodes().foldLeft(0.0) { (partialSum, nbr) => partialSum + partialAuth(nbr) }
     }
 
     val (afterHubs, afterAuth) = (scale(partialHubs, byMax = true), scale(partialAuth, byMax = true))

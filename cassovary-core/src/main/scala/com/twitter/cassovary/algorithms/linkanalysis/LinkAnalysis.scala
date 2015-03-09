@@ -33,7 +33,6 @@ abstract class AbstractLinkAnalysis[T <: IterationState](graph: DirectedGraph[No
 
   protected val log = Logger.get(modelName)
 
-  protected val storedDir     = graph.storedGraphDir
   protected val maxIterations = params.maxIterations
   protected val tolerance     = params.tolerance
 
@@ -61,24 +60,11 @@ abstract class AbstractLinkAnalysis[T <: IterationState](graph: DirectedGraph[No
     if (t1) rawError else Math.sqrt(rawError)
   }
 
-  protected def storedNeighbors(node: Node): Seq[Int] = {
-    storedDir match {
-      case StoredGraphDir.OnlyIn  => node.inboundNodes()
-      case _ => node.outboundNodes()
-    }
-  }
-
-  protected def storedNeighborCount(node: Node): Int = {
-    storedDir match {
-      case StoredGraphDir.OnlyIn => node.inboundCount
-      case _ => node.outboundCount
-    }
-  }
-
   /**
-   *
-   * @param init
-   * @return
+   * Run the algorithm to completion according to the parameters passed on instantiation.
+   * @param init The starting point of the iteration.  If no iteration is given, the default start
+   *             is assumed
+   * @return The final iteration.
    */
   def run(init: T = defaultInitialIteration): T = {
     var iters = init.iteration

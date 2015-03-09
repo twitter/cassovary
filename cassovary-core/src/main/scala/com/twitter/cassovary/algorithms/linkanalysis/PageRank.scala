@@ -47,8 +47,8 @@ class PageRank(graph: DirectedGraph[Node], params: PageRankParams)
     log.debug("Calculating new PageRank values based on previous iteration...")
     val prog = Progress("pagerank_calc", 65536, Some(graph.nodeCount))
     graph foreach { node =>
-      val givenPageRank = beforePR(node.id) / storedNeighborCount(node)
-      storedNeighbors(node) foreach { neighborId => afterPR(neighborId) += givenPageRank }
+      val givenPageRank = beforePR(node.id) / node.outboundCount
+      node.outboundNodes() foreach { neighborId => afterPR(neighborId) += givenPageRank }
       prog.inc
     }
 
