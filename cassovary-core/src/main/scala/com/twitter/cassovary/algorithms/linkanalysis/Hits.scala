@@ -1,6 +1,6 @@
 package com.twitter.cassovary.algorithms.linkanalysis
 
-import com.twitter.cassovary.graph.{StoredGraphDir, Node, DirectedGraph}
+import com.twitter.cassovary.graph.{Node, DirectedGraph}
 
 /**
  * Stores all parameters for Hits algorithm
