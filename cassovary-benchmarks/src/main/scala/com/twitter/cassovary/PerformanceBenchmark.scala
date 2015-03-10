@@ -83,6 +83,9 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   val helpFlag = flags("h", false, "Print usage")
   val globalPRFlag = flags("globalpr", false, "run global pagerank benchmark")
   val pprFlag = flags("ppr", false, "run personalized pagerank benchmark")
+  val idcFlag = flags("idc", false, "run in-degree centrality benchmark")
+  val odcFlag = flags("odc", false, "run out-degree centrality benchmark")
+  val ccFlag  = flags("cc",  false, "run closeness centrality benchmark")
   val getNodeFlag = flags("gn", 0, "run getNodeById benchmark with a given number of steps")
   val reps = flags("reps", DEFAULT_REPS, "number of times to run benchmark")
   val adjacencyList = flags("a", false, "graph in adjacency list format")
@@ -95,6 +98,9 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   }
   if (globalPRFlag()) { benchmarks += (g => new PageRankBenchmark(g)) }
   if (pprFlag()) { benchmarks += (g => new PersonalizedPageRankBenchmark(g)) }
+  if (idcFlag()) { benchmarks += (g => new InDegreeCentralityBenchmark(g)) }
+  if (odcFlag()) { benchmarks += (g => new OutDegreeCentralityBenchmark(g)) }
+  if (ccFlag())  { benchmarks += (g => new ClosenessCentralityBenchmark(g)) }
   if (getNodeFlag() > 0) { benchmarks += (g => new GetNodeByIdBenchmark(g, getNodeFlag(),
     GraphDir.OutDir))}
   if (helpFlag()) {
