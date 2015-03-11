@@ -137,6 +137,13 @@ class ListOfEdgesGraphReader[T](
   def oneShardReader(filename: String): Iterable[NodeIdEdgesMaxId] = {
     new OneShardReader(filename, nodeNumberer)
   }
+
+  def reverseParseNode(n: NodeIdEdgesMaxId): String = {
+    n.edges.map { neighbor =>
+      n.id + " " + neighbor
+    }.mkString("\n") + "\n"
+  }
+
 }
 
 object ListOfEdgesGraphReader {
