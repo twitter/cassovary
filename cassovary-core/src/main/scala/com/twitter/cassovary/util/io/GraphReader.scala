@@ -52,6 +52,12 @@ trait GraphReader[T] {
   def parallelismLimit: Int = Runtime.getRuntime.availableProcessors
 
   /**
+   * The reader knows the format as it knows how to read the file. This reverse parses
+   * the input `n` to a string in that same format.
+   */
+  def reverseParseNode(n: NodeIdEdgesMaxId): String
+
+  /**
    * Create an `ArrayBasedDirectedGraph`
    */
   def toArrayBasedDirectedGraph() = {

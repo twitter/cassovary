@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.{GraphBehaviours, Node}
+import com.twitter.cassovary.graph.{NodeIdEdgesMaxId, GraphBehaviours, Node}
 import com.twitter.cassovary.util.SequentialNodeNumberer
 import org.scalatest.{Matchers, WordSpec}
 
@@ -67,7 +67,16 @@ class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours[Node] wit
           behave like graphEquivalentToMap(graph, intGraphMap)
         }
       }
+
+      "reverse parse a node correctly" in {
+        new GraphWithIntIds {
+          val node = NodeIdEdgesMaxId(10, Array(11, 12, 13))
+          val nodeStr = "10 11\n10 12\n10 13\n"
+          reader.reverseParseNode(node) shouldEqual nodeStr
+        }
+      }
     }
+
     "using String ids" should {
       "provide the correct graph properties" in {
         new GraphWithStringIds {
