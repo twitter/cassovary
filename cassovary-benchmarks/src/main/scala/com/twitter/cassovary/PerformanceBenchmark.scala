@@ -85,7 +85,7 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   val globalPRFlag = flags("globalpr", false, "run global pagerank benchmark")
   val pprFlag = flags("ppr", false, "run personalized pagerank benchmark")
   val centFlag = flags("c", DEFAULT_CENTRALITY_ALGORITHM,
-    "run the specified centrality algorithm (indegree, outdegree, closeness)")
+    "run the specified centrality algorithm (indegree, outdegree, closeness, all)")
   val getNodeFlag = flags("gn", 0, "run getNodeById benchmark with a given number of steps")
   val reps = flags("reps", DEFAULT_REPS, "number of times to run benchmark")
   val adjacencyList = flags("a", false, "graph in adjacency list format")
