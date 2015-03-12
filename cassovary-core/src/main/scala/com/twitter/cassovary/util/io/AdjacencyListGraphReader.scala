@@ -17,7 +17,6 @@ import com.twitter.cassovary.graph.NodeIdEdgesMaxId
 import com.twitter.cassovary.util.NodeNumberer
 import com.twitter.util.NonFatal
 import java.io.IOException
-import java.util.concurrent.ExecutorService
 import scala.io.Source
 
 /**
@@ -130,9 +129,7 @@ class AdjacencyListGraphReader[T] (
 }
 
 object AdjacencyListGraphReader {
-  def forIntIds(directory: String, prefixFileNames: String = "", threadPool: ExecutorService,
+  def forIntIds(directory: String, prefixFileNames: String = "",
                 nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity()) =
-    new AdjacencyListGraphReader[Int](directory, prefixFileNames, nodeNumberer, _.toInt) {
-      override val executorService = threadPool
-    }
+    new AdjacencyListGraphReader[Int](directory, prefixFileNames, nodeNumberer, _.toInt)
 }

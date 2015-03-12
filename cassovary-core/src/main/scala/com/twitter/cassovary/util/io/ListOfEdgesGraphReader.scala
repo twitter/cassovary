@@ -19,7 +19,6 @@ import com.twitter.logging.Logger
 import it.unimi.dsi.fastutil.ints.{Int2IntArrayMap, Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
 import scala.io.Source
 import scala.collection.mutable.ArrayBuffer
-import java.util.concurrent.ExecutorService
 import com.twitter.util.NonFatal
 import java.io.IOException
 
@@ -140,9 +139,8 @@ class ListOfEdgesGraphReader[T](
 }
 
 object ListOfEdgesGraphReader {
-  def forIntIds(directory: String, prefixFileNames: String = "", threadPool: ExecutorService,
+  def forIntIds(directory: String, prefixFileNames: String = "",
                 nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity()) =
-    new ListOfEdgesGraphReader[Int](directory, prefixFileNames, new NodeNumberer.IntIdentity(), _.toInt) {
-      override val executorService = threadPool
-    }
+    new ListOfEdgesGraphReader[Int](directory, prefixFileNames,
+      new NodeNumberer.IntIdentity(), _.toInt)
 }

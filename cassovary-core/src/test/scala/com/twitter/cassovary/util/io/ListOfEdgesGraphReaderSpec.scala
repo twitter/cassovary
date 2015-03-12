@@ -15,7 +15,6 @@ package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.{GraphBehaviours, Node}
 import com.twitter.cassovary.util.SequentialNodeNumberer
-import java.util.concurrent.Executors
 import org.scalatest.{Matchers, WordSpec}
 
 class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours[Node] with Matchers {
@@ -37,24 +36,20 @@ class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours[Node] wit
   private val directory: String = "cassovary-core/src/test/resources/graphs/"
 
   trait GraphWithIntIds {
-    val graph = ListOfEdgesGraphReader.forIntIds(directory, "toy_list5edges",
-      Executors.newFixedThreadPool(2)).toArrayBasedDirectedGraph()
+    val graph = ListOfEdgesGraphReader.forIntIds(directory,
+      "toy_list5edges").toArrayBasedDirectedGraph()
   }
 
   trait GraphWithStringIds {
     val seqNumberer = new SequentialNodeNumberer[String]()
     val graph = new ListOfEdgesGraphReader(directory, "toy_6nodes_list_StringIds", seqNumberer,
-      idReader = identity){
-      override val executorService = Executors.newFixedThreadPool(2)
-    }.toSharedArrayBasedDirectedGraph()
+      idReader = identity).toSharedArrayBasedDirectedGraph()
   }
 
   trait GraphWithLongIds {
     val seqNumberer = new SequentialNodeNumberer[Long]()
     val graph = new ListOfEdgesGraphReader(directory, "toy_6nodes_list_LongIds", seqNumberer,
-      idReader = _.toLong){
-      override val executorService = Executors.newFixedThreadPool(2)
-    }.toSharedArrayBasedDirectedGraph()
+      idReader = _.toLong).toSharedArrayBasedDirectedGraph()
   }
 
   "ListOfEdgesReader" when {

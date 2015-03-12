@@ -28,7 +28,7 @@ class ListOfEdgesToAdjacencyListConverter(
 ) {
   def apply() {
     def outputFileName(chunkNumber: Int) = outputFileNamesPrefix + "_" + chunkNumber + "." + outputFileNamesExtension
-    val graph = ListOfEdgesGraphReader.forIntIds(inputDirectory, inputFileNamesPrefix, threadPool)
+    val graph = ListOfEdgesGraphReader.forIntIds(inputDirectory, inputFileNamesPrefix)
       .toArrayBasedDirectedGraph()
     val outputWriters = Seq.tabulate(numberOfOutputChunks)(n => new File(outputDirectory, outputFileName(n)))
       .map(file => new FileWriter(file))
