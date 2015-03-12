@@ -1,3 +1,16 @@
+/*
+ * Copyright 2015 Twitter, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.twitter.cassovary.algorithms.linkanalysis
 
 import com.twitter.cassovary.graph.{StoredGraphDir, Node, DirectedGraph}
@@ -56,8 +69,8 @@ abstract class AbstractLinkAnalysis[T <: IterationState](graph: DirectedGraph[No
    *           `false` to calculate the T2 error (the sum of the squared differences between two arrays).
    */
   protected def deltaOfArrays(a: Array[Double], b: Array[Double], t1: Boolean = true): Double = {
-    val rawError = (a zip b).map { case (v1,v2) => if(t1) Math.abs(v1 - v2) else Math.pow(v1 - v2, 2.0) }.sum
-    if (t1) rawError else Math.sqrt(rawError)
+    val difference = (a zip b).map { case(v1, v2) => if (t1) Math.abs(v1 - v2) else Math.pow(v1 - v2, 2) }.sum
+    if (t1) difference else Math.sqrt(difference)
   }
 
   /**
