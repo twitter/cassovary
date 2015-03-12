@@ -20,70 +20,78 @@ import com.twitter.logging.Logger
 import com.twitter.util.{Await, Future, FuturePool}
 import java.io._
 
+/**
+ * Splits a graph read by `graphReaderFromDirectory` to multiple subgraphs, each
+ * in a separate subdirectory, named "instance_i" for partition numbered i.
+ * Splitting is done as per `partitioner`.
+ */
 class GraphFilesSplitter[T](outputDir: String, partitioner: Partitioner,
     graphReaderFromDirectory: GraphReaderFromDirectory[T]) {
 
   private val futurePool = new BoundedFuturePool(FuturePool.unboundedPool,
     graphReaderFromDirectory.parallelismLimit)
-  private val log = Logger.get()
+  private val log = Logger.get("graphFilesSplitter")
 
   def splitGraph(): Unit = {
     // there are many parts of the original input graph
     val inputParts = graphReaderFromDirectory.iterableSeq
 
-    // writers is a 2-D array indexed by input part# and instance#
-    val writers = setupOutputDirectories(partitioner.numInstances,
+    // instanceWriters is a 2-D array indexed by input part# and instance#
+    val instanceWriters = setupPerInstanceSubdirectories(partitioner.numInstances,
       graphReaderFromDirectory.iterableSeq.length)
-
     val futures = Future.collect(inputParts.indices map { i =>
-      split(inputParts(i).iterator, writers(i))
+      split(inputParts(i).iterator, instanceWriters(i))
     })
     Await.result(futures)
   }
 
-  // @return an array of arrays. The right index is of subgraph instance number and
-  // left index is of input seq number.
-  private def setupOutputDirectories(numInstances: Int,
-      numInputParts: Int): Array[Array[BufferedWriter]] = {
-    val dir = new File(outputDir)
+  private def mkDirHelper(dirName: String): Unit = {
+    val dir = new File(dirName)
     if (dir.exists()) {
       log.info("Directory %s already exists.", dir)
     } else {
       if (dir.mkdir()) {
-        log.info("Made new directory %s", dir)
+        log.debug("Made new directory %s", dir)
       } else {
         throw new FileNotFoundException("Unable to create new directory " + dir)
       }
     }
+  }
 
-    val writers = Array.ofDim[BufferedWriter](numInstances, numInputParts)
-    (0 until numInstances) foreach { i =>
-      try {
-        val subDirName = outputDir + "/instance_" + i
-        val subdir = new File(subDirName)
-        subdir.mkdir()
-        (0 until numInputParts) foreach { j =>
-          val fileName = subDirName + "/" + j
-          val f = new File(fileName)
-          f.createNewFile()
-          writers(j)(i) = new BufferedWriter(new OutputStreamWriter(
-                    new FileOutputStream(f), "utf-8"))
-        }
-      } catch {
-        case ex : IOException => throw new IOException(ex.toString)
-      }
+  private def getBufferedWriter(fileName: String): BufferedWriter = {
+    try {
+      val f = new File(fileName)
+      f.createNewFile()
+      new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), "utf-8"))
+    } catch {
+      case ex : IOException => throw new IOException(ex.toString)
     }
-    writers
+  }
+
+  // @return an array of arrays. The right index is of subgraph instance number and
+  // left index is of input seq number.
+  private def setupPerInstanceSubdirectories(numInstances: Int,
+      numInputParts: Int): Array[Array[BufferedWriter]] = {
+    mkDirHelper(outputDir)
+    val instanceWriters = Array.ofDim[BufferedWriter](numInstances, numInputParts)
+    (0 until numInstances) foreach { i =>
+        val subDirName = outputDir + "/instance_" + i
+        mkDirHelper(subDirName)
+        (0 until numInputParts) foreach { j =>
+          instanceWriters(j)(i) = getBufferedWriter(subDirName + "/" + j)
+        }
+    }
+    instanceWriters
   }
 
   private def split(it: Iterator[NodeIdEdgesMaxId],
-      writers: Array[BufferedWriter]): Future[Unit] = futurePool {
-    it foreach { partitioner.map(_) foreach { case (instance, node) =>
-        val writer = writers(instance)
-        writer.write(graphReaderFromDirectory.reverseParseNode(node))
+      instanceWriters: Array[BufferedWriter]): Future[Unit] = futurePool {
+    it foreach { origNode =>
+      partitioner.map(origNode) foreach { case (instance, node) =>
+        instanceWriters(instance).write(graphReaderFromDirectory.reverseParseNode(node))
       }
     }
-    writers foreach { writer =>
+    instanceWriters foreach { writer =>
       writer.flush()
       writer.close()
     }
