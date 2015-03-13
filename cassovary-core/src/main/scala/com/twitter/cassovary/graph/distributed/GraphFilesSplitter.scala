@@ -73,7 +73,7 @@ class GraphFilesSplitter[T](outputDir: String, partitioner: Partitioner,
   private def setupPerInstanceSubdirectories(numInstances: Int,
       numInputParts: Int): Array[Array[BufferedWriter]] = {
     mkDirHelper(outputDir)
-    val instanceWriters = Array.ofDim[BufferedWriter](numInstances, numInputParts)
+    val instanceWriters = Array.ofDim[BufferedWriter](numInputParts, numInstances)
     (0 until numInstances) foreach { i =>
         val subDirName = outputDir + "/instance_" + i
         mkDirHelper(subDirName)
