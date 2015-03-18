@@ -22,8 +22,7 @@ import org.scalatest.{Matchers, WordSpec}
 
 class GraphFilesSplitterSpec extends WordSpec with Matchers {
   val inputGraphDir = "cassovary-core/src/test/resources/graphs"
-  val reader = AdjacencyListGraphReader.forIntIds(inputGraphDir, "toy_6nodes_adj",
-        Executors.newFixedThreadPool(2))
+  val reader = AdjacencyListGraphReader.forIntIds(inputGraphDir, "toy_6nodes_adj")
   val tmpDir = "/tmp/test_graph_splitter"
   val numInstances = 2
   val partitioner = new HashSourceMapper(numInstances, i => i % numInstances)

@@ -36,8 +36,9 @@ class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours[Node] wit
   private val directory: String = "cassovary-core/src/test/resources/graphs/"
 
   trait GraphWithIntIds {
-    val graph = ListOfEdgesGraphReader.forIntIds(directory,
-      "toy_list5edges").toArrayBasedDirectedGraph()
+    val reader = ListOfEdgesGraphReader.forIntIds(directory,
+      "toy_list5edges")
+    val graph = reader.toArrayBasedDirectedGraph()
   }
 
   trait GraphWithStringIds {
