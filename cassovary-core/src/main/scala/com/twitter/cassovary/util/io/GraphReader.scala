@@ -13,11 +13,9 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.google.common.util.concurrent.MoreExecutors
 import com.twitter.cassovary.graph.StoredGraphDir.StoredGraphDir
 import com.twitter.cassovary.graph._
 import com.twitter.cassovary.util.NodeNumberer
-import java.util.concurrent.ExecutorService
 
 /**
  * Trait that classes should implement to read in graphs that nodes have
@@ -50,11 +48,6 @@ trait GraphReader[T] {
    * Override to modify the graph's stored direction
    */
   def storedGraphDir: StoredGraphDir = StoredGraphDir.OnlyOut
-
-  /**
-   * Override to use multiple threads
-   */
-  def executorService: ExecutorService = MoreExecutors.sameThreadExecutor()
 
   def parallelismLimit: Int = Runtime.getRuntime.availableProcessors
 

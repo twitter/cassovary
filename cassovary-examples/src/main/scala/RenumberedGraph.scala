@@ -13,18 +13,16 @@
  */
 
 /**
- * Generates a directed Erdos-Renyi random graph file with n log(n) edges 
- * and node ids distributed uniformly throughout the space of 0..MaxNodeId. 
+ * Generates a directed Erdos-Renyi random graph file with n log(n) edges
+ * and node ids distributed uniformly throughout the space of 0..MaxNodeId.
  * Loads the graph file both with a SequentialNodeNumberer and without,
  * and compares approximate representation sizes of the two.
  */
 
-import com.google.common.util.concurrent.MoreExecutors
 import com.twitter.cassovary.util.io.AdjacencyListGraphReader
 import com.twitter.cassovary.util.{Sampling, SequentialNodeNumberer}
 import com.twitter.cassovary.graph.TestGraphs
 import java.io.{File,PrintWriter}
-import scala.math
 import scala.util.Random
 
 object RenumberedGraph {
@@ -59,9 +57,7 @@ object RenumberedGraph {
 
     // Read graph file into memory with renumbering.
     val readGraph = new AdjacencyListGraphReader[Int](renumGraphDirName, renumGraphFileName,
-      new SequentialNodeNumberer[Int](), _.toInt) {
-      override val executorService = MoreExecutors.sameThreadExecutor()
-    }.toArrayBasedDirectedGraph()
+      new SequentialNodeNumberer[Int](), _.toInt).toArrayBasedDirectedGraph()
 
     val rgComplexity = readGraph.approxStorageComplexity
     printf("A renumbered graph with %d nodes (min id: %d, max id: %d) and %d directed edges has an approx. storage complexity of %d bytes.\n",
@@ -70,9 +66,7 @@ object RenumberedGraph {
 
     // Read graph file into memory without renumbering.
     val readGraph2 = new AdjacencyListGraphReader[Int](renumGraphDirName, renumGraphFileName,
-      new SequentialNodeNumberer[Int](), _.toInt) {
-      override val executorService = MoreExecutors.sameThreadExecutor()
-    }.toArrayBasedDirectedGraph()
+      new SequentialNodeNumberer[Int](), _.toInt).toArrayBasedDirectedGraph()
     val rg2Complexity = readGraph2.approxStorageComplexity
     printf("An unrenumbered graph with %d nodes (min id: %d, max id: %d) and %d directed edges has an approx. storage complexity of %d bytes.\n",
       readGraph2.nodeCount, readGraph2.map{_.id}.min, readGraph2.map{_.id}.max, readGraph2.edgeCount, rg2Complexity)

@@ -17,7 +17,6 @@ import com.twitter.cassovary.graph._
 import com.twitter.cassovary.util.io.{AdjacencyListGraphReader, ListOfEdgesGraphReader}
 import com.twitter.app.Flags
 import com.twitter.util.Stopwatch
-import java.util.concurrent.Executors
 import java.io.File
 import scala.collection.mutable.ListBuffer
 
@@ -113,16 +112,11 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   if (helpFlag()) {
     println(flags.usage)
   } else {
-    /**
-     * Thread pool used for reading graphs. Only useful if multiple files with the same prefix name are present.
-     */
-    val graphReadingThreadPool = Executors.newFixedThreadPool(4)
-
     def readGraph(path : String, filename : String, adjacencyList: Boolean) : DirectedGraph[Node] = {
       if (adjacencyList) {
-        AdjacencyListGraphReader.forIntIds(path, filename, graphReadingThreadPool).toArrayBasedDirectedGraph()
+        AdjacencyListGraphReader.forIntIds(path, filename).toArrayBasedDirectedGraph()
       } else
-        ListOfEdgesGraphReader.forIntIds(path, filename, graphReadingThreadPool).toArrayBasedDirectedGraph()
+        ListOfEdgesGraphReader.forIntIds(path, filename).toArrayBasedDirectedGraph()
     }
 
     if (benchmarks.isEmpty) {
@@ -143,7 +137,6 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
           printf("\tAvg time over %d repetitions: %s.\n", reps(), duration)
         }
     }
-    graphReadingThreadPool.shutdown()
   }
 
   def cacheRemoteFile(url : String) : (String, String) = {
