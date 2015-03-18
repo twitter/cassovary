@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.{GraphBehaviours, Node}
+import com.twitter.cassovary.graph.{NodeIdEdgesMaxId, GraphBehaviours, Node}
 import com.twitter.cassovary.util.SequentialNodeNumberer
 import org.scalatest.{Matchers, WordSpec}
 
@@ -37,8 +37,9 @@ class AdjacencyListGraphReaderSpec extends WordSpec with Matchers with GraphBeha
   )
 
   trait GraphWithoutRenumberer {
-    val graph = AdjacencyListGraphReader.forIntIds(directory,
-      "toy_6nodes_adj").toSharedArrayBasedDirectedGraph()
+    val reader = AdjacencyListGraphReader.forIntIds(directory,
+      "toy_6nodes_adj")
+    val graph = reader.toSharedArrayBasedDirectedGraph()
   }
 
   trait GraphWithRenumberer {
@@ -73,6 +74,15 @@ class AdjacencyListGraphReaderSpec extends WordSpec with Matchers with GraphBeha
         behave like graphEquivalentToMap(graph, toy6nodeMap)
       }
     }
+
+    "reverse parse correctly" in {
+      new GraphWithoutRenumberer {
+        val node = NodeIdEdgesMaxId(10, Array(11, 12, 20))
+        val nodeStr = "10 3\n11\n12\n20\n"
+        reader.reverseParseNode(node) shouldEqual nodeStr
+      }
+    }
+
   }
 
   "AdjacencyListReader renumbered" when {

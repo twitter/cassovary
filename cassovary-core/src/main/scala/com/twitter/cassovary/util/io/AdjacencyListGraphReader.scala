@@ -126,6 +126,13 @@ class AdjacencyListGraphReader[T] (
   def oneShardReader(filename : String) : Iterable[NodeIdEdgesMaxId] = {
     new OneShardReader(filename, nodeNumberer)
   }
+
+  // note that we are assuming that n.id.toString does the right thing, which is
+  // true for int and long ids but might not be for a general T.
+  def reverseParseNode(n: NodeIdEdgesMaxId): String = {
+    n.id + separator + n.edges.length + "\n" + n.edges.mkString("\n") + "\n"
+  }
+
 }
 
 object AdjacencyListGraphReader {
