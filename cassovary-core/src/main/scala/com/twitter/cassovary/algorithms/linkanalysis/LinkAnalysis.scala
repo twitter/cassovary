@@ -22,17 +22,23 @@ import scala.annotation.tailrec
 /**
  * The base class for all parameters fed to our iterative algorithms.
  */
-abstract class Params { def maxIterations: Option[Int]; def tolerance: Double }
+abstract class Params {
+  def maxIterations: Option[Int]
+  def tolerance: Double
+}
 
 /**
  * The base class for all iterations through our iterative algorithms.  These classes will simply hold all of the
  * information needed to assess the number of iterations, the error, and the current set of values.
  */
-abstract class IterationState { def error: Double; def iteration: Int }
+abstract class IterationState {
+  def error: Double
+  def iteration: Int
+}
 
 /**
- * `AbstractLinkAnalysis` is the base class that extends `LinkAnalysis`.  All algorithms should inherit from
- * this class.  Let it be noted that we exploit scala streams to accomplish the recursion necessary for
+ * All link analysis algorithms should inherit from the `LinkAnalysis` base class.
+ * Let it be noted that we exploit scala streams to accomplish the recursion necessary for
  * our algorithms.  We will not be storing the results every step of the way--instead we find the iteration
  * that first satisfies the condition of exceeding maximum iterations or falls below the error threshold.
  * @param params The set of all parameters passed into our algorithm
@@ -41,7 +47,7 @@ abstract class IterationState { def error: Double; def iteration: Int }
  * @tparam T `LinkAnalysis` must be generically typed by `Iteration` or one of its subclasses.  An `Iteration`
  *           holds all of the pertinent information for a given algorithm.
  */
-abstract class AbstractLinkAnalysis[T <: IterationState](graph: DirectedGraph[Node],
+abstract class LinkAnalysis[T <: IterationState](graph: DirectedGraph[Node],
     params: Params, modelName: String) {
 
   protected val log = Logger.get(modelName)
@@ -51,16 +57,16 @@ abstract class AbstractLinkAnalysis[T <: IterationState](graph: DirectedGraph[No
 
   /**
    * Run a single iteration through our algorithm.
-   * @param iteration The starting iteration that our algorithm will be applied to.
+   * @param currState The starting iteration that our algorithm will be applied to.
    * @return A new iteration.
    */
-  def iterate(iteration: T): T
+  def iterate(currState: T): T
 
   /**
    * Provides default initial start values for our algorithms.
    * @return An default starting iteration.
    */
-  protected def defaultInitialIteration: T
+  protected def defaultInitialState: T
 
   /**
    * Calculate the error between two arrays using either the T1 error or the T2 error.  This is a
@@ -79,9 +85,7 @@ abstract class AbstractLinkAnalysis[T <: IterationState](graph: DirectedGraph[No
    *             is assumed
    * @return The final iteration.
    */
-  def run(init: T = defaultInitialIteration): T = {
-    var iters = init.iteration
-    var error = init.error
+  def run(init: T = defaultInitialState): T = {
     var currentIteration = init
 
     // Let the user know if they can save memory!
@@ -91,20 +95,26 @@ abstract class AbstractLinkAnalysis[T <: IterationState](graph: DirectedGraph[No
     log.debug(s"Initializing starting ${modelName}...")
     val progress = Progress(s"${modelName}_init", 65536, Some(graph.nodeCount))
 
-    def terminationCondition: Boolean = if (maxIterations.isDefined)
-      iters < maxIterations.get && error > tolerance
-    else error > tolerance
+    def terminate(currState: IterationState): Boolean = if (maxIterations.isDefined)
+      currState.iteration < maxIterations.get && currState.error > tolerance
+    else currState.error > tolerance
 
-    while (terminationCondition) {
+    while (!terminate(currentIteration)) {
       val s = iterate(currentIteration)
 
       log.debug("Finished %sth iteration".format(s.iteration))
       progress.inc
 
       currentIteration = s
-      iters = s.iteration
-      error = s.error
     }
-    currentIteration
+    postRun(currentIteration)
   }
+
+  /**
+   * Run final processing of the state.  Unless the method is overridden, it will just return the final state.
+   * If normalization needs to happen upon convergence, this method is the ideal location for such
+   * @param finalState
+   * @return
+   */
+  def postRun(finalState: T): T = finalState
 }

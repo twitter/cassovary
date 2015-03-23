@@ -42,12 +42,12 @@ case class PageRankIterationState(pageRank: Array[Double], error: Double, iterat
  * Unoptimized for now, and runs in a single thread.
  */
 class PageRank(graph: DirectedGraph[Node], params: PageRankParams)
-  extends AbstractLinkAnalysis[PageRankIterationState](graph, params, "pagerank") {
+  extends LinkAnalysis[PageRankIterationState](graph, params, "pagerank") {
 
   lazy val dampingFactor = params.dampingFactor
   lazy val dampingAmount = (1.0D - dampingFactor) / graph.nodeCount
 
-  protected def defaultInitialIteration: PageRankIterationState = {
+  protected def defaultInitialState: PageRankIterationState = {
     val initial = new Array[Double](graph.maxNodeId + 1)
     graph foreach { n => initial(n.id) = 1.0 / graph.nodeCount }
     PageRankIterationState(initial, 100 + tolerance, 0)

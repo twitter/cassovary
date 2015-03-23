@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.algorithms.linkanalysis
 
-import com.twitter.cassovary.graph.{Node, DirectedGraph}
+import com.twitter.cassovary.graph.{DirectedGraph, Node}
 
 /**
  * Stores all parameters for Hits algorithm
@@ -46,7 +46,7 @@ case class HitsIterationState(hubs: Array[Double],
  * @param params The set of all parameters passed into our algorithm
  */
 class Hits(graph: DirectedGraph[Node], params: HitsParams)
-  extends AbstractLinkAnalysis[HitsIterationState](graph, params, "hits") {
+  extends LinkAnalysis[HitsIterationState](graph, params, "hits") {
   
   private val normalize = params.normalize
 
@@ -55,11 +55,9 @@ class Hits(graph: DirectedGraph[Node], params: HitsParams)
     if (d <= 0) m else m.map { v => v / d }
   }
 
-  protected def defaultInitialIteration: HitsIterationState = {
-    val hubs = new Array[Double](graph.maxNodeId + 1)
+  protected def defaultInitialState: HitsIterationState = {
+    val hubs = Array.fill(graph.maxNodeId + 1)(1.0 / graph.nodeCount)
     val authorities = new Array[Double](graph.maxNodeId + 1)
-    
-    graph foreach { n => hubs(n.id) = 1.0 / graph.nodeCount }
     new HitsIterationState(hubs, authorities, 0, 100 + tolerance)
   }
   
@@ -78,10 +76,10 @@ class Hits(graph: DirectedGraph[Node], params: HitsParams)
     new HitsIterationState(afterHubs, afterAuth, prevIteration.iteration + 1, deltaOfArrays(beforeHubs, afterHubs))
   }
 
-  override def run(init: HitsIterationState = defaultInitialIteration): HitsIterationState = {
-    val h = super.run(init)
-    if (normalize) {
-      new HitsIterationState(scale(h.hubs, byMax = false), scale(h.authorities, byMax = false), h.iteration, h.error)
-    } else h
+  override def postRun(finalState: HitsIterationState): HitsIterationState = {
+    if (normalize)
+      new HitsIterationState(scale(finalState.hubs, byMax = false), scale(finalState.authorities, byMax = false), finalState.iteration, finalState.error)
+    else
+      super.postRun(finalState)
   }
 }
