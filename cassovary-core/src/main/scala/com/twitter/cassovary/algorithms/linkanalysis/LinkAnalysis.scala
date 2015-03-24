@@ -13,11 +13,9 @@
  */
 package com.twitter.cassovary.algorithms.linkanalysis
 
-import com.twitter.cassovary.graph.{StoredGraphDir, Node, DirectedGraph}
+import com.twitter.cassovary.graph.{DirectedGraph, Node}
 import com.twitter.cassovary.util.Progress
 import com.twitter.logging.Logger
-
-import scala.annotation.tailrec
 
 /**
  * The base class for all parameters fed to our iterative algorithms.
@@ -88,6 +86,7 @@ abstract class LinkAnalysis[T <: IterationState](graph: DirectedGraph[Node],
   def run(init: T = defaultInitialState): T = {
     var currentIteration = init
 
+
     // Let the user know if they can save memory!
     if (graph.maxNodeId.toDouble / graph.nodeCount > 1.1 && graph.maxNodeId - graph.nodeCount > 1000000)
       log.info("Warning - you may be able to reduce the memory usage by renumbering this graph!")
@@ -96,15 +95,13 @@ abstract class LinkAnalysis[T <: IterationState](graph: DirectedGraph[Node],
     val progress = Progress(s"${modelName}_init", 65536, Some(graph.nodeCount))
 
     def terminate(currState: IterationState): Boolean = if (maxIterations.isDefined)
-      currState.iteration < maxIterations.get && currState.error > tolerance
-    else currState.error > tolerance
+      currState.iteration >= maxIterations.get || currState.error <= tolerance
+    else currState.error <= tolerance
 
     while (!terminate(currentIteration)) {
       val s = iterate(currentIteration)
-
       log.debug("Finished %sth iteration".format(s.iteration))
       progress.inc
-
       currentIteration = s
     }
     postRun(currentIteration)

@@ -56,7 +56,8 @@ class Hits(graph: DirectedGraph[Node], params: HitsParams)
   }
 
   protected def defaultInitialState: HitsIterationState = {
-    val hubs = Array.fill(graph.maxNodeId + 1)(1.0 / graph.nodeCount)
+    val hubs = new Array[Double](graph.maxNodeId + 1)
+    graph foreach { n => hubs(n.id) = 1.0 / graph.nodeCount }
     val authorities = new Array[Double](graph.maxNodeId + 1)
     new HitsIterationState(hubs, authorities, 0, 100 + tolerance)
   }
@@ -71,8 +72,8 @@ class Hits(graph: DirectedGraph[Node], params: HitsParams)
     graph foreach { node =>
       partialHubs(node.id) = node.outboundNodes().foldLeft(0.0) { (partialSum, nbr) => partialSum + partialAuth(nbr) }
     }
-
     val (afterHubs, afterAuth) = (scale(partialHubs, byMax = true), scale(partialAuth, byMax = true))
+
     new HitsIterationState(afterHubs, afterAuth, prevIteration.iteration + 1, deltaOfArrays(beforeHubs, afterHubs))
   }
 

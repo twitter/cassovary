@@ -79,12 +79,12 @@ class HitsSpec extends WordSpec with Matchers {
       finalIter.error should be > 1e-8
     }
 
-//    "converge if max iterations is None" in {
-//      val hits = new Hits(graph, HitsParams(None, 1e-50, normalize=true))
-//      val finalIter = hits.run()
-//
-//      finalIter.error should be < 1e-50
-//      finalIter.iteration shouldEqual 70
-//    }
+    "converge if max iterations is None" in {
+      val hits = new Hits(graph, HitsParams(None, 1e-50, normalize=true))
+      val finalIter = hits.run()
+
+      finalIter.error should be < 1e-50
+      finalIter.iteration shouldEqual 70
+    }
   }
 }
