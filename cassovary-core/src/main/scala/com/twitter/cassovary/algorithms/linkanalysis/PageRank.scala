@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.algorithms.linkanalysis
 
-import com.twitter.cassovary.graph.{GraphDir, Node, DirectedGraph}
+import com.twitter.cassovary.graph.{DirectedGraph, Node}
 import com.twitter.cassovary.util.Progress
 
 /**
@@ -41,8 +41,12 @@ case class PageRankIterationState(pageRank: Array[Double], error: Double, iterat
  *
  * Unoptimized for now, and runs in a single thread.
  */
-class PageRank(graph: DirectedGraph[Node], params: PageRankParams)
+class PageRank(graph: DirectedGraph[Node], params: PageRankParams = PageRankParams())
   extends LinkAnalysis[PageRankIterationState](graph, params, "pagerank") {
+
+  private val outboundCount = new Array[Double](graph.maxNodeId + 1)
+
+  graph foreach { node => efficientNeighbors(node) foreach { nbr => outboundCount(nbr) += 1} }
 
   lazy val dampingFactor = params.dampingFactor
   lazy val dampingAmount = (1.0D - dampingFactor) / graph.nodeCount
@@ -60,8 +64,13 @@ class PageRank(graph: DirectedGraph[Node], params: PageRankParams)
     log.debug("Calculating new PageRank values based on previous iteration...")
     val prog = Progress("pagerank_calc", 65536, Some(graph.nodeCount))
     graph foreach { node =>
-      val givenPageRank = beforePR(node.id) / node.outboundCount
-      node.outboundNodes() foreach { neighborId => afterPR(neighborId) += givenPageRank }
+      val neighbors = efficientNeighbors(node)
+      if (isInStored)
+        afterPR(node.id) = neighbors.foldLeft(0.0){ (partialSum, nbr) => partialSum + beforePR(nbr) / outboundCount(nbr) }
+      else {
+        val givenPageRank = beforePR(node.id) / outboundCount(node.id)
+        neighbors foreach { neighborId => afterPR(neighborId) += givenPageRank }
+      }
       prog.inc
     }
 

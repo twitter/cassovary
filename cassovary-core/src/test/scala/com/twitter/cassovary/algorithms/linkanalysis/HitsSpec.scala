@@ -5,11 +5,17 @@ import org.scalatest.{Matchers, WordSpec}
 
 class HitsSpec extends WordSpec with Matchers {
   lazy val graph = TestGraphs.g6
+  lazy val graphInOnly = TestGraphs.g6_onlyin
+
+  def hitsTestHelper(finalIter: HitsIterationState, hubsTarget: Array[Double], authoritiesTarget: Array[Double]) = {
+    (finalIter.hubs zip hubsTarget) foreach { case(h, t) => h should be (t +- 0.0005) }
+    (finalIter.authorities zip authoritiesTarget) foreach { case(a, t) => a should be (t +- 0.0005) }
+  }
 
   "Hits" should {
 
     "return initial values when zero iterations are requested" in {
-      val hits = new Hits(graph, HitsParams(Some(0), 1.0E-8, normalize=true))
+      val hits = new Hits(graph, HitsParams(Some(0), normalize=true))
       val finalIter = hits.run()
 
       finalIter.error shouldEqual 100 + 1e-8
@@ -21,58 +27,49 @@ class HitsSpec extends WordSpec with Matchers {
     }
 
     "return proper values when unnormalized" in {
-      val hits = new Hits(graph, HitsParams(Some(100), 1e-8, normalize=false))
+      val hits = new Hits(graph, HitsParams(normalize=false))
       val finalIter = hits.run()
 
-      val hubs        = finalIter.hubs
-      val authorities = finalIter.authorities
+      val hubsTarget = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.9484, 1.0000, 0.4543, 1.0000, 0.0000, 0.2787)
+      val authTarget = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0945, 0.4162, 1.0000, 0.3217, 0.8324, 0.0000)
 
       finalIter.error should be < 1.0e-8
-
-      hubs(10) should be (0.9484 +- 0.0005)
-      hubs(11) should be (1.0000 +- 0.0005)
-      hubs(12) should be (0.4543 +- 0.0005)
-      hubs(13) should be (1.0000 +- 0.0005)
-      hubs(14) should be (0.0000 +- 0.0001)
-      hubs(15) should be (0.2787 +- 0.0005)
-
       finalIter.iteration shouldEqual 30
-
-      authorities(10) should be (0.0945 +- 0.0005)
-      authorities(11) should be (0.4162 +- 0.0005)
-      authorities(12) should be (1.0000 +- 0.0005)
-      authorities(13) should be (0.3217 +- 0.0005)
-      authorities(14) should be (0.8324 +- 0.0005)
-      authorities(15) should be (0.0000 +- 0.0001)
+      hitsTestHelper(finalIter, hubsTarget, authTarget)
     }
 
     "return proper values when normalized" in {
-      val hits = new Hits(graph, HitsParams(Some(100), 1e-8, normalize=true))
+      val hits = new Hits(graph, HitsParams(normalize=true))
       val finalIter = hits.run()
 
-      val hubs        = finalIter.hubs
-      val authorities = finalIter.authorities
+      val hubsTarget = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.2576, 0.2716, 0.1234, 0.2716, 0.0000, 0.0757)
+      val authTarget = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0355, 0.1562, 0.3753, 0.1207, 0.3123, 0.0000)
+
       finalIter.error should be < 1.0e-8
-
-      hubs(10) should be (0.2576 +- 0.0005)
-      hubs(11) should be (0.2716 +- 0.0005)
-      hubs(12) should be (0.1234 +- 0.0005)
-      hubs(13) should be (0.2716 +- 0.0005)
-      hubs(14) should be (0.0000 +- 0.0001)
-      hubs(15) should be (0.0757 +- 0.0005)
-
       finalIter.iteration shouldEqual 30
+      hitsTestHelper(finalIter, hubsTarget, authTarget)
+    }
 
-      authorities(10) should be (0.0355 +- 0.0005)
-      authorities(11) should be (0.1562 +- 0.0005)
-      authorities(12) should be (0.3753 +- 0.0005)
-      authorities(13) should be (0.1207 +- 0.0005)
-      authorities(14) should be (0.3123 +- 0.0005)
-      authorities(15) should be (0.0000 +- 0.0001)
+    "return proper values when a graph is stored OnlyIn" in {
+      val hits = new Hits(graphInOnly, HitsParams(normalize = true))
+      val finalIter = hits.run()
+
+      val hubsTarget = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0355, 0.1562, 0.3753, 0.1207, 0.3123, 0.0000)
+      val authTarget = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.2576, 0.2716, 0.1234, 0.2716, 0.0000, 0.0757)
+
+      finalIter.error should be < 1.0e-8
+      finalIter.iteration shouldEqual 32
+      hitsTestHelper(finalIter, hubsTarget, authTarget)
     }
 
     "stop at max number of iterations" in {
-      val hits = new Hits(graph, HitsParams(Some(10), 1e-8, normalize=true))
+      val hits = new Hits(graph, HitsParams(Some(10), normalize=true))
       val finalIter = hits.run()
 
       finalIter.iteration shouldEqual 10

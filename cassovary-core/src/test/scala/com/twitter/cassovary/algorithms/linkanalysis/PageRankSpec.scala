@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary.algorithms.linkanalysis
 
-import com.twitter.cassovary.graph.TestGraphs
+import com.twitter.cassovary.graph.{Node, DirectedGraph, TestGraphs}
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{Matchers, WordSpec}
 
@@ -32,7 +32,16 @@ class PageRankSpec extends WordSpec with Matchers {
     }
   }
 
+  def testGraphHelper(graph: DirectedGraph[Node], target: Array[Double]) = {
+    val params = PageRankParams(.85, None)
+    val pr = new PageRank(graph, params)
+    val finalIter = pr.run()
+
+    (finalIter.pageRank zip target) foreach { case(calculated, goal) => calculated should be (goal +- 0.00005) }
+  }
+
   lazy val graphG6 = TestGraphs.g6
+  lazy val graphInOnly = TestGraphs.g6_onlyin
 
   "PageRank" should {
 
@@ -61,18 +70,19 @@ class PageRankSpec extends WordSpec with Matchers {
       val finalIter = pr.run()
 
       finalIter.iteration shouldEqual 2
-      finalIter.pageRank.sum should be (1.0 +- 1.0E-8)
+      finalIter.pageRank.sum should be(1.0 +- 1.0E-8)
     }
 
     "converge when no max iterations is given" in {
       val target = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         0.12699, 0.16297, 0.15616, 0.06098, 0.25292, 0.23998)
+      testGraphHelper(graphG6, target)
+    }
 
-      val params = new PageRankParams(.85, None)
-      val pr = new PageRank(graphG6, params)
-      val finalIter = pr.run()
-
-      (finalIter.pageRank zip target).foreach{ case (calculated, goal) => calculated should be (goal +- 0.00005)}
+    "converge when no max iterations is given with graph stored in inbound direction only" in {
+      val target = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.19942, 0.11661, 0.09086, 0.11661, 0.23245, 0.24406)
+      testGraphHelper(graphInOnly, target)
     }
 
     "For a complete graph, 100 iterations still maintains the same values" in {
