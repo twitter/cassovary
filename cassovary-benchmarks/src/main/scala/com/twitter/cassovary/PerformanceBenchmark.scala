@@ -72,7 +72,7 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
    */
   val DEFAULT_REPS = 10
   val defaultLocalGraphFile = "facebook"
-  val DEFAULT_CENTRALITY_ALGORITHM = "all"
+  val DEFAULT_CENTRALITY_ALGORITHM = "none"
 
   val flags = new Flags("Performance benchmark")
   val localFileFlag = flags("local", defaultLocalGraphFile,
@@ -85,6 +85,7 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   val pprFlag = flags("ppr", false, "run personalized pagerank benchmark")
   val centFlag = flags("c", DEFAULT_CENTRALITY_ALGORITHM,
     "run the specified centrality algorithm (indegree, outdegree, closeness, all)")
+  val hitsFlag = flags("hits", false, "run HITS benchmark")
   val getNodeFlag = flags("gn", 0, "run getNodeById benchmark with a given number of steps")
   val reps = flags("reps", DEFAULT_REPS, "number of times to run benchmark")
   val adjacencyList = flags("a", false, "graph in adjacency list format")
@@ -104,9 +105,11 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
     case "closeness" => benchmarks += (g => new ClosenessCentralityBenchmark(g))
     case "all"       => benchmarks.append(g => new InDegreeCentralityBenchmark(g),
       g => new OutDegreeCentralityBenchmark(g), g => new ClosenessCentralityBenchmark(g))
-    case s: String => printf("%s is not a valid centrality option.  Please use indegree, outdegree, or closeness.\n", s)
+    case "none" =>
+    case s: String => printf("%s is not a valid centrality option.  Please use indegree, outdegree, closeness or all.\n", s)
   }
 
+  if (hitsFlag()) { benchmarks += (g => new HitsBenchmark(g)) }
   if (getNodeFlag() > 0) { benchmarks += (g => new GetNodeByIdBenchmark(g, getNodeFlag(),
     GraphDir.OutDir))}
   if (helpFlag()) {
