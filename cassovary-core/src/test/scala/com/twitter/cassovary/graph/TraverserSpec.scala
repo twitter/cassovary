@@ -28,6 +28,35 @@ class TraverserSpec extends WordSpec with MockitoSugar with Matchers {
     def hasNext = i < 40
   }
 
+  "ShortestPathTraverser" should {
+    "return all shortest paths" in {
+      val spt = new ShortestPathsTraverser(TestGraphs.g8, Seq(1))
+      spt.toList
+      spt.numPaths(8) shouldEqual 3
+      spt.paths(8) shouldEqual Seq(Seq(1, 2, 4, 6), Seq(1, 2, 5, 6), Seq(1, 3, 7, 6))
+
+      val spt2 = new ShortestPathsTraverser(TestGraphs.g5, Seq(10))
+      spt2.toList
+      spt2.numPaths(14) shouldEqual 1
+      spt2.paths(14) shouldEqual Seq(Seq(10,13))
+    }
+
+    "return different paths when direction is reversed" in {
+      val spt = new ShortestPathsTraverser(TestGraphs.g8, Seq(1), GraphDir.InDir)
+      spt.toList
+      spt.numPaths(5) shouldEqual 2
+      spt.paths(5) shouldEqual Seq(Seq(1, 8, 6), Seq(1, 9, 6))
+    }
+
+    "return no shortest paths longer than 3 when limit is set" in {
+      val spt = new ShortestPathsTraverser(TestGraphs.g8, Seq(1), GraphDir.OutDir, new Walk.Limits(maxDepth = Some(3)))
+      spt.toList
+      spt.numPaths.getOrElse(8, 0) shouldEqual 0
+      spt.paths.getOrElse(8, Seq(Seq())) shouldEqual Seq(Seq())
+    }
+  }
+
+
   "BoundedIterator" should {
     "satisfy a limit" in {
       val biter = new TestIter with BoundedIterator[Int] {

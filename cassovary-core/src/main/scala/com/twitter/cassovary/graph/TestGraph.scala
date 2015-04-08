@@ -87,6 +87,18 @@ object TestGraphs {
       NodeIdEdgesMaxId(15, Array(10, 11))
       )
 
+  val g8SeqIterator = Seq(
+      NodeIdEdgesMaxId(1, Array(2,3)),
+      NodeIdEdgesMaxId(2, Array(4,5)),
+      NodeIdEdgesMaxId(3, Array(7)),
+      NodeIdEdgesMaxId(4, Array(3, 6)),
+      NodeIdEdgesMaxId(5, Array(4,6)),
+      NodeIdEdgesMaxId(6, Array(8,9)),
+      NodeIdEdgesMaxId(7, Array(6)),
+      NodeIdEdgesMaxId(8, Array(1)),
+      NodeIdEdgesMaxId(9, Array(1,4))
+  )
+
   val nodeSeqIteratorWithEmpty = Seq(
     NodeIdEdgesMaxId(0, Array.empty[Int]),
     NodeIdEdgesMaxId(1, Array.empty[Int])
@@ -115,6 +127,9 @@ object TestGraphs {
   def g7_onlyout = ArrayBasedDirectedGraph(nodeSeqIterator2, StoredGraphDir.OnlyOut,
     NeighborsSortingStrategy.LeaveUnsorted)
   def g7_onlyin = ArrayBasedDirectedGraph(nodeSeqIterator2, StoredGraphDir.OnlyIn,
+    NeighborsSortingStrategy.LeaveUnsorted)
+
+  def g8 = ArrayBasedDirectedGraph(g8SeqIterator, StoredGraphDir.BothInOut,
     NeighborsSortingStrategy.LeaveUnsorted)
 
   // Bipartite Graph
