@@ -53,7 +53,7 @@ class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce:
   }
 
   /**
-   * Top previous neighborhos until node `id`
+   * Top previous neighbors until node `id`
    */
   override def infoOfNode(id: Int): Option[Int2IntMap] = {
     if (underlyingMap.containsKey(id)) {

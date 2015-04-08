@@ -13,7 +13,7 @@
  */
 package com.twitter.cassovary
 
-import com.twitter.cassovary.algorithms.centrality.{ClosenessCentrality, DegreeCentrality}
+import com.twitter.cassovary.algorithms.centrality.{BetweennessCentrality, ClosenessCentrality, DegreeCentrality}
 import com.twitter.cassovary.graph.{GraphDir, Node, DirectedGraph}
 
 sealed abstract class DegreeCentralityBenchmark(graph: DirectedGraph[Node], dir: GraphDir.GraphDir)
@@ -33,5 +33,11 @@ class ClosenessCentralityBenchmark(graph: DirectedGraph[Node])
   extends OperationBenchmark {
   def operation(): Unit = {
     new ClosenessCentrality(graph)
+  }
+}
+
+class BetweennessCentralityBenchmark(graph: DirectedGraph[Node]) extends OperationBenchmark {
+  def operation(): Unit = {
+    new BetweennessCentrality(graph)
   }
 }

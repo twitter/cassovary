@@ -86,6 +86,8 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   val centFlag = flags("c", DEFAULT_CENTRALITY_ALGORITHM,
     "run the specified centrality algorithm (indegree, outdegree, closeness, all)")
   val hitsFlag = flags("hits", false, "run HITS benchmark")
+  val spFlag = flags("sp", false, "run shortest path algorithm for all shortest paths")
+  val aspFlag = flags("asp", false, "run all shortest paths for a given graph")
   val getNodeFlag = flags("gn", 0, "run getNodeById benchmark with a given number of steps")
   val reps = flags("reps", DEFAULT_REPS, "number of times to run benchmark")
   val adjacencyList = flags("a", false, "graph in adjacency list format")
@@ -98,15 +100,20 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   }
   if (globalPRFlag()) { benchmarks += (g => new PageRankBenchmark(g)) }
   if (pprFlag()) { benchmarks += (g => new PersonalizedPageRankBenchmark(g)) }
+  if (spFlag()) { benchmarks += (g => new ShortestPathBenchmark(g)) }
+  if (aspFlag()) { benchmarks += (g => new AllShortestPathsBenchmark(g)) }
 
   centFlag() match {
-    case "indegree"  => benchmarks += (g => new InDegreeCentralityBenchmark(g))
-    case "outdegree" => benchmarks += (g => new OutDegreeCentralityBenchmark(g))
-    case "closeness" => benchmarks += (g => new ClosenessCentralityBenchmark(g))
-    case "all"       => benchmarks.append(g => new InDegreeCentralityBenchmark(g),
-      g => new OutDegreeCentralityBenchmark(g), g => new ClosenessCentralityBenchmark(g))
+    case "indegree"    => benchmarks += (g => new InDegreeCentralityBenchmark(g))
+    case "outdegree"   => benchmarks += (g => new OutDegreeCentralityBenchmark(g))
+    case "closeness"   => benchmarks += (g => new ClosenessCentralityBenchmark(g))
+    case "betweenness" => benchmarks += (g => new BetweennessCentralityBenchmark(g))
+    case "all"         => benchmarks.append(g => new InDegreeCentralityBenchmark(g),
+      g => new OutDegreeCentralityBenchmark(g),
+      g => new ClosenessCentralityBenchmark(g),
+      g => new BetweennessCentralityBenchmark(g))
     case "none" =>
-    case s: String => printf("%s is not a valid centrality option.  Please use indegree, outdegree, closeness or all.\n", s)
+    case s: String => printf("%s is not a valid centrality option.  Please use indegree, outdegree, closeness, beweenness or all.\n", s)
   }
 
   if (hitsFlag()) { benchmarks += (g => new HitsBenchmark(g)) }

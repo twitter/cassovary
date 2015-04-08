@@ -28,6 +28,6 @@ class DegreeCentrality(graph: DirectedGraph[Node], dir: GraphDir, normalize: Boo
 
   def _recalc(): Unit = {
     val denom = if (normalize) graph.nodeCount - 1 else 1.0
-    graph foreach { node => centralityValues(node.id) = node.neighborCount(dir) / denom }
+    graph.par foreach { node => centralityValues(node.id) = node.neighborCount(dir) / denom }
   }
 }

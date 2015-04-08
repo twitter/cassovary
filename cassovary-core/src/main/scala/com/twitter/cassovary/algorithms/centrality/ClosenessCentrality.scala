@@ -23,7 +23,7 @@ import com.twitter.cassovary.graph._
 class ClosenessCentrality(graph: DirectedGraph[Node], normalize: Boolean = true) extends AbstractCentrality(graph) {
 
   def _recalc(): Unit = {
-    graph foreach { node =>
+    graph.par foreach { node =>
       val bfs = new BreadthFirstTraverser(graph, GraphDir.OutDir, Seq(node.id), Walk.Limits())
       val (sum, reachableNodes) = bfs.foldLeft((0.0, 0.0)) {
         case ((partialSum, partialCount), a) => (partialSum + bfs.depth(a.id).get, partialCount + 1)
