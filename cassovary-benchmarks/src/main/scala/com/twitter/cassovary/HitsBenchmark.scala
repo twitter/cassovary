@@ -13,13 +13,13 @@
  */
 package com.twitter.cassovary
 
-import com.twitter.cassovary.algorithms.linkanalysis.{PageRank, PageRankParams}
+import com.twitter.cassovary.algorithms.linkanalysis.{HitsParams, Hits}
 import com.twitter.cassovary.graph.{DirectedGraph, Node}
 
 
-class PageRankBenchmark(graph: DirectedGraph[Node],
-                        pageRankParams: PageRankParams = PageRankParams())
+class HitsBenchmark(graph: DirectedGraph[Node],
+                    hitsParams: HitsParams = HitsParams())
   extends OperationBenchmark {
 
-  def operation() { new PageRank(graph, pageRankParams).run() }
+  def operation() { new Hits(graph, hitsParams).run() }
 }
