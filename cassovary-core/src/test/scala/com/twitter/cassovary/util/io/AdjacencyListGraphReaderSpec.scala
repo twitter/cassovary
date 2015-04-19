@@ -43,8 +43,8 @@ class AdjacencyListGraphReaderSpec extends WordSpec with Matchers with GraphBeha
   }
 
   trait ArrayBasedDynamicGraphWithoutRenumberer {
-    val graph = AdjacencyListGraphReader.forIntIds(directory, "toy_6nodes_adj",
-      Executors.newFixedThreadPool(2)).toArrayBasedDynamicDirectedGraph()
+    val graph = AdjacencyListGraphReader.forIntIds(directory, "toy_6nodes_adj")
+        .toArrayBasedDynamicDirectedGraph()
   }
 
   trait GraphWithRenumberer {
