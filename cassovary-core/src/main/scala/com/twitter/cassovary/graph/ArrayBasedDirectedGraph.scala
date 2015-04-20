@@ -37,7 +37,7 @@ import scala.collection.mutable
  * This case class holds a node's id, all its out edges, and the max
  * id of itself and ids of nodes in its out edges
  */
-case class NodeIdEdgesMaxId(val id: Int, val edges: Array[Int], val maxId: Int)
+case class NodeIdEdgesMaxId(id: Int, edges: Array[Int], maxId: Int)
 
 object NodeIdEdgesMaxId {
   def apply(id: Int, edges: Array[Int]) =
