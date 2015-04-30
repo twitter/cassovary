@@ -70,7 +70,6 @@ class ListOfEdgesGraphReader[T](
 
     override def iterator = new Iterator[NodeIdEdgesMaxId] {
 
-      private val holder = NodeIdEdgesMaxId(-1, null, -1)
       var lastLineParsed = 0
 
       def readEdgesBySource(): (Int2ObjectMap[ArrayBuffer[Int]], Int2IntArrayMap) = {
@@ -120,10 +119,10 @@ class ListOfEdgesGraphReader[T](
       override def next(): NodeIdEdgesMaxId = {
         try {
           val elem = edgesIterator.next()
-          holder.id = elem.getKey
-          holder.edges = elem.getValue.toArray
-          holder.maxId = nodeMaxOutEdgeId.get(elem.getKey)
-          holder
+          NodeIdEdgesMaxId(
+            id=elem.getKey,
+            edges=elem.getValue.toArray,
+            maxId=nodeMaxOutEdgeId.get(elem.getKey))
         } catch {
           case NonFatal(exc) =>
             throw new IOException("Parsing failed near line: %d in %s"
