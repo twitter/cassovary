@@ -25,7 +25,7 @@ object CrossPartitioning extends App {
   val helpFlag = flags("h", false, "Print usage")
   flags.parseArgs(args)
 
-  val reader = AdjacencyListGraphReader.forIntIds(inputGraphDir(), "toy_6nodes_adj", null)
+  val reader = AdjacencyListGraphReader.forIntIds(inputGraphDir(), "toy_6nodes_adj")
 
   def hashNodeFn(i: Int) = i
 
