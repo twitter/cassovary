@@ -13,9 +13,8 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.{GraphBehaviours, Node}
+import com.twitter.cassovary.graph.{NodeIdEdgesMaxId, GraphBehaviours, Node}
 import com.twitter.cassovary.util.SequentialNodeNumberer
-import java.util.concurrent.Executors
 import org.scalatest.{Matchers, WordSpec}
 
 class AdjacencyListGraphReaderSpec extends WordSpec with Matchers with GraphBehaviours[Node] {
@@ -38,30 +37,32 @@ class AdjacencyListGraphReaderSpec extends WordSpec with Matchers with GraphBeha
   )
 
   trait GraphWithoutRenumberer {
-    val graph = AdjacencyListGraphReader.forIntIds(directory, "toy_6nodes_adj",
-      Executors.newFixedThreadPool(2)).toSharedArrayBasedDirectedGraph()
+    val reader = AdjacencyListGraphReader.forIntIds(directory,
+      "toy_6nodes_adj")
+    val graph = reader.toSharedArrayBasedDirectedGraph()
+  }
+
+  trait ArrayBasedDynamicGraphWithoutRenumberer {
+    val graph = AdjacencyListGraphReader.forIntIds(directory, "toy_6nodes_adj")
+        .toArrayBasedDynamicDirectedGraph()
   }
 
   trait GraphWithRenumberer {
     val seqRenumberer = new SequentialNodeNumberer[Int]()
     val graph = AdjacencyListGraphReader.forIntIds(directory, "toy_6nodes_adj",
-      Executors.newFixedThreadPool(2), seqRenumberer).toSharedArrayBasedDirectedGraph()
+      seqRenumberer).toSharedArrayBasedDirectedGraph()
   }
 
   trait GraphWithStringIds {
     val seqNumberer = new SequentialNodeNumberer[String]()
-    val graph = new AdjacencyListGraphReader[String](directory, "toy_7nodes_adj_StringIds", seqNumberer,
-      idReader = identity){
-      override val executorService = Executors.newFixedThreadPool(2)
-    }.toSharedArrayBasedDirectedGraph()
+    val graph = new AdjacencyListGraphReader[String](directory, "toy_7nodes_adj_StringIds",
+      seqNumberer, idReader = identity).toSharedArrayBasedDirectedGraph()
   }
 
   trait GraphWithLongIds {
     val seqNumberer = new SequentialNodeNumberer[Long]()
     val graph = new AdjacencyListGraphReader[Long](directory, "toy_7nodes_adj_LongIds", seqNumberer,
-      idReader = _.toLong){
-      override val executorService = Executors.newFixedThreadPool(2)
-    }.toSharedArrayBasedDirectedGraph()
+      idReader = _.toLong).toSharedArrayBasedDirectedGraph()
   }
 
   "AdjacencyListReader" should {
@@ -75,6 +76,31 @@ class AdjacencyListGraphReaderSpec extends WordSpec with Matchers with GraphBeha
 
     "contain the right nodes and edges" in {
       new GraphWithoutRenumberer {
+        behave like graphEquivalentToMap(graph, toy6nodeMap)
+      }
+    }
+
+    "reverse parse correctly" in {
+      new GraphWithoutRenumberer {
+        val node = NodeIdEdgesMaxId(10, Array(11, 12, 20))
+        val nodeStr = "10 3\n11\n12\n20\n"
+        reader.reverseParseNode(node) shouldEqual nodeStr
+      }
+    }
+
+  }
+
+  "AdjacencyListReader producing ArrayBasedDynamicDirectedGraph" should {
+    "provide the correct graph properties" in {
+      new ArrayBasedDynamicGraphWithoutRenumberer {
+        graph.nodeCount should be(6)
+        graph.edgeCount should be(11L)
+        graph.maxNodeId should be(15)
+      }
+    }
+
+    "contain the right nodes and edges" in {
+      new ArrayBasedDynamicGraphWithoutRenumberer {
         behave like graphEquivalentToMap(graph, toy6nodeMap)
       }
     }

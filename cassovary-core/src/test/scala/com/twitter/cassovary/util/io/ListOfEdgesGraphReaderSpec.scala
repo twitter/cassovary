@@ -13,9 +13,8 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.{GraphBehaviours, Node}
+import com.twitter.cassovary.graph.{NodeIdEdgesMaxId, GraphBehaviours, Node}
 import com.twitter.cassovary.util.SequentialNodeNumberer
-import java.util.concurrent.Executors
 import org.scalatest.{Matchers, WordSpec}
 
 class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours[Node] with Matchers {
@@ -37,24 +36,21 @@ class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours[Node] wit
   private val directory: String = "cassovary-core/src/test/resources/graphs/"
 
   trait GraphWithIntIds {
-    val graph = ListOfEdgesGraphReader.forIntIds(directory, "toy_list5edges",
-      Executors.newFixedThreadPool(2)).toArrayBasedDirectedGraph()
+    val reader = ListOfEdgesGraphReader.forIntIds(directory,
+      "toy_list5edges")
+    val graph = reader.toArrayBasedDirectedGraph()
   }
 
   trait GraphWithStringIds {
     val seqNumberer = new SequentialNodeNumberer[String]()
     val graph = new ListOfEdgesGraphReader(directory, "toy_6nodes_list_StringIds", seqNumberer,
-      idReader = identity){
-      override val executorService = Executors.newFixedThreadPool(2)
-    }.toSharedArrayBasedDirectedGraph()
+      idReader = identity).toSharedArrayBasedDirectedGraph()
   }
 
   trait GraphWithLongIds {
     val seqNumberer = new SequentialNodeNumberer[Long]()
     val graph = new ListOfEdgesGraphReader(directory, "toy_6nodes_list_LongIds", seqNumberer,
-      idReader = _.toLong){
-      override val executorService = Executors.newFixedThreadPool(2)
-    }.toSharedArrayBasedDirectedGraph()
+      idReader = _.toLong).toSharedArrayBasedDirectedGraph()
   }
 
   "ListOfEdgesReader" when {
@@ -72,7 +68,16 @@ class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours[Node] wit
           behave like graphEquivalentToMap(graph, intGraphMap)
         }
       }
+
+      "reverse parse a node correctly" in {
+        new GraphWithIntIds {
+          val node = NodeIdEdgesMaxId(10, Array(11, 12, 13))
+          val nodeStr = "10 11\n10 12\n10 13\n"
+          reader.reverseParseNode(node) shouldEqual nodeStr
+        }
+      }
     }
+
     "using String ids" should {
       "provide the correct graph properties" in {
         new GraphWithStringIds {

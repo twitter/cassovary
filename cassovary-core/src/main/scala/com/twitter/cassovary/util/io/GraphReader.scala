@@ -13,11 +13,9 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.google.common.util.concurrent.MoreExecutors
 import com.twitter.cassovary.graph.StoredGraphDir.StoredGraphDir
 import com.twitter.cassovary.graph._
 import com.twitter.cassovary.util.NodeNumberer
-import java.util.concurrent.ExecutorService
 
 /**
  * Trait that classes should implement to read in graphs that nodes have
@@ -51,12 +49,13 @@ trait GraphReader[T] {
    */
   def storedGraphDir: StoredGraphDir = StoredGraphDir.OnlyOut
 
-  /**
-   * Override to use multiple threads
-   */
-  def executorService: ExecutorService = MoreExecutors.sameThreadExecutor()
-
   def parallelismLimit: Int = Runtime.getRuntime.availableProcessors
+
+  /**
+   * The reader knows the format as it knows how to read the file. This reverse parses
+   * the input `n` to a string in that same format.
+   */
+  def reverseParseNode(n: NodeIdEdgesMaxId): String
 
   /**
    * Create an `ArrayBasedDirectedGraph`
@@ -71,7 +70,7 @@ trait GraphReader[T] {
    *                  128 is an arbitrary default
    */
   def toSharedArrayBasedDirectedGraph(numShards: Int = 128) = {
-    SharedArrayBasedDirectedGraph(iterableSeq, executorService, storedGraphDir, numShards)
+    SharedArrayBasedDirectedGraph(iterableSeq, parallelismLimit, storedGraphDir, numShards)
   }
 
   /**

@@ -7,9 +7,10 @@ library.
 ## Building
 In the main project folder type `./sbt` to enter sbt interactive mode. Move to examples project using
 `project cassovary-examples`. Now by typing `run` you can see and choose an example you would like to run.
-You can also use `run-main ExampleClassName parameters` to run particular example, for example `run-main HelloGraph 10`
+You can also use `runMain ExampleClassName parameters` to run a particular example,
+for example `runMain HelloGraph 10`
 
-## List of examples
+## Some included examples
 * HelloGraph [numNodes] - a "Hello World" example - creates a complete directed graph with 3 nodes and prints out the number of
 edges in the graph.
 * HelloLoadGraph - load in a graph from two adjacency list text files in resources/

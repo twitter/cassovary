@@ -42,7 +42,7 @@ trait Node {
    * Returns a random node from the set of nodes that points to this node or else `None` if
    * this node has no inbound edges.
    *
-   * The default implementation picks a random node from [[inboundNodes()*]] so subclasses
+   * The default implementation picks a random node from `inboundNodes()` so subclasses
    * should consider overriding this method if the `Seq` sequence they produce is not
    * a `IndexedSeq`.
    *
@@ -95,7 +95,7 @@ trait Node {
    * Returns a random node from the set of nodes that this node points to or else `None` if
    * this node has no outbound edges.
    *
-   * The default implementation picks a random node from [[outboundNodes()*]] so subclasses
+   * The default implementation picks a random node from `outboundNodes()` so subclasses
    * should consider overriding this method if the `Seq` sequence they produce is not
    * a lazy `IndexedSeq`.
    *

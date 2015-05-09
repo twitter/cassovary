@@ -17,7 +17,6 @@ import com.twitter.cassovary.graph._
 import com.twitter.cassovary.util.io.{AdjacencyListGraphReader, ListOfEdgesGraphReader}
 import com.twitter.app.Flags
 import com.twitter.util.Stopwatch
-import java.util.concurrent.Executors
 import java.io.File
 import scala.collection.mutable.ListBuffer
 
@@ -73,6 +72,7 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
    */
   val DEFAULT_REPS = 10
   val defaultLocalGraphFile = "facebook"
+  val DEFAULT_CENTRALITY_ALGORITHM = "none"
 
   val flags = new Flags("Performance benchmark")
   val localFileFlag = flags("local", defaultLocalGraphFile,
@@ -83,6 +83,9 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   val helpFlag = flags("h", false, "Print usage")
   val globalPRFlag = flags("globalpr", false, "run global pagerank benchmark")
   val pprFlag = flags("ppr", false, "run personalized pagerank benchmark")
+  val centFlag = flags("c", DEFAULT_CENTRALITY_ALGORITHM,
+    "run the specified centrality algorithm (indegree, outdegree, closeness, all)")
+  val hitsFlag = flags("hits", false, "run HITS benchmark")
   val getNodeFlag = flags("gn", 0, "run getNodeById benchmark with a given number of steps")
   val reps = flags("reps", DEFAULT_REPS, "number of times to run benchmark")
   val adjacencyList = flags("a", false, "graph in adjacency list format")
@@ -95,21 +98,28 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   }
   if (globalPRFlag()) { benchmarks += (g => new PageRankBenchmark(g)) }
   if (pprFlag()) { benchmarks += (g => new PersonalizedPageRankBenchmark(g)) }
+
+  centFlag() match {
+    case "indegree"  => benchmarks += (g => new InDegreeCentralityBenchmark(g))
+    case "outdegree" => benchmarks += (g => new OutDegreeCentralityBenchmark(g))
+    case "closeness" => benchmarks += (g => new ClosenessCentralityBenchmark(g))
+    case "all"       => benchmarks.append(g => new InDegreeCentralityBenchmark(g),
+      g => new OutDegreeCentralityBenchmark(g), g => new ClosenessCentralityBenchmark(g))
+    case "none" =>
+    case s: String => printf("%s is not a valid centrality option.  Please use indegree, outdegree, closeness or all.\n", s)
+  }
+
+  if (hitsFlag()) { benchmarks += (g => new HitsBenchmark(g)) }
   if (getNodeFlag() > 0) { benchmarks += (g => new GetNodeByIdBenchmark(g, getNodeFlag(),
     GraphDir.OutDir))}
   if (helpFlag()) {
     println(flags.usage)
   } else {
-    /**
-     * Thread pool used for reading graphs. Only useful if multiple files with the same prefix name are present.
-     */
-    val graphReadingThreadPool = Executors.newFixedThreadPool(4)
-
     def readGraph(path : String, filename : String, adjacencyList: Boolean) : DirectedGraph[Node] = {
       if (adjacencyList) {
-        AdjacencyListGraphReader.forIntIds(path, filename, graphReadingThreadPool).toArrayBasedDirectedGraph()
+        AdjacencyListGraphReader.forIntIds(path, filename).toArrayBasedDirectedGraph()
       } else
-        ListOfEdgesGraphReader.forIntIds(path, filename, graphReadingThreadPool).toArrayBasedDirectedGraph()
+        ListOfEdgesGraphReader.forIntIds(path, filename).toArrayBasedDirectedGraph()
     }
 
     if (benchmarks.isEmpty) {
@@ -130,7 +140,6 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
           printf("\tAvg time over %d repetitions: %s.\n", reps(), duration)
         }
     }
-    graphReadingThreadPool.shutdown()
   }
 
   def cacheRemoteFile(url : String) : (String, String) = {

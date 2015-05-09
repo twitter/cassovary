@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Twitter, Inc.
+ * Copyright 2015 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at
@@ -22,20 +22,16 @@
  */
 
 import com.twitter.cassovary.util.io.{AdjacencyListGraphReader, LabelsReader}
-import java.util.concurrent.Executors
 
 object HelloLoadGraph {
   def main(args: Array[String]) {
-    val threadPool = Executors.newFixedThreadPool(2)
     val dir = "../cassovary-core/src/test/resources/graphs"
-    val graph = AdjacencyListGraphReader.forIntIds(dir, "toy_6nodes_adj",
-      threadPool).toArrayBasedDirectedGraph()
+    val graph = AdjacencyListGraphReader.forIntIds(dir, "toy_6nodes_adj").toArrayBasedDirectedGraph()
     graph.nodeLabels = new LabelsReader(dir, "toy_6nodelabels").read(graph.maxNodeId)
 
     printf("\nHello Graph!\n\tA graph loaded from two adjacency list files " +
         "with %s nodes has %s directed edges.\n", graph.nodeCount, graph.edgeCount)
     printf("\tLabels of node 10 are label1(%d) and label2(%d)\n",
       graph.labelOfNode[Int](10, "label1").get, graph.labelOfNode[Int](10, "label2").get)
-    threadPool.shutdown()
   }
 }

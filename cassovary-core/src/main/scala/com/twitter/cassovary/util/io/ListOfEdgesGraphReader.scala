@@ -19,7 +19,6 @@ import com.twitter.logging.Logger
 import it.unimi.dsi.fastutil.ints.{Int2IntArrayMap, Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
 import scala.io.Source
 import scala.collection.mutable.ArrayBuffer
-import java.util.concurrent.ExecutorService
 import com.twitter.util.NonFatal
 import java.io.IOException
 
@@ -71,7 +70,6 @@ class ListOfEdgesGraphReader[T](
 
     override def iterator = new Iterator[NodeIdEdgesMaxId] {
 
-      private val holder = NodeIdEdgesMaxId(-1, null, -1)
       var lastLineParsed = 0
 
       def readEdgesBySource(): (Int2ObjectMap[ArrayBuffer[Int]], Int2IntArrayMap) = {
@@ -121,10 +119,10 @@ class ListOfEdgesGraphReader[T](
       override def next(): NodeIdEdgesMaxId = {
         try {
           val elem = edgesIterator.next()
-          holder.id = elem.getKey
-          holder.edges = elem.getValue.toArray
-          holder.maxId = nodeMaxOutEdgeId.get(elem.getKey)
-          holder
+          NodeIdEdgesMaxId(
+            id=elem.getKey,
+            edges=elem.getValue.toArray,
+            maxId=nodeMaxOutEdgeId.get(elem.getKey))
         } catch {
           case NonFatal(exc) =>
             throw new IOException("Parsing failed near line: %d in %s"
@@ -137,12 +135,18 @@ class ListOfEdgesGraphReader[T](
   def oneShardReader(filename: String): Iterable[NodeIdEdgesMaxId] = {
     new OneShardReader(filename, nodeNumberer)
   }
+
+  def reverseParseNode(n: NodeIdEdgesMaxId): String = {
+    n.edges.map { neighbor =>
+      n.id + " " + neighbor
+    }.mkString("\n") + "\n"
+  }
+
 }
 
 object ListOfEdgesGraphReader {
-  def forIntIds(directory: String, prefixFileNames: String = "", threadPool: ExecutorService,
+  def forIntIds(directory: String, prefixFileNames: String = "",
                 nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity()) =
-    new ListOfEdgesGraphReader[Int](directory, prefixFileNames, new NodeNumberer.IntIdentity(), _.toInt) {
-      override val executorService = threadPool
-    }
+    new ListOfEdgesGraphReader[Int](directory, prefixFileNames,
+      new NodeNumberer.IntIdentity(), _.toInt)
 }
