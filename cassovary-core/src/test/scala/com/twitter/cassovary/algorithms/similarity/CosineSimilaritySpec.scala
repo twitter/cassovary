@@ -52,13 +52,13 @@ class CosineSimilaritySpec extends WordSpec with Matchers {
       val dir = GraphDir.OutDir
       val cosineSimilarity = new CosineSimilarity(graph)
 
-      val similarityScore = cosineSimilarity.calculateSimilarity(dir, 10, 13)
+      val similarityScore = cosineSimilarity.calculateSimilarity(10, 13, dir)
       similarityScore shouldEqual (0.4082482 +- EPSILON)
 
-      val topKSimilarNode = cosineSimilarity.getTopKSimilarNodes(dir, 10, 3)
+      val topKSimilarNode = cosineSimilarity.getTopKSimilarNodes(10, 3, dir)
       topKSimilarNode should almostEqualSeq(Seq((11, 0.408248), (13, 0.408248), (15, 0.408248)))
 
-      val topKAllSimilarNodes = cosineSimilarity.getTopKAllSimilarPairs(dir, 10)
+      val topKAllSimilarNodes = cosineSimilarity.getTopKAllSimilarPairs(10, dir)
       topKAllSimilarNodes should almostEqualMap(Map(10 -> Seq((11, 0.408248), (13, 0.408248), (15, 0.408248), (12, 0.0), (14, 0.0)),
         11 -> Seq((13, 1.0), (12, 0.707107), (10, 0.408248)),
         12 -> Seq((11, 0.707107), (13, 0.707107)),
@@ -72,13 +72,13 @@ class CosineSimilaritySpec extends WordSpec with Matchers {
       val dir = GraphDir.InDir
       val cosineSimilarity = new CosineSimilarity(graph)
 
-      val similarityScore = cosineSimilarity.calculateSimilarity(dir, 14, 15)
+      val similarityScore = cosineSimilarity.calculateSimilarity(14, 15, dir)
       similarityScore shouldEqual (0.6666667 +- EPSILON)
 
-      val topKSimilarNode = cosineSimilarity.getTopKSimilarNodes(dir, 10, 10)
+      val topKSimilarNode = cosineSimilarity.getTopKSimilarNodes(10, 10, dir)
       topKSimilarNode should almostEqualSeq(Seq((12, 0.408248), (13, 0.408248), (11, 0.333333), (14, 0.333333), (15,0.333333)))
 
-      val topKAllSimilarNodes = cosineSimilarity.getTopKAllSimilarPairs(dir, 10)
+      val topKAllSimilarNodes = cosineSimilarity.getTopKAllSimilarPairs(10, dir)
       topKAllSimilarNodes should almostEqualMap(Map(10 -> Seq((12, 0.408248), (13, 0.408248), (11, 0.333333), (14, 0.333333), (15, 0.333333), (16, 0.0)),
         11 -> Seq((12, 0.816496), (13, 0.408248), (10, 0.333333), (14, 0.333333), (15, 0.333333)),
         12 -> Seq((11, 0.816497), (13, 0.5), (10, 0.408248)),

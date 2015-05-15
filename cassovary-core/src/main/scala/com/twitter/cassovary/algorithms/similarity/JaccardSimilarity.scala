@@ -24,9 +24,9 @@ import com.twitter.cassovary.graph.GraphDir.GraphDir
  */
 class JaccardSimilarity(val graph: DirectedGraph[Node]) extends Similarity {
 
-  def calculateSimilarity(dir: GraphDir, u: Int, v: Int): Double = {
-    val neighborsOfU = getNeighbors(dir, u).get
-    val neighborsOfV = getNeighbors(dir, v).get
+  def calculateSimilarity(u: Int, v: Int, dir: GraphDir): Double = {
+    val neighborsOfU = getNeighbors(u, dir).get
+    val neighborsOfV = getNeighbors(v, dir).get
     val commonNeighbors = neighborsOfU intersect neighborsOfV
     val unionNeighbors = neighborsOfU union neighborsOfV
     if (unionNeighbors.isEmpty) 0

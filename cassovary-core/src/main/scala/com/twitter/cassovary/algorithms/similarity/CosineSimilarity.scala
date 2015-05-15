@@ -24,9 +24,9 @@ import com.twitter.cassovary.graph.GraphDir.GraphDir
  */
 class CosineSimilarity(val graph: DirectedGraph[Node]) extends Similarity {
 
-  def calculateSimilarity(dir: GraphDir, u: Int, v: Int): Double = {
-    val neighborsOfU = getNeighbors(dir, u).get
-    val neighborsOfV = getNeighbors(dir, v).get
+  def calculateSimilarity(u: Int, v: Int, dir: GraphDir): Double = {
+    val neighborsOfU = getNeighbors(u, dir).get
+    val neighborsOfV = getNeighbors(v, dir).get
     val commonNeighbors = neighborsOfU intersect neighborsOfV
     if(neighborsOfU.isEmpty || neighborsOfV.isEmpty) 0
     else commonNeighbors.size / ( math.sqrt(neighborsOfU.size) * math.sqrt(neighborsOfV.size) )

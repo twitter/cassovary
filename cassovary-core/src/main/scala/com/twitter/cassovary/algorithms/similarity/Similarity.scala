@@ -13,11 +13,11 @@
  */
 package com.twitter.cassovary.algorithms.similarity
 
-import com.twitter.cassovary.graph.{GraphDir, DirectedGraph, Node, StoredGraphDir}
+import com.twitter.cassovary.graph.{DirectedGraph, GraphDir, Node, StoredGraphDir}
 import com.twitter.cassovary.graph.GraphDir.GraphDir
 import com.twitter.cassovary.util.SmallBoundedPriorityQueue
 
-case class SimilarNodes(val nodeId: Int, val score: Double) extends Ordered[SimilarNodes] {
+case class SimilarNodes(nodeId: Int, score: Double) extends Ordered[SimilarNodes] {
   import scala.math.Ordered.orderingToOrdered
 
   def compare(that: SimilarNodes) = (this.score, that.nodeId) compare (that.score, this.nodeId)
@@ -31,37 +31,60 @@ trait Similarity {
 
   def graph: DirectedGraph[Node]
 
-  protected def getNeighbors(dir: GraphDir, nodeId: Int): Option[Set[Int]] = {
-    val node = graph.getNodeById(nodeId)
-    if (node.isDefined) Some(node.get.neighborIds(dir).toSet)
-    else None
+  protected def getNeighbors(nodeId: Int, dir: GraphDir = GraphDir.OutDir): Option[Set[Int]] = {
+    graph.getNodeById(nodeId).map(_.neighborIds(dir).toSet[Int])
   }
 
-  def calculateSimilarity(dir: GraphDir, u: Int, v: Int): Double
+  /**
+   * Execute the Similarity algorithm between two nodes.
+   * @param u    current node ID
+   * @param v    another node ID to check the similarity with current node
+   * @param dir  direction of edges in Directed Graph
+   * @return     Similarity score of two nodes
+   */
+  def calculateSimilarity(u: Int, v: Int, dir: GraphDir = GraphDir.OutDir): Double
 
-  def getTopKSimilarNodes(dir: GraphDir, u: Int, k: Int): Seq[(Int, Double)] = {
+  /**
+   * Iterate over graph nodes and calculate similarity scores for each node. If the graph stores edges in
+   * both in and out direction, then iterate over the neighbors in reverse `dir` of neighbors of node `u`.
+   * @param u    current node ID
+   * @param k    limit for similar nodes
+   * @param dir  direction of edges in Directed Graph
+   * @return     Seq of top `k` similar node ids and their similarity score with node `u`.
+   *             Nodes with non-zero score are added. So, the length of the Seq can be less than `k`
+   */
+  def getTopKSimilarNodes(u: Int, k: Int, dir: GraphDir = GraphDir.OutDir): Seq[(Int, Double)] = {
     val similarNodesQueue = new SmallBoundedPriorityQueue[SimilarNodes](k)
     val graphNodes = {
       if (graph.storedGraphDir == StoredGraphDir.BothInOut) {
-        graph.getNodeById(u).get.neighborIds(dir).toSet[Int].flatMap {
-          v => graph.getNodeById(v).get.neighborIds(GraphDir.reverse(dir))
-        }.toSet[Int]
+        getNeighbors(u, dir) match {
+          case Some(neighbors) => neighbors.flatMap(getNeighbors(_, GraphDir.reverse(dir)).getOrElse(Seq.empty))
+          case None => Seq.empty[Int]
+        }
       } else {
-        graph.toSeq map (node => node.id)
+        graph map (node => node.id)
       }
     }
     graphNodes foreach { node =>
       if (node != u) {
-        val similarityScore = calculateSimilarity(dir, u, node)
+        val similarityScore = calculateSimilarity(u, node, dir)
         if (similarityScore > 0.0) similarNodesQueue += SimilarNodes(node, similarityScore)
       }
     }
     similarNodesQueue.top(k).map(node => (node.nodeId, node.score))
   }
 
-  def getTopKAllSimilarPairs(dir: GraphDir, k: Int): Map[Int, Seq[(Int, Double)]] = {
+  /**
+   * Iterate over each node in the graph and get top `k` nodes with non-zero similarity
+   * score for each node.
+   * @param k    limit for similar nodes
+   * @param dir  direction of edges in Directed Graph
+   * @return     Map with key as node Id and value as Seq of top `k` similar node ids and
+   *             similarity score.
+   */
+  def getTopKAllSimilarPairs(k: Int, dir: GraphDir = GraphDir.OutDir): Map[Int, Seq[(Int, Double)]] = {
     graph.foldLeft(Map.empty[Int, Seq[(Int, Double)]]) { (partialMap, node) =>
-      partialMap + (node.id -> getTopKSimilarNodes(dir, node.id, k))
+      partialMap + (node.id -> getTopKSimilarNodes(node.id, k, dir))
     }
   }
 }

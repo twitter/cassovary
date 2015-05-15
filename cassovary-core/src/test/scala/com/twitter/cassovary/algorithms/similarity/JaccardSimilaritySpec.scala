@@ -27,13 +27,13 @@ class JaccardSimilaritySpec extends WordSpec with Matchers {
       val dir = GraphDir.OutDir
       val jaccardSimilarity = new JaccardSimilarity(graph)
 
-      val similarityScore = jaccardSimilarity.calculateSimilarity(dir, 10, 13)
+      val similarityScore = jaccardSimilarity.calculateSimilarity(10, 13, dir)
       similarityScore shouldEqual 0.25
 
-      val topKSimilarNodes = jaccardSimilarity.getTopKSimilarNodes(dir, 10, 5)
+      val topKSimilarNodes = jaccardSimilarity.getTopKSimilarNodes(10, 5, dir)
       topKSimilarNodes shouldEqual Seq((11, 0.25), (13, 0.25), (15, 0.25))
 
-      val topKAllSimilarNodes = jaccardSimilarity.getTopKAllSimilarPairs(dir, 10)
+      val topKAllSimilarNodes = jaccardSimilarity.getTopKAllSimilarPairs(10, dir)
       topKAllSimilarNodes shouldEqual Map(10 -> Seq((11, 0.25), (13, 0.25), (15, 0.25)),
         11 -> Seq((13, 1.0), (12, 0.5), (10, 0.25)),
         12 -> Seq((11, 0.5), (13, 0.5)),
@@ -47,13 +47,13 @@ class JaccardSimilaritySpec extends WordSpec with Matchers {
       val dir = GraphDir.InDir
       val jaccardSimilarity = new JaccardSimilarity(graph)
 
-      val similarityScore = jaccardSimilarity.calculateSimilarity(dir, 11, 12)
+      val similarityScore = jaccardSimilarity.calculateSimilarity(11, 12, dir)
       similarityScore shouldEqual 0.5
 
-      val topKSimilarNodes = jaccardSimilarity.getTopKSimilarNodes(dir, 11, 5)
+      val topKSimilarNodes = jaccardSimilarity.getTopKSimilarNodes(11, 5, dir)
       topKSimilarNodes shouldEqual Seq((13, 1.0), (12, 0.5), (10, 0.25))
 
-      val topKAllSimilarNodes = jaccardSimilarity.getTopKAllSimilarPairs(dir, 10)
+      val topKAllSimilarNodes = jaccardSimilarity.getTopKAllSimilarPairs(10, dir)
       topKAllSimilarNodes shouldEqual Map(10 -> Seq((11, 0.25), (13, 0.25), (15, 0.25)),
         11 -> Seq((13,1.0), (12, 0.5), (10, 0.25)),
         12 -> Seq((11, 0.5), (13, 0.5)),
