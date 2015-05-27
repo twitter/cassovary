@@ -18,7 +18,7 @@ import com.twitter.cassovary.graph.NodeIdEdgesMaxId
 import com.twitter.logging.Logger
 import it.unimi.dsi.fastutil.ints.{Int2IntArrayMap, Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
 import scala.io.Source
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 import com.twitter.util.NonFatal
 import java.io.IOException
 
@@ -46,6 +46,8 @@ import java.io.IOException
  * In this file, node `a` has two outgoing edges (to `b` and `e`), node `b` has an outgoing edge
  * to node `d` and node `d` has an outgoing edge to node `c`.
  *
+ * Duplicate edges are silently eaten.
+ *
  * Note that, it is recommended to use AdjacencyListGraphReader, because of its efficiency.
  *
  * @param directory the directory to read from
@@ -72,14 +74,14 @@ class ListOfEdgesGraphReader[T](
 
       var lastLineParsed = 0
 
-      def readEdgesBySource(): (Int2ObjectMap[ArrayBuffer[Int]], Int2IntArrayMap) = {
+      def readEdgesBySource(): (Int2ObjectMap[mutable.Set[Int]], Int2IntArrayMap) = {
         log.info("Starting reading from file %s...\n", filename)
         val directedEdgePattern = ("""^(\w+)""" + separator + """(\w+)""").r
         val commentPattern = """(^#.*)""".r
         val lines = Source.fromFile(filename).getLines()
           .map{x => {lastLineParsed += 1; x}}
 
-        val edgesBySource = new Int2ObjectLinkedOpenHashMap[ArrayBuffer[Int]]()
+        val edgesBySource = new Int2ObjectLinkedOpenHashMap[mutable.Set[Int]]()
         val nodeMaxOutEdgeId = new Int2IntArrayMap()
 
         def updateNodeMaxOutEdgeId(node: Int, out: Int) {
@@ -100,7 +102,7 @@ class ListOfEdgesGraphReader[T](
                 if (edgesBySource.containsKey(internalFromId)) {
                   edgesBySource.get(internalFromId) += internalToId
                 } else {
-                  edgesBySource.put(internalFromId, ArrayBuffer(internalToId))
+                  edgesBySource.put(internalFromId, mutable.Set(internalToId))
                 }
                 updateNodeMaxOutEdgeId(internalFromId, internalToId)
             }
