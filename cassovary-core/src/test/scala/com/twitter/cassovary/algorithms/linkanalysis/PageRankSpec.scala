@@ -32,12 +32,12 @@ class PageRankSpec extends WordSpec with Matchers {
     }
   }
 
-  def testGraphHelper(graph: DirectedGraph[Node], target: Array[Double]) = {
+  def testGraphHelper(graph: DirectedGraph[Node], target: Array[Double], tolerance:Double =0.00005) = {
     val params = PageRankParams(.85, None)
     val pr = new PageRank(graph, params)
     val finalIter = pr.run()
 
-    (finalIter.pageRank zip target) foreach { case(calculated, goal) => calculated should be (goal +- 0.00005) }
+    (finalIter.pageRank zip target) foreach { case(calculated, goal) => calculated should be (goal +- tolerance) }
   }
 
   lazy val graphG6 = TestGraphs.g6
@@ -91,7 +91,23 @@ class PageRankSpec extends WordSpec with Matchers {
       val pr = new PageRank(graphComplete, params)
 
       val pagerank = pr.run().pageRank
-      graphComplete.foreach { n => pagerank(n.id) shouldEqual 0.1 }
+      graphComplete.foreach { n => pagerank(n.id) should be (0.1 +- 1E-8) }
+    }
+
+    "Handle dangling nodes correctly when graph is stored only out" in {
+      val target = Array(0.0, 0.11622, 0.21500, 0.16763, 0.16763, 0.07625, 0.14106, 0.11622)
+      testGraphHelper(TestGraphs.dangling_g7, target)
+    }
+
+    "Handle dangling nodes correctly when graph is stored only in" in {
+      val target = Array(0.0, 0.12085, 0.15194, 0.05628, 0.05628, 0.28697, 0.27141, 0.05628)
+      testGraphHelper(TestGraphs.dangling_g7_in, target)
+    }
+
+    "Handle small graphs with dangling nodes" in {
+      val target = Array(0.1844167814, 0.3411710471, 0.4744121714)
+      testGraphHelper(TestGraphs.g3_dangling_out, target, tolerance=5E-10)
+      testGraphHelper(TestGraphs.g3_dangling_in, target.reverse, tolerance=5E-10)
     }
   }
 }

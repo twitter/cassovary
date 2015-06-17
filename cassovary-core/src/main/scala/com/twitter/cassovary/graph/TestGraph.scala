@@ -64,6 +64,17 @@ object TestGraphs {
     TestNode(2, Nil, List(1))
     )
 
+  val g3_dangling_seq = Seq(
+    NodeIdEdgesMaxId(0, Array(1)),
+    NodeIdEdgesMaxId(1, Array(2)),
+    NodeIdEdgesMaxId(2, Array()))
+
+  val g3_dangling_out = ArrayBasedDirectedGraph(g3_dangling_seq, StoredGraphDir.OnlyOut,
+    NeighborsSortingStrategy.LeaveUnsorted)
+
+  val g3_dangling_in = ArrayBasedDirectedGraph(g3_dangling_seq, StoredGraphDir.OnlyIn,
+    NeighborsSortingStrategy.LeaveUnsorted)
+
   def g3 = ArrayBasedDirectedGraph(Seq(
     NodeIdEdgesMaxId(10, Array(11, 12)),
     NodeIdEdgesMaxId(11, Array(12)),
@@ -77,6 +88,26 @@ object TestGraphs {
     NodeIdEdgesMaxId(13, Array(14)),
     NodeIdEdgesMaxId(14, Array())
     ), StoredGraphDir.BothInOut, NeighborsSortingStrategy.LeaveUnsorted)
+
+  def dangling_g7 = ArrayBasedDirectedGraph(Seq(
+    NodeIdEdgesMaxId(1, Array(2)),
+    NodeIdEdgesMaxId(2, Array(3, 4)),
+    NodeIdEdgesMaxId(3, Array()),
+    NodeIdEdgesMaxId(4, Array()),
+    NodeIdEdgesMaxId(5, Array(6)),
+    NodeIdEdgesMaxId(6, Array(1, 2, 7)),
+    NodeIdEdgesMaxId(7, Array())
+  ), StoredGraphDir.OnlyOut, NeighborsSortingStrategy.LeaveUnsorted)
+
+  def dangling_g7_in = ArrayBasedDirectedGraph(Seq(
+    NodeIdEdgesMaxId(1, Array(2)),
+    NodeIdEdgesMaxId(2, Array(3, 4)),
+    NodeIdEdgesMaxId(3, Array()),
+    NodeIdEdgesMaxId(4, Array()),
+    NodeIdEdgesMaxId(5, Array(6)),
+    NodeIdEdgesMaxId(6, Array(1, 2, 7)),
+    NodeIdEdgesMaxId(7, Array())
+  ), StoredGraphDir.OnlyIn, NeighborsSortingStrategy.LeaveUnsorted)
 
   val nodeSeqIterator = Seq(
       NodeIdEdgesMaxId(10, Array(11, 12, 13)),
@@ -95,11 +126,11 @@ object TestGraphs {
   // using testGraph becomes onerous for non-trivial graphs
   def g6 = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.BothInOut,
     NeighborsSortingStrategy.LeaveUnsorted)
-
   def g6_onlyout = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.OnlyOut,
     NeighborsSortingStrategy.LeaveUnsorted)
   def g6_onlyin = ArrayBasedDirectedGraph(nodeSeqIterator, StoredGraphDir.OnlyIn,
     NeighborsSortingStrategy.LeaveUnsorted)
+
   def g6WithEmptyNodes = ArrayBasedDirectedGraph(nodeSeqIteratorWithEmpty, StoredGraphDir.BothInOut,
     NeighborsSortingStrategy.LeaveUnsorted)
 
