@@ -15,6 +15,7 @@ package com.twitter.cassovary.algorithms.linkanalysis
 
 import com.twitter.cassovary.graph.{DirectedGraph, Node}
 import com.twitter.cassovary.util.Progress
+import scala.collection.immutable.BitSet
 
 /**
  * Parameters for PageRank
@@ -44,15 +45,35 @@ case class PageRankIterationState(pageRank: Array[Double], error: Double, iterat
 class PageRank(graph: DirectedGraph[Node], params: PageRankParams = PageRankParams())
   extends LinkAnalysis[PageRankIterationState](graph, params, "pagerank") {
 
-  private val outboundCount = new Array[Double](graph.maxNodeId + 1)
+  // outboundCount is used to find the number of outgoing connections a graph stored OnlyIn has.
+  private lazy val outboundCount = new Array[Double](graph.maxNodeId + 1)
+  private val nodeCount = graph.nodeCount
 
-  graph foreach { node => efficientNeighbors(node) foreach { nbr => outboundCount(nbr) += 1} }
+  //We must find nodes that have zero outbound connections to correctly handle these.
+  private val zeroOutgoing = if (isInStored) {
+
+    //If the graph is stored OnlyIn, it is most efficient to find which nodes are not dangling and do a set subtraction
+    //from there.
+    val nonDangling = graph.foldLeft(BitSet()){ (partialSet, node) =>
+      val neighbors = efficientNeighbors(node)
+      neighbors foreach { nbr => outboundCount(nbr) += 1 }
+      partialSet ++ neighbors
+    }
+    graph.view.map { _.id }.filter { !nonDangling.contains(_) }
+  }
+  else {
+    //If the graph is stored OnlyOut, then the computation is much simpler and does not require complete traversal
+    //of the graph twice to find dangling nodes.
+    graph.foldLeft(BitSet()){ (partialSet, node) =>
+      if (efficientNeighbors(node).isEmpty) partialSet + node.id else partialSet
+    }
+  }
 
   lazy val dampingFactor = params.dampingFactor
-  lazy val dampingAmount = (1.0D - dampingFactor) / graph.nodeCount
+  lazy val dampingAmount = (1.0 - dampingFactor) / nodeCount
 
   protected def defaultInitialState: PageRankIterationState = {
-    val initial = Array.tabulate(graph.maxNodeId + 1){ n => if (graph.existsNodeId(n)) 1.0 / graph.nodeCount else 0.0 }
+    val initial = Array.tabulate(graph.maxNodeId + 1){ n => if (graph.existsNodeId(n)) 1.0 / nodeCount else 0.0 }
     PageRankIterationState(initial, 100 + tolerance, 0)
   }
 
@@ -62,24 +83,22 @@ class PageRank(graph: DirectedGraph[Node], params: PageRankParams = PageRankPara
 
     log.debug("Calculating new PageRank values based on previous iteration...")
     val prog = Progress("pagerank_calc", 65536, Some(graph.nodeCount))
+
+    //must correct for nodes with no outgoing connections
+    val dangleSum = dampingFactor * zeroOutgoing.foldLeft(0.0){ (partialSum, n) => partialSum + beforePR(n) } / nodeCount
+
     graph foreach { node =>
       val neighbors = efficientNeighbors(node)
-      if (isInStored)
-        afterPR(node.id) = neighbors.foldLeft(0.0){ (partialSum, nbr) => partialSum + beforePR(nbr) / outboundCount(nbr) }
+      if (isInStored) {
+        afterPR(node.id) = neighbors.foldLeft(0.0) {
+          (partialSum, nbr) => partialSum + dampingFactor * beforePR(nbr) / outboundCount(nbr)
+        } + dampingAmount + dangleSum
+      }
       else {
-        val givenPageRank = beforePR(node.id) / outboundCount(node.id)
-        neighbors foreach { neighborId => afterPR(neighborId) += givenPageRank }
+        neighbors foreach { nbr => afterPR(nbr) += dampingFactor * beforePR(node.id) / node.outboundCount }
+        afterPR(node.id) += dangleSum + dampingAmount
       }
       prog.inc
-    }
-
-    log.debug("Damping...")
-    val progress_damp = Progress("pagerank_damp", 65536, Some(graph.nodeCount))
-    if (dampingAmount > 0) {
-      graph foreach { node =>
-        afterPR(node.id) = dampingAmount + dampingFactor * afterPR(node.id)
-        progress_damp.inc
-      }
     }
     PageRankIterationState(afterPR, deltaOfArrays(prevIteration.pageRank, afterPR), prevIteration.iteration + 1)
   }

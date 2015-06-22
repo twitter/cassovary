@@ -91,7 +91,7 @@ abstract class LinkAnalysis[T <: IterationState](graph: DirectedGraph[Node],
     if (graph.maxNodeId.toDouble / graph.nodeCount > 1.1 && graph.maxNodeId - graph.nodeCount > 1000000)
       log.info("Warning - you may be able to reduce the memory usage by renumbering this graph!")
 
-    log.debug(s"Initializing starting ${modelName}...")
+    log.debug(s"Initializing starting $modelName...")
     val progress = Progress(s"${modelName}_init", 65536, Some(graph.nodeCount))
 
     def terminate(currState: IterationState): Boolean = if (maxIterations.isDefined)
