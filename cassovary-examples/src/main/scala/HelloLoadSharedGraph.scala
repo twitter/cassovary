@@ -25,7 +25,7 @@ object HelloLoadSharedGraph {
     printf("\nHello Graph!\n\tA SharedArrayBasedDirectedGraph:" +
         "with %s nodes has %s directed edges.\n", graph.nodeCount, graph.edgeCount)
 
-    printf("Trying with BothInOut direction now:")
+    printf("Trying with BothInOut direction now:\n")
     val reader = new AdjacencyListGraphReader(
           dir, "toy_9nodes", new NodeNumberer.IntIdentity(), _.toInt) {
           override def storedGraphDir: StoredGraphDir = StoredGraphDir.BothInOut
