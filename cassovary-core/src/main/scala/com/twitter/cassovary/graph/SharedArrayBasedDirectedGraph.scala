@@ -242,10 +242,9 @@ object SharedArrayBasedDirectedGraph {
         statsReceiver.timeFuture("graph_load_fill_in_edge_lengths_and_offsets") {
           val futures = (0 until numOfShards).map {
             shard => futurePool {
-              var id = 0
-              (0 until (maxNodeId + 1) / numOfShards).foreach {
-                nodeInShard =>
-                  id = nodeInShard * numOfShards + shard
+              // we assume modulo hashing below
+              (shard until (maxNodeId + 1) by numOfShards).foreach {
+                id =>
                   if (nodeIdSet(id) == 1) {
                     lengthTable(id) = if (inEdgesSizes(id) != null) inEdgesSizes(id).get else 0
                     if (lengthTable(id) > 0)
@@ -268,9 +267,9 @@ object SharedArrayBasedDirectedGraph {
       Future[Unit] = {
         log.info("filling in edges")
         statsReceiver.timeFuture("graph_load_fill_in_edges") {
-          val futures = iterableSeq.map {
+          val futures: Seq[Future[Unit]] = iterableSeq.map {
             nodesMaxIdsSeq => futurePool {
-              nodesMaxIdsSeq.map {
+              nodesMaxIdsSeq.foreach {
                 item =>
                   item.edges.foreach {
                     target =>
