@@ -94,7 +94,7 @@ class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours[Node] wit
     }
     "using Long ids" should {
       "provide the correct graph properties" in {
-        new GraphWithStringIds {
+        new GraphWithLongIds {
           graph.nodeCount should be(6)
           graph.edgeCount should be(6L)
           graph.maxNodeId should be(5)
