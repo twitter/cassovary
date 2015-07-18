@@ -29,7 +29,7 @@ class JaccardSimilarity(val graph: DirectedGraph[Node]) extends Similarity {
     val neighborsOfV = getNeighbors(v, dir).get
     val commonNeighbors = neighborsOfU intersect neighborsOfV
     val unionNeighbors = neighborsOfU union neighborsOfV
-    if (unionNeighbors.isEmpty) 0
+    if (unionNeighbors.isEmpty) 1
     else commonNeighbors.size.toDouble / unionNeighbors.size
   }
 
