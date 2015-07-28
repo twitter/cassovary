@@ -1,0 +1,15 @@
+# 6 nodes cycle with String ids and unsorted edges a->{c,b}, c->{d,b}
+a c
+a b
+b c
+c d
+d e
+e f
+f a
+c b
+# end some of them duplicated below
+b c
+c d
+d e
+e f
+f a
