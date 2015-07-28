@@ -24,12 +24,15 @@ import java.io.IOException
 
 /**
  * Reads in a multi-line list of edges from multiple files in a directory, which nodes have ids of type T.
- * Does not check for duplicate edges or nodes.
  *
  * You can optionally specify which files in a directory to read. For example, you may have files starting with
  * "part-" that you'd like to read. Only these will be read in if you specify that as the file prefix.
  *
  * You should also specify `nodeNumberer`, `idReader` for reading node ids.
+ *
+ * You can optionally specify two additional operations during reading:
+ * - to remove duplicate edges
+ * - to sort list of adjacent nodes
  *
  * For a default version for `Int` graphs see [[ListOfEdgesGraphReader.forIntIds]] builder method.
  *
@@ -57,7 +60,9 @@ class ListOfEdgesGraphReader[T](
   val directory: String,
   override val prefixFileNames: String,
   val nodeNumberer: NodeNumberer[T],
-  idReader: (String => T)
+  idReader: (String => T),
+  removeDuplicates: Boolean = false,
+  sortNeighbors: Boolean = false
 ) extends GraphReaderFromDirectory[T] {
 
   private lazy val log = Logger.get
@@ -112,16 +117,26 @@ class ListOfEdgesGraphReader[T](
 
       val (edgesBySource, nodeMaxOutEdgeId) = readEdgesBySource()
 
-      lazy val edgesIterator = edgesBySource.entrySet().iterator()
+      private lazy val edgesIterator = edgesBySource.entrySet().iterator()
 
       override def hasNext: Boolean = edgesIterator.hasNext
 
       override def next(): NodeIdEdgesMaxId = {
+
+        def prepareEdges(buf: ArrayBuffer[Int]) : Array[Int] = {
+          (removeDuplicates, sortNeighbors) match {
+            case (false, false) => buf.toArray
+            case (true, false) => buf.distinct.toArray
+            case (false, true) => buf.sorted.toArray
+            case (true, true) => buf.sorted.distinct.toArray
+          }
+        }
+
         try {
           val elem = edgesIterator.next()
           NodeIdEdgesMaxId(
             id=elem.getKey,
-            edges=elem.getValue.toArray,
+            edges=prepareEdges(elem.getValue),
             maxId=nodeMaxOutEdgeId.get(elem.getKey))
         } catch {
           case NonFatal(exc) =>
