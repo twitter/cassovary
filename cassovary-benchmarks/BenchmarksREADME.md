@@ -9,4 +9,4 @@ cassovary-benchmarks project using
 `project cassovary-benchmarks`. Now by typing `run` you can see and choose one
 of the benchmarks you would like to run. You can also
 use `runMain BenchmarkClassName parameters` to run a particular benchmark,
-for example `runMain com.twitter.cassovary.PerformanceBenchmark -local=facebook -global-pr`
+for example `runMain com.twitter.cassovary.PerformanceBenchmark -local=facebook -globalpr`
