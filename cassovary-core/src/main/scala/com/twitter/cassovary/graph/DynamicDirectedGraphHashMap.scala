@@ -46,7 +46,11 @@ abstract class DynamicDirectedGraphHashMap(val storedGraphDir: StoredGraphDir)
    * Get the total number of edges in the graph. It's a very slow function. Use it carefully.
    */
   def edgeCount = iterator.foldLeft(0) {(accum, node) =>
-    accum + node.inboundCount  + node.outboundCount
+    accum + (storedGraphDir match {
+      case OnlyOut | BothInOut => node.outboundCount
+      case OnlyIn => node.inboundCount
+      case Mutual => 2 * node.outboundCount // count each edge twice
+    })
   }
 
   /**
