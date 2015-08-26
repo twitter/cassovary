@@ -30,9 +30,9 @@ class DynamicDirectedGraphUnionSpec extends WordSpec with Matchers {
       unionGraph.nodeCount shouldEqual (5)
       unionGraph.getOrCreateNode(4)
       unionGraph.nodeCount shouldEqual (6)
-      unionGraph.getOrCreateNode(1).addOutBoundNode(4)
+      unionGraph.addEdge(1, 4)
       unionGraph.getNodeById(4).get.inboundNodes should contain theSameElementsAs (Seq(1))
-      unionGraph.getOrCreateNode(6).addInBoundNode(1)
+      unionGraph.addEdge(1, 6)
       unionGraph.getOrCreateNode(1).outboundNodes should contain theSameElementsAs (Seq(2, 3, 4, 6))
       unionGraph.edgeCount shouldEqual(8)
     }

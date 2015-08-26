@@ -15,23 +15,6 @@ class DynamicDirectedGraphUnion(staticGraph: DirectedGraph[Node], dynamicGraph: 
     else
     ((staticGraph map (_.id)).toSet ++ (dynamicGraph map (_.id)).toSet).size
 
-  /** Represents the union of two nodes. */
-  // Inner class so it can access the addEdge method
-  private class DynamicNodeUnion(staticNodeOption: Option[Node],
-                                  dynamicNode: DynamicNode) extends DynamicNode {
-    override val id: Int = dynamicNode.id
-
-    override def inboundNodes(): Seq[Int] =
-      (staticNodeOption map (_.inboundNodes())).getOrElse(Nil) ++ dynamicNode.inboundNodes()
-    override def outboundNodes(): Seq[Int] =
-      (staticNodeOption map (_.outboundNodes())).getOrElse(Nil) ++ dynamicNode.outboundNodes()
-
-    override def addInBoundNodes(nodeIds: Seq[Int]): Unit = nodeIds map (addEdge(_, id))
-    override def addOutBoundNodes(nodeIds: Seq[Int]): Unit = nodeIds map (addEdge(id, _))
-    override def removeInBoundNode(nodeId: Int): Unit = throw new UnsupportedOperationException()
-    override def removeOutBoundNode(nodeId: Int): Unit = throw new UnsupportedOperationException()
-  }
-
   override def getNodeById(id: Int): Option[DynamicNode] =
     if (staticGraph.existsNodeId(id) || dynamicGraph.existsNodeId(id)) {
       Some(new DynamicNodeUnion(
@@ -69,4 +52,22 @@ class DynamicDirectedGraphUnion(staticGraph: DirectedGraph[Node], dynamicGraph: 
     val additionalDynamicGraphIds = dynamicGraph.iterator map (_.id) filter (!staticGraph.existsNodeId(_))
     (staticGraphIds ++ additionalDynamicGraphIds) map (id => getNodeById(id).get)
   }
+}
+
+/** Represents the union of two nodes. */
+private class DynamicNodeUnion(staticNodeOption: Option[Node],
+                               dynamicNode: DynamicNode) extends DynamicNode {
+  override val id: Int = dynamicNode.id
+
+  override def inboundNodes(): Seq[Int] =
+    (staticNodeOption map (_.inboundNodes())).getOrElse(Nil) ++ dynamicNode.inboundNodes()
+  override def outboundNodes(): Seq[Int] =
+    (staticNodeOption map (_.outboundNodes())).getOrElse(Nil) ++ dynamicNode.outboundNodes()
+
+  // To make sure an edge (u, v) is added to both u's out-neighbors and v's in-neighbors,
+  // mutations should happen through the graph.
+  override def addInBoundNodes(nodeIds: Seq[Int]): Unit = throw new UnsupportedOperationException()
+  override def addOutBoundNodes(nodeIds: Seq[Int]): Unit = throw new UnsupportedOperationException()
+  override def removeInBoundNode(nodeId: Int): Unit = throw new UnsupportedOperationException()
+  override def removeOutBoundNode(nodeId: Int): Unit = throw new UnsupportedOperationException()
 }
