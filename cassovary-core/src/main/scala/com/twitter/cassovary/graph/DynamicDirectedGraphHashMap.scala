@@ -46,17 +46,18 @@ abstract class DynamicDirectedGraphHashMap(val storedGraphDir: StoredGraphDir)
    * Get the total number of edges in the graph. It's a very slow function. Use it carefully.
    */
   def edgeCount = iterator.foldLeft(0) {(accum, node) =>
-    accum + node.inboundCount  + node.outboundCount
+    accum + (storedGraphDir match {
+      case OnlyOut | BothInOut => node.outboundCount
+      case OnlyIn => node.inboundCount
+      case Mutual => 2 * node.outboundCount // count each edge twice
+    })
   }
 
   /**
    * Get a node given a nodeId {@code id}. Returns None if the id is in in the graph.
    */
-  def getNodeById(id: Int): Option[DynamicNode] = {
-    val n = nodes.get(id)
-    if (n == null) None
-    else Some(n)
-  }
+  def getNodeById(id: Int): Option[DynamicNode] =
+    Option(nodes.get(id))
 
   /**
    * Get or create a node given a nodeId {@code id} and return it.
@@ -82,7 +83,7 @@ abstract class DynamicDirectedGraphHashMap(val storedGraphDir: StoredGraphDir)
    * Don't support this operator. It always throws exceptions.
    */
   override lazy val maxNodeId = {
-    throw new Exception("DynamicGraph doesn't support maxNodeId")
+    throw new UnsupportedOperationException("DynamicGraph doesn't support maxNodeId")
   }
 
   def addEdge(srcId: Int, destId: Int) {
