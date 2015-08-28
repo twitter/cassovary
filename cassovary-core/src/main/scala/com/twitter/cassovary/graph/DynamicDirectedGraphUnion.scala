@@ -59,10 +59,14 @@ private class DynamicNodeUnion(staticNodeOption: Option[Node],
                                dynamicNode: DynamicNode) extends DynamicNode {
   override val id: Int = dynamicNode.id
 
-  override def inboundNodes(): Seq[Int] =
-    (staticNodeOption map (_.inboundNodes())).getOrElse(Nil) ++ dynamicNode.inboundNodes()
-  override def outboundNodes(): Seq[Int] =
-    (staticNodeOption map (_.outboundNodes())).getOrElse(Nil) ++ dynamicNode.outboundNodes()
+  override def inboundNodes(): IndexedSeq[Int] = staticNodeOption match {
+    case Some(staticNode) => new IndexedSeqUnion(staticNode.inboundNodes(), dynamicNode.inboundNodes())
+    case None => dynamicNode.inboundNodes()
+  }
+  override def outboundNodes(): IndexedSeq[Int] = staticNodeOption match {
+    case Some(staticNode) => new IndexedSeqUnion(staticNode.outboundNodes(), dynamicNode.outboundNodes())
+    case None => dynamicNode.outboundNodes()
+  }
 
   // To make sure an edge (u, v) is added to both u's out-neighbors and v's in-neighbors,
   // mutations should happen through the graph.
@@ -70,4 +74,20 @@ private class DynamicNodeUnion(staticNodeOption: Option[Node],
   override def addOutBoundNodes(nodeIds: Seq[Int]): Unit = throw new UnsupportedOperationException()
   override def removeInBoundNode(nodeId: Int): Unit = throw new UnsupportedOperationException()
   override def removeOutBoundNode(nodeId: Int): Unit = throw new UnsupportedOperationException()
+}
+
+/** Represents the concatanation of two IndexedSeqs. */
+// TODO: We assume xs and ys have efficient random access (are effectively IndexedSeqs).  Refcatoring Node to return
+// IndexedSeq would remove this assumption
+private class IndexedSeqUnion[A](xs: Seq[A], ys: Seq[A]) extends IndexedSeq[A] {
+  override def length: Int = xs.size + ys.size
+
+  override def apply(i: Int): A =
+    if (i < xs.size) {
+      xs(i)
+    } else if (i - xs.size < ys.size) {
+      ys(i - xs.size)
+    } else {
+      throw new IndexOutOfBoundsException(s"Invalid index $i")
+    }
 }
