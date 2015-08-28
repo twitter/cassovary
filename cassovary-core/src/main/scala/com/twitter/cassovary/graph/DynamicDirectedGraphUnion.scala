@@ -76,8 +76,8 @@ private class DynamicNodeUnion(staticNodeOption: Option[Node],
   override def removeOutBoundNode(nodeId: Int): Unit = throw new UnsupportedOperationException()
 }
 
-/** Represents the concatanation of two IndexedSeqs. */
-// TODO: We assume xs and ys have efficient random access (are effectively IndexedSeqs).  Refcatoring Node to return
+/** Represents the concatenation of two IndexedSeqs. */
+// TODO: We assume xs and ys have efficient random access (are effectively IndexedSeqs).  Refactoring Node to return
 // IndexedSeq would remove this assumption
 private class IndexedSeqUnion[A](xs: Seq[A], ys: Seq[A]) extends IndexedSeq[A] {
   override def length: Int = xs.size + ys.size
