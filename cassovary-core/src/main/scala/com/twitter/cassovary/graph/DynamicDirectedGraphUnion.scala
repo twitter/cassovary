@@ -59,11 +59,11 @@ private class DynamicNodeUnion(staticNodeOption: Option[Node],
                                dynamicNode: DynamicNode) extends DynamicNode {
   override val id: Int = dynamicNode.id
 
-  override def inboundNodes(): IndexedSeq[Int] = staticNodeOption match {
+  override def inboundNodes(): Seq[Int] = staticNodeOption match {
     case Some(staticNode) => new IndexedSeqUnion(staticNode.inboundNodes(), dynamicNode.inboundNodes())
     case None => dynamicNode.inboundNodes()
   }
-  override def outboundNodes(): IndexedSeq[Int] = staticNodeOption match {
+  override def outboundNodes(): Seq[Int] = staticNodeOption match {
     case Some(staticNode) => new IndexedSeqUnion(staticNode.outboundNodes(), dynamicNode.outboundNodes())
     case None => dynamicNode.outboundNodes()
   }
