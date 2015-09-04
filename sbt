@@ -32,7 +32,7 @@ java -ea                          \
   -XX:+UseConcMarkSweepGC         \
   -XX:+CMSParallelRemarkEnabled   \
   -XX:+CMSClassUnloadingEnabled   \
-  -XX:PermSize=256m
+  -XX:PermSize=256m               \
   -XX:SurvivorRatio=128           \
   -XX:MaxTenuringThreshold=0      \
   -XX:ReservedCodeCacheSize=128m  \

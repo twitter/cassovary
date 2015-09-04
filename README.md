@@ -29,7 +29,7 @@ Cassovary is built using [sbt](https://github.com/sbt/sbt) and was tested last u
 3. ```./sbt package```
 
 ## Alternative for using for local projects
-1. ```./sbt publish-local```
+1. ```./sbt publishLocal```
 2. ```cd ../<dependent project>```
 3. ```./sbt update```
 
