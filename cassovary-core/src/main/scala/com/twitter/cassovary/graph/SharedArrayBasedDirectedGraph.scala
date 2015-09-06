@@ -61,7 +61,7 @@ object SharedArrayBasedDirectedGraph {
    ) {
     assert(numOfShards > 0)
 
-    val nodeReadingLoggingFrequency = 10000
+    val nodeReadingLoggingFrequency = 100000
 
     private val futurePool: FuturePool = new BoundedFuturePool(FuturePool.unboundedPool, parallelismLimit)
 
