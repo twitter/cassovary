@@ -151,7 +151,7 @@ object SharedArrayBasedDirectedGraph {
                   item.edges foreach { edge => nodeIdSet(edge) = 1}
                   val c = nodesReadCounter.addAndGet(1)
                   if (c % nodeReadingLoggingFrequency == 0) {
-                    log.info("loading..., finished %s nodes.", nodesReadCounter)
+                    log.info("loading..., finished %s nodes.", c)
                   }
                 }
               }
@@ -162,10 +162,10 @@ object SharedArrayBasedDirectedGraph {
     }
 
     private def countNodes(nodeIdSet: Array[Byte], maxNodeId: Int): Int = {
-      // maybe more optimal to do this by hand to avoid boxing
-      nodeIdSet.sum
+      var n: Int = 1
+      for (i <- 0 to maxNodeId) n += nodeIdSet(i)
+      n
     }
-
 
     def construct(): SharedArrayBasedDirectedGraph = {
       // initialize size counters for each shard in shared array
