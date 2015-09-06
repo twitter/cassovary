@@ -162,7 +162,7 @@ object SharedArrayBasedDirectedGraph {
     }
 
     private def countNodes(nodeIdSet: Array[Byte], maxNodeId: Int): Int = {
-      var n: Int = 1
+      var n: Int = 0
       for (i <- 0 to maxNodeId) n += nodeIdSet(i)
       n
     }

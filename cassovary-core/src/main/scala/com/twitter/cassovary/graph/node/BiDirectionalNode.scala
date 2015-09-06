@@ -24,12 +24,14 @@ import com.twitter.cassovary.util.{Sharded2dArray, ArraySlice}
  */
 trait BiDirectionalNode extends Node
 
-class FillingInEdgesBiDirectionalNode(val id: Int, val outboundNodes: Seq[Int])
+class FillingInEdgesBiDirectionalNode(val id: Int, val outEdges: Array[Int])
   extends BiDirectionalNode {
 
   var inEdges: Array[Int] = BiDirectionalNode.noEdges
 
-  override def inboundNodes(): Seq[Int] = inEdges
+  def inboundNodes(): Seq[Int] = inEdges
+
+  def outboundNodes(): Seq[Int] = outEdges
 
   /**
    * Creates array of a given size to store incoming edges.
@@ -47,7 +49,7 @@ class FillingInEdgesBiDirectionalNode(val id: Int, val outboundNodes: Seq[Int])
 }
 
 object FillingInEdgesBiDirectionalNode {
-  def apply(nodeId: Int, out: Seq[Int], sortedNeighbors: Boolean): FillingInEdgesBiDirectionalNode = {
+  def apply(nodeId: Int, out: Array[Int], sortedNeighbors: Boolean): FillingInEdgesBiDirectionalNode = {
     if (sortedNeighbors) {
       new FillingInEdgesBiDirectionalNode(nodeId, out) with SortedNeighborsNodeOps
     } else {

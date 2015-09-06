@@ -27,7 +27,7 @@ object ArrayBasedDirectedNode {
    *
    * @return a node
    */
-  def apply(nodeId: Int, neighbors: Seq[Int], dir: StoredGraphDir, sortedNeighbors: Boolean = false) = {
+  def apply(nodeId: Int, neighbors: Array[Int], dir: StoredGraphDir, sortedNeighbors: Boolean = false) = {
     dir match {
       case StoredGraphDir.OnlyIn | StoredGraphDir.OnlyOut | StoredGraphDir.Mutual =>
         UniDirectionalNode(nodeId, neighbors, dir, sortedNeighbors)
