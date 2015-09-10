@@ -56,21 +56,20 @@ class TriangleCountSpec extends WordSpec with Matchers {
       triangles should be(0.0 +- 20.0)
     }
 
-
-    "Return correct results for Erdos-Renly mutual graphs" in {
+    "Return correct results for Erdos-Renyi mutual graphs" in {
       val edgeProbability = 0.3
       val numberOfNodes = 200
       val erGraph = TestGraphs.generateRandomUndirectedGraph(numberOfNodes, edgeProbability, rand = rng(),
         parallelismLimit = 1)
       val pars = TriangleCountParameters(500, 500)
       val (transitivity, triangles) = averageOfPairs(TriangleCount(erGraph, pars, rng()), 10)
-      transitivity should be(edgeProbability +- (0.15 * edgeProbability))
+      transitivity should be(edgeProbability +- (0.3 * edgeProbability))
 
       def averageTrianglesInERGraph(nodes: Int, p: Double) = {
         p * p * p * nodes * (nodes - 1) * (nodes - 2) / 6
       }
       val expectedTriangles = averageTrianglesInERGraph(numberOfNodes, edgeProbability)
-      triangles should be (expectedTriangles +- (0.3 * expectedTriangles))
+      triangles should be (expectedTriangles +- (0.4 * expectedTriangles))
     }
 
     "Return correct results for complete graph" in {

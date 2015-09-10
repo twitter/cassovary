@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import com.google.common.annotations.VisibleForTesting
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.graph.node._
-import com.twitter.cassovary.util.BoundedFuturePool
+import com.twitter.cassovary.util.{ArrayBackedSet, SparseOrArrayBasedInt2ObjectMap, BoundedFuturePool}
 import com.twitter.finagle.stats.DefaultStatsReceiver
 import com.twitter.logging.Logger
 import com.twitter.util.Future.when
@@ -84,25 +84,18 @@ object ArrayBasedDirectedGraph {
 
   // a private convenience class encapsulating a representation of the collection of nodes
   private class NodeCollection(val maxNodeId: Int, numNodesEstimate: Int, val numEdges: Long) {
-    private val table = new Array[Node](maxNodeId + 1)
-    private var _numNodes = 0
-    private val nodeIds = new mutable.BitSet(maxNodeId + 1)
+    private val table = SparseOrArrayBasedInt2ObjectMap[Node](isSparse = false, Some(maxNodeId))
     private var inEdgeSizes: Array[AtomicInteger] = _
 
-    def mark(id: Int): Unit = {
-      nodeIds += id
-    }
+    def nodeIdsIterator = table.keysIterator
+    def nodesIterator = table.valuesIterator
 
-    def nodeIdsIterator = nodeIds.iterator
-    def nodesIterator = nodeIdsIterator map { id => table(id) }
-
-    def get(id: Int) = table(id)
+    def apply(id: Int) = table(id)
+    def get(id: Int) = table.get(id)
     def add(node: Node): Unit = {
       val id = node.id
-      assert(table(id) == null, s"Duplicate node $id detected")
-      table(id) = node
-      mark(id)
-      _numNodes += 1
+      assert(table.get(id) == None, s"Duplicate node $id detected")
+      table.update(id, node)
     }
 
     def addInEdge(dest: Int, source: Int): Unit = {
@@ -112,7 +105,7 @@ object ArrayBasedDirectedGraph {
 
     def createAtomicInts(): Unit = {
       inEdgeSizes = Array.tabulate[AtomicInteger](maxNodeId + 1) {
-        i => if (nodeIds.contains(i)) new AtomicInteger() else null
+        i => if (table.contains(i)) new AtomicInteger() else null
       }
     }
 
@@ -123,8 +116,7 @@ object ArrayBasedDirectedGraph {
       sz
     }
 
-    def numNodes = _numNodes
-
+    def numNodes = table.size
   }
 
   /**
@@ -169,8 +161,8 @@ object ArrayBasedDirectedGraph {
 
       val result: Future[ArrayBasedDirectedGraph] = for {
         graphInfo <- fillOutEdges(iterableSeq)
-        nodeCollection <- markStoredNodes(graphInfo)
-        nodesWithNoOutEdges <- createNodesWithNoOutEdges(nodeCollection)
+        nodeCollection <- createExplicitlyGivenNodes(graphInfo)
+        nodesWithNoOutEdges <- createEmptyNodes(nodeCollection, graphInfo)
         _ <- when(storedGraphDir == StoredGraphDir.BothInOut) {
           fillMissingInEdges(nodeCollection, graphInfo.nodesOutEdges, nodesWithNoOutEdges)
         }
@@ -237,11 +229,10 @@ object ArrayBasedDirectedGraph {
     }
 
     /**
-     * Marks all nodes existing in the graph and creates nodes that have `storedGraphDir` consistent
-     * edges.
+     * Create nodes that were explicitly given in input files.
      * @return a representation of the collection of nodes
      */
-    private def markStoredNodes(graphInfo: GraphInfo[Seq[Node]]): Future[NodeCollection] = {
+    private def createExplicitlyGivenNodes(graphInfo: GraphInfo[Seq[Node]]): Future[NodeCollection] = {
       val nodeCollection = new NodeCollection(graphInfo.maxNodeId, graphInfo.numNodes,
         graphInfo.numEdges)
       log.debug("in markStoredNodes")
@@ -251,15 +242,53 @@ object ArrayBasedDirectedGraph {
             futurePool {
               nodes foreach { node =>
                 nodeCollection.add(node)
+                /*
                 storedGraphDir match {
                   case StoredGraphDir.OnlyIn =>
                     node.inboundNodes foreach nodeCollection.mark
                   case _ =>
                     node.outboundNodes foreach nodeCollection.mark
                 }
+                */
               }
             })
         ).map(_ => nodeCollection)
+      }
+    }
+
+    /**
+     * Create implicit aka empty nodes that were not given in input but appeared
+     * as neighbors of the explicit nodes
+     * @return Seq of these empty nodes
+     */
+    private def createEmptyNodes(nodeColl: NodeCollection,
+        graphInfo: GraphInfo[Seq[Node]]): Future[Seq[Node]] = {
+      log.debug("in createEmptyNodes")
+      val emptyNodeIds = new ArrayBackedSet(graphInfo.maxNodeId)
+      statsReceiver.time("graph_load_mark_create_empty_nodes") {
+        Future.join(
+          graphInfo.nodesOutEdges.map(nodes =>
+            futurePool {
+              nodes foreach { node =>
+                val neighborIds = storedGraphDir match {
+                  case StoredGraphDir.OnlyIn => node.inboundNodes()
+                  case _ => node.outboundNodes()
+                }
+                neighborIds foreach { i => if (!nodeColl.get(i).isDefined) emptyNodeIds.add(i) }
+              }
+            })
+        ) map { _ =>
+          /* now create these nodes */
+          val nodesWithNoOutEdges = new mutable.ArrayBuffer[Node]()
+          emptyNodeIds foreach { i =>
+            val node = ArrayBasedDirectedNode(i, emptyArray, storedGraphDir,
+              neighborsSortingStrategy != LeaveUnsorted)
+            nodeColl.add(node)
+            if (storedGraphDir == StoredGraphDir.BothInOut)
+              nodesWithNoOutEdges += node
+          }
+          nodesWithNoOutEdges
+        }
       }
     }
 
@@ -268,7 +297,7 @@ object ArrayBasedDirectedGraph {
      * TODO (possible optimization): don't iterate over all marked nodes if we remove those
      * ids from nodeColl's bitset those ids that we have created nodes already for.
      */
-    private def createNodesWithNoOutEdges(nodeColl: NodeCollection): Future[Seq[Node]] = futurePool {
+    /**private def createNodesWithNoOutEdges2(nodeColl: NodeCollection): Future[Seq[Node]] = futurePool {
       val nodesWithNoOutEdges = new mutable.ArrayBuffer[Node]()
       log.debug("creating nodes that have only in-coming edges")
       statsReceiver.time("graph_load_creating_nodes_without_out_edges") {
@@ -284,7 +313,7 @@ object ArrayBasedDirectedGraph {
           }
       }
       nodesWithNoOutEdges
-    }
+    }**/
 
     private def fillMissingInEdges(nodeColl: NodeCollection, nodesOutEdges: Seq[Seq[Node]],
                                    nodesWithNoOutEdges: Seq[Node]):
@@ -377,7 +406,7 @@ object ArrayBasedDirectedGraph {
  * The private constructor takes as its input a list of (@see Node) nodes, then stores
  * nodes in an array. It also builds all edges which are also stored in array.
  *
- * @param nodes the collection of nodes with edges instantiated
+ * @param nodeCollection the collection of nodes with edges instantiated
  * @param storedGraphDir the graph direction(s) stored
  */
 class ArrayBasedDirectedGraph private (nodeCollection: ArrayBasedDirectedGraph.NodeCollection,
@@ -393,13 +422,6 @@ class ArrayBasedDirectedGraph private (nodeCollection: ArrayBasedDirectedGraph.N
   def getNodeById(id: Int) = {
     if ( (id < 0) || (id > maxNodeId)) {
       None
-    } else {
-      val node = nodeCollection.get(id)
-      if (node == null) {
-        None
-      } else {
-        Some(node)
-      }
-    }
+    } else nodeCollection.get(id)
   }
 }

@@ -33,17 +33,24 @@ object GraphWriter {
 
   /**
    * Writes given graph to given writer by iterating over all nodes and outbound edges.
+   * Please note that sorting before writing might be expensive.
    */
-  def writeDirectedGraph[V <: Node](graph: DirectedGraph[V], writer: Writer): Unit = writeDirectedGraph(graph, Seq(writer))
+  def writeDirectedGraph[V <: Node](graph: DirectedGraph[V], writer: Writer,
+      sortByIds: Boolean): Unit = {
+    writeDirectedGraph(graph, Seq(writer), sortByIds)
+  }
 
   /**
    * Writes given graph to given writers dividing the graph into chunks
    * of equal sizes of nodes.
+   * Please note that sorting before writing might be expensive.
    */
-  def writeDirectedGraph[V <: Node](graph: DirectedGraph[V], writers: Seq[Writer]): Unit = {
+  def writeDirectedGraph[V <: Node](graph: DirectedGraph[V], writers: Seq[Writer],
+      sortByIds: Boolean = false): Unit = {
     val chunks = writers.size
     val nodesForChunk = ((graph.nodeCount - 1) / chunks) + 1
-    graph.grouped(nodesForChunk).zip(writers.iterator).foreach {
+    val nodesIterator = if (sortByIds) graph.toSeq.sortBy(_.id).iterator else graph.iterator
+    nodesIterator.grouped(nodesForChunk).zip(writers.iterator).foreach {
       case (nodes, writer) =>
         val gWriter = new PrintWriter(writer)
         nodes foreach writeNode(gWriter)

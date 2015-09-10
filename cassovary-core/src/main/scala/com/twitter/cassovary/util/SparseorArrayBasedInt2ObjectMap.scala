@@ -18,10 +18,11 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 import java.{util => jutil}
 import scala.collection.JavaConversions._
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
 object SparseOrArrayBasedInt2ObjectMap {
 
-  def apply[T](isSparse: Boolean, maxId: Option[Int]): mutable.Map[Int, T] = {
+  def apply[T : ClassTag](isSparse: Boolean, maxId: Option[Int]): mutable.Map[Int, T] = {
     if (isSparse) {
       new Int2ObjectOpenHashMap[T]().asInstanceOf[jutil.Map[Int, T]]
     } else {
@@ -31,10 +32,47 @@ object SparseOrArrayBasedInt2ObjectMap {
 
 }
 
-class ArrayBasedInt2ObjectMap[T](maxId: Int) extends mutable.Map[Int, T] {
+/**
+ * A set backed by an underlying array that keeps track of ints in the range 0..maxId both
+ * inclusive. It can be used concurrently as each set element has its own location in the array.
+ * @param maxVal maximum integer value in the set
+ */
+class ArrayBackedSet(val maxVal: Int) extends mutable.Set[Int] {
+  private val underlying = new Array[Byte](maxVal + 1)
+
+  override def add(i: Int) = {
+    val existing = !contains(i)
+    underlying(i) = 1
+    existing
+  }
+
+  override def remove(i: Int) = {
+    if (underlying(i) > 0) {
+      underlying(i) = 0
+      true
+    } else false
+  }
+
+  def -=(i: Int) = {
+    remove(i)
+    this
+  }
+
+  def +=(i: Int) = {
+    add(i)
+    this
+  }
+
+  def contains(i: Int) = underlying(i) == 1
+
+  def iterator = (0 to maxVal).filter(contains).iterator
+
+}
+
+class ArrayBasedInt2ObjectMap[T : ClassTag](maxId: Int) extends mutable.Map[Int, T] {
 
   private val array = new Array[T](maxId + 1)
-  private val ids = new mutable.BitSet(maxId + 1)
+  private val ids = new ArrayBackedSet(maxId)
 
   def get(id: Int): Option[T] = if (ids.contains(id)) Some(array(id)) else None
 
@@ -47,7 +85,7 @@ class ArrayBasedInt2ObjectMap[T](maxId: Int) extends mutable.Map[Int, T] {
   }
 
   def -= (id: Int) = {
-    ids -= kv._1
+    ids -= id
     this
   }
 

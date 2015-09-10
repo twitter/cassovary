@@ -37,7 +37,7 @@ object WriteRandomGraph {
     val renumGraphFileName = "erdos_renyi_" + numNodes + ".txt"
     val renumGraphFile = new File(renumGraphDirName, renumGraphFileName)
     printf("Writing graph to file %s.\n", renumGraphFile)
-    GraphWriter.writeDirectedGraph(genGraph, new FileWriter(renumGraphFile))
+    GraphWriter.writeDirectedGraph(genGraph, new FileWriter(renumGraphFile), false)
     printf("Finished writing graph to file %s.\n", renumGraphFile)
   }
 }
