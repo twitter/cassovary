@@ -46,7 +46,7 @@ class ArrayBackedSet(val maxVal: Int) {
 
   def contains(i: Int) = underlying(i) == 1
 
-  def iterator = underlying.filter(_ != 0).iterator
+  def iterator = (0 to maxVal).filter( i => underlying(i) != 0).iterator
 
 }
 
