@@ -1,5 +1,6 @@
 import sbt._
 import Keys._
+import sbtassembly.AssemblyPlugin.autoImport._
 import xerial.sbt.Sonatype._
 
 
@@ -15,7 +16,7 @@ object Cassovary extends Build {
         ExclusionRule(organization = "org.mockito"))
 
   val sharedSettings = Seq(
-    version := "5.1.6",
+    version := "5.2.0",
     organization := "com.twitter",
     scalaVersion := "2.11.5",
     crossScalaVersions := Seq("2.10.4", "2.11.5"),
@@ -79,6 +80,10 @@ object Cassovary extends Build {
     }
   )
 
+  val assemblySettings = Seq(
+    assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false,
+      includeDependency = false))
+
   lazy val root = Project(
     id = "cassovary",
     base = file("."),
@@ -98,16 +103,16 @@ object Cassovary extends Build {
   lazy val cassovaryExamples = Project(
     id = "cassovary-examples",
     base = file("cassovary-examples"),
-    settings = Project.defaultSettings ++ sharedSettings
+    settings = Project.defaultSettings ++ sharedSettings ++ assemblySettings
   ).settings(
-    name := "cassovary-examples",
-    libraryDependencies += fastUtilsDependency
+        name := "cassovary-examples",
+        libraryDependencies += fastUtilsDependency
   ).dependsOn(cassovaryCore)
 
   lazy val cassovaryBenchmarks = Project(
     id = "cassovary-benchmarks",
     base = file("cassovary-benchmarks"),
-    settings = Project.defaultSettings ++ sharedSettings
+    settings = Project.defaultSettings ++ sharedSettings ++ assemblySettings
   ).settings(
       name := "cassovary-benchmarks",
       libraryDependencies ++= Seq(
@@ -119,7 +124,7 @@ object Cassovary extends Build {
   lazy val cassovaryServer = Project(
     id = "cassovary-server",
     base = file("cassovary-server"),
-    settings = Project.defaultSettings ++ sharedSettings
+    settings = Project.defaultSettings ++ sharedSettings ++ assemblySettings
   ).settings(
       name := "cassovary-server",
       libraryDependencies ++= Seq(

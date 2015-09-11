@@ -18,11 +18,13 @@ import java.io.StringWriter
 import org.scalatest.{Matchers, WordSpec}
 
 class GraphWriterSpec extends WordSpec with Matchers {
+  val sortNodes = true
+
   "Graph writer" should {
     "write graph to single file" in {
       val graph = TestGraphs.g6
       val stringWriter = new StringWriter()
-      GraphWriter.writeDirectedGraph(graph, stringWriter)
+      GraphWriter.writeDirectedGraph(graph, stringWriter, sortNodes)
       val expectedResult =
         """10 3
           |11
@@ -49,7 +51,7 @@ class GraphWriterSpec extends WordSpec with Matchers {
         val graph = TestGraphs.g6
         val stringWriter1 = new StringWriter()
         val stringWriter2 = new StringWriter()
-        GraphWriter.writeDirectedGraph(graph, Seq(stringWriter1, stringWriter2))
+        GraphWriter.writeDirectedGraph(graph, Seq(stringWriter1, stringWriter2), sortNodes)
         stringWriter1.toString should be
           """10 3
             |11
@@ -72,10 +74,10 @@ class GraphWriterSpec extends WordSpec with Matchers {
             |11
             |""".stripMargin
       }
-      "number of nodes is not divisable by the number of chunks" in {
+      "number of nodes is not divisible by the number of chunks" in {
         val graph = TestGraphs.g6
         val writers = Array.fill(5)(new StringWriter())
-        GraphWriter.writeDirectedGraph(graph, writers)
+        GraphWriter.writeDirectedGraph(graph, writers, sortNodes)
         writers(0).toString should be
           """10 3
             |11
