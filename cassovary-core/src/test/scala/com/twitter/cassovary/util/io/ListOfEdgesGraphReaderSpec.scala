@@ -47,7 +47,7 @@ class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours[Node] wit
   trait GraphWithLongIds {
     val seqNumberer = new SequentialNodeNumberer[Long]()
     val graph = new ListOfEdgesGraphReader(directory, "toy_6nodes_list_LongIds", seqNumberer,
-      idReader = _.toLong).toSharedArrayBasedDirectedGraph()
+      idReader = _.toLong, separator = ',').toSharedArrayBasedDirectedGraph()
   }
 
   class GraphWithStringIds(filename: String, removeDup: Boolean = false, sortNeighbors: Boolean = false) {

@@ -246,14 +246,6 @@ object ArrayBasedDirectedGraph {
             futurePool {
               nodes foreach { node =>
                 nodeCollection.add(node)
-                /*
-                storedGraphDir match {
-                  case StoredGraphDir.OnlyIn =>
-                    node.inboundNodes foreach nodeCollection.mark
-                  case _ =>
-                    node.outboundNodes foreach nodeCollection.mark
-                }
-                */
               }
             })
         ).map(_ => nodeCollection)

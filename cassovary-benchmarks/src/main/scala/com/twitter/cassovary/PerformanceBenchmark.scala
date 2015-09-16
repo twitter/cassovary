@@ -73,10 +73,13 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   val DEFAULT_REPS = 10
   val defaultLocalGraphFile = "facebook"
   val DEFAULT_CENTRALITY_ALGORITHM = "none"
+  val defaultSeparatorEdges = ' '.toInt
 
   val flags = new Flags("Performance benchmark")
   val localFileFlag = flags("local", defaultLocalGraphFile,
     "Specify common prefix of local files in " + SMALL_FILES_DIRECTORY)
+  val separatorInt = flags("separator", defaultSeparatorEdges,
+    "Separator between source and destination ids in decimal value of the character")
   val remoteFileFlag = flags("url",
     "http://snap.stanford.edu/data/cit-HepTh.txt.gz",
     "Specify a URL to download a graph file from")
@@ -118,8 +121,12 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
     def readGraph(path : String, filename : String, adjacencyList: Boolean) : DirectedGraph[Node] = {
       if (adjacencyList) {
         AdjacencyListGraphReader.forIntIds(path, filename).toArrayBasedDirectedGraph()
-      } else
-        ListOfEdgesGraphReader.forIntIds(path, filename).toArrayBasedDirectedGraph()
+      } else {
+        val sep = separatorInt().toChar
+        printf("Using Character '%d' (in Int) as separator\n", sep.toInt)
+        ListOfEdgesGraphReader.forIntIds(path, filename,
+          separator = sep).toArrayBasedDirectedGraph()
+      }
     }
 
     if (benchmarks.isEmpty) {

@@ -23,14 +23,16 @@ import com.twitter.util.NonFatal
 import java.io.IOException
 
 /**
- * Reads in a multi-line list of edges from multiple files in a directory, which nodes have ids of type T.
+ * Reads in a multi-line list of edges from multiple files in a directory.
+ * Each edge is in its own line and is of the form:
+ * source-id<separator>destination-id
+ * where separator is a single character.
  *
- * You can optionally specify which files in a directory to read. For example, you may have files starting with
- * "part-" that you'd like to read. Only these will be read in if you specify that as the file prefix.
+ * One can optionally specify which files in a directory to read.
+ * For example, one may have files starting with
+ * "part-" that one would like to read, perhaps containing subgraphs of one single graph.
  *
- * You should also specify `nodeNumberer`, `idReader` for reading node ids.
- *
- * You can optionally specify two additional operations during reading:
+ * One can optionally specify two additional operations during reading:
  * - to remove duplicate edges
  * - to sort list of adjacent nodes
  *
@@ -55,20 +57,21 @@ import java.io.IOException
  * @param prefixFileNames the string that each part file starts with
  * @param nodeNumberer nodeNumberer to use with node ids
  * @param idReader function that can read id from String
+ * @param removeDuplicates if false (default), the edges are guaranteed to be unique
+ * @param sortNeighbors if true, the neighbors of a node should be sorted by this class
+ * @param separator the character that separates the source and destination ids
  */
 class ListOfEdgesGraphReader[T](
-  val directory: String,
-  override val prefixFileNames: String,
-  val nodeNumberer: NodeNumberer[T],
-  idReader: (String => T),
-  removeDuplicates: Boolean = false,
-  sortNeighbors: Boolean = false
-) extends GraphReaderFromDirectory[T] {
+    val directory: String,
+    override val prefixFileNames: String,
+    val nodeNumberer: NodeNumberer[T],
+    idReader: (String => T),
+    removeDuplicates: Boolean = false,
+    sortNeighbors: Boolean = false,
+    separator: Char = ' '
+    ) extends GraphReaderFromDirectory[T] {
 
   private lazy val log = Logger.get
-
-  protected val separator = "\\s"
-
 
   private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[T])
     extends Iterable[NodeIdEdgesMaxId] {
@@ -77,45 +80,35 @@ class ListOfEdgesGraphReader[T](
 
       var lastLineParsed = 0
 
-      def readEdgesBySource(): (Int2ObjectMap[ArrayBuffer[Int]], Int2IntArrayMap) = {
+      def readEdgesBySource(): Int2ObjectMap[ArrayBuffer[Int]] = {
         log.info("Starting reading from file %s...\n", filename)
-        val directedEdgePattern = ("""^(\w+)""" + separator + """(\w+)""").r
-        val commentPattern = """(^#.*)""".r
+        //val directedEdgePattern = ("""^(\w+)""" + separator + """(\w+)""").r
         val lines = Source.fromFile(filename).getLines()
           .map{x => {lastLineParsed += 1; x}}
 
         val edgesBySource = new Int2ObjectLinkedOpenHashMap[ArrayBuffer[Int]]()
-        val nodeMaxOutEdgeId = new Int2IntArrayMap()
 
-        def updateNodeMaxOutEdgeId(node: Int, out: Int) {
-          if (nodeMaxOutEdgeId.containsKey(node)) {
-            nodeMaxOutEdgeId.put(node, nodeMaxOutEdgeId.get(node) max out)
-          } else {
-            nodeMaxOutEdgeId.put(node, node max out)
-          }
-        }
-
-        lines.foreach {
-          line =>
-            line.trim match {
-              case commentPattern(s) => ()
-              case directedEdgePattern(from, to) =>
-                val internalFromId = nodeNumberer.externalToInternal(idReader(from))
-                val internalToId = nodeNumberer.externalToInternal(idReader(to))
-                if (edgesBySource.containsKey(internalFromId)) {
-                  edgesBySource.get(internalFromId) += internalToId
-                } else {
-                  edgesBySource.put(internalFromId, ArrayBuffer(internalToId))
-                }
-                updateNodeMaxOutEdgeId(internalFromId, internalToId)
+        lines.foreach { line1 =>
+          val line = line1.trim
+          if (line.charAt(0) != '#') {
+            val i = line.indexOf(separator)
+            val from = line.substring(0, i)
+            val to = line.substring(i + 1)
+            val internalFromId = nodeNumberer.externalToInternal(idReader(from))
+            val internalToId = nodeNumberer.externalToInternal(idReader(to))
+            if (edgesBySource.containsKey(internalFromId)) {
+              edgesBySource.get(internalFromId) += internalToId
+            } else {
+              edgesBySource.put(internalFromId, ArrayBuffer(internalToId))
             }
+          }
         }
         log.info("Finished reading from file %s...\n", filename)
         Source.fromFile(filename).close()
-        (edgesBySource, nodeMaxOutEdgeId)
+        edgesBySource
       }
 
-      val (edgesBySource, nodeMaxOutEdgeId) = readEdgesBySource()
+      val edgesBySource = readEdgesBySource()
 
       private lazy val edgesIterator = edgesBySource.entrySet().iterator()
 
@@ -123,21 +116,25 @@ class ListOfEdgesGraphReader[T](
 
       override def next(): NodeIdEdgesMaxId = {
 
-        def prepareEdges(buf: ArrayBuffer[Int]) : Array[Int] = {
+        def prepareEdges(buf: ArrayBuffer[Int]) : (Array[Int], Int) = {
           (removeDuplicates, sortNeighbors) match {
-            case (false, false) => buf.toArray
-            case (true, false) => buf.distinct.toArray
-            case (false, true) => buf.sorted.toArray
-            case (true, true) => buf.sorted.distinct.toArray
+            case (false, false) => (buf.toArray, buf.max)
+            case (true, false) =>
+              val b = buf.distinct.toArray
+              (b, b.max)
+            case (false, true) =>
+              val b = buf.sorted.toArray
+              (b, b(b.length - 1))
+            case (true, true) =>
+              val b = buf.sorted.distinct.toArray
+              (b, b(b.length - 1))
           }
         }
 
         try {
           val elem = edgesIterator.next()
-          NodeIdEdgesMaxId(
-            id=elem.getKey,
-            edges=prepareEdges(elem.getValue),
-            maxId=nodeMaxOutEdgeId.get(elem.getKey))
+          val (edges, maxId) = prepareEdges(elem.getValue)
+          NodeIdEdgesMaxId(elem.getKey, edges, maxId)
         } catch {
           case NonFatal(exc) =>
             throw new IOException("Parsing failed near line: %d in %s"
@@ -161,7 +158,10 @@ class ListOfEdgesGraphReader[T](
 
 object ListOfEdgesGraphReader {
   def forIntIds(directory: String, prefixFileNames: String = "",
-                nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity()) =
+      nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity(),
+      removeDuplicates: Boolean = false,
+      sortNeighbors: Boolean = false,
+      separator: Char = ' ') =
     new ListOfEdgesGraphReader[Int](directory, prefixFileNames,
-      new NodeNumberer.IntIdentity(), _.toInt)
+      new NodeNumberer.IntIdentity(), _.toInt, removeDuplicates, sortNeighbors, separator)
 }
