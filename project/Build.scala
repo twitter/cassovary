@@ -6,6 +6,8 @@ import xerial.sbt.Sonatype._
 
 object Cassovary extends Build {
 
+  val CassovaryLibraryVersion = "5.2.1"
+
   val utilVersion = "6.23.0"
   val fastUtilsDependency = "it.unimi.dsi" % "fastutil" % "6.6.0"
 
@@ -16,7 +18,7 @@ object Cassovary extends Build {
         ExclusionRule(organization = "org.mockito"))
 
   val sharedSettings = Seq(
-    version := "5.2.0",
+    version := CassovaryLibraryVersion,
     organization := "com.twitter",
     scalaVersion := "2.11.5",
     crossScalaVersions := Seq("2.10.4", "2.11.5"),

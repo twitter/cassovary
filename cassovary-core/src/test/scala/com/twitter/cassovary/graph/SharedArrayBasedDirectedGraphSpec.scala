@@ -14,7 +14,7 @@
 package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.StoredGraphDir._
-import com.twitter.cassovary.util.NodeNumberer
+import com.twitter.cassovary.util.{ParseString, NodeNumberer}
 import com.twitter.cassovary.util.io.AdjacencyListGraphReader
 import org.scalatest.WordSpec
 
@@ -24,7 +24,7 @@ class SharedArrayBasedDirectedGraphSpec extends WordSpec with GraphBehaviours[No
     "Graph constructed from file" should {
         val dir = "cassovary-core/src/test/resources/graphs"
         val reader = new AdjacencyListGraphReader(
-            dir, "toy_9nodes", new NodeNumberer.IntIdentity(), _.toInt) {
+            dir, "toy_9nodes", new NodeNumberer.IntIdentity(), ParseString.toInt) {
             override def storedGraphDir: StoredGraphDir = StoredGraphDir.BothInOut
         }
         val graph = reader.toSharedArrayBasedDirectedGraph()

@@ -14,6 +14,7 @@
 package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.labels._
+import com.twitter.cassovary.util.ParseString
 import com.twitter.util.NonFatal
 import java.io.IOException
 import scala.io.Source
@@ -26,7 +27,7 @@ import scala.io.Source
  * And that each line has an id followed by a single space followed by int value of label
  * <id> <labelValue>
  */
-class LabelsReader(val directory: String, val collPrefix: String) {
+class LabelsReader(val directory: String, val collPrefix: String, val separator: Char = ' ') {
 
   private class IntLabelReaderMaxId(fileName: String, maxId: Int) {
     def readOneLabel(): Label[Int, Int] = {
@@ -34,14 +35,14 @@ class LabelsReader(val directory: String, val collPrefix: String) {
       val name = fileNameParts(fileNameParts.length - 2)
       val label = new ArrayBasedLabel[Int](name, maxId)
       var lastLineParsed = 0
-      val separator = " "
-      val labelPattern = ("""^(\w+)""" + separator + """(\d+)""").r
       val source = Source.fromFile(fileName)
       source.getLines().foreach { line =>
         lastLineParsed += 1
         try {
-          val labelPattern(id, labelValue) = line
-          label.update(id.toInt, labelValue.toInt)
+          val i = line.indexOf(separator)
+          val id = ParseString.toInt(line, 0, i - 1)
+          val labelValue = ParseString.toInt(line, i + 1, line.length - 1)
+          label.update(id, labelValue)
         } catch {
           case NonFatal(exc) =>
             throw new IOException("Parsing failed near line: %d in %s"

@@ -123,7 +123,7 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
         AdjacencyListGraphReader.forIntIds(path, filename).toArrayBasedDirectedGraph()
       } else {
         val sep = separatorInt().toChar
-        printf("Using Character '%d' (in Int) as separator\n", sep.toInt)
+        printf("Using Character (%d in Int) as separator\n", sep.toInt)
         ListOfEdgesGraphReader.forIntIds(path, filename,
           separator = sep).toArrayBasedDirectedGraph()
       }

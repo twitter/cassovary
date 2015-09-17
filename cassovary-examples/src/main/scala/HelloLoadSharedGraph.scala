@@ -14,7 +14,7 @@
 
 import com.twitter.cassovary.graph.StoredGraphDir
 import com.twitter.cassovary.graph.StoredGraphDir.StoredGraphDir
-import com.twitter.cassovary.util.NodeNumberer
+import com.twitter.cassovary.util.{ParseString, NodeNumberer}
 import com.twitter.cassovary.util.io.AdjacencyListGraphReader
 
 object HelloLoadSharedGraph {
@@ -27,7 +27,7 @@ object HelloLoadSharedGraph {
 
     printf("Trying with BothInOut direction now:\n")
     val reader = new AdjacencyListGraphReader(
-          dir, "toy_9nodes", new NodeNumberer.IntIdentity(), _.toInt) {
+          dir, "toy_9nodes", new NodeNumberer.IntIdentity(), ParseString.toInt) {
           override def storedGraphDir: StoredGraphDir = StoredGraphDir.BothInOut
     }
     val graph2 = reader.toSharedArrayBasedDirectedGraph()

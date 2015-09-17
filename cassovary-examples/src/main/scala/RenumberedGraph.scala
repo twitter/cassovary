@@ -20,7 +20,7 @@
  */
 
 import com.twitter.cassovary.util.io.AdjacencyListGraphReader
-import com.twitter.cassovary.util.{Sampling, SequentialNodeNumberer}
+import com.twitter.cassovary.util.{ParseString, Sampling, SequentialNodeNumberer}
 import com.twitter.cassovary.graph.TestGraphs
 import java.io.{File,PrintWriter}
 import scala.util.Random
@@ -57,7 +57,7 @@ object RenumberedGraph {
 
     // Read graph file into memory with renumbering.
     val readGraph = new AdjacencyListGraphReader[Int](renumGraphDirName, renumGraphFileName,
-      new SequentialNodeNumberer[Int](), _.toInt).toArrayBasedDirectedGraph()
+      new SequentialNodeNumberer[Int](), ParseString.toInt).toArrayBasedDirectedGraph()
 
     val rgComplexity = readGraph.approxStorageComplexity
     printf("A renumbered graph with %d nodes (min id: %d, max id: %d) and %d directed edges has an approx. storage complexity of %d bytes.\n",

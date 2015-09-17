@@ -14,7 +14,7 @@
 package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.{SharedArrayBasedDirectedGraph, NodeIdEdgesMaxId, GraphBehaviours, Node}
-import com.twitter.cassovary.util.SequentialNodeNumberer
+import com.twitter.cassovary.util.{ParseString, SequentialNodeNumberer}
 import org.scalatest.{Matchers, WordSpec}
 
 class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours[Node] with Matchers {
@@ -47,15 +47,15 @@ class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours[Node] wit
   trait GraphWithLongIds {
     val seqNumberer = new SequentialNodeNumberer[Long]()
     val graph = new ListOfEdgesGraphReader(directory, "toy_6nodes_list_LongIds", seqNumberer,
-      idReader = _.toLong, separator = ',').toSharedArrayBasedDirectedGraph()
+      idReader = ParseString.toLong, separator = ',').toSharedArrayBasedDirectedGraph()
   }
 
   class GraphWithStringIds(filename: String, removeDup: Boolean = false, sortNeighbors: Boolean = false) {
     val seqNumberer = new SequentialNodeNumberer[String]()
     val graph = new ListOfEdgesGraphReader(directory, filename, seqNumberer,
-      idReader = identity, removeDuplicates = removeDup, sortNeighbors = sortNeighbors).toSharedArrayBasedDirectedGraph()
+      idReader = ParseString.identity, removeDuplicates = removeDup,
+      sortNeighbors = sortNeighbors).toSharedArrayBasedDirectedGraph()
   }
-
 
   "ListOfEdgesReader" when {
     "using Int ids" should {

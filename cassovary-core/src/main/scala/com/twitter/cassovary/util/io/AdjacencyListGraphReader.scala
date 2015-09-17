@@ -14,7 +14,7 @@
 package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
-import com.twitter.cassovary.util.NodeNumberer
+import com.twitter.cassovary.util.{ParseString, NodeNumberer}
 import com.twitter.util.NonFatal
 import java.io.IOException
 import scala.io.Source
@@ -134,5 +134,5 @@ class AdjacencyListGraphReader[T] (
 object AdjacencyListGraphReader {
   def forIntIds(directory: String, prefixFileNames: String = "",
                 nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity()) =
-    new AdjacencyListGraphReader[Int](directory, prefixFileNames, nodeNumberer, _.toInt)
+    new AdjacencyListGraphReader[Int](directory, prefixFileNames, nodeNumberer, ParseString.toInt)
 }

@@ -13,14 +13,14 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.util.NodeNumberer
+import com.twitter.cassovary.util.{NodeNumberer, ParseString}
 import com.twitter.cassovary.graph.NodeIdEdgesMaxId
 import com.twitter.logging.Logger
-import it.unimi.dsi.fastutil.ints.{Int2IntArrayMap, Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
+import com.twitter.util.NonFatal
+import it.unimi.dsi.fastutil.ints.{Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
+import java.io.IOException
 import scala.io.Source
 import scala.collection.mutable.ArrayBuffer
-import com.twitter.util.NonFatal
-import java.io.IOException
 
 /**
  * Reads in a multi-line list of edges from multiple files in a directory.
@@ -65,7 +65,7 @@ class ListOfEdgesGraphReader[T](
     val directory: String,
     override val prefixFileNames: String,
     val nodeNumberer: NodeNumberer[T],
-    idReader: (String => T),
+    idReader: (String, Int, Int) => T,
     removeDuplicates: Boolean = false,
     sortNeighbors: Boolean = false,
     separator: Char = ' '
@@ -92,10 +92,10 @@ class ListOfEdgesGraphReader[T](
           val line = line1.trim
           if (line.charAt(0) != '#') {
             val i = line.indexOf(separator)
-            val from = line.substring(0, i)
-            val to = line.substring(i + 1)
-            val internalFromId = nodeNumberer.externalToInternal(idReader(from))
-            val internalToId = nodeNumberer.externalToInternal(idReader(to))
+            val source = idReader(line, 0, i - 1)
+            val dest = idReader(line, i + 1, line.length - 1)
+            val internalFromId = nodeNumberer.externalToInternal(source)
+            val internalToId = nodeNumberer.externalToInternal(dest)
             if (edgesBySource.containsKey(internalFromId)) {
               edgesBySource.get(internalFromId) += internalToId
             } else {
@@ -163,5 +163,5 @@ object ListOfEdgesGraphReader {
       sortNeighbors: Boolean = false,
       separator: Char = ' ') =
     new ListOfEdgesGraphReader[Int](directory, prefixFileNames,
-      new NodeNumberer.IntIdentity(), _.toInt, removeDuplicates, sortNeighbors, separator)
+      new NodeNumberer.IntIdentity(), ParseString.toInt, removeDuplicates, sortNeighbors, separator)
 }
