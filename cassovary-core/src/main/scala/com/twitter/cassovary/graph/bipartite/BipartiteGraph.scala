@@ -45,15 +45,14 @@ trait BipartiteNode extends Node {
 /**
  * Represents a node on the LHS of a bipartite graph, with a negative node id,
  * all of its in and out edges point to nodes in the RHS, and thus all edge ids have positive values
- * @param nodeId the original (positive) id value of the node (unique on the LHS),
- *        will be internalized to nodeId * -1
+ * @param id the id value of the node (it should be positive if all the node ids are unique in a graph
+ *           and negative if node ids are unique only on each side)
  * @param inboundNodes original (positive) ids of the nodes on the RHS pointed by in-coming edges
  * @param outboundNodes original (positive) ids of the nodes on the RHS pointed by out-going edges
  */
-class LeftNode(nodeId: Int, val inboundNodes: Seq[Int],
+class LeftNode(val id: Int, val inboundNodes: Seq[Int],
     val outboundNodes: Seq[Int]) extends BipartiteNode {
   def isLeftNode = true
-  val id = - nodeId
 }
 
 /**
@@ -61,27 +60,13 @@ class LeftNode(nodeId: Int, val inboundNodes: Seq[Int],
  * all of its in and out edges point to nodes in the LHS, and thus all edge ids have values
  * of the real id * -1
  * @param id the id of the node (unique on the RHS)
- * @param in original (negative) ids of the nodes on the LHS pointed by in-coming edges
- * @param out original (negative) ids of the nodes on the LHS pointed by out-going edges
+ * @param inboundNodes ids of the nodes on the LHS pointed by in-coming edges
+ * @param outboundNodes ids of the nodes on the LHS pointed by out-going edges
+ * inboundNodes and outboundNodes ids should be positive if all the node idS are unique in a graph
+ * and negative if node ids are unique only on each side.
  */
-class RightNode(val id: Int, in: Array[Int], out: Array[Int]) extends BipartiteNode {
+class RightNode(val id: Int, val inboundNodes: Seq[Int], val outboundNodes: Seq[Int]) extends BipartiteNode {
   def isLeftNode = false
-  val inboundNodes = {
-    for (i <- 0 until in.length) {
-      if (in(i) == 0) throw new BipartiteGraphException(
-          "Edge value cannot be 0, node %d's in-edge at edge index %d".format(id, i))
-      in(i) = - in(i)
-    }
-    in.toSeq
-  }
-  val outboundNodes = {
-    for (i <- 0 until out.length) {
-      if (out(i) == 0) throw new BipartiteGraphException(
-          "Edge value cannot be 0, node %d's out edge at edge index %d".format(id, i))
-      out(i) = - out(i)
-    }
-    out.toSeq
-  }
 }
 
 case class BipartiteSide(nodes: Array[BipartiteNode], numOfNodes: Int, numOfOutEdges: Int)
@@ -110,21 +95,60 @@ case class BipartiteSide(nodes: Array[BipartiteNode], numOfNodes: Int, numOfOutE
  * semantic meaning between the left and right sides; but if the graph is of direction
  * BipartiteBoth, then it could carry two semantic
  * meanings in one graph (e.g. list-to-user membership and user-to-list followship).
- *
+ * @param nodeIdsUnique true if node ids are unique in the whole graph
+ *                      and false if unique only on each side (LHS and RHS)
+ * If the node ids are unique only on each side, then the Left Nodes ids are negated,
+ * so that ids are unique in the whole graph. If efficiency is desired, it is best to have node ids
+ * unique in the whole graph.
  */
-class BipartiteGraph(val leftNodes: Array[BipartiteNode], val leftNodeCount: Int,
-                     val leftOutEdgeCount: Long, val rightNodes: Array[BipartiteNode],
+class BipartiteGraph(leftBipartiteNodes: Array[BipartiteNode], val leftNodeCount: Int,
+                     val leftOutEdgeCount: Long, rightBipartiteNodes: Array[BipartiteNode],
                      val rightNodeCount: Int, val rightOutEdgeCount: Long,
-                     val bipartiteGraphDir: BipartiteGraphDir.BipartiteGraphDir) extends Graph[BipartiteNode] {
+                     val bipartiteGraphDir: BipartiteGraphDir.BipartiteGraphDir,
+                     val nodeIdsUnique: Boolean = true) extends Graph[BipartiteNode] {
 
   def this(leftSide: BipartiteSide, rightSide: BipartiteSide,
       bipartiteGraphDir: BipartiteGraphDir.BipartiteGraphDir) =
     this(leftSide.nodes, leftSide.numOfNodes, leftSide.numOfOutEdges,
          rightSide.nodes, rightSide.numOfNodes, rightSide.numOfOutEdges,
-         bipartiteGraphDir)
+         bipartiteGraphDir, true)
+
+  def this(leftSide: BipartiteSide, rightSide: BipartiteSide,
+           bipartiteGraphDir: BipartiteGraphDir.BipartiteGraphDir,
+           nodeIdsUnique: Boolean) =
+     this(leftSide.nodes, leftSide.numOfNodes, leftSide.numOfOutEdges,
+       rightSide.nodes, rightSide.numOfNodes, rightSide.numOfOutEdges,
+       bipartiteGraphDir, nodeIdsUnique)
 
   private val log = Logger.get
   val storedGraphDir =  StoredGraphDir.Bipartite
+
+  val leftNodes = {
+    if (!nodeIdsUnique)
+      leftBipartiteNodes map { node =>
+        if (node != null) new LeftNode(-node.id, node.inboundNodes(), node.outboundNodes())
+        else null
+      }
+    else leftBipartiteNodes
+  }
+  
+  val rightNodes = {
+    if (!nodeIdsUnique)
+      rightBipartiteNodes map { node =>
+        if (node != null) {
+          for (i <- 0 until node.inboundNodes().length) {
+            if (node.inboundNodes()(i) == 0) throw new BipartiteGraphException(
+              "Edge value cannot be 0, node %d's in-edge at edge index %d".format(node.id, i))
+          }
+          for (i <- 0 until node.outboundNodes().length) {
+            if (node.outboundNodes()(i) == 0) throw new BipartiteGraphException(
+              "Edge value cannot be 0, node %d's out edge at edge index %d".format(node.id, i))
+          }
+          new RightNode(node.id, node.inboundNodes().map(x => -x), node.outboundNodes().map(x => -x))
+        } else null
+      }
+    else rightBipartiteNodes
+  }
 
   /**
    * Checks for a given node, is a graph direction is stored.
@@ -151,20 +175,40 @@ class BipartiteGraph(val leftNodes: Array[BipartiteNode], val leftNodeCount: Int
   def getNodeById(id: Int): Option[BipartiteNode] = {
     def isLeftNodeId: Boolean = id < 0
 
-    if (id == 0) {
-      return None // id 0 is not allowed in bipartite graph
-    } else if (isLeftNodeId) {
-      //invert nodeId to index
-      val leftOriginalId = - id
-      if (leftOriginalId < leftNodes.length) {
-        if (leftNodes(leftOriginalId) != null) Some(leftNodes(leftOriginalId))
-        else None
-      } else None
+    if (!nodeIdsUnique) {
+      if (id == 0) {
+        return None // id 0 is not allowed when nodes are not unique in bipartite graph
+      } else if (isLeftNodeId) {
+        //invert nodeId to index
+        val leftOriginalId = -id
+        returnNodeIfPresentInGraph(leftOriginalId, Some(false))
+      } else {
+        returnNodeIfPresentInGraph(id, Some(true))
+      }
     } else {
-      if (id < rightNodes.length) {
-        if (rightNodes(id) != null) Some(rightNodes(id))
+      returnNodeIfPresentInGraph(id)
+    }
+  }
+
+  /**
+   * Return Node if it is Present in graph
+   * @param id
+   * @param rightSide true if node is present in RHS, false if LHS and none if not sure yet
+   */
+  private def returnNodeIfPresentInGraph(id: Int, rightSide: Option[Boolean] = None): Option[BipartiteNode] = {
+    rightSide match {
+      case Some(true) =>
+        if (id < rightNodes.length && rightNodes(id) != null) Some(rightNodes(id))
         else None
-      } else None
+
+      case Some(false) =>
+        if (id < leftNodes.length && leftNodes(id) != null) Some(leftNodes(id))
+        else None
+
+      case None =>
+        if (id < leftNodes.length && leftNodes(id) != null) Some(leftNodes(id))
+        else if (id < rightNodes.length && rightNodes(id) != null) Some(rightNodes(id))
+        else None
     }
   }
 }
