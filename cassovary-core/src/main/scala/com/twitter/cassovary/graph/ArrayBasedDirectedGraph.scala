@@ -16,14 +16,13 @@ package com.twitter.cassovary.graph
 import com.google.common.annotations.VisibleForTesting
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.graph.node._
-import com.twitter.cassovary.util.{ArrayBackedSet, SparseOrArrayBasedInt2ObjectMap, BoundedFuturePool}
+import com.twitter.cassovary.util._
 import com.twitter.finagle.stats.DefaultStatsReceiver
 import com.twitter.logging.Logger
 import com.twitter.util.Future.when
 import com.twitter.util.{Await, Future, FuturePool}
 
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable
 
@@ -64,15 +63,20 @@ object NeighborsSortingStrategy extends Enumeration {
 object ArrayBasedDirectedGraph {
   import NeighborsSortingStrategy._
 
+  /**
+   * @param forceSparseRepr if Some(true), the code saves storage at the expense of speed
+   *                        by using ConcurrentHashMap instead of Array. If Some(false), chooses
+   *                        Array instead. If None, the code calculates whether the graph
+   *                        is sparse based on the number of nodes and maximum node id.
+   * @return
+   */
   def apply(iteratorSeq: Seq[Iterable[NodeIdEdgesMaxId]],
-            parallelismLimit: Int,
-            storedGraphDir: StoredGraphDir,
-            neighborsSortingStrategy: NeighborsSortingStrategy = LeaveUnsorted):
-  ArrayBasedDirectedGraph = {
+      parallelismLimit: Int,
+      storedGraphDir: StoredGraphDir,
+      neighborsSortingStrategy: NeighborsSortingStrategy = LeaveUnsorted,
+      forceSparseRepr: Option[Boolean] = None): ArrayBasedDirectedGraph = {
     val constructor = new ArrayBasedDirectedGraphConstructor(iteratorSeq,
-                                                             parallelismLimit,
-                                                             storedGraphDir,
-                                                             neighborsSortingStrategy)
+      parallelismLimit, storedGraphDir, neighborsSortingStrategy, forceSparseRepr)
     constructor()
   }
 
@@ -83,38 +87,33 @@ object ArrayBasedDirectedGraph {
     apply(Seq(iterable), 1, storedGraphDir, neighborsSortingStrategy)
   }
 
-  // a private convenience class encapsulating a representation of the collection of nodes
-  private class NodeCollection(val maxNodeId: Int, numNodesEstimate: Int, val numEdges: Long) {
-    private val table = SparseOrArrayBasedInt2ObjectMap[Node](isSparse = false, Some(maxNodeId))
-    private var inEdgeSizes: Array[AtomicInteger] = _
+  // A private convenience class encapsulating a concurrent representation of the collection of nodes
+  private class NodeCollection(forceSparsity: Option[Boolean],
+      val maxNodeId: Int, numNodesEstimate: Int, val numEdges: Long) {
+
+    val considerGraphSparse: Boolean = forceSparsity getOrElse {
+      // sparse if number of nodes is much less than maxNodeId, AND
+      // number of edges is also less than maxNodeId. If number of edges
+      // were similar to or greater than maxNodeId, then the extra overhead of allocating
+      // an array of size maxNodeId is not too much relative to the storage occupied by
+      // the edges themselves
+      (numNodesEstimate * 10 < maxNodeId) && (numEdges < maxNodeId)
+    }
+
+    private val table = Int2ObjectMap[Node](isSparse = considerGraphSparse,
+      Some(numNodesEstimate), Some(maxNodeId))
 
     def nodeIdsIterator = table.keysIterator
     def nodesIterator = table.valuesIterator
 
     def apply(id: Int) = table(id)
     def get(id: Int) = table.get(id)
+    def contains(id: Int) = table.contains(id)
+
     def add(node: Node): Unit = {
       val id = node.id
       assert(table.get(id) == None, s"Duplicate node $id detected")
-      table.update(id, node)
-    }
-
-    def addInEdge(dest: Int, source: Int): Unit = {
-      val inEdgeIndex = inEdgeSizes(dest).getAndIncrement
-      table(dest).asInstanceOf[FillingInEdgesBiDirectionalNode].inEdges(inEdgeIndex) = source
-    }
-
-    def createAtomicInts(): Unit = {
-      inEdgeSizes = Array.tabulate[AtomicInteger](maxNodeId + 1) {
-        i => if (table.contains(i)) new AtomicInteger() else null
-      }
-    }
-
-    def incEdgeSize(id: Int) { inEdgeSizes(id).incrementAndGet() }
-    def getAndResetEdgeSize(id: Int) = {
-      val sz = inEdgeSizes(id).intValue()
-      if (sz > 0) inEdgeSizes(id).set(0)
-      sz
+      table.put(id, node)
     }
 
     def numNodes = table.size
@@ -124,11 +123,12 @@ object ArrayBasedDirectedGraph {
    * Constructs array based directed graph
    */
   private class ArrayBasedDirectedGraphConstructor(
-    iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]],
-    parallelismLimit: Int,
-    storedGraphDir: StoredGraphDir,
-    neighborsSortingStrategy: NeighborsSortingStrategy
-  ) {
+      iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]],
+      parallelismLimit: Int,
+      storedGraphDir: StoredGraphDir,
+      neighborsSortingStrategy: NeighborsSortingStrategy,
+      forceSparseRepr: Option[Boolean]
+      ) {
     private lazy val log = Logger.get()
     private val statsReceiver = DefaultStatsReceiver
 
@@ -237,8 +237,8 @@ object ArrayBasedDirectedGraph {
      */
     private def createExplicitlyGivenNodes(graphInfo: GraphInfo[Seq[Node]]): Future[NodeCollection] = {
       log.info("Starting building graph")
-      val nodeCollection = new NodeCollection(graphInfo.maxNodeId, graphInfo.numNodes,
-        graphInfo.numEdges)
+      val nodeCollection = new NodeCollection(forceSparseRepr, graphInfo.maxNodeId,
+        graphInfo.numNodes, graphInfo.numEdges)
       log.debug("in markStoredNodes")
       statsReceiver.time("graph_load_mark_ids_of_stored_nodes") {
         Future.join(
@@ -295,16 +295,32 @@ object ArrayBasedDirectedGraph {
     Future[Unit] = {
       log.debug("calculating in edges sizes")
 
+      val inEdgeSizes = Int2ObjectMap[AtomicInteger](nodeColl.considerGraphSparse,
+        Some(nodeColl.numNodes), Some(nodeColl.maxNodeId), isConcurrent = false)
+      nodeColl.nodeIdsIterator foreach { i => inEdgeSizes.update(i, new AtomicInteger()) }
+
+      def addInEdge(dest: Int, source: Int): Unit = {
+        val inEdgeIndex = inEdgeSizes(dest).getAndIncrement
+        nodeColl(dest).asInstanceOf[FillingInEdgesBiDirectionalNode].inEdges(inEdgeIndex) = source
+      }
+
+      def incEdgeSize(id: Int) { inEdgeSizes(id).incrementAndGet() }
+
+      def getAndResetEdgeSize(id: Int) = {
+        val sz = inEdgeSizes(id).intValue()
+        if (sz > 0) inEdgeSizes(id).set(0)
+        sz
+      }
+
        // Calculates sizes of incoming edges arrays.
       def findInEdgesSizes(nodesOutEdges: Seq[Seq[Node]]): Future[Unit] = {
         statsReceiver.time("graph_load_find_in_edge_sizes") {
-          nodeColl.createAtomicInts()
 
           val futures = nodesOutEdges map {
             nodes => futurePool {
               nodes foreach {
                 node => node.outboundNodes foreach { outEdge =>
-                  nodeColl.incEdgeSize(outEdge)
+                  incEdgeSize(outEdge)
                 }
               }
             }
@@ -322,7 +338,7 @@ object ArrayBasedDirectedGraph {
               nodes foreach { node =>
                // reset inEdgesSizes, and use it as index pointer of
                // the current insertion place when adding in edges
-                val edgeSize = nodeColl.getAndResetEdgeSize(node.id)
+                val edgeSize = getAndResetEdgeSize(node.id)
                 if (edgeSize > 0) {
                   node.asInstanceOf[FillingInEdgesBiDirectionalNode].createInEdges(edgeSize)
                 }
@@ -340,7 +356,7 @@ object ArrayBasedDirectedGraph {
             (nodes: Seq[Node]) => futurePool {
               nodes foreach { node =>
                 node.outboundNodes foreach { outEdge =>
-                  nodeColl.addInEdge(outEdge, node.id)
+                  addInEdge(outEdge, node.id)
                 }
               }
             }
