@@ -112,4 +112,54 @@ class BipartiteGraphSpec extends WordSpec with Matchers {
       rightInNbrSet shouldEqual Set(-2, -4, -5)
     }
   }
+
+  "Bipartite Graph Unique Node Ids Input" should {
+    val graph = TestGraphs.bipartiteGraphWithUniqueNodeIds
+    "have loaded correct number of nodes and edges" in {
+      graph.leftNodeCount shouldEqual 3
+      graph.leftOutEdgeCount shouldEqual 4
+      graph.rightNodeCount shouldEqual 3
+      graph.rightOutEdgeCount shouldEqual 5
+    }
+
+    "have the right input to output node mapping" in {
+      val leftInNbrSet = mutable.Set[Int]()
+      val leftOutNbrSet = mutable.Set[Int]()
+      Array(2, 4, 6) foreach { id =>
+        val node = graph.getNodeById(id).get
+        node.isLeftNode shouldEqual true
+        node.neighborIds(GraphDir.OutDir) foreach { nbrId =>
+          val nbrNode = graph.getNodeById(nbrId).get
+          nbrNode.isLeftNode shouldEqual false
+          leftOutNbrSet += nbrNode.id
+        }
+        node.neighborIds(GraphDir.InDir) foreach { nbrId =>
+          val nbrNode = graph.getNodeById(nbrId).get
+          nbrNode.isLeftNode shouldEqual false
+          leftInNbrSet += nbrNode.id
+        }
+      }
+      leftInNbrSet shouldEqual Set(1, 3, 5)
+      leftOutNbrSet shouldEqual Set(1, 3, 5)
+
+      val rightInNbrSet = mutable.Set[Int]()
+      val rightOutNbrSet = mutable.Set[Int]()
+      Array(1, 3, 5) foreach { id =>
+        val node = graph.getNodeById(id).get
+        node.isLeftNode shouldEqual false
+        node.neighborIds(GraphDir.OutDir) foreach { nbrId =>
+          val nbrNode = graph.getNodeById(nbrId).get
+          nbrNode.isLeftNode shouldEqual true
+          rightOutNbrSet += nbrNode.id
+        }
+        node.neighborIds(GraphDir.InDir) foreach { nbrId =>
+          val nbrNode = graph.getNodeById(nbrId).get
+          nbrNode.isLeftNode shouldEqual true
+          rightInNbrSet += nbrNode.id
+        }
+      }
+      rightInNbrSet shouldEqual Set(2, 4, 6)
+      rightOutNbrSet shouldEqual Set(2, 4, 6)
+    }
+  }
 }

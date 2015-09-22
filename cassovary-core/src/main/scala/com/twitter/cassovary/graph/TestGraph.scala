@@ -161,56 +161,24 @@ object TestGraphs {
    */
 
     val leftNodes = new Array[BipartiteNode](6)
-    var inBounds: Array[Int] = Array()
-    var outBounds: Array[Int] = Array()
-    leftNodes(1) = new LeftNode(1, inBounds, outBounds)
-
-    inBounds = Array()
-    outBounds = Array(5, 10)
-    leftNodes(2) = new LeftNode(2, inBounds, outBounds)
-
-    inBounds = Array()
-    outBounds = Array()
-    leftNodes(3) = new LeftNode(3, inBounds, outBounds)
-
-
-    inBounds = Array()
-    outBounds = Array(14)
-    leftNodes(4) = new LeftNode(4, inBounds, outBounds)
-
-    inBounds = Array()
-    outBounds = Array(5, 10, 8)
-    leftNodes(5) = new LeftNode(5, inBounds, outBounds)
+    leftNodes(1) = new LeftNode(1, Array.empty[Int], Array.empty[Int])
+    leftNodes(2) = new LeftNode(2, Array.empty[Int], Array(5, 10))
+    leftNodes(3) = new LeftNode(3, Array.empty[Int], Array.empty[Int])
+    leftNodes(4) = new LeftNode(4, Array.empty[Int], Array(14))
+    leftNodes(5) = new LeftNode(5, Array.empty[Int], Array(5, 10, 8))
 
     val rightNodes = new Array[BipartiteNode](124)
-    inBounds = Array(4)
-    outBounds = Array()
-    rightNodes(14) = new RightNode(14, inBounds, outBounds)
-
-    inBounds = Array()
-    outBounds = Array()
-    rightNodes(4) = new RightNode(4, inBounds, outBounds)
-
-    inBounds = Array(2, 5)
-    outBounds = Array()
-    rightNodes(5) = new RightNode(5, inBounds, outBounds)
-
-    inBounds = Array(5)
-    outBounds = Array()
-    rightNodes(8) = new RightNode(8, inBounds, outBounds)
-
-    inBounds = Array(2, 5)
-    outBounds = Array()
-    rightNodes(10) = new RightNode(10, inBounds, outBounds)
-
-    inBounds = Array()
-    outBounds = Array()
-    rightNodes(123) = new RightNode(123, inBounds, outBounds)
+    rightNodes(14) = new RightNode(14, Array(4), Array.empty[Int])
+    rightNodes(4) = new RightNode(4, Array.empty[Int], Array.empty[Int])
+    rightNodes(5) = new RightNode(5, Array(2, 5), Array.empty[Int])
+    rightNodes(8) = new RightNode(8, Array(5), Array.empty[Int])
+    rightNodes(10) = new RightNode(10, Array(2, 5), Array.empty[Int])
+    rightNodes(123) = new RightNode(123, Array.empty[Int], Array.empty[Int])
 
     val leftSide = BipartiteSide(leftNodes, 5, 6)
     val rightSide = BipartiteSide(rightNodes, 6, 0)
 
-    new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.LeftToRight)
+    new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.LeftToRight, false)
   }
 
   def bipartiteGraphDoubleSide = {
@@ -225,57 +193,42 @@ object TestGraphs {
    */
 
     val leftNodes = new Array[BipartiteNode](6)
-
-    var inBounds: Array[Int] = Array(4, 5, 123, 10)
-    var outBounds: Array[Int] = Array()
-    leftNodes(1) = new LeftNode(1, inBounds, outBounds)
-
-    inBounds = Array()
-    outBounds = Array(5, 10)
-    leftNodes(2) = new LeftNode(2, inBounds, outBounds)
-
-    inBounds = Array()
-    outBounds = Array()
-    leftNodes(3) = new LeftNode(3, inBounds, outBounds)
-
-
-    inBounds = Array(14)
-    outBounds = Array(14)
-    leftNodes(4) = new LeftNode(4, inBounds, outBounds)
-
-    inBounds = Array(4, 10)
-    outBounds = Array(5, 10, 8)
-    leftNodes(5) = new LeftNode(5, inBounds, outBounds)
+    leftNodes(1) = new LeftNode(1, Array(4, 5, 123, 10), Array.empty[Int])
+    leftNodes(2) = new LeftNode(2, Array.empty[Int], Array(5, 10))
+    leftNodes(3) = new LeftNode(3, Array.empty[Int], Array.empty[Int])
+    leftNodes(4) = new LeftNode(4, Array(14), Array(14))
+    leftNodes(5) = new LeftNode(5, Array(4, 10), Array(5, 10, 8))
 
     val rightNodes = new Array[BipartiteNode](124)
-    inBounds = Array(4)
-    outBounds = Array(4)
-    rightNodes(14) = new RightNode(14, inBounds, outBounds)
-
-    inBounds = Array()
-    outBounds = Array(1, 5)
-    rightNodes(4) = new RightNode(4, inBounds, outBounds)
-
-    inBounds = Array(2, 5)
-    outBounds = Array(1)
-    rightNodes(5) = new RightNode(5, inBounds, outBounds)
-
-    inBounds = Array(5)
-    outBounds = Array()
-    rightNodes(8) = new RightNode(8, inBounds, outBounds)
-
-    inBounds = Array(2, 5)
-    outBounds = Array(1, 5)
-    rightNodes(10) = new RightNode(10, inBounds, outBounds)
-
-    inBounds = Array()
-    outBounds = Array(1)
-    rightNodes(123) = new RightNode(123, inBounds, outBounds)
+    rightNodes(14) = new RightNode(14, Array(4), Array(4))
+    rightNodes(4) = new RightNode(4, Array.empty[Int], Array(1, 5))
+    rightNodes(5) = new RightNode(5, Array(2, 5), Array(1))
+    rightNodes(8) = new RightNode(8, Array(5), Array.empty[Int])
+    rightNodes(10) = new RightNode(10, Array(2, 5), Array(1, 5))
+    rightNodes(123) = new RightNode(123, Array.empty[Int], Array(1))
 
     val leftSide = BipartiteSide(leftNodes, 5, 6)
     val rightSide = BipartiteSide(rightNodes, 6, 7)
 
-    new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.Both)
+    new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.Both, false)
+  }
+
+  def bipartiteGraphWithUniqueNodeIds = {
+
+    val leftNodes = new Array[BipartiteNode](7)
+    leftNodes(2) = new LeftNode(2, Array(1, 3, 5), Array(5))
+    leftNodes(4) = new LeftNode(4, Array(3), Array(1))
+    leftNodes(6) = new LeftNode(6, Array(5), Array(1, 3))
+
+    val rightNodes = new Array[BipartiteNode](6)
+    rightNodes(1) = new RightNode(1, Array(4, 6), Array(2))
+    rightNodes(3) = new RightNode(3, Array(6), Array(2, 4))
+    rightNodes(5) = new RightNode(5, Array(2), Array(2, 6))
+
+    val leftSide = BipartiteSide(leftNodes, 3, 4)
+    val rightSide = BipartiteSide(rightNodes, 3, 5)
+
+    new BipartiteGraph(leftSide, rightSide, BipartiteGraphDir.LeftToRight, true)
   }
 
   // a complete graph is where each node follows every other node
