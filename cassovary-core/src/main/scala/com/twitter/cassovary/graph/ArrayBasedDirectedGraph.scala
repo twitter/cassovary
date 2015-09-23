@@ -100,7 +100,7 @@ object ArrayBasedDirectedGraph {
       (numNodesEstimate * 10 < maxNodeId) && (numEdges < maxNodeId)
     }
 
-    private val table = Int2ObjectMap[Node](isSparse = considerGraphSparse,
+    private val table = Int2ObjectMap[Node](considerGraphSparse,
       Some(numNodesEstimate), Some(maxNodeId))
 
     def nodeIdsIterator = table.keysIterator
