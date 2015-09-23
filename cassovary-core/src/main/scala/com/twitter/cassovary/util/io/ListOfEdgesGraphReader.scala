@@ -13,8 +13,10 @@
  */
 package com.twitter.cassovary.util.io
 
+import com.twitter.cassovary.graph.StoredGraphDir
+import com.twitter.cassovary.graph.StoredGraphDir.StoredGraphDir
 import com.twitter.cassovary.util.{NodeNumberer, ParseString}
-import com.twitter.cassovary.graph.NodeIdEdgesMaxId
+import com.twitter.cassovary.graph.{StoredGraphDir, NodeIdEdgesMaxId}
 import com.twitter.logging.Logger
 import com.twitter.util.NonFatal
 import it.unimi.dsi.fastutil.ints.{Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
@@ -161,7 +163,11 @@ object ListOfEdgesGraphReader {
       nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity(),
       removeDuplicates: Boolean = false,
       sortNeighbors: Boolean = false,
-      separator: Char = ' ') =
+      separator: Char = ' ',
+      graphDir: StoredGraphDir = StoredGraphDir.OnlyOut) =
     new ListOfEdgesGraphReader[Int](directory, prefixFileNames,
-      new NodeNumberer.IntIdentity(), ParseString.toInt, removeDuplicates, sortNeighbors, separator)
+      new NodeNumberer.IntIdentity(), ParseString.toInt, removeDuplicates,
+      sortNeighbors, separator) {
+      override def storedGraphDir: StoredGraphDir = graphDir
+    }
 }

@@ -13,7 +13,8 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.NodeIdEdgesMaxId
+import com.twitter.cassovary.graph.{StoredGraphDir, NodeIdEdgesMaxId}
+import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.{ParseString, NodeNumberer}
 import com.twitter.util.NonFatal
 import java.io.IOException
@@ -133,6 +134,9 @@ class AdjacencyListGraphReader[T] (
 
 object AdjacencyListGraphReader {
   def forIntIds(directory: String, prefixFileNames: String = "",
-                nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity()) =
-    new AdjacencyListGraphReader[Int](directory, prefixFileNames, nodeNumberer, ParseString.toInt)
+      nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity(),
+      graphDir: StoredGraphDir = StoredGraphDir.OnlyOut) =
+    new AdjacencyListGraphReader[Int](directory, prefixFileNames, nodeNumberer, ParseString.toInt) {
+      override def storedGraphDir: StoredGraphDir = graphDir
+    }
 }
