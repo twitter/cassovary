@@ -1,16 +1,3 @@
-/*
- * Copyright 2014 Twitter, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
- * file except in compliance with the License. You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed
- * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
- */
 package com.twitter.cassovary.graph
 
 import com.google.common.annotations.VisibleForTesting
@@ -89,7 +76,7 @@ object ArrayBasedDirectedGraph {
 
   // A private convenience class encapsulating a concurrent representation of the collection of nodes
   private class NodeCollection(forceSparsity: Option[Boolean],
-      val maxNodeId: Int, numNodesEstimate: Int, val numEdges: Long) {
+      val maxNodeId: Int, val numNodes: Int, val numEdges: Long) {
 
     val considerGraphSparse: Boolean = forceSparsity getOrElse {
       // sparse if number of nodes is much less than maxNodeId, AND
@@ -97,11 +84,11 @@ object ArrayBasedDirectedGraph {
       // were similar to or greater than maxNodeId, then the extra overhead of allocating
       // an array of size maxNodeId is not too much relative to the storage occupied by
       // the edges themselves
-      (numNodesEstimate * 10 < maxNodeId) && (numEdges < maxNodeId)
+      (numNodes * 10 < maxNodeId) && (numEdges < maxNodeId)
     }
 
-    private val table = Int2ObjectMap[Node](considerGraphSparse,
-      Some(numNodesEstimate), Some(maxNodeId))
+    private val table = Int2ObjectMap[Node](considerGraphSparse, Some(numNodes), Some(maxNodeId),
+      isConcurrent = false)
 
     def nodeIdsIterator = table.keysIterator
     def nodesIterator = table.valuesIterator
@@ -116,7 +103,6 @@ object ArrayBasedDirectedGraph {
       table.put(id, node)
     }
 
-    def numNodes = table.size
   }
 
   /**
@@ -162,8 +148,9 @@ object ArrayBasedDirectedGraph {
 
       val result: Future[ArrayBasedDirectedGraph] = for {
         graphInfo <- fillOutEdges(iterableSeq)
-        nodeCollection <- createExplicitlyGivenNodes(graphInfo)
-        nodesWithNoOutEdges <- createEmptyNodes(nodeCollection, graphInfo)
+        allNodeIdsSet <- markEmptyNodes(graphInfo)
+        nodeCollection <- createExplicitlyGivenNodes(graphInfo, allNodeIdsSet.size)
+        nodesWithNoOutEdges <- createEmptyNodes(nodeCollection, allNodeIdsSet)
         _ <- when(storedGraphDir == StoredGraphDir.BothInOut) {
           fillMissingInEdges(nodeCollection, graphInfo.nodesOutEdges, nodesWithNoOutEdges)
         }
@@ -232,24 +219,44 @@ object ArrayBasedDirectedGraph {
     }
 
     /**
-     * Create nodes that were explicitly given in input files.
-     * @return a representation of the collection of nodes
+     * Mark those node ids that have any incoming edge to help determine which nodes have
+     * some incoming but no outgoing edges. We are calling these nodes "empty nodes".
      */
-    private def createExplicitlyGivenNodes(graphInfo: GraphInfo[Seq[Node]]): Future[NodeCollection] = {
-      log.info("Starting building graph")
-      val nodeCollection = new NodeCollection(forceSparseRepr, graphInfo.maxNodeId,
-        graphInfo.numNodes, graphInfo.numEdges)
-      log.debug("in markStoredNodes")
-      statsReceiver.time("graph_load_mark_ids_of_stored_nodes") {
+    private def markEmptyNodes(graphInfo: GraphInfo[Seq[Node]]): Future[ArrayBackedSet] = {
+      log.debug("in markEmptyNodes")
+      val allNodeIdsSet = new ArrayBackedSet(graphInfo.maxNodeId)
+      statsReceiver.time("graph_load_mark_create_empty_nodes") {
         Future.join(
           graphInfo.nodesOutEdges.map(nodes =>
             futurePool {
               nodes foreach { node =>
-                nodeCollection.add(node)
+                allNodeIdsSet.add(node.id)
+                val neighborIds = storedGraphDir match {
+                  case StoredGraphDir.OnlyIn => node.inboundNodes()
+                  case _ => node.outboundNodes()
+                }
+                neighborIds foreach { i => allNodeIdsSet.add(i) }
               }
             })
-        ).map(_ => nodeCollection)
+        ) map { _ => allNodeIdsSet}
       }
+    }
+
+    /**
+     * Create nodes that were explicitly given in input files. Note that
+     * we are doing this serially in one thread deliberately to not
+     * have to create a concurrent representation in nodeCollection.
+     * @return a representation of the collection of nodes
+     */
+    private def createExplicitlyGivenNodes(graphInfo: GraphInfo[Seq[Node]],
+        numNodesTotal: Int): Future[NodeCollection] = futurePool {
+      log.debug("in createExplicitlyGivenNodes")
+      val nodeCollection = new NodeCollection(forceSparseRepr, graphInfo.maxNodeId,
+        numNodesTotal, graphInfo.numEdges)
+      graphInfo.nodesOutEdges.map { nodes =>
+        nodes foreach { node => nodeCollection.add(node) }
+      }
+      nodeCollection
     }
 
     /**
@@ -258,36 +265,19 @@ object ArrayBasedDirectedGraph {
      * @return Seq of these empty nodes
      */
     private def createEmptyNodes(nodeColl: NodeCollection,
-        graphInfo: GraphInfo[Seq[Node]]): Future[Seq[Node]] = {
-      log.debug("in createEmptyNodes")
-      val emptyNodeIds = new ArrayBackedSet(graphInfo.maxNodeId)
-      statsReceiver.time("graph_load_mark_create_empty_nodes") {
-        Future.join(
-          graphInfo.nodesOutEdges.map(nodes =>
-            futurePool {
-              nodes foreach { node =>
-                val neighborIds = storedGraphDir match {
-                  case StoredGraphDir.OnlyIn => node.inboundNodes()
-                  case _ => node.outboundNodes()
-                }
-                neighborIds foreach { i => emptyNodeIds.add(i) }
-              }
-            })
-        ) map { _ =>
-          /* now create these nodes */
-          val nodesWithNoOutEdges = new mutable.ArrayBuffer[Node]()
-          emptyNodeIds.iterator foreach { i =>
-            if (!nodeColl.get(i).isDefined) {
-              val node = ArrayBasedDirectedNode(i, emptyArray, storedGraphDir,
-                neighborsSortingStrategy != LeaveUnsorted)
-              nodeColl.add(node)
-              if (storedGraphDir == StoredGraphDir.BothInOut)
-                nodesWithNoOutEdges += node
-            }
-          }
-          nodesWithNoOutEdges
+        allNodeIdsSet: ArrayBackedSet): Future[Seq[Node]] = futurePool {
+      /* now create these empty nodes */
+      val nodesWithNoOutEdges = new mutable.ArrayBuffer[Node]()
+      allNodeIdsSet.iterator foreach { i =>
+        if (!nodeColl.get(i).isDefined) {
+          val node = ArrayBasedDirectedNode(i, emptyArray, storedGraphDir,
+            neighborsSortingStrategy != LeaveUnsorted)
+          nodeColl.add(node)
+          if (storedGraphDir == StoredGraphDir.BothInOut)
+            nodesWithNoOutEdges += node
         }
       }
+      nodesWithNoOutEdges
     }
 
     private def fillMissingInEdges(nodeColl: NodeCollection, nodesOutEdges: Seq[Seq[Node]],

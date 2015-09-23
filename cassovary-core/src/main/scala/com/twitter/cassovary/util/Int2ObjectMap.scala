@@ -10,7 +10,7 @@ import scala.reflect.ClassTag
 object Int2ObjectMap {
 
   def apply[T : ClassTag](isSparse: Boolean, numKeysEstimate: Option[Int],
-      maxId: Option[Int], isConcurrent: Boolean = true): mutable.Map[Int, T] = {
+      maxId: Option[Int], isConcurrent: Boolean): mutable.Map[Int, T] = {
     if (isSparse) {
       if (isConcurrent) {
         numKeysEstimate match {
