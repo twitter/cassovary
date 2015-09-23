@@ -27,11 +27,12 @@ object HelloLoadGraph {
   def main(args: Array[String]) {
     val dir = "../cassovary-core/src/test/resources/graphs"
     val graph = AdjacencyListGraphReader.forIntIds(dir, "toy_6nodes_adj").toArrayBasedDirectedGraph()
-    graph.nodeLabels = new LabelsReader(dir, "toy_6nodelabels").read(graph.maxNodeId)
+    graph.nodeLabels = new LabelsReader(dir, "toy_6nodelabels").read(Some(false),
+      Some(graph.maxNodeId))
 
     printf("\nHello Graph!\n\tA graph loaded from two adjacency list files " +
         "with %s nodes has %s directed edges.\n", graph.nodeCount, graph.edgeCount)
-    printf("\tLabels of node 10 are label1(%d) and label2(%d)\n",
-      graph.labelOfNode[Int](10, "label1").get, graph.labelOfNode[Int](10, "label2").get)
+    printf("\tLabels of node 10 are label1=%d and label2=%s\n",
+      graph.labelOfNode[Int](10, "label1").get, graph.labelOfNode[String](10, "label2").get)
   }
 }

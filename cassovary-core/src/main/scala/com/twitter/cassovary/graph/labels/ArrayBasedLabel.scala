@@ -29,10 +29,13 @@ trait HasMaxId {
  * @param name  name of the label
  * @param maxId maximum value of the id
  * @tparam L    type of the label value
+ *     ClassTag is required to be able to build an array of type L
+ *    TypeTag is required to be able to retrieve values of type L from the Label
  */
-class ArrayBasedLabel[L : ClassTag](val name: String,
-    val maxId: Int)(implicit val tag: TypeTag[L]) extends Label[Int, L] with HasMaxId {
+class ArrayBasedLabel[L : ClassTag: TypeTag](val name: String,
+    val maxId: Int) extends Label[Int, L] with HasMaxId {
   private val array = new Array[L](maxId + 1)
+  val tag = implicitly[TypeTag[L]]
 
   def get(id: Int): Option[L] = Some(array(id))
 
@@ -62,8 +65,8 @@ trait BitSetBasedPartialLabel[L] extends PartialLabel[Int, L] {
  * Backed by an array, but allows some ids to have undefined ('None') value (the ids present
  * are tracked by a bitset).
  */
-class ArrayBasedPartialLabel[L : ClassTag]
-(override val name: String, override val maxId: Int)(implicit override val tag: TypeTag[L])
+class ArrayBasedPartialLabel[L : ClassTag: TypeTag]
+(override val name: String, override val maxId: Int)
     extends ArrayBasedLabel[L](name, maxId) with BitSetBasedPartialLabel[L]
 
 /**
