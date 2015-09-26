@@ -13,6 +13,7 @@
  */
 package com.twitter.cassovary
 
+import com.twitter.cassovary.graph.NeighborsSortingStrategy._
 import com.twitter.cassovary.graph._
 import com.twitter.cassovary.util.io.{AdjacencyListGraphReader, ListOfEdgesGraphReader}
 import com.twitter.app.Flags
@@ -125,7 +126,8 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
         val sep = separatorInt().toChar
         printf("Using Character (%d in Int) as separator\n", sep.toInt)
         ListOfEdgesGraphReader.forIntIds(path, filename,
-          separator = sep).toArrayBasedDirectedGraph()
+          separator = sep).toArrayBasedDirectedGraph(neighborsSortingStrategy = LeaveUnsorted,
+                forceSparseRepr = None)
       }
     }
 
@@ -146,6 +148,8 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
           val duration = benchmark.run(reps())
           printf("\tAvg time over %d repetitions: %s.\n", reps(), duration)
         }
+        //Used with Yourkit to allow capturing memory snapshot before exiting
+        //Thread.sleep(10000 * 1000L)
     }
   }
 

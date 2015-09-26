@@ -24,8 +24,8 @@ trait NodeBehaviors extends WordSpec with Matchers {
   def correctlyConstructNodes(actualOnlyIn: Node, actualOnlyOut: Node, actualMutual: Node,
                               actualBoth: Node): Unit = {
     "construct uni-directional nodes correctly" in {
-      val onlyInNode = Node(nodeId, neighbors, out = Nil)
-      val onlyOutNode = Node(nodeId, Nil, out = neighbors)
+      val onlyInNode = Node(nodeId, neighbors, out = Array())
+      val onlyOutNode = Node(nodeId, Array(), out = neighbors)
       val mutualNode = Node(nodeId, neighbors, out = neighbors)
       actualOnlyIn should deepEquals(onlyInNode)
       actualOnlyOut should deepEquals(onlyOutNode)

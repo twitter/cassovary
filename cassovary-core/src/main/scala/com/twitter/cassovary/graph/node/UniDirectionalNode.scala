@@ -14,7 +14,7 @@
 package com.twitter.cassovary.graph.node
 
 import com.twitter.cassovary.graph.StoredGraphDir._
-import com.twitter.cassovary.graph.{SortedNeighborsNodeOps, Node, SeqBasedNode}
+import com.twitter.cassovary.graph.{NeighborsInSeqNode, NeighborsInArrayNode, SortedNeighborsNodeOps, Node}
 import com.twitter.cassovary.util.{SortedArrayOps, ArraySlice}
 
 /**
@@ -28,15 +28,31 @@ trait UniDirectionalNode extends Node
  * for node's edges
  */
 object UniDirectionalNode {
-  def apply(nodeId: Int, neighbors: Seq[Int], dir: StoredGraphDir, sortedNeighbors: Boolean = false) = {
-    val in = if (dir == OnlyOut) Nil else neighbors
-    val out = if (dir == OnlyIn) Nil else neighbors
+  private val emptyArray = Array.empty[Int]
+  private val emptySeq: Seq[Int] = Nil
+
+  def apply(nodeId: Int, neighbors: Array[Int], dir: StoredGraphDir,
+      sortedNeighbors: Boolean = false) = {
+    val in = if (dir == OnlyOut) emptyArray else neighbors
+    val out = if (dir == OnlyIn) emptyArray else neighbors
     if (sortedNeighbors) {
-      new SeqBasedNode(nodeId, in, out) with UniDirectionalNode with SortedNeighborsNodeOps
+      new NeighborsInArrayNode(nodeId, in, out) with UniDirectionalNode with SortedNeighborsNodeOps
     } else {
-      new SeqBasedNode(nodeId, in, out) with UniDirectionalNode
+      new NeighborsInArrayNode(nodeId, in, out) with UniDirectionalNode
     }
   }
+
+  def applySeq(nodeId: Int, neighbors: Seq[Int], dir: StoredGraphDir,
+      sortedNeighbors: Boolean = false) = {
+    val in = if (dir == OnlyOut) emptySeq else neighbors
+    val out = if (dir == OnlyIn) emptySeq else neighbors
+    if (sortedNeighbors) {
+      new NeighborsInSeqNode(nodeId, in, out) with UniDirectionalNode with SortedNeighborsNodeOps
+    } else {
+      new NeighborsInSeqNode(nodeId, in, out) with UniDirectionalNode
+    }
+  }
+
 }
 
 /**
@@ -45,11 +61,18 @@ object UniDirectionalNode {
  * object to hold its edges
  */
 object SharedArrayBasedUniDirectionalNode {
+  private val emptySeq: Seq[Int] = Nil
+
   def apply(nodeId: Int, edgeArrOffset: Int, edgeArrLen: Int, sharedArray: Array[Array[Int]],
             dir: StoredGraphDir) = {
     val neighbors = new ArraySlice(sharedArray(nodeId % sharedArray.length), edgeArrOffset, edgeArrLen)
-    new SeqBasedNode(nodeId,
-      if (dir == OnlyOut) Nil else neighbors,
-      if (dir == OnlyIn) Nil else neighbors) with UniDirectionalNode
+    new UniDirectionalNode {
+      val id = nodeId
+
+      def inboundNodes() = if (dir == OnlyOut) emptySeq else neighbors
+
+      def outboundNodes() = if (dir == OnlyIn) emptySeq else neighbors
+    }
+
   }
 }

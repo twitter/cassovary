@@ -285,17 +285,26 @@ trait Node {
 object Node {
   private lazy val randGen: Random = new Random
 
-  def apply(nodeId: Int, in: Seq[Int], out: Seq[Int]): Node = {
-    new SeqBasedNode(nodeId, in, out)
+  def apply(nodeId: Int, in: Array[Int], out: Array[Int]): Node = {
+    new NeighborsInArrayNode(nodeId, in, out)
   }
 
   def withSortedNeighbors(nodeId: Int, in: Array[Int], out: Array[Int]) = {
-    new SeqBasedNode(nodeId, in, out) with SortedNeighborsNodeOps
+    new NeighborsInArrayNode(nodeId, in, out) with SortedNeighborsNodeOps
   }
+}
+
+/**
+ * Constructor for a default node with neighbors stored as Arrays.
+ */
+class NeighborsInArrayNode private[graph] (val id: Int, val ins: Array[Int], val outs: Array[Int])
+  extends Node {
+  def inboundNodes(): Seq[Int] = ins
+  def outboundNodes(): Seq[Int] = outs
 }
 
 /**
  * Constructor for a default node with neighbors stored as Seqs.
  */
-class SeqBasedNode private[graph] (val id: Int, val inboundNodes: Seq[Int], val outboundNodes: Seq[Int])
-  extends Node
+class NeighborsInSeqNode private[graph] (val id: Int, val inboundNodes: Seq[Int],
+    val outboundNodes: Seq[Int]) extends Node

@@ -19,7 +19,7 @@ import com.twitter.cassovary.util.{NodeNumberer, ParseString}
 import com.twitter.cassovary.graph.{StoredGraphDir, NodeIdEdgesMaxId}
 import com.twitter.logging.Logger
 import com.twitter.util.NonFatal
-import it.unimi.dsi.fastutil.ints.{Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
+import it.unimi.dsi.fastutil.ints.{Int2ObjectOpenHashMap, Int2ObjectMap}
 import java.io.IOException
 import scala.io.Source
 import scala.collection.mutable.ArrayBuffer
@@ -82,13 +82,13 @@ class ListOfEdgesGraphReader[T](
 
       var lastLineParsed = 0
 
-      def readEdgesBySource(): Int2ObjectMap[ArrayBuffer[Int]] = {
+      def readEdgesBySource(): Int2ObjectOpenHashMap[ArrayBuffer[Int]] = {
         log.info("Starting reading from file %s...\n", filename)
         //val directedEdgePattern = ("""^(\w+)""" + separator + """(\w+)""").r
         val lines = Source.fromFile(filename).getLines()
           .map{x => {lastLineParsed += 1; x}}
 
-        val edgesBySource = new Int2ObjectLinkedOpenHashMap[ArrayBuffer[Int]]()
+        val edgesBySource = new Int2ObjectOpenHashMap[ArrayBuffer[Int]]()
 
         lines.foreach { line1 =>
           val line = line1.trim
@@ -112,7 +112,7 @@ class ListOfEdgesGraphReader[T](
 
       val edgesBySource = readEdgesBySource()
 
-      private lazy val edgesIterator = edgesBySource.entrySet().iterator()
+      private lazy val edgesIterator = edgesBySource.int2ObjectEntrySet().fastIterator()
 
       override def hasNext: Boolean = edgesIterator.hasNext
 
