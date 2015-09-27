@@ -110,7 +110,7 @@ class ListOfEdgesGraphReader[T](
         edgesBySource
       }
 
-      val edgesBySource = readEdgesBySource()
+      private lazy val edgesBySource = readEdgesBySource()
 
       private lazy val edgesIterator = edgesBySource.entrySet().iterator()
 
