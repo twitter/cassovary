@@ -126,8 +126,9 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
         val sep = separatorInt().toChar
         printf("Using Character (%d in Int) as separator\n", sep.toInt)
         ListOfEdgesGraphReader.forIntIds(path, filename,
-          separator = sep).toArrayBasedDirectedGraph(neighborsSortingStrategy = LeaveUnsorted,
-                forceSparseRepr = None)
+          separator = sep).toSharedArrayBasedDirectedGraph()
+          //separator = sep).toArrayBasedDirectedGraph(neighborsSortingStrategy = LeaveUnsorted,
+          //      forceSparseRepr = None)
       }
     }
 
@@ -149,7 +150,7 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
           printf("\tAvg time over %d repetitions: %s.\n", reps(), duration)
         }
         //Used with Yourkit to allow capturing memory snapshot before exiting
-        //Thread.sleep(10000 * 1000L)
+        Thread.sleep(10000 * 1000L)
     }
   }
 

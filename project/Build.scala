@@ -84,7 +84,8 @@ object Cassovary extends Build {
 
   val assemblySettings = Seq(
     assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false,
-      includeDependency = false))
+      includeDependency = false),
+    test in assembly := {})
 
   lazy val root = Project(
     id = "cassovary",

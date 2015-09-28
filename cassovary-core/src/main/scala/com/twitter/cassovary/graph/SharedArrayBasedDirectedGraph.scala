@@ -1,16 +1,3 @@
-/*
- * Copyright 2014 Twitter, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
- * file except in compliance with the License. You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed
- * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
- */
 package com.twitter.cassovary.graph
 
 import java.util.concurrent.atomic.AtomicInteger
@@ -23,9 +10,6 @@ import com.twitter.finagle.stats.DefaultStatsReceiver
 import com.twitter.logging.Logger
 import com.twitter.util.{Await, Future, FuturePool}
 
-/**
- * provides methods for constructing a shared array based graph
- */
 object SharedArrayBasedDirectedGraph {
   private lazy val log = Logger.get()
   private val statsReceiver = DefaultStatsReceiver
@@ -33,13 +17,13 @@ object SharedArrayBasedDirectedGraph {
 
   /**
    * Construct a shared array-based graph from a sequence of NodeIdEdgesMaxId iterables.
-   * Eg each NodeIdEdgesMaxId could correspond to one graph dump file.
+   * Eg each Iterable[NodeIdEdgesMaxId] could come from one graph dump file.
    *
    * This function builds the graph using similar steps as in ArrayBasedDirectedGraph.
-   * The main difference here is that instead of each node has a separate edge array,
-   * here one shared array is used, thus each node can find its edges through
-   * an offset into this shared array. The avoid huge arrays, this edge array
-   * is also sharded based on node's id.
+   * The main difference here is that instead of each node storing neighbor ids in
+   * separate arrays of ids, here one shared array is used for all neighbor ids.
+   * Thus each node can find its edges through an offset into this shared array.
+   * To avoid huge arrays, this edge array is also sharded based on node's id.
    *
    * @param iterableSeq the sequence of nodes each with its own edges
    * @param parallelismLimit number of threads construction uses
@@ -48,8 +32,8 @@ object SharedArrayBasedDirectedGraph {
    */
   def apply(iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]], parallelismLimit: Int,
       storedGraphDir: StoredGraphDir, numOfShards: Int) = {
-    val constructor = new SharedArrayBasedDirectedGraphConstructor(iterableSeq, parallelismLimit, storedGraphDir,
-      numOfShards)
+    val constructor = new SharedArrayBasedDirectedGraphConstructor(iterableSeq, parallelismLimit,
+      storedGraphDir, numOfShards)
     constructor.construct()
   }
 
@@ -63,11 +47,12 @@ object SharedArrayBasedDirectedGraph {
 
     val nodeReadingLoggingFrequency = 100000
 
-    private val futurePool: FuturePool = new BoundedFuturePool(FuturePool.unboundedPool, parallelismLimit)
+    private val futurePool = new BoundedFuturePool(FuturePool.unboundedPool, parallelismLimit)
 
     /**
-     * Read everything to determine the total num of outgoing edges and max id for each shard.
-     * An edge fall in a shard when the source node id is hashed to the index of the shard.
+     * For each shard, go over each NodeIdEdgesMaxId and calculate the size of this shard by
+     * summing the edge lengths of all nodes that fall into this shard.
+     * An edge falls in a shard when the source node id is hashed to the index of the shard.
      *
      * @return shared graph meta-information object with filled all information but node count
      */
@@ -75,7 +60,7 @@ object SharedArrayBasedDirectedGraph {
     Future[Seq[SharedGraphMetaInfo]] = {
       log.info("read out num of edges and max id from files in parallel")
       statsReceiver.timeFuture("graph_load_read_out_edge_sizes_dump_files") {
-        val futures = iterableSeq.map {
+        val futures = iterableSeq map {
           edgesIterable => futurePool {
             var id, newMaxId, varNodeWithOutEdgesMaxId, numOfEdges, edgesLength, nodeCount = 0
             val iteratorForEdgeSizes = edgesIterable.iterator

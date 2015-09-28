@@ -13,13 +13,12 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.StoredGraphDir
 import com.twitter.cassovary.graph.StoredGraphDir.StoredGraphDir
 import com.twitter.cassovary.util.{NodeNumberer, ParseString}
 import com.twitter.cassovary.graph.{StoredGraphDir, NodeIdEdgesMaxId}
 import com.twitter.logging.Logger
 import com.twitter.util.NonFatal
-import it.unimi.dsi.fastutil.ints.{Int2ObjectOpenHashMap, Int2ObjectMap}
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 import java.io.IOException
 import scala.io.Source
 import scala.collection.mutable.ArrayBuffer

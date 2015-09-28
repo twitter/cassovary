@@ -21,7 +21,7 @@ import scala.collection.mutable
  * The concept of shared array is that a number of Seqs share an array
  * as the internal storage. Each of the arrays is defined by its offset from the beginning
  * of the shared array and length.
- * @param array wrapped array
+ * @param array shared array
  * @param offset the offset in the `array`
  * @param length length of the Seq
  */
@@ -39,7 +39,7 @@ class ArraySlice[@specialized(Int, Long) T](array: Array[T],
 
   def update(idx: Int, elem: T) {
     if (idx >= length) {
-      throw new IndexOutOfBoundsException()
+      throw new IndexOutOfBoundsException(idx.toString)
     } else {
       array(offset + idx) = elem
     }
