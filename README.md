@@ -12,17 +12,24 @@ Please follow the cassovary project on twitter at [@cassovary](https://twitter.c
 for updates.
 
 ## Quick Start and Examples
-There is a subproject included here called cassovary-examples containing simple java and scala
+
+After cloning the repository, type ```./sbt``` which will download the sbt launch jar and launch
+the sbt console. Then type the following in the console:
+
+1. ```project cassovary-examples```
+2. ```runMain HelloLoadGraph```
+
+There is a subproject included  called cassovary-examples containing simple java and scala
 examples of using the library. See
 [this README](https://github.com/twitter/cassovary/blob/master/cassovary-examples/ExamplesREADME.md)
-to get started with the examples.
+to get started with these examples.
 
 Some other subprojects to check are cassovary-benchmarks for helping benchmark
 some graph algorithms and cassovary-server that exposes Cassovary on a web server.
 
 ## Building
 
-Cassovary is built using [sbt](https://github.com/sbt/sbt) and was tested last using sbt version 0.13.
+Cassovary is built using [sbt](https://github.com/sbt/sbt) and was tested last using sbt version 0.13.9
 
 1. ```./sbt update``` (might take a couple of minutes)
 2. ```./sbt test```
@@ -39,7 +46,7 @@ Cassovary is published to maven central with crosspath scala versions 2.10.4 and
 
 To use with sbt, use:
 
-```libraryDependencies += "com.twitter" %% "cassovary-core" % "5.0.0"```
+```libraryDependencies += "com.twitter" %% "cassovary-core" % "6.1.0"```
 
 and
 
