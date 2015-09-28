@@ -15,8 +15,8 @@ package com.twitter.cassovary.graph.node
 
 import java.{util => jutil}
 
-import com.twitter.cassovary.graph.{Node, SeqBasedNode, SortedNeighborsNodeOps}
-import com.twitter.cassovary.util.{Sharded2dArray, ArraySlice}
+import com.twitter.cassovary.graph.{NeighborsInArrayNode, Node, SortedNeighborsNodeOps}
+import com.twitter.cassovary.util.Sharded2dArray
 
 /**
  * Nodes in the graph that store both directions and
@@ -61,11 +61,12 @@ object FillingInEdgesBiDirectionalNode {
 object BiDirectionalNode {
   val noEdges = Array[Int]()
 
-  def apply(nodeId: Int, in: Seq[Int], out: Seq[Int], sortedNeighbors: Boolean = false): BiDirectionalNode = {
+  def apply(nodeId: Int, in: Array[Int], out: Array[Int],
+      sortedNeighbors: Boolean = false): BiDirectionalNode = {
     if (sortedNeighbors) {
-      new SeqBasedNode(nodeId, in, out) with BiDirectionalNode with SortedNeighborsNodeOps
+      new NeighborsInArrayNode(nodeId, in, out) with BiDirectionalNode with SortedNeighborsNodeOps
     } else {
-      new SeqBasedNode(nodeId, in, out) with BiDirectionalNode
+      new NeighborsInArrayNode(nodeId, in, out) with BiDirectionalNode
     }
   }
 }

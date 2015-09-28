@@ -36,7 +36,7 @@ object SharedArrayBasedDirectedNode {
     dir match {
       case StoredGraphDir.OnlyIn | StoredGraphDir.OnlyOut | StoredGraphDir.Mutual =>
         val outEdges: Seq[Int] = Option(edges(nodeId)).getOrElse(emptyArray)
-        UniDirectionalNode(nodeId, outEdges, dir)
+        UniDirectionalNode.applySeq(nodeId, outEdges, dir)
       case StoredGraphDir.BothInOut =>
         SharedArrayBasedBiDirectionalNode(nodeId, edges, reverseDirEdges.get)
     }
