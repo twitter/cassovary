@@ -42,14 +42,14 @@ class NodeTouristSpec extends WordSpec with Matchers {
       }
       val info = visitor.infoAllNodes
 
-      pathMapToSeq(info(1)) should be(Seq((DirectedPath(Array(1)), 5)))
-      pathMapToSeq(info(2)) should be(Seq((DirectedPath(Array(2)), 3)))
-      pathMapToSeq(info(3)) should be(Seq(
+      info(1).asScala().toSeq should be(Seq((DirectedPath(Array(1)), 5)))
+      info(2).asScala().toSeq should be(Seq((DirectedPath(Array(2)), 3)))
+      info(3).asScala().toSeq should be(Seq(
         (DirectedPath(Array(2, 3)), 3),
         (DirectedPath(Array(1, 3)), 1),
         (DirectedPath(Array(2, 3, 4, 3)), 1)
       ))
-      pathMapToSeq(info(4)) should be(Seq(
+      info(4).asScala().toSeq should be(Seq(
         (DirectedPath(Array(2, 3, 4)), 2),
         (DirectedPath(Array(1, 4)), 1)
       ))
@@ -66,7 +66,7 @@ class NodeTouristSpec extends WordSpec with Matchers {
       prevNbrCounter.recordPreviousNeighbor(5, 1)
       prevNbrCounter.recordPreviousNeighbor(5, 4)
 
-      prevNbrCounter.infoOfNode(5).map(FastUtilUtils.int2IntMapToMap) should be
+      prevNbrCounter.infoOfNode(5).map(_.asScala()) should be
         Some(Map(4 -> 2, 1 -> 2, 3 -> 1, 2 -> 1))
     }
 
@@ -79,16 +79,8 @@ class NodeTouristSpec extends WordSpec with Matchers {
       prevNbrCounter.recordPreviousNeighbor(5, 1)
       prevNbrCounter.recordPreviousNeighbor(5, 4)
 
-      prevNbrCounter.infoOfNode(5).map(FastUtilUtils.int2IntMapToMap) should be
+      prevNbrCounter.infoOfNode(5).map(_.asScala()) should be
         Some(Map(4 -> 2, 1 -> 2))
     }
-  }
-
-  def pathMapToSeq(map: Object2IntMap[DirectedPath]) = {
-    FastUtilUtils.object2IntMapToArray(map).toSeq
-  }
-
-  def visitMapToSeq(map: Int2IntMap) = {
-    FastUtilUtils.int2IntMapToArray(map).toSeq
   }
 }

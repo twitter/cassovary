@@ -15,6 +15,7 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.util.FastUtilUtils
+import com.twitter.cassovary.util.collections.FastMap
 import com.twitter.util.Duration
 import com.twitter.util.Stopwatch
 import it.unimi.dsi.fastutil.ints.Int2IntMap
@@ -51,8 +52,8 @@ class GraphUtilsSpec extends WordSpec with Matchers {
         visitsCountMap.toSeq shouldEqual Array((1, 1), (2, 1)).toSeq
 
         val pathsCountMap = pathsCounterOption.get.infoAllNodes
-        pathMapToSeq(pathsCountMap(1)) shouldEqual Seq((DirectedPath(Array(1)), 1)).toSeq
-        pathMapToSeq(pathsCountMap(2)) shouldEqual Seq((DirectedPath(Array(1, 2)), 1)).toSeq
+        pathsCountMap(1).asScala().toSeq shouldEqual Seq((DirectedPath(Array(1)), 1))
+        pathsCountMap(2).asScala().toSeq shouldEqual Seq((DirectedPath(Array(1, 2)), 1))
 
         // random walk but no top paths maintained
         val (visitsCounter2, pathsCounterOption2) = graphUtils.randomWalk(OutDir, Seq(1),
@@ -191,10 +192,6 @@ class GraphUtilsSpec extends WordSpec with Matchers {
       }
       //println("Avg duration over %d random walks: %s ms".format(numTimes, sumDuration/numTimes))
     }
-  }
-
-  def pathMapToSeq(map: Object2IntMap[DirectedPath]) = {
-    FastUtilUtils.object2IntMapToArray(map).toSeq
   }
 
   def visitMapToSeq(map: Int2IntMap) = {

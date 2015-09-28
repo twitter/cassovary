@@ -13,57 +13,55 @@
  */
 package com.twitter.cassovary.graph.tourist
 
-import it.unimi.dsi.fastutil.ints._
-import java.util
-import scala.collection.JavaConversions._
+import com.twitter.cassovary.util.collections._
+
+import com.twitter.cassovary.util.collections.Implicits._
 
 /**
  * A tourist that keeps counts of the number of times a node has been seen.
  */
-class VisitsCounter extends IntInfoKeeper(false) with NodeTourist {
+class VisitsCounter extends InfoKeeper[Int] with NodeTourist {
+  override def onlyOnce: Boolean = false
+
+  private val countersMap = FastMap.applyFor[Int, Int, FastMap[Int, Int] with AddTo[Int]]()
 
   /**
    * PriorityQueue and IntComparator for sorting
    */
-  val comparator = new VisitsComparator(underlyingMap, true)
-  val priQ = new IntHeapPriorityQueue(comparator)
+  val comparator = new VisitsComparator(countersMap, true)
+  val priQ = FastQueue.priority[Int](Some(comparator))
 
   def visit(id: Int) {
-    underlyingMap.addTo(id, 1)
+    countersMap.addTo(id, 1)
   }
 
   /**
    * Returns a map of nodes to visit count, sorted in decreasing order when iterating
    */
   protected override def infoPerNode = {
-    val resultMap = new Int2IntArrayMap
+    val resultMap = FastMap.applyFor[Int, Int, FastMap[Int, Int] with InsertionOrderIterator]()
 
     priQ.clear()
 
-    val nodeIterator = underlyingMap.keySet.iterator
+    val nodeIterator = countersMap.asScala().keysIterator
     while (nodeIterator.hasNext) {
       val node = nodeIterator.next()
-      priQ.enqueue(node)
+      priQ += node
     }
 
     while (!priQ.isEmpty) {
-      val node = priQ.dequeueInt()
-      resultMap.put(node, underlyingMap.get(node))
+      val node = priQ.deque()
+      resultMap += (node, countersMap.get(node))
     }
 
-    resultMap.asInstanceOf[util.Map[Int, Int]]
+    resultMap
   }
 }
 
-class VisitsComparator(infoPerNode: Int2IntMap, descending: Boolean) extends IntComparator {
-  // TODO ensure scala runtime does not call this boxed version
-  override def compare(id1: java.lang.Integer, id2: java.lang.Integer): Int = {
-    compare(id1.intValue, id2.intValue)
-  }
-
+class VisitsComparator(infoPerNode: FastMap[Int, Int], descending: Boolean) extends Order[Int] {
   override def compare(id1: Int, id2: Int): Int = {
-    val id1Count = infoPerNode(id1)
-    val id2Count = infoPerNode(id2)
+    val id1Count = infoPerNode.get(id1)
+    val id2Count = infoPerNode.get(id2)
 
     if (id1Count != id2Count) {
       if (descending) {

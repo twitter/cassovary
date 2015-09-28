@@ -14,9 +14,7 @@
 package com.twitter.cassovary.graph.tourist
 
 import com.twitter.cassovary.graph.{DirectedPath, DirectedPathCollection}
-import it.unimi.dsi.fastutil.objects.Object2IntMap
-import java.{util => jutil}
-import scala.collection.JavaConversions.mapAsScalaMap
+import com.twitter.cassovary.util.collections.FastMap
 
 /**
  * A tourist that keeps track of the paths ending at each node. It keeps
@@ -27,7 +25,7 @@ import scala.collection.JavaConversions.mapAsScalaMap
  */
 
 class PathsCounter(numTopPathsPerNode: Int, homeNodeIds: Seq[Int])
-    extends NodeTourist with InfoKeeper[Object2IntMap[DirectedPath]] {
+    extends NodeTourist with InfoKeeper[FastMap[DirectedPath, Int]] {
 
   def this() = this(0, Nil)
 
@@ -40,11 +38,11 @@ class PathsCounter(numTopPathsPerNode: Int, homeNodeIds: Seq[Int])
     paths.appendToCurrentPath(id)
   }
 
-  override def recordInfo(id: Int, info: Object2IntMap[DirectedPath]) {
+  override def recordInfo(id: Int, info: FastMap[DirectedPath, Int]) {
     throw new UnsupportedOperationException("Use visit method instead")
   }
 
-  override def infoOfNode(id: Int): Option[Object2IntMap[DirectedPath]] = {
+  override def infoOfNode(id: Int): Option[FastMap[DirectedPath, Int]] = {
     if (paths.containsNode(id)) {
       Some(paths.topPathsTill(id, numTopPathsPerNode))
     } else {
@@ -52,10 +50,11 @@ class PathsCounter(numTopPathsPerNode: Int, homeNodeIds: Seq[Int])
     }
   }
 
-  def infoPerNode = mapAsScalaMap(paths.topPathsPerNodeId(numTopPathsPerNode)
-    .asInstanceOf[jutil.Map[Int, Object2IntMap[DirectedPath]]])
+  override def infoPerNode = paths.topPathsPerNodeId(numTopPathsPerNode)
 
   override def clear() {
     paths.clear()
   }
+
+  override val onlyOnce: Boolean = false
 }

@@ -15,9 +15,8 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.tourist._
+import com.twitter.cassovary.util.collections.FastMap
 import com.twitter.finagle.stats.DefaultStatsReceiver
-import it.unimi.dsi.fastutil.ints.Int2IntMap
-import it.unimi.dsi.fastutil.objects.Object2IntMap
 import scala.util.Random
 
 
@@ -140,7 +139,7 @@ class GraphUtils[+V <: Node](val graph: Graph[V]) {
    *            in the form of (P as a `DirectedPath`, frequency of walking P).
    */
   def calculatePersonalizedReputation(startNodeIds: Seq[Int], walkParams: RandomWalkParams):
-      (collection.Map[Int, Int], Option[collection.Map[Int, Object2IntMap[DirectedPath]]]) = {
+      (collection.Map[Int, Int], Option[collection.Map[Int, FastMap[DirectedPath, Int]]]) = {
     statsReceiver.time ("%s_total".format("PTC")) {
       val (visitsCounter, pathsCounterOption) = randomWalk(walkParams.dir, startNodeIds, walkParams)
       val topPathsOption = pathsCounterOption flatMap { counter => Some(counter.infoAllNodes) }
@@ -149,7 +148,7 @@ class GraphUtils[+V <: Node](val graph: Graph[V]) {
   }
 
   def calculatePersonalizedReputation(startNodeId: Int, walkParams: RandomWalkParams):
-      (collection.Map[Int, Int], Option[collection.Map[Int, Object2IntMap[DirectedPath]]]) = {
+      (collection.Map[Int, Int], Option[collection.Map[Int, FastMap[DirectedPath, Int]]]) = {
     calculatePersonalizedReputation(Seq(startNodeId), walkParams)
   }
 
@@ -163,7 +162,7 @@ class GraphUtils[+V <: Node](val graph: Graph[V]) {
    */
   def calculateAllPathsWalk(startNodeId: Int, dir: GraphDir, numTopPathsPerNode: Int,
                             walkLimits: Walk.Limits):
-      (collection.Map[Int, Int], collection.Map[Int, Int2IntMap]) = {
+      (collection.Map[Int, Int], collection.Map[Int, FastMap[Int, Int]]) = {
     statsReceiver.time("%s_total".format("AllPathsWalk")) {
       val (visitsCounter, prevNbrCounter) = allPathsWalk(dir, startNodeId,
         numTopPathsPerNode, walkLimits)

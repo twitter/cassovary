@@ -13,16 +13,17 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.StoredGraphDir
+import java.io.IOException
+
 import com.twitter.cassovary.graph.StoredGraphDir.StoredGraphDir
+import com.twitter.cassovary.graph.{NodeIdEdgesMaxId, StoredGraphDir}
+import com.twitter.cassovary.util.collections.FastMap
 import com.twitter.cassovary.util.{NodeNumberer, ParseString}
-import com.twitter.cassovary.graph.{StoredGraphDir, NodeIdEdgesMaxId}
 import com.twitter.logging.Logger
 import com.twitter.util.NonFatal
-import it.unimi.dsi.fastutil.ints.{Int2ObjectMap, Int2ObjectLinkedOpenHashMap}
-import java.io.IOException
-import scala.io.Source
+
 import scala.collection.mutable.ArrayBuffer
+import scala.io.Source
 
 /**
  * Reads in a multi-line list of edges from multiple files in a directory.
@@ -82,13 +83,13 @@ class ListOfEdgesGraphReader[T](
 
       var lastLineParsed = 0
 
-      def readEdgesBySource(): Int2ObjectMap[ArrayBuffer[Int]] = {
+      def readEdgesBySource(): FastMap[Int, ArrayBuffer[Int]] = {
         log.info("Starting reading from file %s...\n", filename)
         //val directedEdgePattern = ("""^(\w+)""" + separator + """(\w+)""").r
         val lines = Source.fromFile(filename).getLines()
           .map{x => {lastLineParsed += 1; x}}
 
-        val edgesBySource = new Int2ObjectLinkedOpenHashMap[ArrayBuffer[Int]]()
+        val edgesBySource = FastMap[Int, ArrayBuffer[Int]]()
 
         lines.foreach { line1 =>
           val line = line1.trim
@@ -98,10 +99,10 @@ class ListOfEdgesGraphReader[T](
             val dest = idReader(line, i + 1, line.length - 1)
             val internalFromId = nodeNumberer.externalToInternal(source)
             val internalToId = nodeNumberer.externalToInternal(dest)
-            if (edgesBySource.containsKey(internalFromId)) {
+            if (edgesBySource.contains(internalFromId)) {
               edgesBySource.get(internalFromId) += internalToId
             } else {
-              edgesBySource.put(internalFromId, ArrayBuffer(internalToId))
+              edgesBySource += (internalFromId, ArrayBuffer(internalToId))
             }
           }
         }
@@ -112,7 +113,7 @@ class ListOfEdgesGraphReader[T](
 
       val edgesBySource = readEdgesBySource()
 
-      private lazy val edgesIterator = edgesBySource.entrySet().iterator()
+      private lazy val edgesIterator = edgesBySource.asScala().iterator
 
       override def hasNext: Boolean = edgesIterator.hasNext
 
@@ -135,8 +136,8 @@ class ListOfEdgesGraphReader[T](
 
         try {
           val elem = edgesIterator.next()
-          val (edges, maxId) = prepareEdges(elem.getValue)
-          NodeIdEdgesMaxId(elem.getKey, edges, maxId)
+          val (edges, maxId) = prepareEdges(elem._2)
+          NodeIdEdgesMaxId(elem._1, edges, maxId)
         } catch {
           case NonFatal(exc) =>
             throw new IOException("Parsing failed near line: %d in %s"

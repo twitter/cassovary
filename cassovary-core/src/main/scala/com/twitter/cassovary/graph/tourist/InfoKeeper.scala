@@ -14,31 +14,30 @@
 package com.twitter.cassovary.graph.tourist
 
 import com.twitter.cassovary.graph.Node
-import scala.collection.mutable
+import com.twitter.cassovary.util.collections.FastMap
+import com.twitter.cassovary.util.collections.FastMap.FastMapFactory
 
 /**
  * Info keeper records info per node id and returns output per node or for all nodes
+ *
+ * If `onlyOnce` is true keeps info only the first time a node is seen.
  */
 trait InfoKeeper[@specialized(Int, Boolean) O] {
+  def onlyOnce: Boolean
 
-  protected def infoPerNode: mutable.Map[Int, O]
-
-  /**
-   * Keep info only the first time a node is seen
-   */
-  val onlyOnce = false
+  protected def infoPerNode: FastMap[Int, O]
 
   /**
    * Record information `info` of node `id`
    */
   def recordInfo(id: Int, info: O) {
     if (!(onlyOnce && infoAllNodes.contains(id))) {
-      infoPerNode.put(id, info)
+      infoPerNode.+=(id, info)
     }
   }
 
   /**
-   * Get information of a paticular node by its `id`
+   * Get information of a particular node by its `id`
    */
   def infoOfNode(id: Int): Option[O] = {
     infoAllNodes.get(id)
@@ -59,5 +58,17 @@ trait InfoKeeper[@specialized(Int, Boolean) O] {
   /**
    * Get info for all nodes (immutable version visible outside)
    */
-  def infoAllNodes: collection.Map[Int, O] = infoPerNode
+  def infoAllNodes: collection.Map[Int, O] = infoPerNode.asScala()
+}
+
+object InfoKeeper {
+  def apply[O](onlyOnce: Boolean = false)(implicit fmf: FastMapFactory[Int, O, FastMap[Int, O]]):
+  InfoKeeper[O] = {
+    val onlyOnceRef = onlyOnce
+    new InfoKeeper[O] {
+      def onlyOnce: Boolean = onlyOnceRef
+
+      val infoPerNode: FastMap[Int, O] = FastMap[Int, O]()
+    }
+  }
 }

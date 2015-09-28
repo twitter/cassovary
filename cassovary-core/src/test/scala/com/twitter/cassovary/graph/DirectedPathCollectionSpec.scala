@@ -14,6 +14,7 @@
 package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.util.FastUtilUtils
+import com.twitter.cassovary.util.collections.FastMap
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 import org.junit.runner.RunWith
 import org.scalatest.{Matchers, WordSpec}
@@ -103,7 +104,7 @@ class DirectedPathCollectionSpec extends WordSpec with Matchers {
   }
 
 
-  def pathMapToSeq(map: Object2IntMap[DirectedPath]) = {
-    FastUtilUtils.object2IntMapToArray(map).toSeq
+  def pathMapToSeq(map: FastMap[DirectedPath, Int]) = {
+    map.asScala().toSeq
   }
 }

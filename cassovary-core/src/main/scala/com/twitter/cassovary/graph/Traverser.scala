@@ -15,9 +15,11 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
-import com.twitter.cassovary.graph.tourist.{BoolInfoKeeper, IntInfoKeeper, PrevNbrCounter}
+import com.twitter.cassovary.graph.tourist.{InfoKeeper, PrevNbrCounter}
+import com.twitter.cassovary.util.collections.FastQueue
+import com.twitter.cassovary.util.collections.Implicits._
 import com.twitter.logging.Logger
-import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue
+
 import scala.annotation.tailrec
 import scala.util.Random
 
@@ -79,7 +81,7 @@ class RandomTraverser[+V <: Node](graph: Graph[V], dir: GraphDir, homeNodeIds: S
   private[this] var currNode: V = _
   private val homeNodeIdSet = Set(homeNodeIds: _*)
 
-  private val seenNodesTracker = new BoolInfoKeeper(self.onlyOnce)
+  private val seenNodesTracker = InfoKeeper[Boolean](self.onlyOnce)
 
   protected def seenBefore(id: Int) = seenNodesTracker.infoOfNode(id).isDefined
   private var pathLength = 0
@@ -171,7 +173,7 @@ object Walk {
 
     import NodeColor._
 
-    val map = new BoolInfoKeeper(false)
+    val map = InfoKeeper[Boolean](false)
 
     def +=(kv: (Int, Color)) {
       kv._2 match {
@@ -256,7 +258,7 @@ trait QueueBasedTraverser[+V <: Node] extends Traverser[V] {
   /**
    * Queue that stores nodes to be visited next.
    */
-  protected val queue = new IntArrayFIFOQueue()
+  protected val queue = FastQueue.fifo[Int]()
 
   /**
    * Number of nodes ever enqueued in the `queue`.
@@ -356,7 +358,7 @@ trait QueueBasedTraverser[+V <: Node] extends Traverser[V] {
       case GraphTraverserNodePriority.LIFO =>
         nodes.reverse.foreach (node => queue.enqueueFirst(node))
       case GraphTraverserNodePriority.FIFO =>
-        nodes.foreach (node => queue.enqueue(node))
+        nodes.foreach (node => queue += node)
     }
   }
 
@@ -376,13 +378,13 @@ trait QueueBasedTraverser[+V <: Node] extends Traverser[V] {
     if (queue.isEmpty)
       None
     else
-      Some(queue.firstInt())
+      Some(queue.first())
   }
 
   def next() = {
     findNextNodeToVisit() match {
       case Some(nextId) =>
-        if (shouldBeDequeuedBeforeProcessing) queue.dequeueInt()
+        if (shouldBeDequeuedBeforeProcessing) queue.deque()
         val node = getExistingNodeById(graph, nextId)
         processNode(node)
         node
@@ -398,8 +400,7 @@ trait QueueBasedTraverser[+V <: Node] extends Traverser[V] {
  * A traverser that keeps track of first depth of visiting a given node.
  */
 trait DepthTracker extends QueueBasedTraverser[Node] {
-
-  private lazy val depthTracker = new IntInfoKeeper(true)
+  private lazy val depthTracker = InfoKeeper[Int](true)
 
   abstract override protected def enqueue(nodes: Seq[Int], from: Option[Int]): Unit = {
     val fromDepth = from.flatMap(depthTracker.infoOfNode).getOrElse(-1)
@@ -511,7 +512,7 @@ class DepthFirstTraverser[+V <: Node](val graph: Graph[V], val dir: GraphDir, va
     if (queue.isEmpty) {
       None
     } else {
-      val next = queue.firstInt()
+      val next = queue.first()
       val visitedBefore = coloring.get(next) match {
         case Walk.NodeColor.Visited => true
         case _ => false
@@ -526,7 +527,7 @@ class DepthFirstTraverser[+V <: Node](val graph: Graph[V], val dir: GraphDir, va
   }
 
   def handleVisitedInQueue(next: Int) {
-    queue.dequeueInt()
+    queue.deque()
   }
 
   // can't limit number of nodes added to the queue, because we skip some nodes
@@ -544,8 +545,8 @@ class DepthFirstTraverser[+V <: Node](val graph: Graph[V], val dir: GraphDir, va
  * node. It does not have to be the same as the depth at which the node is visited.
  */
 trait PathLengthTracker extends DepthFirstTraverser[Node] {
-  private lazy val nextVisitDistanceTracker = new IntInfoKeeper(false)
-  private lazy val visitDistanceTracker = new IntInfoKeeper(true)
+  private lazy val nextVisitDistanceTracker = InfoKeeper[Int](false)
+  private lazy val visitDistanceTracker = InfoKeeper[Int](true)
 
   abstract override protected def enqueue(nodes: Seq[Int], from: Option[Int]): Unit = {
     val fromDistance = from.flatMap(visitDistanceTracker.infoOfNode).getOrElse(-1)
@@ -575,9 +576,9 @@ trait PathLengthTracker extends DepthFirstTraverser[Node] {
 trait DiscoveryAndFinishTimeTracker extends DepthFirstTraverser[Node] {
   private[this] var time: Int = _ // automatically initialized to 0 before first enqueue
 
-  private lazy val discoveryTime = new IntInfoKeeper(false)
+  private lazy val discoveryTime = InfoKeeper[Int](false)
 
-  private lazy val finishingTime = new IntInfoKeeper(false)
+  private lazy val finishingTime = InfoKeeper[Int](false)
 
   override val shouldBeDequeuedBeforeProcessing = false
 
