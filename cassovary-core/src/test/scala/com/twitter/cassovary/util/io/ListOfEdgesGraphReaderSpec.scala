@@ -50,11 +50,12 @@ class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours[Node] wit
       idReader = ParseString.toLong, separator = ',').toSharedArrayBasedDirectedGraph()
   }
 
-  class GraphWithStringIds(filename: String, removeDup: Boolean = false, sortNeighbors: Boolean = false) {
+  class GraphWithStringIds(filename: String, removeDup: Boolean = false,
+      sortNeighbors: Boolean = false, sortedSource: Boolean = true) {
     val seqNumberer = new SequentialNodeNumberer[String]()
     val graph = new ListOfEdgesGraphReader(directory, filename, seqNumberer,
       idReader = ParseString.identity, removeDuplicates = removeDup,
-      sortNeighbors = sortNeighbors).toSharedArrayBasedDirectedGraph()
+      sortNeighbors = sortNeighbors, sortedBySourceId = sortedSource).toSharedArrayBasedDirectedGraph()
   }
 
   "ListOfEdgesReader" when {
@@ -94,78 +95,92 @@ class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours[Node] wit
           hasCorrectProperties(graph)
         }
       }
-      "contain the right nodes and edges" in {
-        new GraphWithStringIds("toy_6nodes_list_StringIds.txt") {
-          behave like renumberedGraphEquivalentToMap(graph, stringGraphMap, seqNumberer)
-        }
-      }
 
-      "provide the correct graph properties with sorting reader" in {
-        new GraphWithStringIds("toy_6nodes_list_StringIds.txt", sortNeighbors = true) {
-          hasCorrectProperties(graph)
-        }
-      }
-      "contain the right nodes and edges with sorting reader" in {
-        new GraphWithStringIds("toy_6nodes_list_StringIds.txt", sortNeighbors = true) {
-          behave like renumberedGraphEquivalentToMap(graph, stringGraphMap, seqNumberer)
-        }
-      }
+      Seq(true, false) map { sortedSource =>
 
-      "provide the correct graph properties with duplicate elimination reader" in {
-        new GraphWithStringIds("toy_6nodes_list_StringIds.txt", removeDup = true) {
-          hasCorrectProperties(graph)
+        s"contain the right nodes and edges (edgesSortedBySource = $sortedSource)" in {
+          new GraphWithStringIds("toy_6nodes_list_StringIds.txt", sortedSource = sortedSource) {
+            behave like renumberedGraphEquivalentToMap(graph, stringGraphMap, seqNumberer)
+          }
         }
-      }
-      "contain the right nodes and edges with duplicate elimination reader" in {
-        new GraphWithStringIds("toy_6nodes_list_StringIds.txt", removeDup = true) {
-          behave like renumberedGraphEquivalentToMap(graph, stringGraphMap, seqNumberer)
-        }
-      }
 
-      "provide the correct graph properties with sorting and duplicate elimination reader" in {
-        new GraphWithStringIds("toy_6nodes_list_StringIds.txt", sortNeighbors = true, removeDup = true) {
-          hasCorrectProperties(graph)
+        s"provide the correct graph properties with sorting reader (edgesSortedBySource = $sortedSource)" in {
+          new GraphWithStringIds("toy_6nodes_list_StringIds.txt", sortNeighbors = true) {
+            hasCorrectProperties(graph)
+          }
         }
-      }
-      "contain the right nodes and edges with sorting and duplicate elimination reader" in {
-        new GraphWithStringIds("toy_6nodes_list_StringIds.txt", sortNeighbors = true, removeDup = true) {
-          behave like renumberedGraphEquivalentToMap(graph, stringGraphMap, seqNumberer)
+
+        s"contain the right nodes and edges with sorting reader (edgesSortedBySource = $sortedSource)" in {
+          new GraphWithStringIds("toy_6nodes_list_StringIds.txt", sortNeighbors = true) {
+            behave like renumberedGraphEquivalentToMap(graph, stringGraphMap, seqNumberer)
+          }
         }
+
+        s"provide the correct graph properties with duplicate elimination reader (edgesSortedBySource = $sortedSource)" in {
+          new GraphWithStringIds("toy_6nodes_list_StringIds.txt", removeDup = true) {
+            hasCorrectProperties(graph)
+          }
+        }
+
+        s"contain the right nodes and edges with duplicate elimination reader (edgesSortedBySource = $sortedSource)" in {
+          new GraphWithStringIds("toy_6nodes_list_StringIds.txt", removeDup = true) {
+            behave like renumberedGraphEquivalentToMap(graph, stringGraphMap, seqNumberer)
+          }
+        }
+
+        s"provide the correct graph properties with sorting and duplicate elimination reader (edgesSortedBySource = $sortedSource)" in {
+          new GraphWithStringIds("toy_6nodes_list_StringIds.txt", sortNeighbors = true, removeDup = true) {
+            hasCorrectProperties(graph)
+          }
+        }
+
+        s"contain the right nodes and edges with sorting and duplicate elimination reader (edgesSortedBySource = $sortedSource)" in {
+          new GraphWithStringIds("toy_6nodes_list_StringIds.txt", sortNeighbors = true, removeDup = true) {
+            behave like renumberedGraphEquivalentToMap(graph, stringGraphMap, seqNumberer)
+          }
+        }
+
+        s"on file with unsorted edges provide the correct graph properties with sorting reader (edgesSortedBySource = $sortedSource)" in {
+          new GraphWithStringIds("toy_6nodes_list_StringIds_unsorted.txt", sortNeighbors = true) {
+            graph.nodeCount should be(6)
+            graph.edgeCount should be(8L)
+            graph.maxNodeId should be(5)
+          }
+        }
+
+        s"on file with unsorted edges contain the right nodes and edges with sorting reader (edgesSortedBySource = $sortedSource)" in {
+          new GraphWithStringIds("toy_6nodes_list_StringIds_unsorted.txt", sortNeighbors = true) {
+            behave like renumberedGraphEquivalentToMap(graph, stringGraphMapForUnsorted, seqNumberer)
+          }
+        }
+
       }
 
       "on file with duplicated edges provide the correct graph properties with duplicate elimination reader" in {
-        new GraphWithStringIds("toy_6nodes_list_StringIds_dup_edges.txt", removeDup = true) {
+        new GraphWithStringIds("toy_6nodes_list_StringIds_dup_edges.txt",
+          removeDup = true, sortedSource = false) {
           hasCorrectProperties(graph)
         }
       }
-      "on file with duplicated edges contain the right nodes and edges with duplicate elimination reader" in {
-        new GraphWithStringIds("toy_6nodes_list_StringIds_dup_edges.txt", removeDup = true) {
-          behave like renumberedGraphEquivalentToMap(graph, stringGraphMap, seqNumberer)
-        }
-      }
 
-      "on file with unsorted edges provide the correct graph properties with sorting reader" in {
-        new GraphWithStringIds("toy_6nodes_list_StringIds_unsorted.txt", sortNeighbors = true) {
-          graph.nodeCount should be(6)
-          graph.edgeCount should be(8L)
-          graph.maxNodeId should be(5)
-        }
-      }
-      "on file with unsorted edges contain the right nodes and edges with sorting reader" in {
-        new GraphWithStringIds("toy_6nodes_list_StringIds_unsorted.txt", sortNeighbors = true) {
-          behave like renumberedGraphEquivalentToMap(graph, stringGraphMapForUnsorted, seqNumberer)
+      "on file with duplicated edges contain the right nodes and edges with duplicate elimination reader" in {
+        new GraphWithStringIds("toy_6nodes_list_StringIds_dup_edges.txt",
+          removeDup = true, sortedSource = false) {
+          behave like renumberedGraphEquivalentToMap(graph, stringGraphMap, seqNumberer)
         }
       }
 
       "on file with unsorted and duplicated edges provide the correct graph properties with sorting+dedup reader" in {
-        new GraphWithStringIds("toy_6nodes_list_StringIds_unsorted_dup_edges.txt", removeDup = true, sortNeighbors = true) {
+        new GraphWithStringIds("toy_6nodes_list_StringIds_unsorted_dup_edges.txt",
+          removeDup = true, sortNeighbors = true, sortedSource = false) {
           graph.nodeCount should be(6)
           graph.edgeCount should be(8L)
           graph.maxNodeId should be(5)
         }
       }
       "on file with unsorted and duplicated edges contain the right nodes and edges with sorting+dedup reader" in {
-        new GraphWithStringIds("toy_6nodes_list_StringIds_unsorted_dup_edges.txt", removeDup = true, sortNeighbors = true) {
+        new GraphWithStringIds("toy_6nodes_list_StringIds_unsorted_dup_edges.txt", removeDup = true,
+          sortNeighbors = true, sortedSource = false) {
           behave like renumberedGraphEquivalentToMap(graph, stringGraphMapForUnsorted, seqNumberer)
         }
       }
@@ -179,6 +194,7 @@ class ListOfEdgesGraphReaderSpec extends WordSpec with GraphBehaviours[Node] wit
           graph.maxNodeId should be(5)
         }
       }
+
       "contain the right nodes and edges" in {
         new GraphWithLongIds {
           behave like renumberedGraphEquivalentToMap(graph, longGraphMap, seqNumberer)

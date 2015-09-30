@@ -194,7 +194,7 @@ object SharedArrayBasedDirectedGraph {
 
       def findInEdgesAndShardsSizes(sharedEdgeArray: Array[Array[Int]], shardsLengths: Array[AtomicInteger],
                                     nodeIdSet: Array[Byte]): Future[(Array[AtomicInteger], Array[AtomicInteger])] = {
-        log.info("calculating in edges shards sizes")
+        log.debug("calculating in edges shards sizes")
         statsReceiver.timeFuture("graph_load_find_in_edge_shards_sizes") {
           val inEdgesSizes = new Array[AtomicInteger](maxNodeId + 1)
           val inEdgesShardsSizes = Array.fill(numOfShards)(new AtomicInteger())

@@ -16,11 +16,8 @@ package com.twitter.cassovary.util.io
 import com.twitter.cassovary.graph.StoredGraphDir.StoredGraphDir
 import com.twitter.cassovary.util.{NodeNumberer, ParseString}
 import com.twitter.cassovary.graph.{StoredGraphDir, NodeIdEdgesMaxId}
-import com.twitter.logging.Logger
-import com.twitter.util.NonFatal
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
-import java.io.IOException
-import scala.io.Source
+
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -61,6 +58,8 @@ import scala.collection.mutable.ArrayBuffer
  * @param removeDuplicates if false (default), the edges are guaranteed to be unique
  * @param sortNeighbors if true, the neighbors of a node should be sorted by this class
  * @param separator the character that separates the source and destination ids
+ * @param sortedBySourceId if true (default), all the edges belonging to the same sourceId are given
+ *                         on consecutive lines. This allows efficient internal data structure.
  */
 class ListOfEdgesGraphReader[T](
     val directory: String,
@@ -69,53 +68,101 @@ class ListOfEdgesGraphReader[T](
     idReader: (String, Int, Int) => T,
     removeDuplicates: Boolean = false,
     sortNeighbors: Boolean = false,
-    separator: Char = ' '
+    separator: Char = ' ',
+    sortedBySourceId: Boolean = true
     ) extends GraphReaderFromDirectory[T] {
-
-  private lazy val log = Logger.get
 
   private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[T])
     extends Iterable[NodeIdEdgesMaxId] {
 
-    override def iterator = new Iterator[NodeIdEdgesMaxId] {
+    def twoNodeIdsIterator(): Iterator[(Int, Int)] = {
+      new TwoTsFileReader[T](filename, separator, idReader) map {
+        case (source, dest) =>
+          val internalFromId = nodeNumberer.externalToInternal(source)
+          val internalToId = nodeNumberer.externalToInternal(dest)
+          (internalFromId, internalToId)
+      }
+    }
 
-      var lastLineParsed = 0
+    // accumulate neighbors if given in sorted order of fromId
+    private def edgesSourceSorted() = new Iterable[(Int, ArrayBuffer[Int])] {
+
+      def iterator = new Iterator[(Int, ArrayBuffer[Int])] {
+
+        private val nodeIds = twoNodeIdsIterator()
+
+        private var _next = {
+          if (nodeIds.hasNext) {
+            val (from, to) = nodeIds.next()
+            Some(from, ArrayBuffer(to))
+          }
+          else None
+        }
+
+        def hasNext: Boolean = _next.isDefined
+
+        def next() = {
+          val curr = _next.get
+          _next = accumulateNeighbors(curr)
+          curr
+        }
+
+        // note that this potentially modifies currPartial
+        private def accumulateNeighbors(currPartial: (Int, ArrayBuffer[Int])) = {
+          val expectedFromId = currPartial._1
+          nodeIds find { case (from, to) =>
+            val accum = from == expectedFromId
+            if (accum) currPartial._2 += to
+            !accum
+          } map { case (from, to) => (from, ArrayBuffer(to))}
+        }
+
+      }
+    }
+
+    // accumulate neighbors if given in sorted order of fromId
+    private def edgesSourceMap() = new Iterable[(Int, ArrayBuffer[Int])] {
 
       def readEdgesBySource(): Int2ObjectOpenHashMap[ArrayBuffer[Int]] = {
-        log.info("Starting reading from file %s...\n", filename)
-        //val directedEdgePattern = ("""^(\w+)""" + separator + """(\w+)""").r
-        val lines = Source.fromFile(filename).getLines()
-          .map{x => {lastLineParsed += 1; x}}
-
         val edgesBySource = new Int2ObjectOpenHashMap[ArrayBuffer[Int]]()
-
-        lines.foreach { line1 =>
-          val line = line1.trim
-          if (line.charAt(0) != '#') {
-            val i = line.indexOf(separator)
-            val source = idReader(line, 0, i - 1)
-            val dest = idReader(line, i + 1, line.length - 1)
-            val internalFromId = nodeNumberer.externalToInternal(source)
-            val internalToId = nodeNumberer.externalToInternal(dest)
+        val nodeIds = twoNodeIdsIterator()
+        nodeIds foreach {
+          case (internalFromId, internalToId) =>
             if (edgesBySource.containsKey(internalFromId)) {
               edgesBySource.get(internalFromId) += internalToId
             } else {
               edgesBySource.put(internalFromId, ArrayBuffer(internalToId))
             }
-          }
         }
-        log.info("Finished reading from file %s...\n", filename)
-        Source.fromFile(filename).close()
         edgesBySource
       }
 
-      private lazy val edgesBySource = readEdgesBySource()
+      private lazy val _edgesSource = readEdgesBySource().int2ObjectEntrySet()
 
-      private lazy val edgesIterator = edgesBySource.int2ObjectEntrySet().fastIterator()
+      def iterator = new Iterator[(Int, ArrayBuffer[Int])] {
+        private val _edgesIterator = _edgesSource.fastIterator()
 
-      override def hasNext: Boolean = edgesIterator.hasNext
+        def hasNext: Boolean = _edgesIterator.hasNext
 
-      override def next(): NodeIdEdgesMaxId = {
+        def next(): (Int, ArrayBuffer[Int]) = {
+          val entry = _edgesIterator.next()
+          (entry.getKey, entry.getValue)
+        }
+      }
+    }
+
+    private lazy val idAndEdgesIterable = {
+      if (sortedBySourceId) edgesSourceSorted()
+      else edgesSourceMap()
+    }
+
+    def iterator = new Iterator[NodeIdEdgesMaxId] {
+
+      private lazy val idAndEdgesIterator = idAndEdgesIterable.iterator
+
+      def hasNext: Boolean = idAndEdgesIterator.hasNext
+
+      def next() = {
 
         def prepareEdges(buf: ArrayBuffer[Int]) : (Array[Int], Int) = {
           (removeDuplicates, sortNeighbors) match {
@@ -131,16 +178,9 @@ class ListOfEdgesGraphReader[T](
               (b, b(b.length - 1))
           }
         }
-
-        try {
-          val elem = edgesIterator.next()
-          val (edges, maxId) = prepareEdges(elem.getValue)
-          NodeIdEdgesMaxId(elem.getKey, edges, maxId)
-        } catch {
-          case NonFatal(exc) =>
-            throw new IOException("Parsing failed near line: %d in %s"
-              .format(lastLineParsed, filename), exc)
-        }
+        val (id, buf) = idAndEdgesIterator.next()
+        val (edges, maxId) = prepareEdges(buf)
+        NodeIdEdgesMaxId(id, edges, maxId)
       }
     }
   }
