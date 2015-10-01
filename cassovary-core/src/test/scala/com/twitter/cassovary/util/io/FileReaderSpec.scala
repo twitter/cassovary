@@ -45,7 +45,7 @@ class FileReaderSpec extends WordSpec with Matchers {
     "using strings" should {
       checkStrings("toy_3nodes.txt")
       checkStrings("toy_list5edges.txt")
-      checkStrings("toy_6nodes_list_Longids.txt")
+      checkStrings("toy_6nodes_list_LongIds.txt")
     }
 
     "using pair of ids" should {
