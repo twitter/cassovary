@@ -13,10 +13,9 @@
  */
 package com.twitter.cassovary.graph
 
-import it.unimi.dsi.fastutil.objects._
+import com.twitter.cassovary.util.collections.{CQueue, Order}
 import it.unimi.dsi.fastutil.ints._
-import java.util.Comparator
-
+import it.unimi.dsi.fastutil.objects._
 
 /**
  * Represents a collection of directed paths. For example, a collection of paths out of
@@ -34,7 +33,7 @@ class DirectedPathCollection {
    * Priority queue and comparator for sorting top paths. Reused across nodes.
    */
   val comparator = new PathCounterComparator(pathCountsPerId, true)
-  val priQ = new ObjectHeapPriorityQueue[DirectedPath](comparator)
+  val priQ = CQueue.priority[DirectedPath](comparator)
 
   /**
    * Appends node to the current path and record this path against the node.
@@ -68,13 +67,15 @@ class DirectedPathCollection {
 
     val pathIterator = pathCountMap.keySet.iterator
     while (pathIterator.hasNext) {
-      val path = pathIterator.next
-      priQ.enqueue(path)
+      val path = pathIterator.next()
+      priQ += path
     }
 
-    while (returnMap.size < num && !priQ.isEmpty) {
-      val path = priQ.dequeue()
+    var size = 0
+    while (size < num && !priQ.isEmpty) {
+      val path = priQ.deque()
       returnMap.put(path, pathCountMap.get(path))
+      size += 1
     }
 
     returnMap
@@ -140,7 +141,7 @@ class DirectedPathCollection {
 }
 
 class PathCounterComparator(pathCountsPerId: Int2ObjectOpenHashMap[Object2IntOpenHashMap[DirectedPath]], descending: Boolean)
-  extends Comparator[DirectedPath] {
+  extends Order[DirectedPath] {
 
   var infoMap: Object2IntOpenHashMap[DirectedPath] = null
 

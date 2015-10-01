@@ -13,6 +13,7 @@
  */
 package com.twitter.cassovary.graph.tourist
 
+import com.twitter.cassovary.util.collections.{Order, CQueue}
 import it.unimi.dsi.fastutil.ints._
 import java.{util => jutil}
 import scala.collection.JavaConversions._
@@ -37,7 +38,7 @@ class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce:
    * Priority queue and comparator for sorting prev nbrs. Reused across nodes.
    */
    val comparator = new PrevNbrComparator(underlyingMap, true)
-   val priQ = new IntHeapPriorityQueue(comparator)
+   val priQ = CQueue.priority[Int](comparator)
 
   override def recordInfo(id: Int, nodeMap: Int2IntMap) {
     throw new UnsupportedOperationException("Use recordPreviousNeighbor instead")
@@ -77,17 +78,17 @@ class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce:
     val nodeIterator = infoMap.keySet.iterator
     while (nodeIterator.hasNext) {
       val nbrId = nodeIterator.next()
-      priQ.enqueue(nbrId)
+      priQ += nbrId
     }
 
     val size = num match {
       case Some(n) => n
-      case None => priQ.size
+      case None => priQ.size()
     }
 
     while (result.size < size && !priQ.isEmpty) {
-      val nbrId = priQ.dequeueInt()
-      result += ((nbrId, infoMap(nbrId)))
+      val nbrId = priQ.deque()
+      result.put(nbrId, infoMap(nbrId))
     }
 
     result
@@ -112,17 +113,12 @@ class PrevNbrCounter(val numTopPathsPerNode: Option[Int], override val onlyOnce:
 }
 
 class PrevNbrComparator(nbrCountsPerId: Int2ObjectOpenHashMap[Int2IntOpenHashMap],
-                        descending: Boolean) extends IntComparator {
+                        descending: Boolean) extends Order[Int] {
 
   var infoMap: Int2IntOpenHashMap = null
 
   def setNode(id: Int) {
     infoMap = nbrCountsPerId.get(id)
-  }
-
-  // TODO ensure scala runtime does not call this boxed version
-  override def compare(id1: java.lang.Integer, id2: java.lang.Integer): Int = {
-    compare(id1.intValue, id2.intValue)
   }
 
   override def compare(id1: Int, id2: Int): Int = {
