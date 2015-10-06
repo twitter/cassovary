@@ -16,8 +16,9 @@ package com.twitter.cassovary.graph
 import com.twitter.cassovary.graph.GraphDir._
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.twitter.cassovary.graph.tourist.{BoolInfoKeeper, IntInfoKeeper, PrevNbrCounter}
+import com.twitter.cassovary.util.collections.CQueue
 import com.twitter.logging.Logger
-import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue
+
 import scala.annotation.tailrec
 import scala.util.Random
 
@@ -256,7 +257,7 @@ trait QueueBasedTraverser[+V <: Node] extends Traverser[V] {
   /**
    * Queue that stores nodes to be visited next.
    */
-  protected val queue = new IntArrayFIFOQueue()
+  protected val queue = CQueue.fifo[Int]()
 
   /**
    * Number of nodes ever enqueued in the `queue`.
@@ -356,7 +357,7 @@ trait QueueBasedTraverser[+V <: Node] extends Traverser[V] {
       case GraphTraverserNodePriority.LIFO =>
         nodes.reverse.foreach (node => queue.enqueueFirst(node))
       case GraphTraverserNodePriority.FIFO =>
-        nodes.foreach (node => queue.enqueue(node))
+        nodes.foreach (node => queue += node)
     }
   }
 
@@ -376,13 +377,13 @@ trait QueueBasedTraverser[+V <: Node] extends Traverser[V] {
     if (queue.isEmpty)
       None
     else
-      Some(queue.firstInt())
+      Some(queue.first())
   }
 
   def next() = {
     findNextNodeToVisit() match {
       case Some(nextId) =>
-        if (shouldBeDequeuedBeforeProcessing) queue.dequeueInt()
+        if (shouldBeDequeuedBeforeProcessing) queue.deque()
         val node = getExistingNodeById(graph, nextId)
         processNode(node)
         node
@@ -511,7 +512,7 @@ class DepthFirstTraverser[+V <: Node](val graph: Graph[V], val dir: GraphDir, va
     if (queue.isEmpty) {
       None
     } else {
-      val next = queue.firstInt()
+      val next = queue.first()
       val visitedBefore = coloring.get(next) match {
         case Walk.NodeColor.Visited => true
         case _ => false
@@ -526,7 +527,7 @@ class DepthFirstTraverser[+V <: Node](val graph: Graph[V], val dir: GraphDir, va
   }
 
   def handleVisitedInQueue(next: Int) {
-    queue.dequeueInt()
+    queue.deque()
   }
 
   // can't limit number of nodes added to the queue, because we skip some nodes
