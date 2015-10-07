@@ -14,7 +14,8 @@
 
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.twitter.cassovary.graph.{TestGraphs, DirectedGraph, GraphUtils, Node}
-import com.twitter.finagle.{Http, Service}
+import com.twitter.finagle.{Httpx, Service}
+import com.twitter.finagle.httpx.{Request, Response, Status}
 import com.twitter.io.Charsets.Utf8
 import com.twitter.logging.Logger
 import com.twitter.server.TwitterServer
@@ -44,21 +45,21 @@ object CassovaryServer extends TwitterServer {
 
   def main() {
 
-    val service = new Service[HttpRequest, HttpResponse] {
-      def apply(req: HttpRequest): Future[HttpResponse] = Future {
+    val service = new Service[Request, Response] {
+      def apply(request: Request): Future[Response] = Future {
         val graph = TestGraphs.generateRandomGraph(100, 0.1)
         walkOn(graph)
         val content = "Finished walk on graph with %d nodes and %s edges\n".format(graph.nodeCount,
           graph.edgeCount)
-        val response =
-          new DefaultHttpResponse(req.getProtocolVersion, HttpResponseStatus.OK)
-        response.setContent(copiedBuffer(content, Utf8))
+        val response = request.response
+        response.status = Status.Ok
+        response.write(content)
         response
       }
     }
 
     // start Twitter Server
-    val server = Http.serve(":8888", service)
+    val server = Httpx.serve(":8888", service)
     onExit {
       server.close()
     }

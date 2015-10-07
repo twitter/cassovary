@@ -6,9 +6,9 @@ import xerial.sbt.Sonatype._
 
 object Cassovary extends Build {
 
-  val CassovaryLibraryVersion = "6.1.0"
+  val CassovaryLibraryVersion = "6.1.1"
 
-  val utilVersion = "6.23.0"
+  val utilVersion = "6.28.0"
   val fastUtilsDependency = "it.unimi.dsi" % "fastutil" % "7.0.7"
 
   def util(which: String) =
@@ -20,19 +20,18 @@ object Cassovary extends Build {
   val sharedSettings = Seq(
     version := CassovaryLibraryVersion,
     organization := "com.twitter",
-    scalaVersion := "2.11.5",
-    crossScalaVersions := Seq("2.10.4", "2.11.5"),
+    scalaVersion := "2.11.7",
+    crossScalaVersions := Seq("2.10.4", "2.11.7"),
     retrieveManaged := true,
     libraryDependencies ++= Seq(
       "com.google.guava" % "guava" % "16.0.1",
       fastUtilsDependency % "provided",
-      "org.mockito" % "mockito-all" % "1.8.5" % "test",
+      "org.mockito" % "mockito-all" % "1.9.5" % "test",
       util("core"),
       util("logging"),
-      "org.scalatest" %% "scalatest" % "2.2.3" % "test",
+      "org.scalatest" %% "scalatest" % "2.2.4" % "test",
       "junit" % "junit" % "4.10" % "test",
-      "com.twitter.common" % "metrics" % "0.0.29",
-      "com.twitter" %% "finagle-stats" % "6.24.0",
+      "com.twitter" %% "finagle-stats" % "6.29.0",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     ),
     resolvers += "twitter repo" at "http://maven.twttr.com",
@@ -132,8 +131,7 @@ object Cassovary extends Build {
       name := "cassovary-server",
       libraryDependencies ++= Seq(
         fastUtilsDependency,
-        "com.twitter" %% "finagle-http" % "6.24.0",
-        "com.twitter" %% "twitter-server" % "1.9.0"
+        "com.twitter" %% "twitter-server" % "1.14.0"
       )
   ).dependsOn(cassovaryCore)
 
