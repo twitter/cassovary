@@ -23,7 +23,7 @@ trait GraphBehaviours[V <: Node] extends Matchers {
     "have correct number of nodes" in {
       graph.nodeCount shouldEqual numNodes
     }
-    "have number of edges less than in full graph" in {
+    "have number of edges less than in complete graph" in {
       graph.edgeCount should be <= (numNodes * (numNodes - 1).toLong)
     }
   }
@@ -95,12 +95,12 @@ trait GraphBehaviours[V <: Node] extends Matchers {
         }
         if (checkOrdering) {
           withClue("graph's nodeid " + id + "'s edges do not match: in graph = " +
-            a + " edges = " + b.get) {
+            a + " edges = " + b.get + "\n") {
             a shouldEqual b.get
           }
         } else {
           withClue("graph's nodeid " + id + "'s edges do not match: in graph = " +
-            a.toSet + " edges = " + b.get.toSet) {
+            a.toSet + " edges = " + b.get.toSet + "\n") {
             a.toSet shouldEqual b.get.toSet
           }
         }

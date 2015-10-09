@@ -74,7 +74,7 @@ trait GraphReader[T] {
    *                  128 is an arbitrary default
    */
   def toSharedArrayBasedDirectedGraph(numShards: Int = 128) = {
-    SharedArrayBasedDirectedGraph(iterableSeq, parallelismLimit, storedGraphDir, numShards)
+    SharedArrayBasedDirectedGraph(iterableSeq, parallelismLimit, storedGraphDir)
   }
 
   /**

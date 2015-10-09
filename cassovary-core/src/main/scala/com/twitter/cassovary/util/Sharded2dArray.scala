@@ -37,11 +37,3 @@ class Sharded2dArray[@specialized(Int, Long) T](shards: Array[Array[T]],
     }
   }
 }
-
-object Sharded2dArray {
-  def fromArrays(shards: Array[Array[Int]], nodeSet: Array[Byte],
-                 offsets: Array[Int], lengths: Array[Int]): Sharded2dArray[Int] = {
-    new Sharded2dArray[Int](shards, x => nodeSet(x) != 0, offsets, lengths,
-                            x => x % shards.length)
-  }
-}
