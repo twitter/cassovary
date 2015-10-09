@@ -15,7 +15,7 @@ package com.twitter.cassovary.graph.bipartite
 
 import com.twitter.cassovary.util.SmallBoundedPriorityQueue
 import com.twitter.cassovary.graph.{GraphUtils, Node}
-import com.twitter.finagle.stats.DefaultStatsReceiver
+import com.twitter.finagle.stats.{DefaultStatsReceiver, Stat}
 import com.twitter.logging.Logger
 import scala.collection.mutable
 
@@ -171,9 +171,9 @@ class IterativeLinkAnalyzer(graphUtils: GraphUtils[Node], resetProbOnLeft: Doubl
 
     if (sortOutputByScore) {
       //sort output
-      val sortedLeft = statsReceiver.time("bila_sort_left") { sortedListFrom(nodeInfos(0)) }
+      val sortedLeft = Stat.time(statsReceiver.stat("bila_sort_left")) { sortedListFrom(nodeInfos(0)) }
       log.ifDebug { "Finished sorting left" }
-      val sortedRight = statsReceiver.time("bila_sort_right") { sortedListFrom(nodeInfos(1)) }
+      val sortedRight = Stat.time(statsReceiver.stat("bila_sort_right")) { sortedListFrom(nodeInfos(1)) }
       log.ifDebug { "Finished sorting right" }
       (sortedLeft, sortedRight)
     } else {
