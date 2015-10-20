@@ -68,13 +68,8 @@ trait GraphReader[T] {
       forceSparseRepr)
   }
 
-  /**
-   * Create a `SharedArrayBasedDirectedGraph`
-   * @param numShards Number of shards to split the in-memory array into
-   *                  128 is an arbitrary default
-   */
-  def toSharedArrayBasedDirectedGraph(numShards: Int = 128) = {
-    SharedArrayBasedDirectedGraph(iterableSeq, parallelismLimit, storedGraphDir)
+  def toSharedArrayBasedDirectedGraph(forceSparseRepr: Option[Boolean] = None) = {
+    SharedArrayBasedDirectedGraph(iterableSeq, parallelismLimit, storedGraphDir, forceSparseRepr)
   }
 
   /**

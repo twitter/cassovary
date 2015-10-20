@@ -14,11 +14,11 @@
 package com.twitter.cassovary.util.io
 
 import com.twitter.cassovary.graph.StoredGraphDir.StoredGraphDir
+import com.twitter.cassovary.util.collections.ReusableArrayBuffer
 import com.twitter.cassovary.util.{NodeNumberer, ParseString}
 import com.twitter.cassovary.graph.{StoredGraphDir, NodeIdEdgesMaxId}
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 
-import scala.collection.mutable.ArrayBuffer
 
 /**
  * Reads in a multi-line list of edges from multiple files in a directory.
@@ -33,8 +33,6 @@ import scala.collection.mutable.ArrayBuffer
  * One can optionally specify two additional operations during reading:
  * - to remove duplicate edges
  * - to sort list of adjacent nodes
- *
- * For a default version for `Int` graphs see [[ListOfEdgesGraphReader.forIntIds]] builder method.
  *
  * In each file, a directed edges is defined by a pair of T: from and to.
  * For example, we use `String` ids with ` ` (space) `separator`, when
@@ -61,6 +59,7 @@ import scala.collection.mutable.ArrayBuffer
  * @param sortedBySourceId if true (default), all the edges belonging to the same sourceId are given
  *                         on consecutive lines. This allows efficient internal data structure.
  */
+
 class ListOfEdgesGraphReader[T](
     val directory: String,
     override val prefixFileNames: String,
@@ -76,25 +75,35 @@ class ListOfEdgesGraphReader[T](
     extends Iterable[NodeIdEdgesMaxId] {
 
     def twoNodeIdsIterator(): Iterator[(Int, Int)] = {
-      new TwoTsFileReader[T](filename, separator, idReader) map {
-        case (source, dest) =>
-          val internalFromId = nodeNumberer.externalToInternal(source)
-          val internalToId = nodeNumberer.externalToInternal(dest)
-          (internalFromId, internalToId)
+      new TwoTsFileReader[T](filename, separator, idReader) map { case (source, dest) =>
+        val internalFromId = nodeNumberer.externalToInternal(source)
+        val internalToId = nodeNumberer.externalToInternal(dest)
+        (internalFromId, internalToId)
       }
     }
 
     // accumulate neighbors if given in sorted order of fromId
-    private def edgesSourceSorted() = new Iterable[(Int, ArrayBuffer[Int])] {
+    private def edgesSourceSorted() = new Iterable[ReusableArrayBuffer] {
 
-      def iterator = new Iterator[(Int, ArrayBuffer[Int])] {
+      def iterator = new Iterator[ReusableArrayBuffer] {
+
+        private val bufs = Array.fill[ReusableArrayBuffer](2)(new ReusableArrayBuffer())
+        private var nextIndx = 0
+        private def startNewBuf(source: Int, dest: Int) = {
+          nextIndx = 1 - nextIndx
+          val buf = bufs(nextIndx)
+          buf.clear()
+          buf += source //head of buf is always source
+          buf += dest
+          buf
+        }
 
         private val nodeIds = twoNodeIdsIterator()
 
         private var _next = {
           if (nodeIds.hasNext) {
             val (from, to) = nodeIds.next()
-            Some(from, ArrayBuffer(to))
+            Some(startNewBuf(from, to))
           }
           else None
         }
@@ -103,50 +112,49 @@ class ListOfEdgesGraphReader[T](
 
         def next() = {
           val curr = _next.get
-          _next = accumulateNeighbors(curr)
-          curr
-        }
-
-        // note that this potentially modifies currPartial
-        private def accumulateNeighbors(currPartial: (Int, ArrayBuffer[Int])) = {
-          val expectedFromId = currPartial._1
-          nodeIds find { case (from, to) =>
+          val expectedFromId = curr(0)
+          _next = nodeIds find { case (from, to) =>
             val accum = from == expectedFromId
-            if (accum) currPartial._2 += to
+            if (accum) curr += to
             !accum
-          } map { case (from, to) => (from, ArrayBuffer(to))}
+          } map { case (from, to) =>
+            startNewBuf(from, to)
+          }
+          curr
         }
 
       }
     }
 
     // accumulate neighbors if given in sorted order of fromId
-    private def edgesSourceMap() = new Iterable[(Int, ArrayBuffer[Int])] {
+    private def edgesSourceMap() = new Iterable[ReusableArrayBuffer] {
 
-      def readEdgesBySource(): Int2ObjectOpenHashMap[ArrayBuffer[Int]] = {
-        val edgesBySource = new Int2ObjectOpenHashMap[ArrayBuffer[Int]]()
+      def readEdgesBySource(): Int2ObjectOpenHashMap[ReusableArrayBuffer] = {
+        val edgesBySource = new Int2ObjectOpenHashMap[ReusableArrayBuffer]()
         val nodeIds = twoNodeIdsIterator()
-        nodeIds foreach {
-          case (internalFromId, internalToId) =>
-            if (edgesBySource.containsKey(internalFromId)) {
+        nodeIds foreach { case (internalFromId, internalToId) =>
+          if (edgesBySource.containsKey(internalFromId)) {
               edgesBySource.get(internalFromId) += internalToId
-            } else {
-              edgesBySource.put(internalFromId, ArrayBuffer(internalToId))
-            }
+          } else {
+            val buf = new ReusableArrayBuffer(4)
+            buf += internalFromId
+            buf += internalToId
+            edgesBySource.put(internalFromId, buf)
+          }
         }
         edgesBySource
       }
 
       private lazy val _edgesSource = readEdgesBySource().int2ObjectEntrySet()
 
-      def iterator = new Iterator[(Int, ArrayBuffer[Int])] {
+      def iterator = new Iterator[ReusableArrayBuffer] {
         private val _edgesIterator = _edgesSource.fastIterator()
 
         def hasNext: Boolean = _edgesIterator.hasNext
 
-        def next(): (Int, ArrayBuffer[Int]) = {
+        def next(): ReusableArrayBuffer = {
           val entry = _edgesIterator.next()
-          (entry.getKey, entry.getValue)
+          entry.getValue
         }
       }
     }
@@ -164,22 +172,25 @@ class ListOfEdgesGraphReader[T](
 
       def next() = {
 
-        def prepareEdges(buf: ArrayBuffer[Int]) : (Array[Int], Int) = {
+        def prepareEdges(buf: Array[Int]) : (Array[Int], Int) = {
           (removeDuplicates, sortNeighbors) match {
-            case (false, false) => (buf.toArray, buf.max)
+            case (false, false) => (buf, buf.max)
             case (true, false) =>
-              val b = buf.distinct.toArray
+              val b = buf.distinct
               (b, b.max)
             case (false, true) =>
-              val b = buf.sorted.toArray
+              val b = buf.sorted
               (b, b(b.length - 1))
             case (true, true) =>
-              val b = buf.sorted.distinct.toArray
+              val b = buf.sorted.distinct
               (b, b(b.length - 1))
           }
         }
-        val (id, buf) = idAndEdgesIterator.next()
-        val (edges, maxId) = prepareEdges(buf)
+
+        val buf = idAndEdgesIterator.next()
+        val id = buf(0)
+        val edgesArr = buf.toArray(1)
+        val (edges, maxId) = prepareEdges(edgesArr)
         NodeIdEdgesMaxId(id, edges, maxId)
       }
     }

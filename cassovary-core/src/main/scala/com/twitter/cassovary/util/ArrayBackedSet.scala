@@ -19,9 +19,20 @@ class ArrayBackedSet(val maxVal: Int) {
 
   def contains(i: Int) = underlying(i) == 1
 
-  def iterator = (0 to maxVal).filter( i => underlying(i) != 0).iterator
+  def iterator = Iterator.range(0, maxVal + 1).filter(i => underlying(i) != 0)
+
+  // avoid the boxing/unboxing of Iterator where possible
+  def foreach[U](f: Int => U): Unit = {
+    for (i <- 0 to maxVal) {
+      if (underlying(i) != 0) f(i)
+    }
+  }
 
   // this is expensive as it iterates through the whole set, so use carefully
-  def size = iterator.size
+  def size = {
+    var sz = 0
+    foreach { _ => sz += 1 }
+    sz
+  }
 
 }

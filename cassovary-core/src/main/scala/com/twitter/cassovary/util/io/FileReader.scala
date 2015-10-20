@@ -19,7 +19,7 @@ abstract class FileReader[T](fileName: String) extends Iterator[T] {
 
   def hasNext: Boolean = _next.isDefined
   def next(): T = {
-    val curr = _next
+    val curr = saveCurr(_next)
     _next = checkNext()
     if (!hasNext) close()
     curr.get
@@ -27,9 +27,14 @@ abstract class FileReader[T](fileName: String) extends Iterator[T] {
 
   protected def processOneLine(line: String): T
 
+  // by default, to save state, we simply return x
+  // but this is available to be overridden should x
+  // be a reference that might be lost.
+  protected def saveCurr(x: Option[T]) = x
+
   private def checkNext(): Option[T] = {
     var found: Option[T] = None
-    while (lines.hasNext && !found.isDefined) {
+    while (lines.hasNext && found.isEmpty) {
       val line = lines.next().trim
       if (line.charAt(0) != '#') {
         try {
@@ -52,7 +57,7 @@ abstract class FileReader[T](fileName: String) extends Iterator[T] {
 }
 
 // T is the id type, typically Int or Long or String
-class TwoTsFileReader[@specialized(Int) T](fileName: String,
+class TwoTsFileReader[T](fileName: String,
     separator: Char,
     idReader: (String, Int, Int) => T)
     extends FileReader[(T, T)](fileName) {

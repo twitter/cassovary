@@ -52,7 +52,7 @@ object ArrayBasedDirectedGraph {
 
   /**
    * @param forceSparseRepr if Some(true), the code saves storage at the expense of speed
-   *                        by using ConcurrentHashMap instead of Array. If Some(false), chooses
+   *                        by using HashMap instead of Array. If Some(false), chooses
    *                        Array instead. If None, the code calculates whether the graph
    *                        is sparse based on the number of nodes and maximum node id.
    * @return
@@ -84,7 +84,7 @@ object ArrayBasedDirectedGraph {
       // were similar to or greater than maxNodeId, then the extra overhead of allocating
       // an array of size maxNodeId is not too much relative to the storage occupied by
       // the edges themselves
-      (numNodes * 10 < maxNodeId) && (numEdges < maxNodeId)
+      (numNodes * 4 < maxNodeId) && (numEdges < maxNodeId)
     }
 
     private val table = Int2ObjectMap[Node](considerGraphSparse, Some(numNodes), Some(maxNodeId),
@@ -268,8 +268,8 @@ object ArrayBasedDirectedGraph {
         allNodeIdsSet: ArrayBackedSet): Future[Seq[Node]] = futurePool {
       /* now create these empty nodes */
       val nodesWithNoOutEdges = new mutable.ArrayBuffer[Node]()
-      allNodeIdsSet.iterator foreach { i =>
-        if (!nodeColl.get(i).isDefined) {
+      allNodeIdsSet.foreach { i =>
+        if (nodeColl.get(i).isEmpty) {
           val node = ArrayBasedDirectedNode(i, emptyArray, storedGraphDir,
             neighborsSortingStrategy != LeaveUnsorted)
           nodeColl.add(node)

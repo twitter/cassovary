@@ -5,10 +5,12 @@ import java.util.concurrent.atomic.AtomicInteger
 import com.google.common.annotations.VisibleForTesting
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.graph.node._
+import com.twitter.cassovary.util.collections.Int2IntMap
 import com.twitter.cassovary.util.{ArrayBackedSet, BoundedFuturePool, Sharded2dArray}
 import com.twitter.finagle.stats.{Stat, DefaultStatsReceiver}
 import com.twitter.logging.Logger
 import com.twitter.util.{Await, Future, FuturePool}
+
 
 object SharedArrayBasedDirectedGraph {
   private lazy val log = Logger.get()
@@ -23,7 +25,6 @@ object SharedArrayBasedDirectedGraph {
     def hash(i: Int) = i & mask
   }
 
-
   /**
    * Construct a shared array-based graph from a sequence of NodeIdEdgesMaxId iterables.
    * Eg each Iterable[NodeIdEdgesMaxId] could come from one graph dump file.
@@ -37,22 +38,31 @@ object SharedArrayBasedDirectedGraph {
    * @param iterableSeq the sequence of nodes each with its own edges
    * @param parallelismLimit number of threads construction uses
    * @param storedGraphDir the direction of the graph to be built
+   * @param forceSparseRepr if Some(true), the code saves storage at the expense of speed
+   *                        by using ConcurrentHashMap instead of Array. If Some(false), chooses
+   *                        Array instead. If None, the code calculates whether the graph
+   *                        is sparse based on the number of nodes and maximum node id.
    */
   def apply(iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]], parallelismLimit: Int,
-      storedGraphDir: StoredGraphDir) = {
+      storedGraphDir: StoredGraphDir, forceSparseRepr: Option[Boolean] = None) = {
     val constructor = new SharedArrayBasedDirectedGraphConstructor(iterableSeq, parallelismLimit,
-      storedGraphDir)
+      storedGraphDir, forceSparseRepr)
     constructor.construct()
   }
 
   private class SharedArrayBasedDirectedGraphConstructor(
     iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]],
     parallelismLimit: Int,
-    storedGraphDir: StoredGraphDir) {
-
-    val nodeReadingLoggingFrequency = 1000000
+    storedGraphDir: StoredGraphDir,
+    forceSparseRepr: Option[Boolean] = None) {
 
     private val futurePool = new BoundedFuturePool(FuturePool.unboundedPool, parallelismLimit)
+
+    // info kept for each shard while building
+    private class PerShardInfo {
+      val edgeCount = new AtomicInteger()
+      val nextFreeEdgeIndex = new AtomicInteger()
+    }
 
     /**
      * For each shard, go over each NodeIdEdgesMaxId and calculate the size of this shard by
@@ -61,24 +71,25 @@ object SharedArrayBasedDirectedGraph {
      *
      * @return shared graph meta-information object with filled all information but node count
      */
-    private def readMetaInfoPerShard(sharedEdgeArraySizeCount: Array[AtomicInteger]):
+    private def readMetaInfoPerShard(shardsInfo: Array[PerShardInfo]):
     Future[Seq[SharedGraphMetaInfo]] = {
       log.info("read out num of edges and max id from files in parallel")
       val stat = statsReceiver.stat("graph_load_read_out_edge_sizes_dump_files")
       Stat.timeFuture(stat) {
         val futures = iterableSeq map {
           edgesIterable => futurePool {
-            var id, newMaxId, numOfEdges, edgesLength = 0
+            var id, newMaxId, numOfEdges, edgesLength, numNodes = 0
             val iteratorForEdgeSizes = edgesIterable.iterator
             iteratorForEdgeSizes foreach { item =>
               id = item.id
               newMaxId = newMaxId max item.maxId
               edgesLength = item.edges.length
               // +1 because we will keep edgesLength in the very first index
-              sharedEdgeArraySizeCount(EdgeShards.hash(id)).addAndGet(edgesLength + 1)
+              shardsInfo(EdgeShards.hash(id)).edgeCount.addAndGet(edgesLength + 1)
               numOfEdges += edgesLength
+              numNodes += 1
             }
-            SharedGraphMetaInfo(newMaxId, numOfEdges)
+            SharedGraphMetaInfo(newMaxId, numOfEdges, numNodes)
           }
         }
         Future.collect(futures)
@@ -93,7 +104,7 @@ object SharedArrayBasedDirectedGraph {
 
       def aggregate(meta1: SharedGraphMetaInfo, meta2: SharedGraphMetaInfo) = {
         SharedGraphMetaInfo(meta1.maxId max meta2.maxId,
-          meta1.edgeCount + meta2.edgeCount)
+          meta1.edgeCount + meta2.edgeCount, meta1.numNodes + meta2.numNodes)
       }
 
       partsMetaInfo.reduce(aggregate)
@@ -102,55 +113,52 @@ object SharedArrayBasedDirectedGraph {
     /**
      * Instantiates shared array. Resets `sharedEdgeArraySizeCount`.
      */
-    private def instantiateSharedArray(sharedEdgeArraySizeCount: Array[AtomicInteger]):
+    private def instantiateSharedArray(shardsInfo: Array[PerShardInfo]):
     Array[Array[Int]] = {
       // instantiate shared array (2-dimensional)
       val sharedEdgeArray = new Array[Array[Int]](EdgeShards.numShards)
       for (i <- 0 until EdgeShards.numShards) {
-        sharedEdgeArray(i) = new Array[Int](sharedEdgeArraySizeCount(i).get)
-        // reset size counter
-        sharedEdgeArraySizeCount(i).set(0)
+        sharedEdgeArray(i) = new Array[Int](shardsInfo(i).edgeCount.get)
       }
       sharedEdgeArray
     }
 
     private def fillEdgesMarkNodeOffsets(iterableSeq: Seq[Iterable[NodeIdEdgesMaxId]],
-        sharedEdgeArray: Array[Array[Int]], nodeCollection: NodeCollection,
-        nextFreeCellInSharedTable: Array[AtomicInteger]): Future[Unit] = {
+                                         sharedEdgeArray: Array[Array[Int]],
+                                         nodeCollection: NodeCollection,
+                                         shardsInfo: Array[PerShardInfo],
+                                         partsMetaInfo: Seq[SharedGraphMetaInfo]): Future[Unit] = {
       log.debug("loading nodes and out edges from file in parallel and marking all nodes")
-      val nodesReadCounter = new AtomicInteger()
       val allNodeIdsSet = new ArrayBackedSet(nodeCollection.maxNodeId)
-      val stat = statsReceiver.stat("graph_load_read_out_edge_from_dump_files")
 
-      val futures = iterableSeq.map {
-        edgesIterable =>
-          Stat.timeFuture(stat) {
-            futurePool {
-              var id, edgesLength, shardIdx, offset = 0
-              edgesIterable.foreach { item =>
-                id = item.id
-                allNodeIdsSet.add(id)
-                //nodeCollection.nodeIdSet(id) = 1
-                edgesLength = item.edges.length
-                shardIdx = EdgeShards.hash(id)
-                offset = nextFreeCellInSharedTable(shardIdx).getAndAdd(edgesLength + 1)
-                Array.copy(item.edges, 0, sharedEdgeArray(shardIdx), offset + 1, edgesLength)
-                nodeCollection.offsets(id) = offset + 1
-                //nodeCollection.lengthTable(id) = edgesLength
-                sharedEdgeArray(shardIdx)(offset) = edgesLength
-                item.edges foreach { edge => allNodeIdsSet.add(edge) }
-                val c = nodesReadCounter.addAndGet(1)
-                if (c % nodeReadingLoggingFrequency == 0) {
-                  log.info("loading..., finished %s nodes.", c)
-                }
-              }
-            }
+      val futures = iterableSeq.indices.map {
+        index => futurePool {
+          val edgesIterable = iterableSeq(index)
+          val ids = new Array[Int](partsMetaInfo(index).numNodes)
+          val offsets = new Array[Int](partsMetaInfo(index).numNodes)
+          var id, edgesLength, shardIdx, offset, i = 0
+          edgesIterable.foreach { item =>
+            id = item.id
+            edgesLength = item.edges.length
+            shardIdx = EdgeShards.hash(id)
+            offset = shardsInfo(shardIdx).nextFreeEdgeIndex.getAndAdd(edgesLength + 1)
+            Array.copy(item.edges, 0, sharedEdgeArray(shardIdx), offset + 1, edgesLength)
+            ids(i) = id
+            offsets(i) = offset + 1
+            i += 1
+            sharedEdgeArray(shardIdx)(offset) = edgesLength
+            item.edges foreach { edge => allNodeIdsSet.add(edge) }
           }
+          (ids, offsets)
+        }
       }
-      Future.join(futures).map { _ =>
+
+      Future.collect(futures).map { idsAndOffsetsAll =>
+        // serialize addition to nodeCollection
         // don't need to keep allNodeIdsSet around, encode in offsets()
-        allNodeIdsSet.iterator.foreach { i =>
-          if (nodeCollection.offsets(i) < 0) nodeCollection.offsets(i) = 0
+        allNodeIdsSet.foreach { i => nodeCollection.updateOffset(i, 0) }
+        idsAndOffsetsAll foreach { case (ids, offsets) =>
+            ids.indices foreach { i => nodeCollection.updateOffset(ids(i), offsets(i)) }
         }
       }
     }
@@ -160,7 +168,7 @@ object SharedArrayBasedDirectedGraph {
       def numEdges(id: Int) = {
         if (nc.emptyNode(id)) 0
         else {
-          sharedEdgeArray(EdgeShards.hash(id))(nc.offsets(id) - 1)
+          sharedEdgeArray(EdgeShards.hash(id))(nc.getEdgeOffset(id) - 1)
         }
       }
 
@@ -169,17 +177,15 @@ object SharedArrayBasedDirectedGraph {
 
 
     def construct(): SharedArrayBasedDirectedGraph = {
-      // initialize size counters for each shard in shared array
-      val sharedEdgeArraySizeCount = new Array[AtomicInteger](EdgeShards.numShards)
-      for (i <- 0 until EdgeShards.numShards) sharedEdgeArraySizeCount(i) = new AtomicInteger()
+      val shardsInfo = Array.fill(EdgeShards.numShards)(new PerShardInfo)
 
       val future = for {
-        partsMetaInfo <- readMetaInfoPerShard(sharedEdgeArraySizeCount)
+        partsMetaInfo <- readMetaInfoPerShard(shardsInfo)
         metaInfo = aggregateMetaInfoFromParts(partsMetaInfo)
-        nodeCollection = new NodeCollection(metaInfo.maxId, None)
-        sharedEdgeArray = instantiateSharedArray(sharedEdgeArraySizeCount)
+        nodeCollection = new NodeCollection(metaInfo, forceSparseRepr)
+        sharedEdgeArray = instantiateSharedArray(shardsInfo)
         _ <- fillEdgesMarkNodeOffsets(iterableSeq, sharedEdgeArray, nodeCollection,
-          sharedEdgeArraySizeCount)
+          shardsInfo, partsMetaInfo)
         outEdges = sharded2dArray(nodeCollection, sharedEdgeArray)
         reverseDirEdgeArray <-
           if (storedGraphDir == BothInOut)
@@ -201,10 +207,10 @@ object SharedArrayBasedDirectedGraph {
                                   nodeCollection: NodeCollection):
     Future[Option[Sharded2dArray[Int]]] = {
 
-      val nodesWithInEdges = new NodeCollection(nodeCollection.maxNodeId, None)
       val numNodes = nodeCollection.size
+      val nodesWithInEdges = new NodeCollection(nodeCollection.graphInfo, forceSparseRepr)
       val inEdgesSizes = new Array[AtomicInteger](nodeCollection.maxNodeId + 1)
-      val inEdgesShardsSizes = Array.fill(EdgeShards.numShards)(new AtomicInteger())
+      val reverseShardsInfo = Array.fill(EdgeShards.numShards)(new PerShardInfo)
 
       // do function f for all nodes, divided into EdgeShards.numShards futures
       def doForAllNodeIds(f: Int => Unit): Future[Unit] = {
@@ -235,7 +241,7 @@ object SharedArrayBasedDirectedGraph {
           val len = inEdgesSizes(id).get
           val shard = EdgeShards.hash(id)
           val offset = if (len > 0) {
-            inEdgesShardsSizes(shard).getAndAdd(1 + len) + 1
+            reverseShardsInfo(shard).edgeCount.getAndAdd(1 + len) + 1
           } else 0
           nodesWithInEdges.updateOffset(id, offset)
         }
@@ -256,15 +262,14 @@ object SharedArrayBasedDirectedGraph {
         }
       }
 
-      def fillInEdges(sharedInEdgesArray: Array[Array[Int]], offsetTable: Array[Int],
-                      nextFreeCellPerNode: Array[AtomicInteger]):
-      Future[Unit] = {
+      def fillInEdges(sharedInEdgesArray: Array[Array[Int]],
+                      nextFreeEdgeIndexPerNode: Array[AtomicInteger]): Future[Unit] = {
         log.debug("filling in edges")
         Stat.timeFuture(statsReceiver.stat("graph_load_fill_in_edges")) {
           doForAllNodeIds { nodeId =>
             outEdges(nodeId) foreach { neighborId =>
               val shard = sharedInEdgesArray(EdgeShards.hash(neighborId))
-              shard(nextFreeCellPerNode(neighborId).getAndIncrement) = nodeId
+              shard(nextFreeEdgeIndexPerNode(neighborId).getAndIncrement) = nodeId
             }
           }
         }
@@ -273,9 +278,9 @@ object SharedArrayBasedDirectedGraph {
       for {
         _ <- findInEdgesSizes()
         _ <- findInShardSizes()
-        sharedInEdges = instantiateSharedArray(inEdgesShardsSizes)
+        sharedInEdges = instantiateSharedArray(reverseShardsInfo)
         _ <- fillInEdgesLengths(sharedInEdges)
-        _ <- fillInEdges(sharedInEdges, nodesWithInEdges.offsets, inEdgesSizes)
+        _ <- fillInEdges(sharedInEdges, inEdgesSizes)
       } yield Some(sharded2dArray(nodesWithInEdges, sharedInEdges))
     }
   }
@@ -285,26 +290,42 @@ object SharedArrayBasedDirectedGraph {
     SharedArrayBasedDirectedGraph = apply(Seq(iterable), 1, storedGraphDir)
 }
 
-private class NodeCollection(val maxNodeId: Int, forceSparsity: Option[Boolean] = None)
+private class NodeCollection(val graphInfo: SharedGraphMetaInfo, forceSparsity: Option[Boolean] = None)
     extends Iterable[Int] {
+
+  val maxNodeId = graphInfo.maxId
+  private val considerGraphSparse: Boolean = forceSparsity getOrElse {
+    // sparse if number of nodes is much less than maxNodeId, AND
+    // number of edges is also less than maxNodeId. If number of edges
+    // were similar to or greater than maxNodeId, then the extra overhead of allocating
+    // an array of size maxNodeId is not too much relative to the storage occupied by
+    // the edges themselves
+    (graphInfo.numNodes * 4 < maxNodeId) && (graphInfo.edgeCount < maxNodeId)
+  }
 
   /**
    * Encoding of node with id=i with just one array `offsets` of ints:
-   * 1. i exists in the graph. offsets(i) > 0 and length(i) = arr(offsets(i)-1).
-   *    Edges(i) are in [offsets(i)..offsets(i)+length(i)-1]
-   * 2. i is an empty node with no edges. offsets(i) == 0
-   * 3. i does not exist in the graph. offsets(i) == -1
+   * 1. i exists in the graph. edgeOffsets(i) > 0 and length(i) = arr(edgeOffsets(i)-1).
+   *    Edges(i) are in arr[edgeOffsets(i)..edgeOffsets(i)+length(i)-1]
+   * 2. i is an empty node with no edges. edgeOffsets(i) == 0
+   * (Obsoleted when we are not using a full array: 3. i does not exist in the graph. edgeOffsets(i) == -1)
    */
-  val offsets = Array.fill[Int](maxNodeId + 1)(-1)
+  //val edgeOffsets = Array.fill[Int](maxNodeId + 1)(-1)
+  private val edgeOffsets = Int2IntMap(isSparse = considerGraphSparse, numKeysEstimate = None, maxId = Some(maxNodeId))
 
-  def updateOffset(i: Int, v: Int) { offsets(i) = v }
+  def offsets: Int => Int = edgeOffsets
 
-  def hasEdges(id: Int) = offsets(id) > 0
-  def emptyNode(id: Int) = offsets(id) == 0
-  def validNode(id: Int) = offsets(id) >= 0
+  def updateOffset(i: Int, v: Int) { edgeOffsets(i) = v }
+  def getEdgeOffset(id: Int) = edgeOffsets(id)
 
-  def iterator = (0 to maxNodeId).iterator.filter(validNode)
+  def validNode(id: Int) = edgeOffsets.contains(id)
+  def hasEdges(id: Int) = validNode(id) && edgeOffsets(id) > 0
+  def emptyNode(id: Int) = validNode(id) && edgeOffsets(id) == 0
 
+  // iterator of valid node ids
+  def iterator = edgeOffsets.keysIterator
+
+  override lazy val size = edgeOffsets.size
 }
 
 
@@ -314,7 +335,7 @@ private class NodeCollection(val maxNodeId: Int, forceSparsity: Option[Boolean] 
  * @param maxId the max node id in the graph
  * @param edgeCount the number of edges in the graph
  */
-case class SharedGraphMetaInfo(maxId: Int, edgeCount: Long)
+case class SharedGraphMetaInfo(maxId: Int, edgeCount: Long, numNodes: Int)
 
 /**
  * This class is an implementation of the directed graph trait that is backed
