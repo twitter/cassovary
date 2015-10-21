@@ -84,7 +84,7 @@ object ArrayBasedDirectedGraph {
       // were similar to or greater than maxNodeId, then the extra overhead of allocating
       // an array of size maxNodeId is not too much relative to the storage occupied by
       // the edges themselves
-      (numNodes * 4 < maxNodeId) && (numEdges < maxNodeId)
+      (numNodes * 8 < maxNodeId) && (numEdges < maxNodeId)
     }
 
     private val table = Int2ObjectMap[Node](considerGraphSparse, Some(numNodes), Some(maxNodeId),

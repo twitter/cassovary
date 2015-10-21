@@ -203,8 +203,7 @@ object SharedArrayBasedDirectedGraph {
      *
      * Needed only if storing both directions.
      */
-    private def createReverseDirEdgeArray(outEdges: Sharded2dArray[Int],
-                                  nodeCollection: NodeCollection):
+    private def createReverseDirEdgeArray(outEdges: Sharded2dArray[Int], nodeCollection: NodeCollection):
     Future[Option[Sharded2dArray[Int]]] = {
 
       val numNodes = nodeCollection.size
@@ -222,7 +221,7 @@ object SharedArrayBasedDirectedGraph {
       }
 
       def findInEdgesSizes() = {
-        log.debug("calculating in edges shards sizes")
+        log.info("calculating incoming neighbor sizes for each node")
         Stat.timeFuture(statsReceiver.stat("graph_load_find_in_edge_shards_sizes")) {
           nodeCollection foreach { id =>
             inEdgesSizes(id) = new AtomicInteger()
@@ -236,6 +235,7 @@ object SharedArrayBasedDirectedGraph {
       }
 
       def findInShardSizes() = {
+        log.info("calculating in shard sizes")
         // one more pass to adjust per-shard array sizes and also update offsets
         doForAllNodeIds { id: Int =>
           val len = inEdgesSizes(id).get
@@ -247,7 +247,7 @@ object SharedArrayBasedDirectedGraph {
         }
       }
 
-      def fillInEdgesLengths(sharedInEdgesArray: Array[Array[Int]]): Future[Unit] = {
+      def fillInEdgesOffsets(sharedInEdgesArray: Array[Array[Int]]): Future[Unit] = {
         log.info("filling lengths and offsets")
         Stat.timeFuture(statsReceiver.stat("graph_load_fill_in_edge_lengths_and_offsets")) {
           doForAllNodeIds { id =>
@@ -264,8 +264,8 @@ object SharedArrayBasedDirectedGraph {
 
       def fillInEdges(sharedInEdgesArray: Array[Array[Int]],
                       nextFreeEdgeIndexPerNode: Array[AtomicInteger]): Future[Unit] = {
-        log.debug("filling in edges")
-        Stat.timeFuture(statsReceiver.stat("graph_load_fill_in_edges")) {
+        log.info("filling in edges")
+        val fut = Stat.timeFuture(statsReceiver.stat("graph_load_fill_in_edges")) {
           doForAllNodeIds { nodeId =>
             outEdges(nodeId) foreach { neighborId =>
               val shard = sharedInEdgesArray(EdgeShards.hash(neighborId))
@@ -273,13 +273,17 @@ object SharedArrayBasedDirectedGraph {
             }
           }
         }
+        log.info("DONE filling in edges")
+        fut
       }
 
+      // main set of steps to build incoming edges in the graph
+      log.info("Now building all the incoming edges")
       for {
         _ <- findInEdgesSizes()
         _ <- findInShardSizes()
         sharedInEdges = instantiateSharedArray(reverseShardsInfo)
-        _ <- fillInEdgesLengths(sharedInEdges)
+        _ <- fillInEdgesOffsets(sharedInEdges)
         _ <- fillInEdges(sharedInEdges, inEdgesSizes)
       } yield Some(sharded2dArray(nodesWithInEdges, sharedInEdges))
     }
@@ -300,7 +304,7 @@ private class NodeCollection(val graphInfo: SharedGraphMetaInfo, forceSparsity: 
     // were similar to or greater than maxNodeId, then the extra overhead of allocating
     // an array of size maxNodeId is not too much relative to the storage occupied by
     // the edges themselves
-    (graphInfo.numNodes * 4 < maxNodeId) && (graphInfo.edgeCount < maxNodeId)
+    (graphInfo.numNodes * 8 < maxNodeId) && (graphInfo.edgeCount < maxNodeId)
   }
 
   /**
