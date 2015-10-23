@@ -36,4 +36,16 @@ class Sharded2dArray[@specialized(Int, Long) T](shards: Array[Array[T]],
       null
     }
   }
+
+  // avoids creation of un-necessary objects just for the purpose of iterating
+  def foreach(id: T)(f: T => Unit): Unit = {
+    if (indicator(id)) {
+      val offset = offsets(id)
+      val endIndex = offset + lengths(id)
+      val shardNum = hashing(id)
+      for (i <- offset until endIndex) {
+        f(shards(shardNum)(i))
+      }
+    }
+  }
 }

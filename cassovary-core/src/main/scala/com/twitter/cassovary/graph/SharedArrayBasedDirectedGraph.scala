@@ -226,7 +226,7 @@ object SharedArrayBasedDirectedGraph {
           shardInfo.idsMapped = new Array[Int](shardInfo.numIdsMapped)
           shardInfo.nextFreeEdgeIndex.set(0) //reusing a variable
         }
-        val futures = nodeCollection.iterator.grouped(1 + numNodes/parallelismLimit).toSeq map { ids =>
+        val futures = nodeCollection.iterator.grouped(1 + numNodes / parallelismLimit).toSeq map { ids =>
           futurePool {
             var shard: PerShardInfo = shardsInfo(0)
             ids foreach { id =>
@@ -257,7 +257,7 @@ object SharedArrayBasedDirectedGraph {
         log.info("calculating incoming neighbor sizes for each node")
         doForAllNodeIds { id => inEdgesSizes(id) = new AtomicInteger() } flatMap { _ =>
           doForAllNodeIds { id =>
-            outEdges(id) foreach { neighbor =>
+            outEdges.foreach(id) { neighbor =>
               inEdgesSizes(neighbor).incrementAndGet()
             }
           }
@@ -304,13 +304,26 @@ object SharedArrayBasedDirectedGraph {
         log.info("filling in edges")
         Stat.timeFuture(statsReceiver.stat("graph_load_fill_in_edges")) {
           doForAllNodeIds { nodeId =>
-            outEdges(nodeId) foreach { neighborId =>
+            outEdges.foreach(nodeId) { neighborId =>
               val shard = sharedInEdgesArray(EdgeShards.hash(neighborId))
               shard(nextFreeEdgeIndexPerNode(neighborId).getAndIncrement) = nodeId
             }
           }
         }
       }
+
+      def sortInEdges(sharedInEdgesArray: Array[Array[Int]]): Future[Unit] = {
+        log.info("sorting in edges in place")
+        doForAllNodeIds { nodeId =>
+          val offset = nodesWithInEdges.getEdgeOffset(nodeId)
+          if (offset > 0) {
+            val shardNum = EdgeShards.hash(nodeId)
+            val numEdges = sharedInEdgesArray(shardNum)(offset - 1)
+            java.util.Arrays.sort(sharedInEdgesArray(shardNum), offset, offset + numEdges)
+          }
+        }
+      }
+
 
       // main set of steps to build incoming edges in the graph
       log.info("Now building all the incoming edges")
@@ -321,6 +334,7 @@ object SharedArrayBasedDirectedGraph {
         sharedInEdges = instantiateSharedArray(reverseShardsInfo)
         _ <- fillInEdgesOffsets(sharedInEdges)
         _ <- fillInEdges(sharedInEdges, inEdgesSizes)
+        _ <- sortInEdges(sharedInEdges)
       } yield Some(sharded2dArray(nodesWithInEdges, sharedInEdges))
     }
   }
