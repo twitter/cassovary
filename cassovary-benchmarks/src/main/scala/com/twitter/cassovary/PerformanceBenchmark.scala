@@ -150,7 +150,7 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
           printf("\tAvg time over %d repetitions: %s.\n", reps(), duration)
         }
         //Used with Yourkit to allow capturing memory snapshot before exiting
-        Thread.sleep(10000 * 1000L)
+        //Thread.sleep(10000 * 1000L)
     }
   }
 
