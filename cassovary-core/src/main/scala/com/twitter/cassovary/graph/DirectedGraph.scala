@@ -55,6 +55,8 @@ trait DirectedGraph[+V <: Node] extends Graph[V] with Iterable[V] {
     StoredGraphDir.isDirStored(dir, storedGraphDir)
   }
 
+  def isBiDirectional = StoredGraphDir.isInDirStored(storedGraphDir) && StoredGraphDir.isOutDirStored(storedGraphDir)
+
   /**
    * Returns the total number of directed edges in the graph.  A mutual edge, eg: A -> B and B -> A,
    * counts as 2 edges in this total.

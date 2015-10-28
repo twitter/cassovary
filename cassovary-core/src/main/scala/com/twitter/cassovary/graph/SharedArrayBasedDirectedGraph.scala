@@ -78,7 +78,7 @@ object SharedArrayBasedDirectedGraph {
      */
     private def readMetaInfoPerShard():
     Future[Seq[SharedGraphMetaInfo]] = {
-      log.info("read out num of edges and max id from files in parallel")
+      log.debug("read out num of edges and max id from files in parallel")
       val stat = statsReceiver.stat("graph_load_read_out_edge_sizes_dump_files")
       Stat.timeFuture(stat) {
         val futures = iterableSeq map {
@@ -201,7 +201,7 @@ object SharedArrayBasedDirectedGraph {
           reverseDirEdgeArray, metaInfo, storedGraphDir)
 
       val graph = Await.result(future)
-      log.info("DONE")
+      log.debug("DONE")
       graph
     }
 
@@ -257,7 +257,7 @@ object SharedArrayBasedDirectedGraph {
       }
 
       def findInEdgesSizes() = {
-        log.info("calculating incoming neighbor sizes for each node")
+        log.debug("calculating incoming neighbor sizes for each node")
         doForAllNodeIds { id =>
           outEdges.foreach(id) { neighbor =>
             inEdgesSizes(neighbor).incrementAndGet()
@@ -286,7 +286,7 @@ object SharedArrayBasedDirectedGraph {
       }
 
       def fillInEdgesOffsets(sharedInEdgesArray: Array[Array[Int]]): Future[Unit] = {
-        log.info("filling lengths in 2d array")
+        log.debug("filling lengths in 2d array")
         Stat.timeFuture(statsReceiver.stat("graph_load_fill_in_edge_lengths_and_offsets")) {
           doForAllNodeIds { id =>
             val len = inEdgesSizes(id).get
@@ -301,7 +301,7 @@ object SharedArrayBasedDirectedGraph {
       }
 
       def fillInEdges(sharedInEdgesArray: Array[Array[Int]]): Future[Unit] = {
-        log.info("filling in edges")
+        log.debug("filling in edges")
         Stat.timeFuture(statsReceiver.stat("graph_load_fill_in_edges")) {
           doForAllNodeIds { nodeId =>
             outEdges.foreach(nodeId) { neighborId =>
@@ -314,7 +314,7 @@ object SharedArrayBasedDirectedGraph {
       }
 
       def sortInEdges(sharedInEdgesArray: Array[Array[Int]]): Future[Unit] = {
-        log.info("sorting in edges in place")
+        log.debug("sorting in edges in place")
         doForAllNodeIds { nodeId =>
           val offset = nodesWithInEdges.getEdgeOffset(nodeId)
           if (offset > 0) {
@@ -325,9 +325,8 @@ object SharedArrayBasedDirectedGraph {
         }
       }
 
-
       // main set of steps to build incoming edges in the graph
-      log.info("Now building all the incoming edges")
+      log.info("Now building the reverse direction representation")
       for {
         _ <- partitionNodeIdsPerShard()
         _ <- findInEdgesSizes()
@@ -412,7 +411,7 @@ class SharedArrayBasedDirectedGraph private (
 
   lazy val nodeCount: Int = nodeCollection.size
 
-  lazy val edgeCount: Long = metaInformation.numEdges
+  lazy val edgeCount: Long = if (isBiDirectional) 2 * metaInformation.numEdges else metaInformation.numEdges
 
   override lazy val maxNodeId = nodeCollection.maxNodeId
 

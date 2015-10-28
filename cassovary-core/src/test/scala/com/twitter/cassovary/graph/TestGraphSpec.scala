@@ -27,7 +27,7 @@ class TestGraphSpec extends WordSpec with Matchers with GraphBehaviours[Node] {
       graph.isDirStored(GraphDir.OutDir) should be (true)
       graph.nodeCount should be (3)
       graph.maxNodeId should be (12)
-      graph.edgeCount should be (4L)
+      graph.edgeCount should be (8L)
     }
   }
 

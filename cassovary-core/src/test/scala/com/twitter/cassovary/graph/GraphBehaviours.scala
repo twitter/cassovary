@@ -24,7 +24,8 @@ trait GraphBehaviours[V <: Node] extends Matchers {
       graph.nodeCount shouldEqual numNodes
     }
     "have number of edges less than in complete graph" in {
-      graph.edgeCount should be <= (numNodes * (numNodes - 1).toLong)
+      val mul = if (graph.isBiDirectional) 2 else 1
+      graph.edgeCount should be <= (mul * numNodes * (numNodes - 1).toLong)
     }
   }
 
@@ -33,7 +34,8 @@ trait GraphBehaviours[V <: Node] extends Matchers {
       graph.nodeCount shouldEqual numNodes
     }
     "have all possible edges" in {
-      graph.edgeCount shouldEqual (numNodes * (numNodes - 1).toLong)
+      val mul = if (graph.isBiDirectional) 2 else 1
+      graph.edgeCount shouldEqual (mul * numNodes * (numNodes - 1).toLong)
       graph foreach { node =>
         val neighbors = (0 until numNodes) filter {
           _ != node.id

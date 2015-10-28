@@ -13,26 +13,57 @@
  */
 
 import com.twitter.cassovary.graph.StoredGraphDir
-import com.twitter.cassovary.graph.StoredGraphDir.StoredGraphDir
-import com.twitter.cassovary.util.{ParseString, NodeNumberer}
-import com.twitter.cassovary.util.io.AdjacencyListGraphReader
+import com.twitter.cassovary.graph.StoredGraphDir._
+import com.twitter.cassovary.util.io.{FileReader, IoUtils, ListOfEdgesGraphReader}
 
+// if args are specified they stand for: <name-of-dir> <name-of-graph>
 object HelloLoadSharedGraph {
+
   def main(args: Array[String]) {
-    val dir = "../cassovary-core/src/test/resources/graphs"
-    val graph = AdjacencyListGraphReader.forIntIds(dir, "toy_9nodes").toSharedArrayBasedDirectedGraph()
-
-    printf("\nHello Graph!\n\tA SharedArrayBasedDirectedGraph:" +
-        "with %s nodes has %s directed edges.\n", graph.nodeCount, graph.edgeCount)
-
-    printf("Trying with BothInOut direction now:\n")
-    val reader = new AdjacencyListGraphReader(
-          dir, "toy_9nodes", new NodeNumberer.IntIdentity(), ParseString.toInt) {
-          override def storedGraphDir: StoredGraphDir = StoredGraphDir.BothInOut
+    val (dir, graphName, graphDirection) = if (args.length > 0) {
+      val d = if (args.length >= 3) {
+        args(2) match {
+          case "BothInOut" => BothInOut
+          case "OnlyOut" => OnlyOut
+          case "OnlyIn" => OnlyIn
+          case s => println(s"Unknown graph direction $s specified. Using OnlyOut !")
+            OnlyOut
+        }
+      } else OnlyOut
+      (args(0), args(1), d)
     }
-    val graph2 = reader.toSharedArrayBasedDirectedGraph()
-    printf("\nHello Graph!\n\tA SharedArrayBasedDirectedGraph:" +
-        "with %s nodes has %s directed edges.\n", graph2.nodeCount, graph2.edgeCount)
+    else {
+      ("../cassovary-core/src/test/resources/graphs", "toy_list5edges", OnlyOut)
+    }
+    val sep = detectGraphFormat(dir, graphName)
+    println(s"Will read graph $graphName from directory $dir using separator ${sep.toInt}")
 
+    println(s"\nBuilding shared graph for direction $graphDirection")
+    val graph = ListOfEdgesGraphReader.forIntIds(dir, graphName, separator = sep,
+      graphDir = graphDirection).toSharedArrayBasedDirectedGraph()
+    println(s"A SharedArrayBasedDirectedGraph with ${graph.nodeCount} nodes has ${graph.edgeCount} directed edges.")
   }
+
+  private def detectGraphFormat(directory: String, prefixFileNames: String) = {
+    val validFiles = IoUtils.readFileNames(directory, prefixFileNames)
+    if (validFiles.isEmpty) {
+      println(s"No file starting with $prefixFileNames found in $directory!")
+      System.exit(-1)
+    }
+    val name = validFiles(0)
+    val formatReader = new FileReader[Char](name) {
+      def processOneLine(line: String) = {
+        val index = line.indexWhere(c => c < '0' || c > '9')
+        if (index == -1) {
+          println(s"Unable to infer format type of file $name in directory $directory!")
+          System.exit(-1)
+          -1.toChar
+        } else line(index)
+      }
+    }
+    val separator = formatReader.next()
+    formatReader.close()
+    separator
+  }
+
 }

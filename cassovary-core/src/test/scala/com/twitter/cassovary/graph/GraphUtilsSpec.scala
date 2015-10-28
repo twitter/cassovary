@@ -99,7 +99,7 @@ class GraphUtilsSpec extends WordSpec with Matchers {
 
     "pass basic graph checks" in {
       graph.nodeCount shouldEqual 6
-      graph.edgeCount shouldEqual 11
+      graph.edgeCount shouldEqual 11*2
       graphUtils.neighborCount(10, GraphDir.OutDir) shouldEqual 3
       graphUtils.neighborCount(11, GraphDir.InDir) shouldEqual 2
     }

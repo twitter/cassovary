@@ -27,7 +27,7 @@ class DirectedGraphSpec extends WordSpec with Matchers {
     "two node with each following the other" should {
       "nodeCount and edgeCount be correct" in {
         twoNodeGraph.nodeCount shouldEqual 2
-        twoNodeGraph.edgeCount shouldEqual 2
+        twoNodeGraph.edgeCount shouldEqual 4
       }
 
       "maxNodeId be correct" in {
@@ -48,7 +48,7 @@ class DirectedGraphSpec extends WordSpec with Matchers {
     "six node graph" should {
       "nodeCount and edgeCount be correct" in {
         sixNodeGraph.nodeCount shouldEqual 6
-        sixNodeGraph.edgeCount shouldEqual 11
+        sixNodeGraph.edgeCount shouldEqual 22
       }
 
       "maxNodeId be correct" in {

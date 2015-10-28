@@ -396,7 +396,7 @@ class ArrayBasedDirectedGraph private (nodeCollection: ArrayBasedDirectedGraph.N
   override lazy val maxNodeId = nodeCollection.maxNodeId
 
   val nodeCount = nodeCollection.numNodes
-  val edgeCount = nodeCollection.numEdges
+  val edgeCount = if (isBiDirectional) 2* nodeCollection.numEdges else nodeCollection.numEdges
 
   def iterator = nodeCollection.nodesIterator
 

@@ -8,11 +8,11 @@ import com.twitter.util.NonFatal
 import scala.io.Source
 
 abstract class FileReader[T](fileName: String) extends Iterator[T] {
-  private val log = Logger.get()
-  private var _lastLineParsed = 0
+  protected val log = Logger.get()
+  protected var lastLineParsed = 0
   log.info("Starting reading from file %s...\n", fileName)
   private val lines = Source.fromFile(fileName).getLines().map { x =>
-    _lastLineParsed += 1
+    lastLineParsed += 1
     x
   }
   private var _next: Option[T] = checkNext()
@@ -21,7 +21,10 @@ abstract class FileReader[T](fileName: String) extends Iterator[T] {
   def next(): T = {
     val curr = saveCurr(_next)
     _next = checkNext()
-    if (!hasNext) close()
+    if (!hasNext) {
+      log.info("Finished reading from file %s...\n", fileName)
+      close()
+    }
     curr.get
   }
 
@@ -42,15 +45,14 @@ abstract class FileReader[T](fileName: String) extends Iterator[T] {
         } catch {
           case NonFatal(exc) =>
             throw new IOException("Parsing failed near line: %d in %s"
-                .format(_lastLineParsed, fileName), exc)
+                .format(lastLineParsed, fileName), exc)
         }
       }
     }
     found
   }
 
-  private def close(): Unit = {
-    log.info("Finished reading from file %s...\n", fileName)
+  def close(): Unit = {
     Source.fromFile(fileName).close()
   }
 
@@ -64,6 +66,11 @@ class TwoTsFileReader[T](fileName: String,
 
   def processOneLine(line: String): (T, T) = {
     val i = line.indexOf(separator)
+    if (i == -1) {
+      log.error(s"!!Parse error at line number $lastLineParsed in" +
+        s"file $fileName. Parsing using separator: ${separator.toInt} (in Int) and '$separator' (in Char)!!\n")
+      throw new IOException("Parse error")
+    }
     val source = idReader(line, 0, i - 1)
     val dest = idReader(line, i + 1, line.length - 1)
     (source, dest)

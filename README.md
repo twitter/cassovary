@@ -1,4 +1,8 @@
-# Cassovary [![Build Status](https://secure.travis-ci.org/twitter/cassovary.png)](http://travis-ci.org/twitter/cassovary)
+# Cassovary
+
+[![Maven Central](https://img.shields.io/maven-central/v/com.twitter/cassovary-core_2.11.svg)](https://maven-badges.herokuapp.com/maven-central/com.twitter/cassovary-core_2.11)
+[![Build Status](https://img.shields.io/travis/twitter/cassovary.svg)](https://travis-ci.org/twitter/cassovary)
+
 Cassovary is a simple "big graph" processing library for the JVM.
 Most JVM-hosted graph libraries are flexible but not
 space efficient. Cassovary is designed from the ground up to first be
@@ -42,11 +46,13 @@ Cassovary is built using [sbt](https://github.com/sbt/sbt) and was tested last u
 
 ## Using maven published version of library
 
-Cassovary is published to maven central with crosspath scala versions 2.10.4 and 2.11.5.
+Cassovary is published to maven central with crosspath scala versions 2.10.4 and 2.11.7.
+Please see the latest version number (such as 6.3.0) released alongside
+the maven-central image at the top of the README.
 
-To use with sbt, use:
+To use with sbt, substitute the latest version number and use:
 
-```libraryDependencies += "com.twitter" %% "cassovary-core" % "6.1.2"```
+```libraryDependencies += "com.twitter" %% "cassovary-core" % "6.3.0"```
 
 and
 
@@ -59,7 +65,7 @@ Also, Cassovary requires Java 7+ and the last Cassovary version to support Java 
 The only dependency that Cassovary uses which is not bundled with it (because of its size)
 is ```it.unimi.dsi.fastutil```. You can add that dependency in your sbt project as follows:
 
-```libraryDependencies += "it.unimi.dsi" % "fastutil" % "6.6.0"```
+```libraryDependencies += "it.unimi.dsi" % "fastutil" % "7.0.7"```
 
 ## Comparison to Other Graph Libraries
 There are many excellent graph mining libraries already in existence. Most of
@@ -85,7 +91,7 @@ graph processing systems because of the known difficulty of achieving good
 graph partitions. On the flip side, the size of the
 graph it works with is bounded by the memory available in a machine, though
 the use of space efficient data structures does not seem to make this a
-limitation for most practical graphs. For example, an ```ArrayBasedDirectedGraph```
+limitation for most practical graphs. For example, a ```SharedArrayBasedDirectedGraph```
 instance of a unidirectional graph with 10M nodes and 1B edges consumes
 less than 6GB of memory, and scales linearly beyond that.
 

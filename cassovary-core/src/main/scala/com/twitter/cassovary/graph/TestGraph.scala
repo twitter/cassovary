@@ -33,7 +33,7 @@ case class TestGraph(nodes: Node*) extends DirectedGraph[Node] {
   def iterator = nodeTable.valuesIterator
 
   def edgeCount = iterator.foldLeft(0L) {
-    (accum, node) => accum + node.outboundCount
+    (accum, node) => accum + node.outboundCount + node.inboundCount
   }
   def getNodeById(id: Int) = nodeTable.get(id)
 

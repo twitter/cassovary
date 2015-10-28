@@ -76,7 +76,7 @@ class DirectedGraphUtilsSpec extends WordSpec with Matchers {
       val graph = TestGraphs.generateCompleteGraph(10)
       val directedGraphUtils = new DirectedGraphUtils(graph)
       "mutual edge check" in {
-        directedGraphUtils.getNumMutualEdges shouldEqual graph.edgeCount / 2
+        directedGraphUtils.getNumMutualEdges shouldEqual graph.edgeCount/4
       }
     }
   }
