@@ -158,7 +158,7 @@ object ArrayBasedDirectedGraph {
         new ArrayBasedDirectedGraph(nodeCollection, storedGraphDir)
 
       val graph = Await.result(result)
-      log.info("Finished building graph")
+      log.debug("Finished building graph")
       graph
     }
 

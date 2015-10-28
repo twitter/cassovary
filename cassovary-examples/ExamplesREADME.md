@@ -10,6 +10,9 @@ In the main project folder type `./sbt` to enter sbt interactive mode. Move to e
 You can also use `runMain ExampleClassName parameters` to run a particular example,
 for example `runMain HelloGraph 10`
 
+Alternatively, on the command line type ```bash cassovary-examples/src/main/load-graph-examples.sh``` to
+generate a random graph with 5M nodes and approximately 100M edges and then load it.
+
 ## Some included examples
 * HelloGraph [numNodes] - a "Hello World" example - creates a complete directed graph with 3 nodes and prints out the number of
 edges in the graph.

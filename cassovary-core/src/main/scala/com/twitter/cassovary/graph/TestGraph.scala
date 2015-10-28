@@ -253,9 +253,9 @@ object TestGraphs {
   /**
    * @return Probability of existence of an edge in a random E-R graph.
    */
-  def getProbEdgeRandomDirected(numNodes: Int, avgOutDegree: Int) = {
+  def getProbEdgeRandomDirected(numNodes: Int, avgOutDegree: Double) = {
     require(numNodes > 1)
-    avgOutDegree.toDouble / (numNodes - 1)
+    avgOutDegree / (numNodes - 1)
   }
 
   /**

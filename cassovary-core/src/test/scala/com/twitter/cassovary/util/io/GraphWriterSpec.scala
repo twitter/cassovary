@@ -20,39 +20,43 @@ import org.scalatest.{Matchers, WordSpec}
 class GraphWriterSpec extends WordSpec with Matchers {
   val sortNodes = true
 
-  "Graph writer" should {
-    "write graph to single file" in {
-      val graph = TestGraphs.g6
-      val stringWriter = new StringWriter()
-      GraphWriter.writeDirectedGraph(graph, stringWriter, sortNodes)
-      val expectedResult =
-        """10 3
-          |11
-          |12
-          |13
-          |11 2
-          |12
-          |14
-          |12 1
-          |14
-          |13 2
-          |12
-          |14
-          |14 1
-          |15
-          |15 2
-          |10
-          |11
-          |""".stripMargin
-      stringWriter.toString should be (expectedResult)
-    }
-    "write graph to multiple chunks" when {
-      "number of nodes is divisible by the number of chunks" in {
+  "Graph writer" when {
+    "writing in adjacency format" should {
+      "write graph to single file" in {
         val graph = TestGraphs.g6
-        val stringWriter1 = new StringWriter()
-        val stringWriter2 = new StringWriter()
-        GraphWriter.writeDirectedGraph(graph, Seq(stringWriter1, stringWriter2), sortNodes)
-        stringWriter1.toString should be
+        val stringWriter = new StringWriter()
+        GraphWriter.writeDirectedGraph(graph, stringWriter, formatAdjacency = true, sortByIds = sortNodes)
+        val expectedResult =
+          """10 3
+            |11
+            |12
+            |13
+            |11 2
+            |12
+            |14
+            |12 1
+            |14
+            |13 2
+            |12
+            |14
+            |14 1
+            |15
+            |15 2
+            |10
+            |11
+            |""".
+            stripMargin
+        stringWriter.toString should be (expectedResult)
+      }
+
+      "write graph to multiple chunks" when {
+        "number of nodes is divisible by the number of chunks" in {
+          val graph = TestGraphs.g6
+          val
+          stringWriter1 = new StringWriter()
+          val stringWriter2 = new StringWriter()
+          GraphWriter.writeDirectedGraph(graph, Seq(stringWriter1, stringWriter2), formatAdjacency = true, sortNodes)
+          stringWriter1.toString should be
           """10 3
             |11
             |12
@@ -63,7 +67,7 @@ class GraphWriterSpec extends WordSpec with Matchers {
             |12 1
             |14
             |""".stripMargin
-        stringWriter2.toString should be
+          stringWriter2.toString should be
           """13 2
             |12
             |14
@@ -73,12 +77,14 @@ class GraphWriterSpec extends WordSpec with Matchers {
             |10
             |11
             |""".stripMargin
-      }
-      "number of nodes is not divisible by the number of chunks" in {
-        val graph = TestGraphs.g6
-        val writers = Array.fill(5)(new StringWriter())
-        GraphWriter.writeDirectedGraph(graph, writers, sortNodes)
-        writers(0).toString should be
+        }
+        "number of nodes is not divisible by the number of chunks" in {
+          val graph =
+            TestGraphs.g6
+          val
+          writers = Array.fill(5)(new StringWriter())
+          GraphWriter.writeDirectedGraph(graph, writers, formatAdjacency = true, sortNodes)
+          writers(0).toString should be
           """10 3
             |11
             |12
@@ -87,25 +93,51 @@ class GraphWriterSpec extends WordSpec with Matchers {
             |12
             |14
             |""".stripMargin
-        writers(1).toString should be
+          writers(1
+          ).toString should be
           """12 1
             |14
             |""".stripMargin
-        writers(2).toString should be
+          writers(2).
+            toString should be
           """13 2
             |12
             |14
             |""".stripMargin
-        writers(3).toString should be
+          writers(3).
+            toString should be
           """14 1
             |15
             |""".stripMargin
-        writers(4).toString should be
+          writers(4).toString should be
           """15 2
             |10
             |11
             |""".stripMargin }
+      }
     }
 
+    "writing in list-of-edges format" should {
+      "write correctly to a single file" in {
+        val graph = TestGraphs.g6
+        val stringWriter = new StringWriter()
+        GraphWriter.writeDirectedGraph(graph, stringWriter, formatAdjacency = false, sortByIds = sortNodes)
+        val expectedResult =
+          """10 11
+            |10 12
+            |10 13
+            |11 12
+            |11 14
+            |12 14
+            |13 12
+            |13 14
+            |14 15
+            |15 10
+            |15 11
+            |""".
+            stripMargin
+        stringWriter.toString should be (expectedResult)
+      }
+    }
   }
 }

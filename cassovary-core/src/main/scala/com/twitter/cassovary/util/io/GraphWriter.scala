@@ -24,20 +24,26 @@ object GraphWriter {
   /**
    * Writes `node` to a given `writer`.
    */
-  private def writeNode(writer: PrintWriter)(node: Node) {
+  private def writeNodeAdjacency(writer: PrintWriter)(node: Node) {
     writer.println(node.id + " " + node.outboundCount)
     node.outboundNodes().foreach { ngh =>
       writer.println(ngh)
     }
   }
 
+  private def writeNodeListEdges(writer: PrintWriter)(node: Node) {
+      node.outboundNodes().foreach { ngh =>
+        writer.println(node.id + " " + ngh)
+      }
+    }
+
   /**
    * Writes given graph to given writer by iterating over all nodes and outbound edges.
    * Please note that sorting before writing might be expensive.
    */
   def writeDirectedGraph[V <: Node](graph: DirectedGraph[V], writer: Writer,
-      sortByIds: Boolean): Unit = {
-    writeDirectedGraph(graph, Seq(writer), sortByIds)
+                                    formatAdjacency: Boolean, sortByIds: Boolean): Unit = {
+    writeDirectedGraph(graph, Seq(writer), formatAdjacency, sortByIds)
   }
 
   /**
@@ -46,14 +52,16 @@ object GraphWriter {
    * Please note that sorting before writing might be expensive.
    */
   def writeDirectedGraph[V <: Node](graph: DirectedGraph[V], writers: Seq[Writer],
-      sortByIds: Boolean = false): Unit = {
+      formatAdjacency: Boolean = false, sortByIds: Boolean = false): Unit = {
     val chunks = writers.size
     val nodesForChunk = ((graph.nodeCount - 1) / chunks) + 1
     val nodesIterator = if (sortByIds) graph.toSeq.sortBy(_.id).iterator else graph.iterator
     nodesIterator.grouped(nodesForChunk).zip(writers.iterator).foreach {
       case (nodes, writer) =>
         val gWriter = new PrintWriter(writer)
-        nodes foreach writeNode(gWriter)
+        nodes foreach {
+          if (formatAdjacency) writeNodeAdjacency(gWriter) else writeNodeListEdges(gWriter)
+        }
         gWriter.close()
     }
   }

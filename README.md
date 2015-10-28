@@ -93,7 +93,11 @@ graph it works with is bounded by the memory available in a machine, though
 the use of space efficient data structures does not seem to make this a
 limitation for most practical graphs. For example, a ```SharedArrayBasedDirectedGraph```
 instance of a unidirectional graph with 10M nodes and 1B edges consumes
-less than 6GB of memory, and scales linearly beyond that.
+less than 6GB of memory, and scales linearly beyond that. Some other data points for memory
+usage can be checked out using the script ```bash cassovary-examples/src/main/load-graph-examples.sh```.
+A randomly generated unidirectional directed graph with 0.5M nodes and 10M edges can be built
+with 100MB of memory, and one with 5M nodes and 100M edges can be built with 500MB of memory.
+
 
 ## Mailing list
 http://groups.google.com/group/twitter-cassovary

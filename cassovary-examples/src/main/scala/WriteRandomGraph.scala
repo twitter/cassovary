@@ -17,27 +17,32 @@
  * and writes it to a file.
  */
 
-import com.twitter.cassovary.graph.TestGraphs
+import com.twitter.cassovary.graph.{StoredGraphDir, TestGraphs}
 import com.twitter.cassovary.util.io.GraphWriter
 import java.io.{File,FileWriter}
-import scala.math
 
 object WriteRandomGraph {
 
+  // Arguments: <graphDirectory> <prefix of file names> <# of nodes> <average #edges/node> <number of file chunks>
   def main(args: Array[String]) {
-    val numNodes = if (args.length > 0) args(0).toInt else 50
-    val avgOutDegree = math.ceil(math.log(numNodes)).toInt
+    val (graphDirectory, prefix, numNodes, avgOutDegree, numFileChunks) = if (args.length > 0) {
+      (args(0), args(1), args(2).toInt, args(3).toDouble, args(4).toInt)
+    } else ("/tmp", "erdos_renyi", 50, 10.0, 1)
+    //val avgOutDegree = numEdges.toDouble/numNodes //math.ceil(math.log(numNodes)).toInt
 
-    printf("Generating Erdos-Renyi random graph with n=%d nodes and log(n)=%d avg outdegree...\n", numNodes, avgOutDegree)
+    printf("Generating Erdos-Renyi random graph with %d nodes and %s avg outdegree...\n",
+      numNodes, avgOutDegree)
     val genGraph = TestGraphs.generateRandomGraph(numNodes,
-      TestGraphs.getProbEdgeRandomDirected(numNodes, avgOutDegree))
+      TestGraphs.getProbEdgeRandomDirected(numNodes, avgOutDegree), StoredGraphDir.OnlyOut)
 
     // Write graph to temporary file.
-    val renumGraphDirName = System.getProperty("java.io.tmpdir")
-    val renumGraphFileName = "erdos_renyi_" + numNodes + ".txt"
-    val renumGraphFile = new File(renumGraphDirName, renumGraphFileName)
-    printf("Writing graph to file %s.\n", renumGraphFile)
-    GraphWriter.writeDirectedGraph(genGraph, new FileWriter(renumGraphFile), false)
-    printf("Finished writing graph to file %s.\n", renumGraphFile)
+    val graphFiles = (0 until numFileChunks) map { i => prefix + "_" + i + ".txt" }
+    val fileWriters = graphFiles map { name =>
+      new FileWriter(new File(graphDirectory, name))
+    }
+    printf("Writing graph with %d nodes and %s edges in dir %s to file(s) %s\n",
+      genGraph.nodeCount, genGraph.edgeCount, graphDirectory, graphFiles.mkString(","))
+    GraphWriter.writeDirectedGraph(genGraph, fileWriters, false, false)
+    printf("Finished writing graph to files.\n")
   }
 }
