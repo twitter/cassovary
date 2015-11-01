@@ -21,6 +21,14 @@ class CQueueSpec extends WordSpec with Matchers {
     q.isEmpty should be (true)
 
     intercept[NoSuchElementException](q.deque())
+
+    // Check that fastutils were used
+    try {
+      q.deque()
+    } catch {
+      case e: Throwable =>
+        e.getStackTrace.head.getClassName.contains("it.unimi.dsi.fastutil") shouldEqual (true)
+    }
   }
 
   "CQueue" should {
