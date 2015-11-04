@@ -227,18 +227,14 @@ object SharedArrayBasedDirectedGraph {
         }
         shardsInfo foreach { shardInfo =>
           shardInfo.idsMapped = new Array[Int](shardInfo.numIdsMapped)
-          shardInfo.nextFreeEdgeIndex.set(0) //reusing a variable
+          shardInfo.numIdsMapped = 0 //reusing this variable
         }
-        val futures = nodeCollection.iterator.grouped(1 + numNodes / parallelismLimit).toSeq map { ids =>
-          futurePool {
-            var shard: PerShardInfo = shardsInfo(0)
-            ids foreach { id =>
-              shard = shardsInfo(EdgeShards.hash(id))
-              shard.idsMapped(shard.nextFreeEdgeIndex.getAndIncrement()) = id
-            }
-          }
+        // fill out the array per shard by binning nodeCollection's ids into each shard
+        nodeCollection foreach { id =>
+          val shard = shardsInfo(EdgeShards.hash(id))
+          shard.idsMapped(shard.numIdsMapped) = id
+          shard.numIdsMapped += 1
         }
-        Future.join(futures)
       }
 
       // do function f(shardNum, id, idIndex) for all nodes, divided into EdgeShards.numShards futures
@@ -327,8 +323,8 @@ object SharedArrayBasedDirectedGraph {
 
       // main set of steps to build incoming edges in the graph
       log.info("Now building the reverse direction representation")
+      partitionNodeIdsPerShard()
       for {
-        _ <- partitionNodeIdsPerShard()
         _ <- findInEdgesSizes()
         _ <- findInShardSizes()
         sharedInEdges = instantiateSharedArray(reverseShardsInfo)

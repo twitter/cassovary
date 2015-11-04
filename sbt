@@ -5,16 +5,20 @@ root=$(
   /bin/pwd
 )
 
-sbtjar=sbt-launch.jar
 sbtver=0.13.9
-SBTURL=http://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/$sbtver/$sbtjar
+
+rawsbtjar=sbt-launch.jar
+sbtdir=$HOME/.sbt/launchers/$sbtver
+sbtjar=$sbtdir/$rawsbtjar
+SBTURL=http://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/$sbtver/$rawsbtjar
 JARMD5=767d963ed266459aa8bf32184599786d
 
 if [ ! -f $sbtjar ]; then
-  echo "downloading $sbtjar" 1>&2
+  echo "downloading $rawsbtjar" 1>&2
   curl --location --remote-name $SBTURL
-  echo "copying to $HOME/.sbt/launchers/$sbtver/$sbtjar"
-  cp $sbtjar $HOME/.sbt/launchers/$sbtver/
+  echo "copying to $sbtdir "
+  mkdir -p $sbtdir
+  cp $rawsbtjar $sbtdir
 fi
 
 test -f $sbtjar || exit 1
