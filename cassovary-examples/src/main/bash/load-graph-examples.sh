@@ -16,8 +16,8 @@ echo 'Loading graph from all the files (approx. 5M nodes and 100M edges) in out 
 java -Xmx500M -server -cp $JARSCP HelloLoadSharedGraph /tmp 5M_20 OnlyOut
 
 echo 'Loading graph from one of these files (approx. 0.5M nodes and 10M edges) in both directions'
-java -Xmx500M -server -cp $JARSCP HelloLoadSharedGraph /tmp 5M_20_0.txt BothInOut
+java -Xmx400M -server -cp $JARSCP HelloLoadSharedGraph /tmp 5M_20_0.txt BothInOut
 
 echo 'Loading graph from all the files (approx. 5M nodes and 100M edges) in both directions'
-java -Xmx1300M -server -cp $JARSCP HelloLoadSharedGraph /tmp 5M_20 BothInOut
+java -Xmx1100M -server -cp $JARSCP HelloLoadSharedGraph /tmp 5M_20 BothInOut
 
