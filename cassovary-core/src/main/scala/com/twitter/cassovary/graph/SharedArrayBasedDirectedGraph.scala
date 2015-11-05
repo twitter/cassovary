@@ -350,7 +350,7 @@ private class NodeCollection(val graphInfo: SharedGraphMetaInfo, forceSparsity: 
     // were similar to or greater than maxNodeId, then the extra overhead of allocating
     // an array of size maxNodeId is not too much relative to the storage occupied by
     // the edges themselves
-    (graphInfo.numNodes * 8 < maxNodeId) && (graphInfo.numEdges < maxNodeId)
+    (graphInfo.numNodes * 8 < maxNodeId) && (graphInfo.numEdges < 4 * maxNodeId)
   }
 
   /**
