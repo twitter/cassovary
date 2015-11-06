@@ -95,8 +95,9 @@ limitation for most practical graphs. For example, a ```SharedArrayBasedDirected
 instance of a unidirectional graph with 10M nodes and 1B edges consumes
 less than 6GB of memory, and scales linearly beyond that. Some other data points for memory
 usage can be checked out using the script ```bash cassovary-examples/src/main/bash/load-graph-examples.sh```.
-A randomly generated unidirectional directed graph with 0.5M nodes and 10M edges can be built
-with 60MB of memory, and one with 5M nodes and 100M edges can be built with 500MB of memory.
+As the script shows, a randomly generated unidirectional directed graph with 0.5M nodes and 10M edges can be built
+with 60MB of memory, and one with 5M nodes and 100M edges can be built with 500MB of memory. Loading both
+directions of those graphs takes respectively 120MB and 1.1GB of memory.
 
 
 ## Mailing list
