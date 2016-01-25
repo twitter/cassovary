@@ -13,8 +13,10 @@
  */
 package com.twitter.cassovary.graph
 
-import com.twitter.cassovary.util.SortedArrayOps
+import com.twitter.cassovary.collections.SortedCSeqOps
+import com.twitter.cassovary.collections.CSeq
 
+import CSeq.Implicits._
 /**
  * This trait designed to be mixed in to `Node` when neighbors of node
  * are sorted Arrays.
@@ -22,11 +24,11 @@ import com.twitter.cassovary.util.SortedArrayOps
 trait SortedNeighborsNodeOps {
   self: Node =>
 
-  override protected def containsNode(nodeIds: Seq[Int], queryNodeId: Int): Boolean = {
-    SortedArrayOps.exists(nodeIds.toArray, queryNodeId)
+  override protected def containsNode(nodeIds: CSeq[Int], queryNodeId: Int): Boolean = {
+    SortedCSeqOps.exists(nodeIds, queryNodeId)
   }
 
-  override protected def intersect(neighbors: Seq[Int], nodeIds: Seq[Int]): Seq[Int] = {
-    SortedArrayOps.intersectSorted(neighbors.toArray, nodeIds.toArray)
+  override protected def intersect(neighbors: CSeq[Int], nodeIds: CSeq[Int]): CSeq[Int] = {
+    SortedCSeqOps.intersectSorted(neighbors, nodeIds)
   }
 }

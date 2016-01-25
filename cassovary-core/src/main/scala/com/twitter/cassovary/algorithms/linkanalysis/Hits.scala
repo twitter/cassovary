@@ -61,8 +61,13 @@ class Hits(graph: DirectedGraph[Node], params: HitsParams = HitsParams())
     val neighbors = efficientNeighbors(node)
     if (scatter)
       neighbors foreach { nbr => targetCollection(nbr) += valueCollection(node.id) }
-    else
-      targetCollection(node.id) = neighbors.foldLeft(0.0){ (partialSum, nbr) => partialSum + valueCollection(nbr) }
+    else {
+      var sum: Double = 0.0
+
+      neighbors.foreach (nbr => sum += valueCollection(nbr))
+
+      targetCollection(node.id) = sum
+    }
   }
 
   protected def defaultInitialState: HitsIterationState = {

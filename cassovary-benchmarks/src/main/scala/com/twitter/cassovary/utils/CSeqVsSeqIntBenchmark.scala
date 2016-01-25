@@ -11,20 +11,38 @@
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
+package com.twitter.cassovary.utils
 
-package com.twitter.cassovary.graph.node
 
-import com.twitter.cassovary.graph.Node
-import org.scalatest.matchers.{MatchResult, Matcher}
+import com.twitter.cassovary.collections.CSeq
+import org.openjdk.jmh.annotations.{Benchmark, Scope, Setup, State}
+import CSeq.Implicits._
 
-object NodeTestUtils {
+@State(Scope.Thread)
+class CSeqVsSeqIntBenchmark {
+  val seqsLength = 100000
 
-  def deepEquals(expected: Node) = new Matcher[Node] {
-    def apply(left: Node) = MatchResult(
-      (expected.id == left.id) && (expected.outboundNodes.toSeq == left.outboundNodes.toSeq) &&
-          (expected.inboundNodes.toSeq == left.inboundNodes.toSeq),
-      "Nodes did not match. Expected: %s Actual: %s".format(expected, left),
-      "Nodes are equal"
-    )
+  var seq: Seq[Int] = _
+
+  var cSeq: CSeq[Int] = _
+
+  @Setup
+  def prepareSeqs() = {
+    val arr = Array.tabulate(seqsLength)(n => n)
+    seq = arr.toSeq
+    cSeq = CSeq(arr)
+  }
+
+
+  @Benchmark
+  def sumOfCSeq(): Int = {
+    var s = 0
+    cSeq.foreach(e => s += e)
+    s
+  }
+
+  @Benchmark
+  def sumOfSeq(): Int = {
+    seq.sum
   }
 }

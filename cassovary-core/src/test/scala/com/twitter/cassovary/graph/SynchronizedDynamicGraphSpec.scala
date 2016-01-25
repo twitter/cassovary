@@ -48,33 +48,33 @@ class SynchronizedDynamicGraphSpec extends WordSpec with Matchers {
     val graph = createTempGraph(StoredGraphDir.OnlyIn)
     graph.addEdge(0, 1)
     val node1 = graph.getNodeById(0).get
-    node1.inboundNodes.toList shouldEqual List()
-    node1.outboundNodes.toList shouldEqual List()
+    node1.inboundNodes.toSeq shouldEqual Seq()
+    node1.outboundNodes.toSeq shouldEqual Seq()
     val node2 = graph.getNodeById(1).get
-    node2.inboundNodes.toList shouldEqual List(0)
-    node2.outboundNodes.toList shouldEqual List()
+    node2.inboundNodes.toSeq shouldEqual Seq(0)
+    node2.outboundNodes.toSeq shouldEqual Seq()
   }
 
   "Add new edges in OnlyOut graph" in {
     val graph = createTempGraph(StoredGraphDir.OnlyOut)
     graph.addEdge(1, 2)
     val node1 = graph.getNodeById(1).get
-    node1.inboundNodes.toList shouldEqual List()
-    node1.outboundNodes.toList shouldEqual List(2)
+    node1.inboundNodes.toSeq shouldEqual Seq()
+    node1.outboundNodes.toSeq shouldEqual Seq(2)
     val node2 = graph.getNodeById(2).get
-    node2.inboundNodes.toList shouldEqual List()
-    node2.outboundNodes.toList shouldEqual List()
+    node2.inboundNodes.toSeq shouldEqual Seq()
+    node2.outboundNodes.toSeq shouldEqual Seq()
   }
 
   "Add new edges in BothInOut graph" in {
     val graph = createTempGraph(StoredGraphDir.BothInOut)
     graph.addEdge(1, 2)
     val node1 = graph.getNodeById(1).get
-    node1.inboundNodes.toList shouldEqual List()
-    node1.outboundNodes.toList shouldEqual List(2)
+    node1.inboundNodes.toSeq shouldEqual Seq()
+    node1.outboundNodes.toSeq shouldEqual Seq(2)
     val node2 = graph.getNodeById(2).get
-    node2.inboundNodes.toList shouldEqual List(1)
-    node2.outboundNodes.toList shouldEqual List()
+    node2.inboundNodes.toSeq shouldEqual Seq(1)
+    node2.outboundNodes.toSeq shouldEqual Seq()
   }
 
   "getNodeById return None if id is not in graph" in {
@@ -103,15 +103,15 @@ class SynchronizedDynamicGraphSpec extends WordSpec with Matchers {
     (2 to numLoop) foreach {
       i =>
         val node = graph.getNodeById(i).get
-        node.inboundNodes.toList shouldEqual List(i - 1)
-        node.outboundNodes.toList shouldEqual List(i + 1)
+        node.inboundNodes.toSeq shouldEqual Seq(i - 1)
+        node.outboundNodes.toSeq shouldEqual Seq(i + 1)
     }
     val node1 = graph.getNodeById(1).get
-    node1.inboundNodes.toList shouldEqual List()
-    node1.outboundNodes.toList shouldEqual List(2)
+    node1.inboundNodes.toSeq shouldEqual Seq()
+    node1.outboundNodes.toSeq shouldEqual Seq(2)
     val nodeLast = graph.getNodeById(numLoop + 1).get
-    nodeLast.inboundNodes.toList shouldEqual List(numLoop)
-    nodeLast.outboundNodes.toList shouldEqual List()
+    nodeLast.inboundNodes.toSeq shouldEqual Seq(numLoop)
+    nodeLast.outboundNodes.toSeq shouldEqual Seq()
   }
 
   "multiple threads add and remove nodes/edges simultaneously" in {
@@ -129,8 +129,8 @@ class SynchronizedDynamicGraphSpec extends WordSpec with Matchers {
     (1 to numLoop + 1) foreach {
       i =>
         val node = graph.getNodeById(i).get
-        node.inboundNodes.toList shouldEqual List()
-        node.outboundNodes.toList shouldEqual List()
+        node.inboundNodes.toSeq shouldEqual Seq()
+        node.outboundNodes.toSeq shouldEqual Seq()
     }
   }
 }

@@ -69,8 +69,7 @@ object CQueue {
 
   trait LowerPriorityImplicit {
     private val factoryAny = new CQueueFactoryAny[AnyRef]()
-    implicit def factoryAny[T]: CQueueFactory[T] =
-      factoryAny.asInstanceOf[CQueueFactory[T]]
+    implicit def factoryAny[T]: CQueueFactory[T] = factoryAny.asInstanceOf[CQueueFactory[T]]
   }
 
   trait LowPriorityImplicit extends LowerPriorityImplicit {
@@ -78,7 +77,6 @@ object CQueue {
   }
 
   object Implicits extends LowPriorityImplicit
-
 }
 
 class CQueueAny[T, QueueType <: PriorityQueue[T]](protected val underlying: QueueType)

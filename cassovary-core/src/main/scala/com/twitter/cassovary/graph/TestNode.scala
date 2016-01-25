@@ -13,4 +13,12 @@
  */
 package com.twitter.cassovary.graph
 
-case class TestNode(id: Int, inboundNodes: List[Int], outboundNodes: List[Int]) extends Node
+import com.twitter.cassovary.collections.CSeq
+
+import com.twitter.cassovary.collections.CSeq.Implicits._
+
+case class TestNode(id: Int, inboundNodesList: List[Int], outboundNodesList: List[Int]) extends Node {
+  val inboundNodes = CSeq[Int](inboundNodesList.toArray)
+
+  val outboundNodes = CSeq[Int](outboundNodesList.toArray)
+}

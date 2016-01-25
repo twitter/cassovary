@@ -52,7 +52,5 @@ object FastUtilsWrappingBenchmark {
         i => easyMap.get(keys(i))
       }
     }
-
   }
-
 }

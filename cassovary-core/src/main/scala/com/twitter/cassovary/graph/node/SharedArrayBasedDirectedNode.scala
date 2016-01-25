@@ -16,9 +16,11 @@ package com.twitter.cassovary.graph.node
 import com.twitter.cassovary.graph.StoredGraphDir
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.Sharded2dArray
+import com.twitter.cassovary.collections.CSeq
+
+import com.twitter.cassovary.collections.CSeq.Implicits._
 
 object SharedArrayBasedDirectedNode {
-  val emptyArray = new Array[Int](0)
   /**
    * Creates a shared array based directed node (uni-directional or bi-directional) for
    * outgoing edges. Reverse edge arrays are not shared.
@@ -35,8 +37,8 @@ object SharedArrayBasedDirectedNode {
       dir: StoredGraphDir, reverseDirEdges: Option[Sharded2dArray[Int]] = None) = {
     dir match {
       case StoredGraphDir.OnlyIn | StoredGraphDir.OnlyOut | StoredGraphDir.Mutual =>
-        val outEdges: Seq[Int] = Option(edges(nodeId)).getOrElse(emptyArray)
-        UniDirectionalNode.applySeq(nodeId, outEdges, dir)
+        val outEdges: CSeq[Int] = Option(edges(nodeId)).getOrElse(CSeq.empty[Int])
+        UniDirectionalNode.applyCSeq(nodeId, outEdges, dir)
       case StoredGraphDir.BothInOut =>
         SharedArrayBasedBiDirectionalNode(nodeId, edges, reverseDirEdges.get)
     }

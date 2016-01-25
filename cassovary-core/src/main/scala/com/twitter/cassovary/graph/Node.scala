@@ -13,6 +13,9 @@
  */
 package com.twitter.cassovary.graph
 
+import com.twitter.cassovary.collections.CSeq
+import com.twitter.cassovary.collections.CSeq.Implicits._
+
 import scala.util.Random
 
 /**
@@ -29,14 +32,14 @@ trait Node {
   /**
    * Returns ids of all nodes pointing to this node.
    */
-  def inboundNodes(): Seq[Int]
+  def inboundNodes(): CSeq[Int]
 
   /**
    * Returns up to `max` nodes that this node points to.
    * @param max the max number of nodes it needs
    * @return a sequence of inboundNode ids
    */
-  def inboundNodes(max: Int): Seq[Int] = inboundNodes.take(max)
+  def inboundNodes(max: Int): CSeq[Int] = inboundNodes().slice(0, max)
 
   /**
    * Returns a random node from the set of nodes that points to this node or else `None` if
@@ -56,7 +59,7 @@ trait Node {
    * @param rnd user defined random number generator
    * @return a random node id
    */
-  def randomInboundNode(rnd: Random) = randomNode(inboundNodes, rnd)
+  def randomInboundNode(rnd: Random) = randomNode(inboundNodes(), rnd)
 
   /**
    * Returns a random sample of size at most `numResults` from the set of nodes
@@ -78,18 +81,18 @@ trait Node {
   /**
    * @return the total number of inbound edges.
    */
-  def inboundCount: Int = inboundNodes.size
+  def inboundCount: Int = inboundNodes.length
 
   /**
    * @return all nodes this node points to.
    */
-  def outboundNodes(): Seq[Int]
+  def outboundNodes(): CSeq[Int]
 
   /**
    * @param max the maximum number of outBound nodes needed.
    * @return up to `max` nodes that this node points to.
    */
-  def outboundNodes(max: Int): Seq[Int] = outboundNodes.take(max)
+  def outboundNodes(max: Int): CSeq[Int] = outboundNodes().slice(0, max)
 
   /**
    * Returns a random node from the set of nodes that this node points to or else `None` if
@@ -130,14 +133,14 @@ trait Node {
   /**
    * @return the total number of outbound edges.
    */
-  def outboundCount: Int = outboundNodes.size
+  def outboundCount: Int = outboundNodes.length
 
   /**
    * A method that return either inbound or outbound allowing direction `dir`.
    * @param dir the direction (inbound or outbound) that the method is applied to.
    * @return a sequence of inbound or outbound neighbors.
    */
-  def neighborIds(dir: GraphDir): Seq[Int] = {
+  def neighborIds(dir: GraphDir): CSeq[Int] = {
     dir match {
       case OutDir => outboundNodes
       case InDir => inboundNodes
@@ -151,7 +154,7 @@ trait Node {
    * @param max the maximum number of neighbors needed.
    * @return a sequence of inbound or outbound neighbors.
    */
-  def neighborIds(dir: GraphDir, max: Int): Seq[Int] = neighborIds(dir).take(max)
+  def neighborIds(dir: GraphDir, max: Int): CSeq[Int] = neighborIds(dir).slice(0, max)
 
   /**
    * A method that returns a random node in the allowing direction `dir`.
@@ -217,12 +220,12 @@ trait Node {
   /**
    * @return Intersection of `dir` neighbors with `nodeIds`.
    */
-  def intersect(dir: GraphDir, nodeIds: Seq[Int]): Seq[Int] = {
+  def intersect(dir: GraphDir, nodeIds: CSeq[Int]): CSeq[Int] = {
     intersect(neighborIds(dir), nodeIds)
   }
 
-  protected def intersect(neighbors: Seq[Int], nodeIds: Seq[Int]): Seq[Int] = {
-    neighbors.intersect(nodeIds)
+  protected def intersect(neighbors: CSeq[Int], nodeIds: CSeq[Int]): CSeq[Int] = {
+    CSeq[Int](neighbors.toSeq.intersect(nodeIds.toSeq).toArray)
   }
 
   /**
@@ -242,15 +245,19 @@ trait Node {
    * more optimized implementation.
    * @return a boolean indicating Whether `nodeIds` contains `queryNodeId`.
    */
-  protected def containsNode(nodeIds: Seq[Int], queryNodeId: Int): Boolean = {
-    nodeIds.contains(queryNodeId)
+  protected def containsNode(nodeIds: CSeq[Int], queryNodeId: Int): Boolean = {
+    nodeIds.foreach{
+      case nodeId if nodeId == queryNodeId => return true
+      case _ =>
+    }
+    false
   }
 
   /**
    * @param rnd a user defined random number generator.
    * @return a random node from `nodeIds` using a supplied random number generator `rnd`.
    */
-  protected def randomNode(nodeIds: Seq[Int], rnd: Random): Option[Int] = {
+  protected def randomNode(nodeIds: CSeq[Int], rnd: Random): Option[Int] = {
     if (nodeIds.isEmpty) {
       None
     } else {
@@ -265,9 +272,9 @@ trait Node {
    * @param rnd a user defined random number generator.
    * @return a random node from `nodeIds` using a supplied random number generator `rnd`.
    */
-  protected def randomNodeSet(nodeIds: Seq[Int], numResults: Int, rnd: Random) = {
+  protected def randomNodeSet(nodeIds: CSeq[Int], numResults: Int, rnd: Random) = {
     val arraySize = if (nodeIds.isEmpty) {0} else {numResults}
-    (1 to arraySize).map(_ => nodeIds(rnd.nextInt(nodeIds.size))).toArray
+    (1 to arraySize).map(_ => nodeIds(rnd.nextInt(nodeIds.length))).toArray
   }
 
   /**
@@ -275,9 +282,9 @@ trait Node {
    */
    override def toString  = {
      "NodeId => " + id + "\n" +
-     inboundNodes.take(10).foldLeft("InboundNodes[" + inboundCount + "] =>") { (accum, node) =>
+     inboundNodes(10).toSeq.foldLeft("InboundNodes[" + inboundCount + "] =>") { (accum, node) =>
        accum + node + "|"} + "\n" +
-     outboundNodes.take(10).foldLeft("OutboundNodes[" + outboundCount + "] =>"){ (accum, node) =>
+     outboundNodes(10).toSeq.foldLeft("OutboundNodes[" + outboundCount + "] =>"){ (accum, node) =>
        accum + node + "|"} + "\n"
    }
 }
@@ -299,12 +306,12 @@ object Node {
  */
 class NeighborsInArrayNode private[graph] (val id: Int, val ins: Array[Int], val outs: Array[Int])
   extends Node {
-  def inboundNodes(): Seq[Int] = ins
-  def outboundNodes(): Seq[Int] = outs
+  def inboundNodes(): CSeq[Int] = CSeq(ins)
+  def outboundNodes(): CSeq[Int] = CSeq(outs)
 }
 
 /**
- * Constructor for a default node with neighbors stored as Seqs.
+ * Constructor for a default node with neighbors stored as CSeqs.
  */
-class NeighborsInSeqNode private[graph] (val id: Int, val inboundNodes: Seq[Int],
-    val outboundNodes: Seq[Int]) extends Node
+class NeighborsInCSeqNode private[graph] (val id: Int, val inboundNodes: CSeq[Int],
+                                          val outboundNodes: CSeq[Int]) extends Node

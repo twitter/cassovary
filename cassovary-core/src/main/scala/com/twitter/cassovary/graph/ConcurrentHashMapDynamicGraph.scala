@@ -13,6 +13,9 @@ package com.twitter.cassovary.graph
 
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.graph.node.DynamicNode
+import com.twitter.cassovary.collections.CSeq
+
+import com.twitter.cassovary.collections.CSeq.Implicits._
 
 /**
  * An efficient dynamic graph implementation which supports concurrent reading and writing.
@@ -31,8 +34,8 @@ private class ConcurrentNode(val id: Int) extends DynamicNode {
   val outboundList = new ConcurrentIntArrayList()
   val inboundList = new ConcurrentIntArrayList()
 
-  def outboundNodes(): Seq[Int] = outboundList
-  def inboundNodes(): Seq[Int] = inboundList
+  def outboundNodes(): CSeq[Int] = outboundList.asCSeq()
+  def inboundNodes(): CSeq[Int] = inboundList.asCSeq()
   /**
    * Add outbound edges {@code nodeIds} into the outbound list.
    */
@@ -55,7 +58,7 @@ private class ConcurrentNode(val id: Int) extends DynamicNode {
   */
 // We store Ints in an array padded with extra capacity that will grow over time.
 // We essentially want a fastutil IntArrayList, but with synchronized appends.
-private class ConcurrentIntArrayList extends collection.IndexedSeq[Int] {
+private class ConcurrentIntArrayList {
   @volatile private var intArray: Array[Int] = new Array[Int](ConcurrentIntArrayList.initialCapacity)
   @volatile private var _size = 0
 
@@ -78,9 +81,11 @@ private class ConcurrentIntArrayList extends collection.IndexedSeq[Int] {
     }
   }
 
-  def length: Int = _size
+  def asCSeq(): CSeq[Int] = new CSeq[Int] {
+    override def apply(idx: Int): Int = intArray(idx)
 
-  def apply(idx: Int): Int = intArray(idx)
+    override def length: Int = _size
+  }
 }
 
 object ConcurrentIntArrayList {

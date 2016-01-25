@@ -22,21 +22,21 @@ class ConcurrentHashMapDynamicGraphSpec extends WordSpec with Matchers {
       // For now, addEdge allows duplicates.  graph.addEdge(1, 2) // Test duplicate elimination
       graph.edgeCount shouldEqual 1
       val node1 = graph.getNodeById(1).get
-      node1.inboundNodes.toList shouldEqual ( List())
-      node1.outboundNodes.toList shouldEqual (List(2))
+      node1.inboundNodes.toSeq shouldEqual ( Seq())
+      node1.outboundNodes.toSeq shouldEqual (Seq(2))
       val node2 = graph.getNodeById(2).get
-      node2.inboundNodes.toList shouldEqual (List(1))
-      node2.outboundNodes.toList shouldEqual (List())
+      node2.inboundNodes.toSeq shouldEqual (Seq(1))
+      node2.outboundNodes.toSeq shouldEqual (Seq())
 
       graph.addEdge(1, 10)
       graph.addEdge(200, 2)
 
       // Test multi-edge
       graph.addEdge(1, 2)
-      node1.inboundNodes.toList shouldEqual (List())
-      node1.outboundNodes.toList shouldEqual (List(2, 10, 2))
-      node2.inboundNodes.toList shouldEqual (List(1, 200, 1))
-      node2.outboundNodes.toList shouldEqual (List())
+      node1.inboundNodes.toSeq shouldEqual (Seq())
+      node1.outboundNodes.toSeq shouldEqual (Seq(2, 10, 2))
+      node2.inboundNodes.toSeq shouldEqual (Seq(1, 200, 1))
+      node2.outboundNodes.toSeq shouldEqual (Seq())
     }
 
     "support concurrent writing" in {
@@ -57,7 +57,8 @@ class ConcurrentHashMapDynamicGraphSpec extends WordSpec with Matchers {
           for (i <- 0 until 5) {
             val neighbors0 = graph.getOrCreateNode(0).outboundNodes
             Thread.sleep(1)
-            assert(neighbors0.count(_ == 0) <= 1)  // I expect the most common error would be observing extra 0 entries
+            assert(neighbors0.toSeq.count(_ == 0) <= 1)  // I expect the most common error would be
+            // observing extra 0 entries
           }
         }
       }
@@ -65,7 +66,8 @@ class ConcurrentHashMapDynamicGraphSpec extends WordSpec with Matchers {
       edgeAdders foreach (_.start())
       edgeAdders foreach (_.join())
       edgeReader.join()
-      graph.getOrCreateNode(0).outboundNodes should contain theSameElementsAs (0 until edgesPerThread * threadCount)
+      graph.getOrCreateNode(0).outboundNodes.toSeq should contain theSameElementsAs (0 until
+        edgesPerThread * threadCount)
 
     }
   }

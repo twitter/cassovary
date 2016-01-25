@@ -74,7 +74,7 @@ object Partitioner {
     val origNodesEdges = origGraph map { node =>
       val neighbors =
         if (origGraph.isDirStored(GraphDir.OutDir)) node.outboundNodes() else node.inboundNodes()
-      NodeIdEdgesMaxId(node.id, neighbors.toArray)
+      NodeIdEdgesMaxId(node.id, neighbors.toSeq.toArray)
     }
 
     val newNodesEdges: Iterable[(Int, NodeIdEdgesMaxId)] = origNodesEdges.flatMap(partitioner.map)

@@ -3,8 +3,11 @@ package com.twitter.cassovary.graph
 import com.twitter.cassovary.graph.node.DynamicNode
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.util.FastUtilUtils
+import com.twitter.cassovary.collections.CSeq
 import it.unimi.dsi.fastutil.ints.IntArrayList
 import scala.collection.mutable.ArrayBuffer
+
+import com.twitter.cassovary.collections.CSeq.Implicits._
 
 /**
  * A dynamic directed graph, implemented using an ArrayBuffer of IntArrayList
@@ -70,14 +73,14 @@ class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
     * For efficiency, we don't store Nodes, but create them on the fly as needed.
     */
   class IntListNode(override val id: Int,
-                    val outboundList: Option[Seq[Int]],
-                    val inboundList: Option[Seq[Int]])
+                    val outboundList: Option[CSeq[Int]],
+                    val inboundList: Option[CSeq[Int]])
       extends DynamicNode {
-    override def outboundNodes(): Seq[Int] = outboundList.getOrElse(Seq.empty)
+    override def outboundNodes(): CSeq[Int] = outboundList.getOrElse(CSeq.empty[Int])
 
-    override def inboundNodes(): Seq[Int] = storedGraphDir match {
+    override def inboundNodes(): CSeq[Int] = storedGraphDir match {
       case Mutual => outboundNodes()
-      case _ => inboundList.getOrElse(Seq.empty)
+      case _ => inboundList.getOrElse(CSeq.empty[Int])
       }
 
     def addOutBoundNodes(nodeIds: Seq[Int]): Unit = {
@@ -109,8 +112,8 @@ class ArrayBasedDynamicDirectedGraph(val storedGraphDir: StoredGraphDir)
   override def getNodeById(id: Int): Option[DynamicNode] =
     if (nodeExists(id)) {
       Some(new IntListNode(id,
-        outboundListOption(id) map FastUtilUtils.intArrayListToSeq,
-        inboundListOption(id) map FastUtilUtils.intArrayListToSeq))
+        outboundListOption(id) map FastUtilUtils.intArrayListToCSeq,
+        inboundListOption(id) map FastUtilUtils.intArrayListToCSeq))
     } else {
       None
     }

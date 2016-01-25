@@ -170,7 +170,7 @@ class TriangleCount(graph : DirectedGraph[Node], parameters : TriangleCountParam
     var transitivity = 0.0
     var triangles = 0.0
     graph.foreach {
-      case fromNode => fromNode.outboundNodes().foreach {
+      case fromNode => fromNode.outboundNodes().toSeq.foreach {
         case toNode if toNode > fromNode.id =>
           val (pi, totalWedges) = update(edgeNo, fromNode.id, toNode)
           transitivity = 3.0 * pi

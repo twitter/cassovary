@@ -16,6 +16,7 @@ package com.twitter.cassovary.util
 
 import java.{util => jutil}
 
+import com.twitter.cassovary.collections.CSeq
 import it.unimi.dsi.fastutil.ints.{IntArrayList, Int2BooleanOpenHashMap, Int2IntMap, Int2IntOpenHashMap}
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 
@@ -62,7 +63,7 @@ object FastUtilUtils {
   def newInt2IntOpenHashMap(): mutable.Map[Int, Int] =
     new Int2IntOpenHashMap().asInstanceOf[jutil.Map[Int, Int]]
 
-  def intArrayListToSeq(list: IntArrayList): Seq[Int] = new IndexedSeq[Int] {
+  def intArrayListToCSeq(list: IntArrayList): CSeq[Int] = new CSeq[Int] {
     override def apply(idx: Int): Int = list.getInt(idx)
     override def length: Int = list.size
   }

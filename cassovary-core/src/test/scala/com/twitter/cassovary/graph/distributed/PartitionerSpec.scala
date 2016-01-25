@@ -30,7 +30,8 @@ class PartitionerSpec extends WordSpec with Matchers with GraphBehaviours[Node] 
       for (dir <- Seq(GraphDir.OutDir, GraphDir.InDir)) {
         node.neighborIds(dir).foreach { neighborId =>
           val exists = subgraphs exists { graph =>
-            graph.getNodeById(node.id).flatMap(_.neighborIds(dir).find(_ == neighborId)).isDefined
+            graph.getNodeById(node.id)
+              .flatMap(_.neighborIds(dir).toSeq.find(_ == neighborId)).isDefined
           }
           exists shouldEqual true
         }
@@ -43,13 +44,13 @@ class PartitionerSpec extends WordSpec with Matchers with GraphBehaviours[Node] 
 
     val subgraphs = instances.values
     orig foreach { origNode =>
-      val origInNeighbors = origNode.neighborIds(GraphDir.InDir).toSet
-      val origOutNeighbors = origNode.neighborIds(GraphDir.OutDir).toSet
+      val origInNeighbors = origNode.neighborIds(GraphDir.InDir).toSeq.toSet
+      val origOutNeighbors = origNode.neighborIds(GraphDir.OutDir).toSeq.toSet
       val foundSubGraph = subgraphs exists { subgraph =>
         val node = subgraph.getNodeById(origNode.id)
         node exists { n =>
-          (n.neighborIds(GraphDir.InDir).toSet == origInNeighbors) &&
-              (n.neighborIds(GraphDir.OutDir).toSet == origOutNeighbors)
+          (n.neighborIds(GraphDir.InDir).toSeq.toSet == origInNeighbors) &&
+              (n.neighborIds(GraphDir.OutDir).toSeq.toSet == origOutNeighbors)
         }
       }
       withClue("Node " + origNode.id + " was not found any subgraph") {
