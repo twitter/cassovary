@@ -8,7 +8,8 @@ object Cassovary extends Build {
 
   val CassovaryLibraryVersion = "6.3.1"
 
-  val utilVersion = "6.28.0"
+  val finagleVersion = "6.35.0"
+  val utilVersion = "6.34.0"
   val fastUtilsDependency = "it.unimi.dsi" % "fastutil" % "7.0.7"
 
   def util(which: String) =
@@ -31,7 +32,7 @@ object Cassovary extends Build {
       util("logging"),
       "org.scalatest" %% "scalatest" % "2.2.4" % "test",
       "junit" % "junit" % "4.10" % "test",
-      "com.twitter" %% "finagle-stats" % "6.29.0",
+      "com.twitter" %% "finagle-stats" % finagleVersion,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     ),
     resolvers += "twitter repo" at "http://maven.twttr.com",
@@ -131,7 +132,7 @@ object Cassovary extends Build {
       name := "cassovary-server",
       libraryDependencies ++= Seq(
         fastUtilsDependency,
-        "com.twitter" %% "twitter-server" % "1.14.0"
+        "com.twitter" %% "twitter-server" % "1.20.0"
       )
   ).dependsOn(cassovaryCore)
 

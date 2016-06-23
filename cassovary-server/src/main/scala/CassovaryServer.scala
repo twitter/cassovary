@@ -14,8 +14,8 @@
 
 import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.twitter.cassovary.graph.{TestGraphs, DirectedGraph, GraphUtils, Node}
-import com.twitter.finagle.{Httpx, Service}
-import com.twitter.finagle.httpx.{Request, Response, Status}
+import com.twitter.finagle.{Http, Service}
+import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.io.Charsets.Utf8
 import com.twitter.logging.Logger
 import com.twitter.server.TwitterServer
@@ -59,7 +59,7 @@ object CassovaryServer extends TwitterServer {
     }
 
     // start Twitter Server
-    val server = Httpx.serve(":8888", service)
+    val server = Http.serve(":8888", service)
     onExit {
       server.close()
     }
