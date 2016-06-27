@@ -6,7 +6,7 @@ import xerial.sbt.Sonatype._
 
 object Cassovary extends Build {
 
-  val CassovaryLibraryVersion = "6.3.1"
+  val CassovaryLibraryVersion = "6.4.0"
 
   val finagleVersion = "6.35.0"
   val utilVersion = "6.34.0"
