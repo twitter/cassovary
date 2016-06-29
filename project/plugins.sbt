@@ -1,3 +1,3 @@
-addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "0.2.0")
+addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "1.1")
 
-//addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "0.8.1")
+//addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "1.0.0")
