@@ -410,6 +410,7 @@ trait DepthTracker extends QueueBasedTraverser[Node] {
   }
 
   def depth(id: Int) = depthTracker.infoOfNode(id)
+  def depthAllNodes = depthTracker.infoAllNodes
 }
 
 /**
