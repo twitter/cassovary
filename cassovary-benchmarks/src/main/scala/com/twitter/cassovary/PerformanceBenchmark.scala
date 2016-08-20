@@ -45,7 +45,7 @@ import scala.collection.mutable.ListBuffer
  * See: [[http://snap.stanford.edu/data/]]
  */
 
-object PerformanceBenchmark extends App with GzipGraphDownloader {
+object PerformanceBenchmark extends GzipGraphDownloader {
   /**
    * Directory to store cached graphs downloaded from the web.
    */
@@ -93,73 +93,86 @@ object PerformanceBenchmark extends App with GzipGraphDownloader {
   val getNodeFlag = flags("gn", 0, "run getNodeById benchmark with a given number of steps")
   val reps = flags("reps", DEFAULT_REPS, "number of times to run benchmark")
   val adjacencyList = flags("a", false, "graph in adjacency list format")
-  flags.parseArgs(args)
-  if (localFileFlag.isDefined) files += ((SMALL_FILES_DIRECTORY, localFileFlag()))
-  if (remoteFileFlag.isDefined) files += cacheRemoteFile(remoteFileFlag())
-  if (files.isEmpty) {
-    println("No files specified on command line. Taking default graph files facebook and wiki-Vote.")
-    files ++= smallFiles
-  }
-  if (globalPRFlag()) { benchmarks += (g => new PageRankBenchmark(g)) }
-  if (pprFlag()) { benchmarks += (g => new PersonalizedPageRankBenchmark(g)) }
 
-  centFlag() match {
-    case "indegree"  => benchmarks += (g => new InDegreeCentralityBenchmark(g))
-    case "outdegree" => benchmarks += (g => new OutDegreeCentralityBenchmark(g))
-    case "closeness" => benchmarks += (g => new ClosenessCentralityBenchmark(g))
-    case "all"       => benchmarks.append(g => new InDegreeCentralityBenchmark(g),
-      g => new OutDegreeCentralityBenchmark(g), g => new ClosenessCentralityBenchmark(g))
-    case "none" =>
-    case s: String => printf("%s is not a valid centrality option.  Please use indegree, outdegree, closeness or all.\n", s)
-  }
-
-  if (hitsFlag()) { benchmarks += (g => new HitsBenchmark(g)) }
-  if (getNodeFlag() > 0) { benchmarks += (g => new GetNodeByIdBenchmark(g, getNodeFlag(),
-    GraphDir.OutDir))}
-  if (helpFlag()) {
-    println(flags.usage)
-  } else {
-    def readGraph(path : String, filename : String, adjacencyList: Boolean) : DirectedGraph[Node] = {
-      if (adjacencyList) {
-        AdjacencyListGraphReader.forIntIds(path, filename).toArrayBasedDirectedGraph()
-      } else {
-        val sep = separatorInt().toChar
-        printf("Using Character (%d in Int) as separator\n", sep.toInt)
-        ListOfEdgesGraphReader.forIntIds(path, filename, graphDir = StoredGraphDir.BothInOut,
-          separator = sep).toSharedArrayBasedDirectedGraph(forceSparseRepr = None)
-          //separator = sep).toArrayBasedDirectedGraph(neighborsSortingStrategy = LeaveUnsorted,
-          //      forceSparseRepr = None)
-      }
-    }
-
-    if (benchmarks.isEmpty) {
-      println("No benchmarks specified on command line. Will only read the local graph files.")
-    }
-
-    files.foreach {
-      case (path, filename) =>
-        printf("Reading %s graph from %s\n", filename, path)
-        val readingTime = Stopwatch.start()
-        val graph = readGraph(path, filename, adjacencyList())
-        printf("\tGraph %s loaded from list of edges with %s nodes and %s edges.\n" +
-               "\tLoading Time: %s\n", filename, graph.nodeCount, graph.edgeCount, readingTime())
-        for (b <- benchmarks) {
-          val benchmark = b(graph)
-          printf("Running benchmark %s on graph %s...\n", benchmark.name, filename)
-          val duration = benchmark.run(reps())
-          printf("\tAvg time over %d repetitions: %s.\n", reps(), duration)
-        }
-        //Used with Yourkit to allow capturing memory snapshot before exiting
-        //Thread.sleep(10000 * 1000L)
-    }
-  }
-
-  def cacheRemoteFile(url : String) : (String, String) = {
+  def cacheRemoteFile(url: String): (String, String) = {
     printf("Downloading remote file from %s\n", url)
     new File(CACHE_DIRECTORY).mkdirs()
     val name = url.split("/").last.split("\\.")(0) + ".txt"
-    val target =  CACHE_DIRECTORY + name
+    val target = CACHE_DIRECTORY + name
     downloadAndUnpack(url, target)
     (CACHE_DIRECTORY, name)
+  }
+
+  def readGraph(path: String, filename: String, adjacencyList: Boolean): DirectedGraph[Node] = {
+    if (adjacencyList) {
+      AdjacencyListGraphReader.forIntIds(path, filename).toArrayBasedDirectedGraph()
+    } else {
+      val sep = separatorInt().toChar
+      printf("Using Character (%d in Int) as separator\n", sep.toInt)
+      ListOfEdgesGraphReader.forIntIds(path, filename, graphDir = StoredGraphDir.BothInOut,
+        separator = sep).toSharedArrayBasedDirectedGraph(forceSparseRepr = None)
+      //separator = sep).toArrayBasedDirectedGraph(neighborsSortingStrategy = LeaveUnsorted,
+      //      forceSparseRepr = None)
+    }
+  }
+
+  def main(args: Array[String]): Unit = {
+    flags.parseArgs(args)
+    if (localFileFlag.isDefined) files += ((SMALL_FILES_DIRECTORY, localFileFlag()))
+    if (remoteFileFlag.isDefined) files += cacheRemoteFile(remoteFileFlag())
+    if (files.isEmpty) {
+      println("No files specified on command line. Taking default graph files facebook and wiki-Vote.")
+      files ++= smallFiles
+    }
+    if (globalPRFlag()) {
+      benchmarks += (g => new PageRankBenchmark(g))
+    }
+    if (pprFlag()) {
+      benchmarks += (g => new PersonalizedPageRankBenchmark(g))
+    }
+
+    centFlag() match {
+      case "indegree" => benchmarks += (g => new InDegreeCentralityBenchmark(g))
+      case "outdegree" => benchmarks += (g => new OutDegreeCentralityBenchmark(g))
+      case "closeness" => benchmarks += (g => new ClosenessCentralityBenchmark(g))
+      case "all" => benchmarks.append(g => new InDegreeCentralityBenchmark(g),
+        g => new OutDegreeCentralityBenchmark(g), g => new ClosenessCentralityBenchmark(g))
+      case "none" =>
+      case s: String => printf("%s is not a valid centrality option.  Please use indegree, outdegree, closeness or all.\n", s)
+    }
+
+    if (hitsFlag()) {
+      benchmarks += (g => new HitsBenchmark(g))
+    }
+    if (getNodeFlag() > 0) {
+      benchmarks += (g => new GetNodeByIdBenchmark(g, getNodeFlag(),
+        GraphDir.OutDir))
+    }
+    if (helpFlag()) {
+      println(flags.usage)
+    } else {
+
+      if (benchmarks.isEmpty) {
+        println("No benchmarks specified on command line. Will only read the local graph files.")
+      }
+
+      files.foreach {
+        case (path, filename) =>
+          printf("Reading %s graph from %s\n", filename, path)
+          val readingTime = Stopwatch.start()
+          val graph = readGraph(path, filename, adjacencyList())
+          printf("\tGraph %s loaded from list of edges with %s nodes and %s edges.\n" +
+            "\tLoading Time: %s\n", filename, graph.nodeCount, graph.edgeCount, readingTime())
+          for (b <- benchmarks) {
+            val benchmark = b(graph)
+            printf("Running benchmark %s on graph %s...\n", benchmark.name, filename)
+            val duration = benchmark.run(reps())
+            printf("\tAvg time over %d repetitions: %s.\n", reps(), duration)
+          }
+        //Used with Yourkit to allow capturing memory snapshot before exiting
+        //Thread.sleep(10000 * 1000L)
+      }
+    }
+
   }
 }

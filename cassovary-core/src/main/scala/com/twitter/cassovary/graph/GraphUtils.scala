@@ -190,8 +190,8 @@ class GraphUtils[+V <: Node](val graph: Graph[V]) {
       (node.outboundNodes(), node.inboundNodes())
     else
       (node.inboundNodes(), node.outboundNodes())
-    val setSmall = dirSmall.toSet
-    val numEdges = dirLarge.foldLeft(0L) { (num, curr) =>
+    val setSmall = dirSmall.toSeq.toSet
+    val numEdges = dirLarge.toSeq.foldLeft(0L) { (num, curr) =>
       if (setSmall contains curr) num+1
       else num
     }

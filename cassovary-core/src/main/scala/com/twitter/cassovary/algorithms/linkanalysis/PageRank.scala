@@ -16,6 +16,8 @@ package com.twitter.cassovary.algorithms.linkanalysis
 import com.twitter.cassovary.graph.{DirectedGraph, Node}
 import com.twitter.cassovary.util.Progress
 import scala.collection.immutable.BitSet
+import scala.collection.mutable
+
 
 /**
  * Parameters for PageRank
@@ -54,10 +56,13 @@ class PageRank(graph: DirectedGraph[Node], params: PageRankParams = PageRankPara
 
     //If the graph is stored OnlyIn, it is most efficient to find which nodes are not dangling and do a set subtraction
     //from there.
-    val nonDangling = graph.foldLeft(BitSet()){ (partialSet, node) =>
+    val nonDangling = mutable.BitSet()
+    graph.foreach{ node =>
       val neighbors = efficientNeighbors(node)
-      neighbors foreach { nbr => outboundCount(nbr) += 1 }
-      partialSet ++ neighbors
+      neighbors foreach { nbr =>
+        outboundCount(nbr) += 1
+        nonDangling.add(nbr)
+      }
     }
     graph.view.map { _.id }.filter { !nonDangling.contains(_) }
   }
@@ -90,12 +95,16 @@ class PageRank(graph: DirectedGraph[Node], params: PageRankParams = PageRankPara
     graph foreach { node =>
       val neighbors = efficientNeighbors(node)
       if (isInStored) {
-        afterPR(node.id) = neighbors.foldLeft(0.0) {
-          (partialSum, nbr) => partialSum + dampingFactor * beforePR(nbr) / outboundCount(nbr)
-        } + dampingAmount + dangleSum
+        var newNodePR = 0.0
+        neighbors.foreach {
+          nbr => newNodePR += dampingFactor * beforePR(nbr) / outboundCount(nbr)
+        }
+        afterPR(node.id) = newNodePR + dampingAmount + dangleSum
       }
       else {
-        neighbors foreach { nbr => afterPR(nbr) += dampingFactor * beforePR(node.id) / node.outboundCount }
+        neighbors foreach { nbr =>
+          afterPR(nbr) += dampingFactor * beforePR(node.id) / node .outboundCount
+        }
         afterPR(node.id) += dangleSum + dampingAmount
       }
       prog.inc

@@ -17,6 +17,9 @@ import java.{util => jutil}
 
 import com.twitter.cassovary.graph.{NeighborsInArrayNode, Node, SortedNeighborsNodeOps}
 import com.twitter.cassovary.util.Sharded2dArray
+import com.twitter.cassovary.collections.CSeq
+
+import com.twitter.cassovary.collections.CSeq.Implicits._
 
 /**
  * Nodes in the graph that store both directions and
@@ -29,15 +32,15 @@ class FillingInEdgesBiDirectionalNode(val id: Int, val outEdges: Array[Int])
 
   var inEdges: Array[Int] = BiDirectionalNode.noEdges
 
-  def inboundNodes(): Seq[Int] = inEdges
+  def inboundNodes(): CSeq[Int] = CSeq(inEdges)
 
-  def outboundNodes(): Seq[Int] = outEdges
+  def outboundNodes(): CSeq[Int] = CSeq(outEdges)
 
   /**
    * Creates array of a given size to store incoming edges.
    */
   def createInEdges(size: Int): Unit = {
-    inEdges = new Array[Int](size)
+    inEdges = Array.ofDim[Int](size)
   }
 
   /**
@@ -59,7 +62,7 @@ object FillingInEdgesBiDirectionalNode {
 }
 
 object BiDirectionalNode {
-  val noEdges = Array[Int]()
+  val noEdges = Array.empty[Int]
 
   def apply(nodeId: Int, in: Array[Int], out: Array[Int],
       sortedNeighbors: Boolean = false): BiDirectionalNode = {
@@ -76,8 +79,8 @@ object SharedArrayBasedBiDirectionalNode {
       reverseDirEdgeArray: Sharded2dArray[Int]) = {
     new Node {
       val id = nodeId
-      def outboundNodes() = Option(sharedOutEdgesArray(nodeId)).getOrElse(BiDirectionalNode.noEdges)
-      def inboundNodes() = Option(reverseDirEdgeArray(nodeId)).getOrElse(BiDirectionalNode.noEdges)
+      def outboundNodes() = Option(sharedOutEdgesArray(nodeId)).getOrElse(CSeq.empty)
+      def inboundNodes() = Option(reverseDirEdgeArray(nodeId)).getOrElse(CSeq.empty)
     }
   }
 }

@@ -1,25 +1,40 @@
-package com.twitter.cassovary.util
+package com.twitter.cassovary.collections
 
-import java.{util => jutil}
-
-object SortedArrayOps {
+object SortedCSeqOps {
   /**
    * @return true if `elem` is in the `array`.
    *
    * Assumes that the collection is sorted. Does not use built-in Scala's
    * searching methods to avoid boxing/unboxing.
    */
-  def exists(array: Array[Int], elem: Int): Boolean = {
-    jutil.Arrays.binarySearch(array, elem) match {
+  def exists(cseq: CSeq[Int], elem: Int): Boolean = {
+    if (cseq.isEmpty) return false
+
+    def cSeqBinarySearch(a: CSeq[Int], key: Int): Int = {
+      var low: Int = 0
+      var high: Int = cseq.length - 1
+
+      while (low <= high) {
+        val mid: Int = (low + high) >>> 1
+        val midVal: Int = a(mid)
+        if (midVal < key) low = mid + 1
+        else if (midVal > key) high = mid - 1
+        else return mid
+      }
+      return -(low + 1)
+    }
+
+    cSeqBinarySearch(cseq, elem) match {
       case idx if idx < 0 => false
       case idx => true
     }
   }
 
   /**
-   * Linear intersection of two sorted arrays.
+   * Linear intersection of two sorted Cseqs.
    */
-  def intersectSorted(array: Array[Int], that: Array[Int]): Array[Int] = {
+  def intersectSorted(array: CSeq[Int], that: CSeq[Int])(implicit csf: CSeqFactory[Int]):
+      CSeq[Int] = {
     val intersection = Array.ofDim[Int](math.min(array.length, that.length))
     var intersectionIdx = 0
     var arrayIdx = 0
@@ -38,7 +53,14 @@ object SortedArrayOps {
       }
     }
 
-    slice(intersection, 0, intersectionIdx)
+    // We copy common elements to a new array to save memory. Alternatively,
+    // we can save processor time and return `intersection` array wrapped in CSeq
+    // at the cost of memory leak since the elements of the array after `intersectionIdx`
+    // will never be used.
+    val resArray = Array.ofDim[Int](intersectionIdx)
+    Array.copy(intersection, 0, resArray, 0, intersectionIdx)
+
+    CSeq[Int](resArray)
   }
 
   /**
@@ -47,7 +69,7 @@ object SortedArrayOps {
    * @return A sorted array containing only once each element
    *         that wast in either of two arrays.
    */
-  def unionSorted(thisA: Array[Int], that: Array[Int]): Array[Int] = {
+  def unionSorted(thisA: CSeq[Int], that: CSeq[Int])(implicit csf: CSeqFactory[Int]): CSeq[Int] = {
     val union = Array.ofDim[Int](thisA.length + that.length)
     var resultIdx = 0
     var thisIdx = 0
@@ -80,13 +102,11 @@ object SortedArrayOps {
       }
     }
 
-    slice(union, 0, resultIdx)
-  }
+    // Same tradeoff as in intersectionSorted method.
+    val resArray = Array.ofDim[Int](resultIdx)
+    Array.copy(union, 0, resArray, 0, resultIdx)
 
-  @inline def slice(a: Array[Int], from: Int, len: Int): Array[Int] = {
-    val result = Array.ofDim[Int](len)
-    Array.copy(a, from, result, 0, len)
-    result
+    CSeq[Int](resArray)
   }
 }
 

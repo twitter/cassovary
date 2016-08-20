@@ -25,7 +25,7 @@ import com.twitter.cassovary.graph.TestGraphs
  *   -n [numNodes]  number of nodes in generated graphs (default: 10000)
  *   -p [probEdge]  probability of existence of edge in a graph (default: 0.001)
  */
-object GraphGenerationBenchmarks extends App {
+object GraphGenerationBenchmark {
   val DEFAULT_REPS = 10
 
   val flags = new Flags("Graph generation benchmarks")
@@ -33,22 +33,17 @@ object GraphGenerationBenchmarks extends App {
   val probEdgeFlag = flags("p", 0.001, "Probability of edge existance")
   val repsFlag = flags("reps", DEFAULT_REPS, "Number of times to run benchmark")
   val helpFlag = flags("h", false, "Print usage")
-  flags.parseArgs(args)
-
-  if (helpFlag()) {
-    println(flags.usage)
-  } else {
-    performBenchmarks(numNodesFlag(), probEdgeFlag(), repsFlag())
-  }
 
   def performBenchmarks(numNodes: Int, probEdge: Double, reps: Int) {
     val benchmarks = List[GraphGenerationBenchmark](
       new GraphGenerationBenchmark(numNodes, probEdge) {
         override def name = "Random directed graph generation"
+
         override def operation() = TestGraphs.generateRandomGraph(numNodes, probEdge)
       },
       new GraphGenerationBenchmark(numNodes, probEdge) {
         override def name = "Random undirected graph generation"
+
         override def operation() = TestGraphs.generateRandomUndirectedGraph(numNodes, probEdge)
       }
     )
@@ -62,4 +57,14 @@ object GraphGenerationBenchmarks extends App {
 
   abstract case class GraphGenerationBenchmark(numNodes: Int, probEdge: Double)
     extends OperationBenchmark
+
+  def main(args: Array[String]) {
+    flags.parseArgs(args)
+
+    if (helpFlag()) {
+      println(flags.usage)
+    } else {
+      performBenchmarks(numNodesFlag(), probEdgeFlag(), repsFlag())
+    }
+  }
 }

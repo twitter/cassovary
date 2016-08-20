@@ -14,8 +14,10 @@
 package com.twitter.cassovary.graph.node
 
 import com.twitter.cassovary.graph.StoredGraphDir._
-import com.twitter.cassovary.graph.{NeighborsInSeqNode, NeighborsInArrayNode, SortedNeighborsNodeOps, Node}
-import com.twitter.cassovary.util.{SortedArrayOps, ArraySlice}
+import com.twitter.cassovary.graph.{NeighborsInCSeqNode, NeighborsInArrayNode, Node, SortedNeighborsNodeOps}
+import com.twitter.cassovary.collections.CSeq
+
+import com.twitter.cassovary.collections.CSeq.Implicits._
 
 /**
  * Nodes in the graph that store edges in only one direction (or in the case Mutual Dir graph,
@@ -29,7 +31,6 @@ trait UniDirectionalNode extends Node
  */
 object UniDirectionalNode {
   private val emptyArray = Array.empty[Int]
-  private val emptySeq: Seq[Int] = Nil
 
   def apply(nodeId: Int, neighbors: Array[Int], dir: StoredGraphDir,
       sortedNeighbors: Boolean = false) = {
@@ -42,15 +43,21 @@ object UniDirectionalNode {
     }
   }
 
+  def applyCSeq(nodeId: Int, neighbors: CSeq[Int], dir: StoredGraphDir,
+                sortedNeighbors: Boolean = false) = {
+    val in = if (dir == OnlyOut) CSeq.empty[Int] else neighbors
+    val out = if (dir == OnlyIn) CSeq.empty[Int] else neighbors
+    if (sortedNeighbors) {
+      new NeighborsInCSeqNode(nodeId, in, out) with UniDirectionalNode with SortedNeighborsNodeOps
+    } else {
+      new NeighborsInCSeqNode(nodeId, in, out) with UniDirectionalNode
+    }
+  }
+
+  @deprecated("Use apply instead.", "7.0.0")
   def applySeq(nodeId: Int, neighbors: Seq[Int], dir: StoredGraphDir,
       sortedNeighbors: Boolean = false) = {
-    val in = if (dir == OnlyOut) emptySeq else neighbors
-    val out = if (dir == OnlyIn) emptySeq else neighbors
-    if (sortedNeighbors) {
-      new NeighborsInSeqNode(nodeId, in, out) with UniDirectionalNode with SortedNeighborsNodeOps
-    } else {
-      new NeighborsInSeqNode(nodeId, in, out) with UniDirectionalNode
-    }
+    apply(nodeId, neighbors.toArray, dir, sortedNeighbors)
   }
 
 }
@@ -61,17 +68,16 @@ object UniDirectionalNode {
  * object to hold its edges
  */
 object SharedArrayBasedUniDirectionalNode {
-  private val emptySeq: Seq[Int] = Nil
-
   def apply(nodeId: Int, edgeArrOffset: Int, edgeArrLen: Int, sharedArray: Array[Array[Int]],
             dir: StoredGraphDir) = {
-    val neighbors = new ArraySlice(sharedArray(nodeId % sharedArray.length), edgeArrOffset, edgeArrLen)
+    val neighbors = CSeq[Int](sharedArray(nodeId % sharedArray.length), edgeArrOffset,
+      edgeArrOffset + edgeArrLen)
     new UniDirectionalNode {
       val id = nodeId
 
-      def inboundNodes() = if (dir == OnlyOut) emptySeq else neighbors
+      def inboundNodes() = if (dir == OnlyOut) CSeq.empty[Int] else neighbors
 
-      def outboundNodes() = if (dir == OnlyIn) emptySeq else neighbors
+      def outboundNodes() = if (dir == OnlyIn) CSeq.empty[Int] else neighbors
     }
 
   }

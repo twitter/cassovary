@@ -25,7 +25,7 @@ class NodeSpec extends WordSpec with Matchers {
   def noInboundEdges(node: Node): Unit = {
     "have no inbound edges" in {
       node.inboundCount shouldEqual 0
-      node.inboundNodes().size shouldEqual 0
+      node.inboundNodes().length shouldEqual 0
       node.isInboundNode(1) shouldEqual false
     }
 
@@ -38,7 +38,7 @@ class NodeSpec extends WordSpec with Matchers {
   def noOutboundEdges(node: Node): Unit = {
     "have no outbound edges" in {
       node.outboundCount shouldEqual 0
-      node.outboundNodes().size shouldEqual 0
+      node.outboundNodes().length shouldEqual 0
       node.isOutboundNode(1) shouldEqual false
     }
 
@@ -58,7 +58,7 @@ class NodeSpec extends WordSpec with Matchers {
     "have an inbound edge" in {
       val node = onlyInboundEdges
       node.inboundCount shouldEqual 1
-      node.inboundNodes should contain(2)
+      node.inboundNodes.toSeq should contain(2)
       node.isInboundNode(1) shouldEqual false
       node.isInboundNode(2) shouldEqual true
     }
@@ -80,7 +80,7 @@ class NodeSpec extends WordSpec with Matchers {
     "have an outbound edge" in {
       val node = onlyOutboundEdges
       node.outboundCount shouldEqual 1
-      node.outboundNodes should contain (2)
+      node.outboundNodes.toSeq should contain (2)
       node.isOutboundNode(1) shouldEqual false
       node.isOutboundNode(2) shouldEqual true
     }
@@ -97,7 +97,7 @@ class NodeSpec extends WordSpec with Matchers {
     "have an inbound edge" in {
       val node = inboundAndOutboundEdges
       node.inboundCount shouldEqual 1
-      node.inboundNodes should contain (2)
+      node.inboundNodes.toSeq should contain (2)
       node.isInboundNode(1) shouldEqual false
       node.isInboundNode(2) shouldEqual true
       node.isInboundNode(3) shouldEqual false
@@ -113,7 +113,7 @@ class NodeSpec extends WordSpec with Matchers {
     "have an outbound edge" in {
       val node = inboundAndOutboundEdges
       node.outboundCount shouldEqual 1
-      node.outboundNodes should contain (3)
+      node.outboundNodes.toSeq should contain (3)
       node.isOutboundNode(1) shouldEqual false
       node.isOutboundNode(2) shouldEqual false
       node.isOutboundNode(3) shouldEqual true
@@ -135,8 +135,8 @@ class NodeSpec extends WordSpec with Matchers {
       val node2 = new NeighborsInArrayNode(0, Array(3), Array(4, 6))
         with SortedNeighborsNodeOps
 
-      node1.intersect(GraphDir.InDir, node2.inboundNodes()) should be (Seq())
-      node1.intersect(GraphDir.OutDir, node2.outboundNodes()) should be (Seq(4, 6))
+      node1.intersect(GraphDir.InDir, node2.inboundNodes()).toSeq should be (Seq())
+      node1.intersect(GraphDir.OutDir, node2.outboundNodes()).toSeq should be (Seq(4, 6))
     }
 
     "allow logarithmic membership checking" in {

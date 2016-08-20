@@ -31,7 +31,7 @@ object NodeUtils {
    */
   def removeSelfAndNodesDirectlyFollowing[T](node: Node, allNodeInfos: List[T],
       extractIdFunc: T => Int) = {
-    removeFromList(Set(node.outboundNodes: _*) ++ Set(node.id), allNodeInfos, extractIdFunc)
+    removeFromList(Set(node.id) ++ node.outboundNodes().toSeq, allNodeInfos, extractIdFunc)
   }
 
   /**

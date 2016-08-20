@@ -15,6 +15,7 @@ package com.twitter.cassovary.algorithms.linkanalysis
 
 import com.twitter.cassovary.graph.{StoredGraphDir, DirectedGraph, Node}
 import com.twitter.cassovary.util.Progress
+import com.twitter.cassovary.collections.CSeq
 import com.twitter.logging.Logger
 
 /**
@@ -50,8 +51,8 @@ abstract class LinkAnalysis[T <: IterationState](graph: DirectedGraph[Node],
   protected val tolerance     = params.tolerance
   protected val isInStored    = StoredGraphDir.isInDirStored(graph.storedGraphDir)
 
-  protected def efficientNeighbors(node: Node): Seq[Int] = if (isInStored) node.inboundNodes() else node.outboundNodes()
-  protected def efficientNeighborCount(node: Node): Int  = efficientNeighbors(node).size
+  protected def efficientNeighbors(node: Node): CSeq[Int] = if (isInStored) node.inboundNodes() else node.outboundNodes()
+  protected def efficientNeighborCount(node: Node): Int  = efficientNeighbors(node).length
 
   /**
    * Run a single iteration through our algorithm.

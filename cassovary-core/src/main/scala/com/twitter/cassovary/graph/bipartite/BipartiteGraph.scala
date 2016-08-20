@@ -13,8 +13,10 @@
  */
 package com.twitter.cassovary.graph.bipartite
 
-import com.twitter.cassovary.graph.{Graph, GraphDir, StoredGraphDir, Node}
+import com.twitter.cassovary.collections.CSeq
+import com.twitter.cassovary.collections.CSeq.Implicits._
 import com.twitter.cassovary.graph.GraphDir._
+import com.twitter.cassovary.graph.{Graph, GraphDir, Node, StoredGraphDir}
 import com.twitter.logging.Logger
 
 case class BipartiteGraphException(e: String) extends Exception(e)
@@ -50,8 +52,8 @@ trait BipartiteNode extends Node {
  * @param inboundNodes original (positive) ids of the nodes on the RHS pointed by in-coming edges
  * @param outboundNodes original (positive) ids of the nodes on the RHS pointed by out-going edges
  */
-class LeftNode(val id: Int, val inboundNodes: Seq[Int],
-    val outboundNodes: Seq[Int]) extends BipartiteNode {
+class LeftNode(val id: Int, val inboundNodes: CSeq[Int],
+    val outboundNodes: CSeq[Int]) extends BipartiteNode {
   def isLeftNode = true
 }
 
@@ -65,7 +67,8 @@ class LeftNode(val id: Int, val inboundNodes: Seq[Int],
  * inboundNodes and outboundNodes ids should be positive if all the node idS are unique in a graph
  * and negative if node ids are unique only on each side.
  */
-class RightNode(val id: Int, val inboundNodes: Seq[Int], val outboundNodes: Seq[Int]) extends BipartiteNode {
+class RightNode(val id: Int, val inboundNodes: CSeq[Int], val outboundNodes: CSeq[Int]) extends
+BipartiteNode {
   def isLeftNode = false
 }
 
@@ -144,7 +147,16 @@ class BipartiteGraph(leftBipartiteNodes: Array[BipartiteNode], val leftNodeCount
             if (node.outboundNodes()(i) == 0) throw new BipartiteGraphException(
               "Edge value cannot be 0, node %d's out edge at edge index %d".format(node.id, i))
           }
-          new RightNode(node.id, node.inboundNodes().map(x => -x), node.outboundNodes().map(x => -x))
+          def negate(cseq: CSeq[Int]): CSeq[Int] = {
+            val res = Array.ofDim[Int](cseq.length)
+            var cur: Int = 0
+            cseq.foreach {
+              elem => res(cur) = -elem
+                      cur += 1
+            }
+            CSeq[Int](res)
+          }
+          new RightNode(node.id, negate(node.inboundNodes()), negate(node.outboundNodes()))
         } else null
       }
     else rightBipartiteNodes

@@ -13,6 +13,8 @@
  */
 package com.twitter.cassovary.util
 
+import com.twitter.cassovary.collections.{CSeqFactory, CSeq}
+
 /**
  * A wrapper that behaves as an Array of internal Arrays of `T`.
  *
@@ -28,10 +30,10 @@ class Sharded2dArray[@specialized(Int, Long) T](shards: Array[Array[T]],
                                                 indicator: T => Boolean,
                                                 offsets: T => Int,
                                                 lengths: T => Int,
-                                                hashing: T => Int) {
-  def apply(id: T): Seq[T] = {
+                                                hashing: T => Int)(implicit csq: CSeqFactory[T]) {
+  def apply(id: T): CSeq[T] = {
     if (indicator(id)) {
-      new ArraySlice[T](shards(hashing(id)), offsets(id), lengths(id))
+      CSeq[T](shards(hashing(id)), offsets(id), offsets(id) + lengths(id))
     } else {
       null
     }

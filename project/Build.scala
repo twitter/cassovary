@@ -1,12 +1,13 @@
+package com.twitter.cassovary.colections
+
 import sbt._
 import Keys._
 import sbtassembly.AssemblyPlugin.autoImport._
 import xerial.sbt.Sonatype._
-
+import pl.project13.scala.sbt.JmhPlugin
 
 object Cassovary extends Build {
-
-  val CassovaryLibraryVersion = "6.4.0"
+  val CassovaryLibraryVersion = "7.0.0"
 
   val finagleVersion = "6.35.0"
   val utilVersion = "6.34.0"
@@ -21,8 +22,7 @@ object Cassovary extends Build {
   val sharedSettings = Seq(
     version := CassovaryLibraryVersion,
     organization := "com.twitter",
-    scalaVersion := "2.11.7",
-    crossScalaVersions := Seq("2.10.4", "2.11.7"),
+    scalaVersion := "2.11.8",
     retrieveManaged := true,
     libraryDependencies ++= Seq(
       "com.google.guava" % "guava" % "16.0.1",
@@ -92,7 +92,7 @@ object Cassovary extends Build {
     base = file("."),
     settings = Project.defaultSettings ++ sharedSettings ++ sonatypeSettings
   ).aggregate(
-      cassovaryCore, cassovaryExamples, cassovaryBenchmarks, cassovaryServer
+      cassovaryCore, cassovaryExamples, cassovaryBenchmarks, cassovaryServer, cassovaryCollections
   )
 
   lazy val cassovaryCore = Project(
@@ -101,6 +101,15 @@ object Cassovary extends Build {
     settings = Project.defaultSettings ++ sharedSettings ++ sonatypeSettings
   ).settings(
     name := "cassovary-core"
+  ).dependsOn(cassovaryCollections)
+
+  lazy val cassovaryCollections = Project(
+    id = "cassovary-collections",
+    base = file("cassovary-collections"),
+    settings = Project.defaultSettings ++ sharedSettings ++ sonatypeSettings
+  ).settings(
+    name := "cassovary-collections",
+    scalacOptions += "-language:experimental.macros"
   )
 
   lazy val cassovaryExamples = Project(
@@ -122,7 +131,7 @@ object Cassovary extends Build {
         fastUtilsDependency,
         util("app")
       )
-  ).dependsOn(cassovaryCore)
+  ).dependsOn(cassovaryCore).enablePlugins(JmhPlugin)
 
   lazy val cassovaryServer = Project(
     id = "cassovary-server",
@@ -135,5 +144,4 @@ object Cassovary extends Build {
         "com.twitter" %% "twitter-server" % "1.20.0"
       )
   ).dependsOn(cassovaryCore)
-
 }

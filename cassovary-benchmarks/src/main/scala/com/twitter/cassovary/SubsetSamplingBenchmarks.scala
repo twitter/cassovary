@@ -17,7 +17,7 @@ import com.twitter.app.Flags
 import com.twitter.cassovary.util.Sampling
 import scala.util.Random
 
-object SubsetSamplingBenchmarks extends App {
+object SubsetSamplingBenchmarks {
   val DEFAULT_REPS = 1000
 
   val rng = new Random
@@ -27,43 +27,50 @@ object SubsetSamplingBenchmarks extends App {
   val subsetSizeFlag = flags("s", 100, "Sampling subset size")
   val repsFlag = flags("reps", DEFAULT_REPS, "Number of times to run benchmark")
   val helpFlag = flags("h", false, "Print usage")
-  flags.parseArgs(args)
 
-  if (helpFlag()) {
-    println(flags.usage)
-  } else {
-    performBenchmarks(subsetSizeFlag(), numFlag(), repsFlag())
-  }
+  def main(args: Array[String]): Unit = {
+    flags.parseArgs(args)
 
-  abstract case class SubsetSamplingBenchmark(size: Int, maxElement: Int)
-    extends OperationBenchmark
+    if (helpFlag()) {
+      println(flags.usage)
+    } else {
+      performBenchmarks(subsetSizeFlag(), numFlag(), repsFlag())
+    }
 
-  def performBenchmarks(size: Int, maxElement: Int, reps: Int) {
-    val benchmarks = List(
-      new SubsetSamplingBenchmark(size, maxElement) {
-        override def name = "Array based sampling with sampling array generated in advance"
-        val array = (1 to maxElement).toArray
-        override def operation(): Unit = {
-          Sampling.randomSubset(size, array, rng)
+    abstract case class SubsetSamplingBenchmark(size: Int, maxElement: Int)
+      extends OperationBenchmark
+
+    def performBenchmarks(size: Int, maxElement: Int, reps: Int) {
+      val benchmarks = List(
+        new SubsetSamplingBenchmark(size, maxElement) {
+          override def name = "Array based sampling with sampling array generated in advance"
+
+          val array = (1 to maxElement).toArray
+
+          override def operation(): Unit = {
+            Sampling.randomSubset(size, array, rng)
+          }
+        },
+        new SubsetSamplingBenchmark(size, maxElement) {
+          override def name = "Array based sampling with array generation for each sample"
+
+          override def operation(): Unit = {
+            Sampling.randomSubset(size, (1 to maxElement).toArray, rng)
+          }
+        },
+        new SubsetSamplingBenchmark(size, maxElement) {
+          override def name = "Range based sampling"
+
+          override def operation(): Unit = {
+            Sampling.randomSubset(size, 1 to maxElement, rng)
+          }
         }
-      },
-      new SubsetSamplingBenchmark(size, maxElement) {
-        override def name = "Array based sampling with array generation for each sample"
-        override def operation(): Unit = {
-          Sampling.randomSubset(size, (1 to maxElement).toArray, rng)
-        }
-      },
-      new SubsetSamplingBenchmark(size, maxElement) {
-        override def name = "Range based sampling"
-        override def operation(): Unit = {
-          Sampling.randomSubset(size, 1 to maxElement, rng)
-        }
+      )
+      for (benchmark <- benchmarks) {
+        printf("Sampling %d from 1..%d using %s\n", benchmark.size, benchmark.maxElement, benchmark.name)
+        val duration = benchmark.run(reps)
+        printf("\tAvg time over %d repetitions: %s.\n", reps, duration)
       }
-    )
-    for (benchmark <- benchmarks) {
-      printf("Sampling %d from 1..%d using %s\n", benchmark.size, benchmark.maxElement, benchmark.name)
-      val duration = benchmark.run(reps)
-      printf("\tAvg time over %d repetitions: %s.\n", reps, duration)
     }
   }
 }

@@ -40,8 +40,8 @@ trait GraphBehaviours[V <: Node] extends Matchers {
         val neighbors = (0 until numNodes) filter {
           _ != node.id
         }
-        node.inboundNodes().sorted shouldEqual neighbors
-        node.outboundNodes().sorted shouldEqual neighbors
+        node.inboundNodes().toSeq.sorted shouldEqual neighbors
+        node.outboundNodes().toSeq.sorted shouldEqual neighbors
       }
     }
   }
@@ -54,7 +54,7 @@ trait GraphBehaviours[V <: Node] extends Matchers {
         (0 to 1) foreach { dir =>
           val neighbors = if (dir == 0) node.outboundNodes() else node.inboundNodes()
           withClue("duplicates in neighbors array detected") {
-            neighbors.size shouldEqual neighbors.toSet.size
+            neighbors.length shouldEqual neighbors.toSeq.toSet.size
           }
           neighbors foreach { nbr =>
             withClue("nbr.id < 0 (" + nbr + ")") {
@@ -71,7 +71,7 @@ trait GraphBehaviours[V <: Node] extends Matchers {
               if (dir == 0) neighborNode.inboundNodes()
               else neighborNode.outboundNodes()
             withClue("edge existence not consistent in nodes") {
-              neighborNodeOtherDirEdges should contain (node.id)
+              neighborNodeOtherDirEdges.toSeq should contain (node.id)
             }
           }
         }
@@ -113,8 +113,8 @@ trait GraphBehaviours[V <: Node] extends Matchers {
 
     "have correct in and out edges" + (if (checkOrdering) " in correct order" else "") in {
       for (node <- graph) {
-        check(node.id, node.outboundNodes(), outEdges.get(node.id))
-        check(node.id, node.inboundNodes(), inEdges.get(node.id))
+        check(node.id, node.outboundNodes().toSeq, outEdges.get(node.id))
+        check(node.id, node.inboundNodes().toSeq, inEdges.get(node.id))
       }
     }
   }
@@ -150,9 +150,9 @@ trait GraphBehaviours[V <: Node] extends Matchers {
     "be consistent among all nodes" in {
       graph foreach { node =>
         withClue("inbound nodes not equal to outbound nodes in undirected graph") {
-          node.inboundNodes().sorted shouldEqual node.outboundNodes().sorted
+          node.inboundNodes().toSeq.sorted shouldEqual node.outboundNodes().toSeq.sorted
         }
-        node.inboundNodes().size shouldEqual node.inboundNodes().toSet.size
+        node.inboundNodes().length shouldEqual node.inboundNodes().toSeq.toSet.size
         node.inboundNodes() foreach { nbr =>
           withClue("nbr.id < 0 (" + nbr + ")") {
             nbr should be >= 0
@@ -164,7 +164,7 @@ trait GraphBehaviours[V <: Node] extends Matchers {
             nbr should not be node.id
           }
           withClue("edge existence not consistent in nodes") {
-            graph.getNodeById(nbr).get.outboundNodes() should contain (node.id)
+            graph.getNodeById(nbr).get.outboundNodes().toSeq should contain (node.id)
           }
         }
       }
@@ -177,7 +177,7 @@ trait GraphBehaviours[V <: Node] extends Matchers {
         withClue("unexpected node: " + node.id) {
           nodeMap.contains(node.id) shouldEqual true
         }
-        val neighbors = node.outboundNodes().toArray.sorted
+        val neighbors = node.outboundNodes().toSeq.toArray.sorted
         val nodesInMap = nodeMap(node.id).toArray.sorted
         withClue("node: " + node.id + " neighbors.length incorrect") {
           neighbors.length shouldEqual nodesInMap.length
@@ -203,10 +203,13 @@ trait GraphBehaviours[V <: Node] extends Matchers {
       val neighbors = node.outboundNodes()
       val nodesInMap = nodeMap(nodeNumberer.internalToExternal(node.id))
       withClue("edge missing in the graph") {
-        nodesInMap.forall { i => neighbors.contains(nodeNumberer.externalToInternal(i)) } shouldEqual true
+        nodesInMap
+          .forall { i =>
+            neighbors.toSeq.contains(nodeNumberer.externalToInternal(i)) } shouldEqual true
       }
       withClue("unexpected edge in the graph") {
-        neighbors.forall { i => nodesInMap.contains(nodeNumberer.internalToExternal(i)) } shouldEqual true
+        neighbors.toSeq
+          .forall { i => nodesInMap.contains(nodeNumberer.internalToExternal(i)) } shouldEqual true
       }
     }
     nodeMap.keys.foreach {

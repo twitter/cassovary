@@ -32,7 +32,7 @@ trait Similarity {
   def graph: DirectedGraph[Node]
 
   protected def getNeighbors(nodeId: Int, dir: GraphDir = GraphDir.OutDir): Option[Set[Int]] = {
-    graph.getNodeById(nodeId).map(_.neighborIds(dir).toSet[Int])
+    graph.getNodeById(nodeId).map(_.neighborIds(dir).toSeq.toSet[Int])
   }
 
   /**

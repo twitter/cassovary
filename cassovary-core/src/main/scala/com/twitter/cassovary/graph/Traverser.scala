@@ -335,7 +335,7 @@ trait QueueBasedTraverser[+V <: Node] extends Traverser[V] {
       degreeLimit.isLimitReached(node.neighborCount(dir))) {
       Seq()
     } else {
-      limitAddedToQueue(node.neighborIds(dir).filter(n => shouldBeEnqueued(coloring.get(n))))
+      limitAddedToQueue(node.neighborIds(dir).toSeq.filter(n => shouldBeEnqueued(coloring.get(n))))
     }
   }
 

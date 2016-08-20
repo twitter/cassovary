@@ -3,6 +3,7 @@ package com.twitter.cassovary.graph
 import com.google.common.annotations.VisibleForTesting
 import com.twitter.cassovary.graph.StoredGraphDir._
 import com.twitter.cassovary.graph.node._
+import com.twitter.cassovary.collections.CSeq
 import com.twitter.cassovary.util.collections.Int2IntMap
 import com.twitter.cassovary.util.{Int2ObjectMap, ArrayBackedSet, BoundedFuturePool, Sharded2dArray}
 import com.twitter.finagle.stats.{Stat, DefaultStatsReceiver}
@@ -10,6 +11,8 @@ import com.twitter.logging.Logger
 import com.twitter.util.{Await, Future, FuturePool}
 
 import java.util.concurrent.atomic.AtomicInteger
+
+import com.twitter.cassovary.collections.CSeq.Implicits._
 
 object SharedArrayBasedDirectedGraph {
   private lazy val log = Logger.get()

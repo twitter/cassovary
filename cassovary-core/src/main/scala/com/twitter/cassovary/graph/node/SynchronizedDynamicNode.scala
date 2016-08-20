@@ -13,7 +13,11 @@
  */
 package com.twitter.cassovary.graph.node
 
+import com.twitter.cassovary.collections.CSeq
+
 import scala.collection.mutable.ArrayBuffer
+
+import com.twitter.cassovary.collections.CSeq.Implicits._
 
 /**
  * A Node supports add and delete operation on its in/out edges.
@@ -32,11 +36,11 @@ class SynchronizedDynamicNode(val id: Int) extends DynamicNode {
    */
   def inboundNodes = {
     val array = synchronized { inEdges.toArray }
-    array filter { _ != DELETED_MARKER}
+    CSeq.apply(array filter { _ != DELETED_MARKER})
   }
   def outboundNodes = synchronized {
     val array = synchronized { outEdges.toArray }
-    array filter {_ != DELETED_MARKER}
+    CSeq(array filter {_ != DELETED_MARKER})
   }
 
   override def equals(other: Any) = {
@@ -86,8 +90,8 @@ class SynchronizedDynamicNode(val id: Int) extends DynamicNode {
   }
 
   override def toString = {
-    val inNodes = synchronized { inboundNodes.toList }
-    val outNodes = synchronized { outboundNodes.toList }
+    val inNodes = synchronized { inboundNodes.toSeq }
+    val outNodes = synchronized { outboundNodes.toSeq }
     "SynchronizedDynamicNode(id=%d, out=%s, in=%s)".format(id, outNodes, inNodes)
   }
 }

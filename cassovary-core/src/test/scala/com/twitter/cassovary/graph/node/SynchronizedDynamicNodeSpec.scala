@@ -33,17 +33,17 @@ class SynchronizedDynamicNodeSpec extends WordSpec with Matchers {
       val node = fixture(1)
       node.addInBoundNode(2)
       node.addInBoundNode(3)
-      node.inboundNodes.toList shouldEqual List(2, 3)
+      node.inboundNodes.toSeq shouldEqual Seq(2, 3)
       node.removeInBoundNode(3)
       node.removeInBoundNode(4) // non-existing items won't throw exceptions
-      node.inboundNodes.toList shouldEqual List(2)
+      node.inboundNodes.toSeq shouldEqual Seq(2)
 
       node.addOutBoundNode(2)
       node.addOutBoundNode(3)
-      node.outboundNodes.toList shouldEqual List(2, 3)
+      node.outboundNodes.toSeq shouldEqual Seq(2, 3)
       node.removeOutBoundNode(3)
       node.removeOutBoundNode(4)
-      node.outboundNodes.toList shouldEqual List(2)
+      node.outboundNodes.toSeq shouldEqual Seq(2)
     }
 
     "throw an exception if id is DELETED_MARKER" in {

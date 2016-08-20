@@ -38,7 +38,7 @@ class BipartiteGraphSpec extends WordSpec with Matchers {
           nbrNode.isLeftNode shouldEqual false
           leftNbrSet += nbrNode.id
         }
-        node.neighborIds(GraphDir.InDir).toList shouldEqual Nil
+        node.neighborIds(GraphDir.InDir).toSeq shouldEqual Seq()
       }
 
       leftNbrSet shouldEqual Set(14, 5, 8, 10)
@@ -52,7 +52,7 @@ class BipartiteGraphSpec extends WordSpec with Matchers {
           nbrNode.isLeftNode shouldEqual true
           rightNbrSet += nbrNode.id
         }
-        node.neighborIds(GraphDir.OutDir).toList shouldEqual Nil
+        node.neighborIds(GraphDir.OutDir).toSeq shouldEqual Seq()
       }
       rightNbrSet shouldEqual Set(-2, -4, -5)
 

@@ -11,8 +11,11 @@
  */
 package com.twitter.cassovary.graph
 
+import com.twitter.cassovary.collections.CSeq
 import com.twitter.cassovary.util.io.{IntLongSource, MemoryMappedIntLongSource}
 import java.io._
+
+import com.twitter.cassovary.collections.CSeq.Implicits._
 
 /**
  * A graph which reads edge data from a memory mapped file.  There is no object overhead per
@@ -55,18 +58,18 @@ class MemoryMappedDirectedGraph(file: File) extends DirectedGraph[Node] {
 
   private def inDegree(id: Int): Int = ((inboundOffset(id + 1) - inboundOffset(id)) / 4).toInt
 
+  private class MemoryMappedCSeq(id: Int, degreeFunction: Int => Int, offset: Long)
+      extends CSeq[Int] {
+    override def apply(idx: Int): Int = data.getInt(offset + 4L * idx)
+    override def length: Int = degreeFunction(id)
+  }
+
   /* Only created when needed (there is no array of these stored). */
   private class MemoryMappedDirectedNode(override val id: Int) extends Node {
     val nodeOutboundOffset = outboundOffset(id)
     val nodeInboundOffset = inboundOffset(id)
-    def outboundNodes(): Seq[Int] = new IndexedSeq[Int] {
-      val length: Int = outDegree(id)
-      def apply(i: Int): Int =  data.getInt(nodeOutboundOffset + 4L * i)
-    }
-    def inboundNodes(): Seq[Int] = new IndexedSeq[Int] {
-      val length: Int = inDegree(id)
-      def apply(i: Int): Int =  data.getInt(nodeInboundOffset + 4L * i)
-    }
+    def outboundNodes(): CSeq[Int] = new MemoryMappedCSeq(id, outDegree, nodeOutboundOffset)
+    def inboundNodes(): CSeq[Int] = new MemoryMappedCSeq(id, inDegree, nodeInboundOffset)
   }
 
   def getNodeById(id: Int): Option[Node] =
@@ -112,12 +115,12 @@ object MemoryMappedDirectedGraph {
     out.writeLong(inboundOffset) // Needed to compute indegree of node n-1
 
     for (i <- 0 until n) {
-      for (v <- (graph.getNodeById(i) map (_.outboundNodes())).getOrElse(Nil)) {
+      for (v <- (graph.getNodeById(i) map (_.outboundNodes())).getOrElse(CSeq.empty[Int])) {
         out.writeInt(v)
       }
     }
     for (i <- 0 until n) {
-      for (v <- (graph.getNodeById(i) map (_.inboundNodes())).getOrElse(Nil)) {
+      for (v <- (graph.getNodeById(i) map (_.inboundNodes())).getOrElse(CSeq.empty[Int])) {
         out.writeInt(v)
       }
     }

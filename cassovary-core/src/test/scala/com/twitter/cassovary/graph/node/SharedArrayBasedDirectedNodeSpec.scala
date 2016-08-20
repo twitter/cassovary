@@ -15,6 +15,9 @@ package com.twitter.cassovary.graph.node
 
 import com.twitter.cassovary.graph.StoredGraphDir
 import com.twitter.cassovary.util.Sharded2dArray
+import com.twitter.cassovary.collections.CSeq
+
+import com.twitter.cassovary.collections.CSeq.Implicits._
 
 class SharedArrayBasedDirectedNodeSpec extends NodeBehaviors {
   val nodesIndicator: Int => Boolean = {case `nodeId` => true; case _ => false}
@@ -22,10 +25,10 @@ class SharedArrayBasedDirectedNodeSpec extends NodeBehaviors {
   val lengthsOut: Int => Int = {case `nodeId` => 3; case _ => -1}
   val lengthsIn: Int => Int = {case `nodeId` => 2; case _ => -1}
 
-  val sharedOutEdgesArray = new Sharded2dArray(Array[Array[Int]](neighbors), nodesIndicator, offsets,
-    lengthsOut, (x: Int) => 0)
-  val sharedInEdgesArray = new Sharded2dArray(Array[Array[Int]](inEdges), nodesIndicator, offsets,
-    lengthsIn, (x: Int) => 0)
+  val sharedOutEdgesArray = new Sharded2dArray[Int](Array[Array[Int]](neighbors),
+    nodesIndicator, offsets, lengthsOut, (x: Int) => 0)
+  val sharedInEdgesArray = new Sharded2dArray[Int](Array[Array[Int]](inEdges),
+    nodesIndicator, offsets, lengthsIn, (x: Int) => 0)
 
   val actualIn = SharedArrayBasedDirectedNode(nodeId, sharedOutEdgesArray,
           StoredGraphDir.OnlyIn)
