@@ -13,11 +13,9 @@
  */
 package com.twitter.cassovary.graph
 
-import com.twitter.cassovary.graph.bipartite.BipartiteNode
 import org.mockito.Mockito._
-import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.mock.MockitoSugar
-
+import org.scalatest.{Matchers, WordSpec}
 import scala.util.Random
 
 class TraverserSpec extends WordSpec with MockitoSugar with Matchers {
