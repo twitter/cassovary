@@ -191,7 +191,8 @@ class ListOfEdgesGraphReader[T](
         val id = buf(0)
         val edgesArr = buf.toArray(1)
         val (edges, maxId) = prepareEdges(edgesArr)
-        NodeIdEdgesMaxId(id, edges, maxId)
+        val nodeMaxId = id.max(maxId)
+        NodeIdEdgesMaxId(id, edges, nodeMaxId)
       }
     }
   }
