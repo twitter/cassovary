@@ -17,14 +17,14 @@ JARDIR=cassovary-examples/target/scala-2.11
 JARS=`echo $JARDIR/*assembly*.jar`
 JARSCP=${JARS// /:}
 
-echo Generating a random graph with 500K nodes with average outdegree 20 (so ~10M edges total in one direction) and storing in /tmp/...
-java -Xmx1200M -server -cp $JARSCP WriteRandomGraph /tmp 5M 5000000 20 8
+echo "Generating a random graph with 500K nodes with average outdegree 20 (so ~10M edges total in one direction) and storing in /tmp/..."
+java -Xmx1200M -server -cp $JARSCP WriteRandomGraph /tmp 500K 500000 20 4
 
 echoandrun 60M 500K OnlyOut
 echoandrun 120M 500K BothInOut
 
-echo Generating a random graph with 5M nodes with average outdegree 20 (so ~100M edges total in one direction) and storing in /tmp/...
-java -Xmx1500M -server -cp $JARSCP WriteRandomGraph /tmp 500K 500000 20 4
+echo "Generating a random graph with 5M nodes with average outdegree 20 (so ~100M edges total in one direction) and storing in /tmp/..."
+java -Xmx1500M -server -cp $JARSCP WriteRandomGraph /tmp 5M 5000000 20 8
 
 echoandrun 500M 5M OnlyOut
 echoandrun 1100M 5M BothInOut
