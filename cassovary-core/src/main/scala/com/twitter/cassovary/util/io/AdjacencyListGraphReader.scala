@@ -13,11 +13,13 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.{StoredGraphDir, NodeIdEdgesMaxId}
+import com.twitter.cassovary.graph.{NodeIdEdgesMaxId, StoredGraphDir}
 import com.twitter.cassovary.graph.StoredGraphDir._
-import com.twitter.cassovary.util.{ParseString, NodeNumberer}
+import com.twitter.cassovary.util.{NodeNumberer, ParseString}
 import com.twitter.util.NonFatal
-import java.io.IOException
+import java.io.{BufferedInputStream, FileInputStream, IOException}
+import java.util.zip.GZIPInputStream
+
 import scala.io.Source
 
 /**
@@ -60,7 +62,8 @@ class AdjacencyListGraphReader[T] (
   val directory: String,
   override val prefixFileNames: String = "",
   val nodeNumberer: NodeNumberer[T],
-  idReader: (String => T)
+  idReader: (String => T),
+  isGzip: Boolean = false
 ) extends GraphReaderFromDirectory[T] {
 
   /**
@@ -80,7 +83,10 @@ class AdjacencyListGraphReader[T] (
     override def iterator = new Iterator[NodeIdEdgesMaxId] {
 
       var lastLineParsed = 0
-      private val src = Source.fromFile(filename)
+      private val src = if (!isGzip)
+        Source.fromFile(filename)
+      else
+        Source.fromInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(filename))), "ISO-8859-1")
       private val lines = src.getLines()
         .map{x => {lastLineParsed += 1; x}}
 
@@ -135,7 +141,7 @@ class AdjacencyListGraphReader[T] (
 object AdjacencyListGraphReader {
   def forIntIds(directory: String, prefixFileNames: String = "",
       nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity(),
-      graphDir: StoredGraphDir = StoredGraphDir.OnlyOut) =
+      graphDir: StoredGraphDir = StoredGraphDir.OnlyOut, isGzip: Boolean = false) =
     new AdjacencyListGraphReader[Int](directory, prefixFileNames, nodeNumberer, ParseString.toInt) {
       override def storedGraphDir: StoredGraphDir = graphDir
     }
