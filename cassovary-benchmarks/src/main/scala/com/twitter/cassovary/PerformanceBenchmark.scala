@@ -94,8 +94,8 @@ object PerformanceBenchmark extends GzipGraphDownloader {
   val reps = flags("reps", DEFAULT_REPS, "number of times to run benchmark")
   val adjacencyList = flags("a", false, "graph in adjacency list format")
   val gzipFlag = flags("gz", false, "Is file in gzip format")
-  val dirOutFlag = flags("out", false, "Graph direction: out")
-  val dirInFlag = flags("in", false, "Graph direction: in")
+  val dirOutFlag = flags("out", true, "Graph direction: out")
+  val dirInFlag = flags("in", true, "Graph direction: in")
 
 
   def cacheRemoteFile(url: String): (String, String) = {

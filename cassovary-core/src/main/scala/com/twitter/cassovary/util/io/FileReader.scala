@@ -4,11 +4,11 @@ import java.io.IOException
 
 import com.twitter.logging.Logger
 import com.twitter.util.NonFatal
-
-import scala.io.Source
 import java.io.FileInputStream
 import java.io.BufferedInputStream
 import java.util.zip.GZIPInputStream
+import scala.io.Source
+
 
 abstract class FileReader[T](fileName: String, isGzip: Boolean = false) extends Iterator[T] {
   protected val log = Logger.get()
@@ -83,6 +83,26 @@ class TwoTsFileReader[T](fileName: String,
     val source = idReader(line, 0, i - 1)
     val dest = idReader(line, i + 1, line.length - 1)
     (source, dest)
+  }
+
+}
+
+// T is the id type, typically Int or Long or String
+class AdjacencyTsFileReader[T](fileName: String,
+                               separator: Char,
+                               idReader: (String => T))
+  extends FileReader[(Option[T], Any)](fileName) {
+
+  def processOneLine(line: String): (Option[T], Any) = {
+    val i = line.indexOf(separator)
+    if (i == -1) {
+      val dest = idReader(line)
+      (None, dest)
+    } else {
+      val source = idReader(line.substring(0, i))
+      val count = line.substring(i + 1, line.length).toInt
+      (Some(source), count)
+    }
   }
 
 }
