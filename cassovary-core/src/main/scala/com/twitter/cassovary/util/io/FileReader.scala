@@ -90,8 +90,8 @@ class TwoTsFileReader[T](fileName: String,
 // T is the id type, typically Int or Long or String
 class AdjacencyTsFileReader[T](fileName: String,
                                separator: Char,
-                               idReader: (String => T))
-  extends FileReader[(Option[T], Any)](fileName) {
+                               idReader: (String => T), isGzip: Boolean = false)
+  extends FileReader[(Option[T], Any)](fileName, isGzip) {
 
   def processOneLine(line: String): (Option[T], Any) = {
     val i = line.indexOf(separator)

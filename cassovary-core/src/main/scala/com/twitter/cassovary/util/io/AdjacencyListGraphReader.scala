@@ -127,7 +127,7 @@ object AdjacencyListGraphReader {
   def forIntIds(directory: String, prefixFileNames: String = "",
       nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity(),
       graphDir: StoredGraphDir = StoredGraphDir.OnlyOut, isGzip: Boolean = false, separator: Char = ' ') =
-    new AdjacencyListGraphReader[Int](directory, prefixFileNames, nodeNumberer, ParseString.toInt) {
+    new AdjacencyListGraphReader[Int](directory, prefixFileNames, nodeNumberer, ParseString.toInt, isGzip = isGzip) {
       override def storedGraphDir: StoredGraphDir = graphDir
     }
 }
