@@ -87,21 +87,22 @@ class TwoTsFileReader[T](fileName: String,
 
 }
 
-// T is the id type, typically Int or Long or String
+// Here, T is either the source or dest id (typically Int or Long or String)
+//   and "Int" represents the count of adjacency. 
 class AdjacencyTsFileReader[T](fileName: String,
                                separator: Char,
                                idReader: (String => T), isGzip: Boolean = false)
-  extends FileReader[(Option[T], Any)](fileName, isGzip) {
+  extends FileReader[(T, Option[Int])](fileName, isGzip) {
 
-  def processOneLine(line: String): (Option[T], Any) = {
+  def processOneLine(line: String): (T, Option[Int]) = {
     val i = line.indexOf(separator)
     if (i == -1) {
       val dest = idReader(line)
-      (None, dest)
+      (dest, None)
     } else {
       val source = idReader(line.substring(0, i))
       val count = line.substring(i + 1, line.length).toInt
-      (Some(source), count)
+      (source, Some(count))
     }
   }
 

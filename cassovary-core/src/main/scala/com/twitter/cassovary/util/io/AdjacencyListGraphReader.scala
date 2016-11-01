@@ -74,15 +74,10 @@ class AdjacencyListGraphReader[T] (
   private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[T])
     extends Iterable[NodeIdEdgesMaxId] {
 
-    def adjacencyNodeIdsIterator(): Iterator[(Option[Int], Int)] = {
-      new AdjacencyTsFileReader[T](filename, separator, idReader) map { case (source, dest) =>
-        if (source.isDefined) {
-          val internalFromId = nodeNumberer.externalToInternal(source.get)
-          (Some(internalFromId), dest.asInstanceOf[Int])
-        } else {
-          val internalToId = nodeNumberer.externalToInternal(dest.asInstanceOf[T])
-          (None, internalToId)
-        }
+    def adjacencyNodeIdsIterator(): Iterator[(Int, Option[Int])] = {
+      new AdjacencyTsFileReader[T](filename, separator, idReader) map { case (nodeId, count) =>
+        val internalNodeId = nodeNumberer.externalToInternal(nodeId)
+        (internalNodeId, count)
       }
     }
 
@@ -94,13 +89,14 @@ class AdjacencyListGraphReader[T] (
 
       override def next(): NodeIdEdgesMaxId = {
         var i = 0
-        val (id, outEdgeCountInt) = nodeIds.next()
-        val internalNodeId = id.get;
+        val (id, outEdgeCountIntOpt) = nodeIds.next()
+        val internalNodeId = id
 
         var newMaxId = internalNodeId
+        val outEdgeCountInt = outEdgeCountIntOpt.get
         val outEdgesArr = new Array[Int](outEdgeCountInt)
         while (i < outEdgeCountInt) {
-          val (from, internalNghId) = nodeIds.next()
+          val (internalNghId, tmp) = nodeIds.next()
           newMaxId = newMaxId max internalNghId
           outEdgesArr(i) = internalNghId
           i += 1

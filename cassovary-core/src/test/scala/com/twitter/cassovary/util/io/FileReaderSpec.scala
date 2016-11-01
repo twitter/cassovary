@@ -58,9 +58,9 @@ class FileReaderSpec extends WordSpec with Matchers {
     val expectedLines = allLines(pathName, isGzip).map { l =>
       val arr = l.split(separator).map(_.toInt)
       if (arr.length > 1) {
-        (Some(arr(0)), arr(1))
+        (arr(0), Some(arr(1)))
       } else {
-        (None, arr(0))
+        (arr(0), None)
       }
     }
     expectedLines shouldEqual actualLines
