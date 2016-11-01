@@ -13,11 +13,12 @@
  */
 package com.twitter.cassovary.util.io
 
-import com.twitter.cassovary.graph.{StoredGraphDir, NodeIdEdgesMaxId}
+import com.twitter.cassovary.graph.{NodeIdEdgesMaxId, StoredGraphDir}
 import com.twitter.cassovary.graph.StoredGraphDir._
-import com.twitter.cassovary.util.{ParseString, NodeNumberer}
+import com.twitter.cassovary.util.{NodeNumberer, ParseString}
 import com.twitter.util.NonFatal
-import java.io.IOException
+import java.io.{BufferedInputStream, FileInputStream, IOException}
+import java.util.zip.GZIPInputStream
 import scala.io.Source
 
 /**
@@ -60,13 +61,11 @@ class AdjacencyListGraphReader[T] (
   val directory: String,
   override val prefixFileNames: String = "",
   val nodeNumberer: NodeNumberer[T],
-  idReader: (String => T)
+  idReader: (String => T),
+  isGzip: Boolean = false,
+  separator: Char = ' '
 ) extends GraphReaderFromDirectory[T] {
 
-  /**
-   * Separator between node ids forming edge.
-   */
-  protected val separator = " "
 
   /**
    * Read in nodes and edges from a single file
@@ -75,47 +74,35 @@ class AdjacencyListGraphReader[T] (
   private class OneShardReader(filename: String, nodeNumberer: NodeNumberer[T])
     extends Iterable[NodeIdEdgesMaxId] {
 
-    private val outEdgePattern = ("""^(\w+)""" + separator + """(\d+)""").r
+    def adjacencyNodeIdsIterator(): Iterator[(Int, Option[Int])] = {
+      new AdjacencyTsFileReader[T](filename, separator, idReader) map { case (nodeId, count) =>
+        val internalNodeId = nodeNumberer.externalToInternal(nodeId)
+        (internalNodeId, count)
+      }
+    }
 
     override def iterator = new Iterator[NodeIdEdgesMaxId] {
 
-      var lastLineParsed = 0
-      private val src = Source.fromFile(filename)
-      private val lines = src.getLines()
-        .map{x => {lastLineParsed += 1; x}}
+      private val nodeIds = adjacencyNodeIdsIterator()
 
-      override def hasNext: Boolean = {
-        val isNotLastLine = lines.hasNext
-        if (!isNotLastLine) {
-          src.close()
-        }
-        isNotLastLine
-      }
+      override def hasNext: Boolean = nodeIds.hasNext
 
       override def next(): NodeIdEdgesMaxId = {
         var i = 0
-        try {
-          val outEdgePattern(id, outEdgeCount) = lines.next().trim
-          val outEdgeCountInt = outEdgeCount.toInt
-          val externalNodeId = idReader(id)
-          val internalNodeId = nodeNumberer.externalToInternal(externalNodeId)
+        val (id, outEdgeCountIntOpt) = nodeIds.next()
+        val internalNodeId = id
 
-          var newMaxId = internalNodeId
-          val outEdgesArr = new Array[Int](outEdgeCountInt)
-          while (i < outEdgeCountInt) {
-            val externalNghId = idReader(lines.next().trim)
-            val internalNghId = nodeNumberer.externalToInternal(externalNghId)
-            newMaxId = newMaxId max internalNghId
-            outEdgesArr(i) = internalNghId
-            i += 1
-          }
-
-          NodeIdEdgesMaxId(internalNodeId, outEdgesArr, newMaxId)
-        } catch {
-          case NonFatal(exc) =>
-            throw new IOException("Parsing failed near line: %d in %s"
-              .format(lastLineParsed, filename), exc)
+        var newMaxId = internalNodeId
+        val outEdgeCountInt = outEdgeCountIntOpt.get
+        val outEdgesArr = new Array[Int](outEdgeCountInt)
+        while (i < outEdgeCountInt) {
+          val (internalNghId, tmp) = nodeIds.next()
+          newMaxId = newMaxId max internalNghId
+          outEdgesArr(i) = internalNghId
+          i += 1
         }
+
+        NodeIdEdgesMaxId(internalNodeId, outEdgesArr, newMaxId)
       }
     }
   }
@@ -127,7 +114,7 @@ class AdjacencyListGraphReader[T] (
   // note that we are assuming that n.id.toString does the right thing, which is
   // true for int and long ids but might not be for a general T.
   def reverseParseNode(n: NodeIdEdgesMaxId): String = {
-    n.id + separator + n.edges.length + "\n" + n.edges.mkString("\n") + "\n"
+    n.id + separator.toString + n.edges.length + "\n" + n.edges.mkString("\n") + "\n"
   }
 
 }
@@ -135,8 +122,8 @@ class AdjacencyListGraphReader[T] (
 object AdjacencyListGraphReader {
   def forIntIds(directory: String, prefixFileNames: String = "",
       nodeNumberer: NodeNumberer[Int] = new NodeNumberer.IntIdentity(),
-      graphDir: StoredGraphDir = StoredGraphDir.OnlyOut) =
-    new AdjacencyListGraphReader[Int](directory, prefixFileNames, nodeNumberer, ParseString.toInt) {
+      graphDir: StoredGraphDir = StoredGraphDir.OnlyOut, isGzip: Boolean = false, separator: Char = ' ') =
+    new AdjacencyListGraphReader[Int](directory, prefixFileNames, nodeNumberer, ParseString.toInt, isGzip = isGzip) {
       override def storedGraphDir: StoredGraphDir = graphDir
     }
 }
