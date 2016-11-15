@@ -46,13 +46,14 @@ Cassovary is built using [sbt](https://github.com/sbt/sbt) and was tested last u
 
 ## Using maven published version of library
 
-Cassovary is published to maven central with crosspath scala versions 2.10.4 and 2.11.7.
-Please see the latest version number (such as 6.3.0) released alongside
-the maven-central image at the top of the README.
+Cassovary is published to maven central with scala version 2.11.8 starting Cassovary version 7.0.0.
+The latest published Cassovary version number that also works with scala 2.10 is version 6.4.0.
+Please see the latest version number (such as 7.1.0) released alongside
+the maven-central image at the top of this README.
 
 To use with sbt, substitute the latest version number and use:
 
-```libraryDependencies += "com.twitter" %% "cassovary-core" % "6.3.0"```
+```libraryDependencies += "com.twitter" %% "cassovary-core" % "7.1.0"```
 
 and
 
@@ -60,6 +61,8 @@ and
 
 The last Cassovary version to support scala 2.9 is 3.4.0, and
 support for scala version 2.9.x has been discontinued since.
+The last Cassovary version to support scala 2.10 is 6.4.0, and
+support for scala version 2.10.x has been discontinued since.
 Also, Cassovary requires Java 7+ and the last Cassovary version to support Java 6 was 3.4.0.
 
 The only dependency that Cassovary uses which is not bundled with it (because of its size)
