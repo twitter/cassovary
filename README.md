@@ -118,7 +118,7 @@ Thanks to all the [contributors](https://github.com/twitter/cassovary/graphs/con
 We use the [Yourkit](http://yourkit.com) Java Profiler for profiling and tuning Cassovary. [![Yourkit logo](http://projects.collide.info/attachments/download/1289/yklogo.png)](http://yourkit.com)
 
 ## License
-Copyright 2015 Twitter, Inc.
+Copyright 2016 Twitter, Inc.
 
 Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
 
