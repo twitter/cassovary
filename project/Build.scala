@@ -7,7 +7,7 @@ import xerial.sbt.Sonatype._
 import pl.project13.scala.sbt.JmhPlugin
 
 object Cassovary extends Build {
-  val CassovaryLibraryVersion = "7.0.0"
+  val CassovaryLibraryVersion = "7.1.0"
 
   val finagleVersion = "6.35.0"
   val utilVersion = "6.34.0"
