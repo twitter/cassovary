@@ -8,15 +8,15 @@ import pl.project13.scala.sbt.JmhPlugin
 
 object V {
   val cassovary = "7.1.0"
-  val fastutil = "7.2.1"
-  val finagle = "6.45.0"
+  val fastutil = "8.1.0" // "7.2.1"
+  val finagle = "7.0.0" // "6.45.0"
   val guava = "23.0"
   val junit = "4.12"
   val mockito = "1.10.19"
   val scala =  "2.11.11"
   val scalatest = "2.2.6"
   val twitterServer = "1.31.0"
-  val util = "6.45.0"
+  val util = "7.0.0" // "6.45.0"
 }
 
 object Cassovary extends Build {
