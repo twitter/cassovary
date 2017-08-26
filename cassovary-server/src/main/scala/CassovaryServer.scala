@@ -16,7 +16,6 @@ import com.twitter.cassovary.graph.GraphUtils.RandomWalkParams
 import com.twitter.cassovary.graph.{TestGraphs, DirectedGraph, GraphUtils, Node}
 import com.twitter.finagle.{Http, Service}
 import com.twitter.finagle.http.{Request, Response, Status}
-import com.twitter.io.Charsets.Utf8
 import com.twitter.logging.Logger
 import com.twitter.server.TwitterServer
 import com.twitter.util.{Await, Future}
