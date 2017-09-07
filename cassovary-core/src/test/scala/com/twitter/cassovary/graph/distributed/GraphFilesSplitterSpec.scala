@@ -14,10 +14,8 @@
 package com.twitter.cassovary.graph.distributed
 
 import java.io.File
-import java.util.concurrent.Executors
 
 import com.twitter.cassovary.util.io.AdjacencyListGraphReader
-import com.twitter.common.util.FileUtils
 import org.scalatest.{Matchers, WordSpec}
 
 class GraphFilesSplitterSpec extends WordSpec with Matchers {
@@ -39,7 +37,25 @@ class GraphFilesSplitterSpec extends WordSpec with Matchers {
         val files = new File(tmpDir + "/" + s).list()
         files.toList.sorted shouldEqual expectedFiles
       }
-      FileUtils.forceDeletePath(tmpd)
+      forceDeletePath(tmpd)
     }
+  }
+
+  private def forceDeletePath(path: java.io.File): Boolean = {
+    if (path == null) {
+      false
+    } else {
+      if (path.exists() && path.isDirectory()) {
+        val files = path.listFiles()
+        for (file <- files) {
+          if (file.isDirectory()) {
+            forceDeletePath(file)
+          } else {
+            file.delete()
+          }
+        }
+      }
+    }
+    path.delete()
   }
 }

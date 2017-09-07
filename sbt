@@ -5,7 +5,7 @@ root=$(
   /bin/pwd
 )
 
-sbtver=0.13.9
+sbtver=0.13.15
 
 rawsbtjar=sbt-launch.jar
 sbtdir=$HOME/.sbt/launchers/$sbtver

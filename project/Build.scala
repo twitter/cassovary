@@ -6,15 +6,26 @@ import sbtassembly.AssemblyPlugin.autoImport._
 import xerial.sbt.Sonatype._
 import pl.project13.scala.sbt.JmhPlugin
 
-object Cassovary extends Build {
-  val CassovaryLibraryVersion = "7.1.0"
+object V {
+  val cassovary = "7.1.0"
+  val fastutil = "8.1.0"
+  val finagle = "7.1.0"
+  val guava = "23.0"
+  val junit = "4.12"
+  val mockito = "1.10.19"
+  val crossScala = Seq("2.11.11","2.12.3")
+  val scalatest = "3.0.4"
+  val twitterServer = "1.32.0"
+  val util = "7.1.0"
+}
 
-  val finagleVersion = "6.35.0"
-  val utilVersion = "6.34.0"
-  val fastUtilsDependency = "it.unimi.dsi" % "fastutil" % "7.0.7"
+object Cassovary extends Build {
+  val CassovaryLibraryVersion = V.cassovary
+
+  val fastUtilsDependency = "it.unimi.dsi" % "fastutil" % V.fastutil
 
   def util(which: String) =
-    "com.twitter" %% ("util-" + which) % utilVersion excludeAll(
+    "com.twitter" %% ("util-" + which) % V.util excludeAll(
         ExclusionRule(organization = "junit"),
         ExclusionRule(organization = "org.scala-tools.testing"),
         ExclusionRule(organization = "org.mockito"))
@@ -22,17 +33,17 @@ object Cassovary extends Build {
   val sharedSettings = Seq(
     version := CassovaryLibraryVersion,
     organization := "com.twitter",
-    scalaVersion := "2.11.8",
+    crossScalaVersions := V.crossScala,
     retrieveManaged := true,
     libraryDependencies ++= Seq(
-      "com.google.guava" % "guava" % "16.0.1",
+      "com.google.guava" % "guava" % V.guava,
       fastUtilsDependency % "provided",
-      "org.mockito" % "mockito-all" % "1.9.5" % "test",
+      "org.mockito" % "mockito-all" % V.mockito % "test",
       util("core"),
       util("logging"),
-      "org.scalatest" %% "scalatest" % "2.2.4" % "test",
-      "junit" % "junit" % "4.10" % "test",
-      "com.twitter" %% "finagle-stats" % finagleVersion,
+      "org.scalatest" %% "scalatest" % V.scalatest % "test",
+      "junit" % "junit" % V.junit % "test",
+      "com.twitter" %% "finagle-stats" % V.finagle,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     ),
     resolvers += "twitter repo" at "http://maven.twttr.com",
@@ -141,7 +152,7 @@ object Cassovary extends Build {
       name := "cassovary-server",
       libraryDependencies ++= Seq(
         fastUtilsDependency,
-        "com.twitter" %% "twitter-server" % "1.20.0"
+        "com.twitter" %% "twitter-server" % V.twitterServer
       )
   ).dependsOn(cassovaryCore)
 }
