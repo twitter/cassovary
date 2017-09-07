@@ -9,14 +9,14 @@ import pl.project13.scala.sbt.JmhPlugin
 object V {
   val cassovary = "7.1.0"
   val fastutil = "8.1.0"
-  val finagle = "7.0.0"
+  val finagle = "7.1.0"
   val guava = "23.0"
   val junit = "4.12"
   val mockito = "1.10.19"
-  val scala = "2.12.3" // "2.11.11"
-  val scalatest = "3.0.4" // "2.2.6"
-  val twitterServer = "1.31.0"
-  val util = "7.0.0"
+  val crossScala = Seq("2.11.11","2.12.3")
+  val scalatest = "3.0.4"
+  val twitterServer = "1.32.0"
+  val util = "7.1.0"
 }
 
 object Cassovary extends Build {
@@ -33,7 +33,7 @@ object Cassovary extends Build {
   val sharedSettings = Seq(
     version := CassovaryLibraryVersion,
     organization := "com.twitter",
-    scalaVersion := V.scala,
+    crossScalaVersions := V.crossScala,
     retrieveManaged := true,
     libraryDependencies ++= Seq(
       "com.google.guava" % "guava" % V.guava,
