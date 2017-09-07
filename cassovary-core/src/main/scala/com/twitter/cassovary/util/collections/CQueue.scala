@@ -128,7 +128,7 @@ private[collections] class CQueueFactoryInt extends CQueueFactory[Int] {
     val intComparator = new IntComparator {
       def compare(i: Int, i1: Int): Int = order.compare(i, i1)
 
-      def compare(o1: Integer, o2: Integer): Int = {
+      override def compare(o1: Integer, o2: Integer): Int = {
         throw new IllegalStateException("Boxed comparison should not be used")
       }
     }
