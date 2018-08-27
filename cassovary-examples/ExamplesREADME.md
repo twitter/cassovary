@@ -6,7 +6,7 @@ library.
 
 ## Building
 In the main project folder type `./sbt` to enter sbt interactive mode. Move to examples project using
-`project cassovary-examples`. Now by typing `run` you can see and choose an example you would like to run.
+`project cassovaryExamples`. Now by typing `run` you can see and choose an example you would like to run.
 You can also use `runMain ExampleClassName parameters` to run a particular example,
 for example `runMain HelloGraph 10`
 
