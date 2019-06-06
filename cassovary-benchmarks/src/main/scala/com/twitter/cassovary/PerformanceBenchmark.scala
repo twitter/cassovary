@@ -82,7 +82,7 @@ object PerformanceBenchmark extends GzipGraphDownloader {
   val separatorInt = flags("separator", defaultSeparatorEdges,
     "Separator between source and destination ids in decimal value of the character")
   val remoteFileFlag = flags("url",
-    "http://snap.stanford.edu/data/cit-HepTh.txt.gz",
+    "https://snap.stanford.edu/data/cit-HepTh.txt.gz",
     "Specify a URL to download a graph file from")
   val helpFlag = flags("h", false, "Print usage")
   val globalPRFlag = flags("globalpr", false, "run global pagerank benchmark")
