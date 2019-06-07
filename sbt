@@ -10,7 +10,7 @@ sbtver=0.13.9
 rawsbtjar=sbt-launch.jar
 sbtdir=$HOME/.sbt/launchers/$sbtver
 sbtjar=$sbtdir/$rawsbtjar
-SBTURL=http://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/$sbtver/$rawsbtjar
+SBTURL=https://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/$sbtver/$rawsbtjar
 JARMD5=767d963ed266459aa8bf32184599786d
 
 if [ ! -f $sbtjar ]; then

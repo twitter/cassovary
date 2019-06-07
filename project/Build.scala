@@ -35,7 +35,7 @@ object Cassovary extends Build {
       "com.twitter" %% "finagle-stats" % finagleVersion,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     ),
-    resolvers += "twitter repo" at "http://maven.twttr.com",
+    resolvers += "twitter repo" at "https://maven.twttr.com",
 
     scalacOptions ++= Seq("-encoding", "utf8"),
     scalacOptions += "-deprecation",
@@ -49,7 +49,7 @@ object Cassovary extends Build {
     pomIncludeRepository := { _ => false },
     publishMavenStyle := true,
     pomExtra := (
-      <url>http://twitter.com/cassovary</url>
+      <url>https://twitter.com/cassovary</url>
       <licenses>
         <license>
           <name>Apache 2</name>
