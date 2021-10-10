@@ -63,11 +63,27 @@ object UniDirectionalNode {
 }
 
 /**
+ * A node where both directions have the same edges.
+ */
+trait UndirectedNode extends UniDirectionalNode {
+  final def inboundNodes() = outboundNodes()
+}
+
+object UndirectedNode {
+  def apply(nodeId: Int, outbound: Seq[Int]) =
+    new UndirectedNode {
+      override val id = nodeId
+      override def outboundNodes() = outbound
+    }
+}
+
+/**
  * Factory object for creating uni-directional nodes that uses shared array as underlying storage
  * for node's edges, * i.e. multiple nodes share a shared two-dimensional array
  * object to hold its edges
  */
 object SharedArrayBasedUniDirectionalNode {
+
   def apply(nodeId: Int, edgeArrOffset: Int, edgeArrLen: Int, sharedArray: Array[Array[Int]],
             dir: StoredGraphDir) = {
     val neighbors = CSeq[Int](sharedArray(nodeId % sharedArray.length), edgeArrOffset,
